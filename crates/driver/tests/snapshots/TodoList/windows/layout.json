@@ -1,0 +1,59 @@
+{
+  "hash": "a6bb96edf9a9ad2d",
+  "templates": [
+    {
+      "label": "TodoList",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {}, "children": [1, 2, 4]},
+        {"element": "Input", "props": {}, "children": []},
+        {"element": "Button", "props": {}, "children": [3]},
+        {"element": "Text", "props": {}, "children": []},
+        {"point": 0}
+      ],
+      "values": [
+        {"node": 1, "prop": "value", "type": "String"},
+        {"node": 3, "prop": "value", "type": "String"}
+      ],
+      "events": [
+        {"node": 1, "event": "onChange", "payload": "String", "controls": 0},
+        {"node": 2, "event": "onClick", "payload": null, "controls": null}
+      ],
+      "points": [
+        {"node": 4, "kind": "branch", "templates": [1]}
+      ]
+    },
+    {
+      "label": "TodoList:if8.0",
+      "kind": "branch",
+      "roots": [0],
+      "nodes": [
+        {"point": 0}
+      ],
+      "values": [],
+      "events": [],
+      "points": [
+        {"node": 0, "kind": "list", "template": 2}
+      ]
+    },
+    {
+      "label": "TodoList:for7",
+      "kind": "row",
+      "roots": [0],
+      "nodes": [
+        {"element": "Row", "props": {}, "children": [1, 2]},
+        {"element": "Text", "props": {}, "children": []},
+        {"element": "Button", "props": {}, "children": [3]},
+        {"element": "Text", "props": {"value": "x"}, "children": []}
+      ],
+      "values": [
+        {"node": 1, "prop": "value", "type": "String"}
+      ],
+      "events": [
+        {"node": 2, "event": "onClick", "payload": null, "controls": null}
+      ],
+      "points": []
+    }
+  ]
+}

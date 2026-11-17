@@ -177,6 +177,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "weft-ui-codegen-winui"
+version = "0.0.0"
+dependencies = [
+ "weft-ui-compiler",
+]
+
+[[package]]
 name = "weft-ui-compiler"
 version = "0.0.0"
 
@@ -188,6 +195,7 @@ dependencies = [
  "weft-ui-codegen-swiftui",
  "weft-ui-codegen-web",
  "weft-ui-codegen-wechat",
+ "weft-ui-codegen-winui",
  "weft-ui-compiler",
 ]
 

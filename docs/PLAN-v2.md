@@ -1,0 +1,403 @@
+# PLAN v2：一套代码，所有平台
+
+一份 `.weft` 视图加一份 JS/TS 逻辑，产出 7 个平台的原生应用：
+
+| 平台      | 视图层                | 逻辑层 JS 引擎        | 宿主构建工具            |
+| --------- | --------------------- | --------------------- | ----------------------- |
+| `web`     | DOM                   | 浏览器                | 无（Vite 产物即成品）    |
+| `wechat`  | WXML                  | 小程序逻辑层          | 无（可选调开发者工具 CLI） |
+| `ios`     | SwiftUI               | Hermes                | `xcodebuild`            |
+| `macos`   | SwiftUI               | Hermes                | `xcodebuild`            |
+| `android` | Jetpack Compose       | Hermes                | Gradle                  |
+| `windows` | WinUI 3（C#）          | Hermes                | `dotnet build`          |
+| `linux`   | GTK 4（C++）           | Hermes                | CMake                   |
+
+语言本身不变：语法见 [GRAMMAR.md](GRAMMAR.md)，单向数据流、`model` / `event` / `state` 语义、编译期依赖分析和脏位方案沿用 [PLAN.md](PLAN.md)。本文只描述新架构，以及从现状迁移过去的路线。
+
+## 目标与非目标
+
+目标：
+
+- **视图原生**：每个平台的视图编译成该平台的原生控件代码，不用 WebView，也不自绘。
+- **逻辑统一**：业务逻辑和数据只写一份 JS/TS。Web 和小程序用平台自带的引擎，其余平台嵌入 [Hermes](https://github.com/meta/hermes)，发布时预编译成字节码。
+- **构建一条命令**：`WEFT_PLATFORM=xxx vite build` 生成 `apps/xxx/` 原生工程，然后调用宿主机的构建工具出包。
+- **平台 API 统一**：`import { fetch } from "@weft-ui/platform"`。各平台的类型签名完全一致，不支持的 API 调用时抛错。
+
+非目标：
+
+- 不追求像素级一致。只保证布局语义一致（见[布局规范](#内置元素与布局规范)），外观贴近各平台原生风格。
+- 不提供 JS 以外的逻辑层。现有的 Rust 宿主在 P0 删除（见[迁移](#从现状迁移)）。
+- 第一阶段不做多页面导航、多窗口、平台特有元素，也不做原生端热更新。
+
+## 总体架构
+
+```mermaid
+flowchart LR
+  subgraph Build[构建期：WEFT_PLATFORM=xxx vite build]
+    Weft[.weft] --> Plugin["@weft-ui/vite"]
+    TS[.ts 逻辑] --> Plugin
+    Plugin --> Compiler[编译器 WASM]
+    Compiler -->|JS 逻辑模块| Bundle[JS bundle / Hermes 字节码]
+    Compiler -->|视图源码| ViewSrc[Swift / Kotlin / C# / C++ / WXML]
+    Bundle --> App["apps/xxx/"]
+    ViewSrc --> App
+    App --> HostTool[xcodebuild / Gradle / dotnet / CMake]
+  end
+```
+
+```mermaid
+flowchart LR
+  subgraph Runtime[运行期：原生平台]
+    JS["Hermes<br/>用户逻辑 + model + 生成的逻辑模块<br/>@weft-ui/runtime/remote"] -->|视图操作 ops| Core["原生内核 C++<br/>C ABI"]
+    Core --> Shell["平台壳<br/>Swift / Kotlin / C# / C++"]
+    Shell --> Widgets[原生控件]
+    Widgets -->|用户事件| Shell
+    Shell -->|dispatch| Core
+    Core --> JS
+    JS -->|平台 API 调用| Core
+    Core -->|call / resolve| Shell
+  end
+```
+
+### 关键决策
+
+| 决策         | 选择                                                         | 理由                                                         |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 绑定在哪求值 | 全部在 JS 逻辑层，推广小程序后端的做法。原生模板里没有表达式    | 表达式代码生成只有一份（JS），整除、`??`、字符串格式化等语义在所有平台一致；原生 codegen 只生成结构和槽位读取，工作量小一个数量级 |
+| Web          | 继续直接操作 DOM，不走视图协议                               | 同一个线程里没必要多一层中转；现有 M2 的实现和更新粒度保持不变 |
+| 视图协议     | 新增 `ViewLayout`，作为编译器核心概念（见[视图协议](#视图协议)） | 逻辑层和视图层的唯一契约。小程序和 4 个原生平台共用一份逻辑代码生成，差别只在“sink” |
+| 原生内核     | C++ 实现，对外暴露 C ABI，用 CMake 构建                       | Hermes/JSI 本身就是 C++；Swift（C 互操作）、Kotlin（JNI）、C#（P/Invoke）、GTK 都能直接调用 C ABI |
+| JS 线程      | 第一阶段 Hermes 跑在 UI 线程，事件同步分发、同步 flush         | 受控输入能当场决定是否回滚（和小程序一样）。协议仍保留 hold/ack，以后可以把 JS 挪到独立线程 |
+| Apple        | iOS 和 macOS 共用一个 SwiftUI codegen，靠 `#if os()` 区分少量差异 | 两端控件和 Observation 模型相同                              |
+| Windows      | C# + WinUI 3，用 `dotnet build` 构建                           | WinUI 3 在 C# 上支持最成熟，生成的代码简洁；通过 P/Invoke 调用内核 |
+| Linux        | GTK 4。生成的 C++ 直接调用 GTK 的 C API，用 CMake 构建，和内核同一套工具链 | 不额外引入 gtkmm 或 Rust 工具链                              |
+| 原生最低版本 | iOS 17、macOS 14、Android API 24、Windows 10 1809、GTK 4.10  | SwiftUI 需要 Observation（`@Observable`）；其余是 Compose、Windows App SDK、GTK 4 的稳定基线 |
+
+## 编译器架构
+
+### Crate 划分
+
+```
+crates/
+  compiler/        weft-ui-compiler：syntax、sema、deps、IR，新增 view（ViewLayout）、
+                   codegen（Codegen trait、Platform、OutputFile）
+  codegen-js/      JS 宿主绑定（model 类、events、App 类、.d.ts）+ 表达式生成；
+                   两种逻辑模式：dom（供 codegen-web 拼装）和 remote（输出视图协议 ops）
+  codegen-web/     DOM 创建与 patch（现有 codegen/web 中 DOM 相关部分）
+  codegen-wechat/  WXML + 视图组件（现有 wxml.rs / miniprogram.rs）
+  codegen-swiftui/ iOS / macOS
+  codegen-compose/ Android
+  codegen-winui/   Windows（C#）
+  codegen-gtk/     Linux（C++）
+  driver/          Platform → 后端的分发、应用级编译入口；被 wasm 和测试使用
+  wasm/            wasm-bindgen 导出 driver
+```
+
+依赖方向：`compiler` ← `codegen-js` ← `codegen-web` / `codegen-wechat`；原生后端只依赖 `compiler`；`driver` 依赖全部后端。编译器核心不知道有哪些后端。
+
+### Codegen 接口
+
+```rust
+/// 目标平台；字符串形式与 WEFT_PLATFORM 一致。
+pub enum Platform { Web, Wechat, Ios, Macos, Android, Windows, Linux }
+
+pub struct Context<'a> {
+    pub program: &'a Program,
+    /// 非 web 平台由 compiler 从 IR 计算；web 为 None。
+    pub layout: Option<&'a ViewLayout>,
+    pub platform: Platform,
+}
+
+/// 生成一个平台的视图层。逻辑层固定由 codegen-js 生成，不属于这个接口。
+pub trait Codegen {
+    fn generate(&self, cx: &Context<'_>) -> Vec<OutputFile>;
+}
+
+/// 相对 apps/<platform>/weft/ 的路径和内容。
+pub struct OutputFile { pub path: String, pub contents: String }
+```
+
+- `driver::compile_app(entries, platform, loader)` 返回 `{ logic: Vec<JsModule>, views: Vec<OutputFile>, layout_hash, diagnostics, files }`。`logic` 交给 Vite 的 `transform`，`views` 由插件写进原生工程。
+- **应用级 Program**：原生端的模板注册表覆盖整个应用，所以非 web 平台把应用里所有 `.weft`（默认是 `src/` 下的全部文件）编译成一个 Program。导入闭包内名字唯一的规则扩大到整个应用。新增 `check_many(entries)`，现有的 `check(entry)` 是它的单入口特例。
+- **布局哈希**：`ViewLayout` 的哈希同时写进 JS 逻辑和原生模板。内核启动时比对，不一致直接报错，避免 JS bundle 和原生工程版本错位、悄悄渲染错。
+- 平台能力检查（例如以后的 `Ios.xxx` 命名空间元素）放进 `driver`：它知道目标平台，在 IR 上报诊断，不需要后端各自报错。
+
+### 视图协议
+
+`ViewLayout` 从 IR 推导，把每个组件拆成**块模板**：组件体、每个 `if` 分支、每个 `for` 行体、每个插槽内容各算一个模板，在应用内统一编号。
+
+| 模板成员 | 内容                                                         |
+| -------- | ------------------------------------------------------------ |
+| 静态树   | 元素和静态属性。常量直接内联进原生模板，不占槽位              |
+| 值槽     | 动态属性和文本：`(节点, 属性, 类型)`，类型是 `Int` / `Float` / `Bool` / `String` |
+| 事件槽   | `(节点, 事件属性, 载荷类型)`。`Emit` 和 lambda 都在 JS 侧解析，原生端只回报“哪个 scope 的哪个槽被触发” |
+| 挂载点   | `(节点, 种类)`，种类是 `Branch`、`List`、`Instance(组件)` 或 `Slot` |
+
+运行时每个模板实例是一个 **scope**，id 由 JS 分配。每次 flush 产出一批 ops，一次调用交给 sink：
+
+| op       | 参数                          | 含义                                                         |
+| -------- | ----------------------------- | ------------------------------------------------------------ |
+| `create` | scope, template               | 创建实例（此时还没挂上树）                                   |
+| `set`    | scope, slot, value            | 写值槽                                                       |
+| `branch` | scope, point, child \| 0      | `if` 切换。旧的子 scope 连同后代隐式销毁                     |
+| `rows`   | scope, point, [child…]        | `for` 的完整新顺序。不在新列表里的行隐式销毁                 |
+| `attach` | scope, point, child           | 组件实例 / 插槽内容，只在创建时发一次                         |
+
+批内顺序保证新 scope 的 `create` / `set` 先于挂载它的 op，所以原生端总是先建好子树再插入。反方向只有一种消息：`dispatch(scope, handler, payload)`。
+
+- **编码**：二进制、带版本号。JS 侧写进可复用的 `ArrayBuffer`，内核零拷贝交给平台壳；另提供调试用的文本 dump。小程序的 sink 不编码，直接把 ops 翻译成 `setData` 路径，数据形状保持 M4 的现状。
+- **列表**：协议只给最终顺序。SwiftUI `ForEach(id:)` 和 Compose `key` 自己处理移动；WinUI 和 GTK 调用内核里的 LIS 工具算出最少的移动。
+- **受控输入**：JS 在 UI 线程上同步执行 `dispatch` 和 flush，返回时原生端已经知道值有没有被接受，没接受就回滚。IME 组字期间不回滚，各平台都要实现这一点。
+- **生命周期**：规则同 PLAN.md。在原生平台上，“插入渲染树”指 commit 已提交到原生控件树，由 JS 在 commit 返回后触发，不等同于 SwiftUI 的 `onAppear`（可见）。
+- **无头渲染器**：`@weft-ui/runtime/testing` 把 ops 应用到一棵内存树上，作为协议的参考实现，所有一致性测试都基于它（见[测试](#测试策略)）。
+
+### 两类视图后端
+
+| 类别   | 平台                 | 生成内容                                                     |
+| ------ | -------------------- | ------------------------------------------------------------ |
+| 响应式 | SwiftUI、Compose     | 每个模板一个状态类（`@Observable final class` / `mutableStateOf` 属性）和一个视图函数；`apply(slot, value)` 是生成的 `switch`。框架只重组读到变化属性的视图，细粒度更新由框架完成 |
+| 命令式 | WinUI、GTK（以及 DOM） | 每个模板一个类：构造时创建控件，持有需要更新的控件引用，`apply(slot, value)` 直接改控件属性。和现有 DOM 后端是同一种结构 |
+
+两类共享同一个 `ViewLayout`，区别只在生成代码的形态。同一类内部的后端可以参考对方的实现。
+
+## 内置元素与布局规范
+
+元素集合不变（`Column` `Row` `Text` `Button` `Input` `Checkbox` `Image`）。映射：
+
+| 元素       | Web                  | WXML       | SwiftUI          | Compose        | WinUI                 | GTK 4            |
+| ---------- | -------------------- | ---------- | ---------------- | -------------- | --------------------- | ---------------- |
+| `Column`   | `div` flex column    | `view`     | `VStack`         | `Column`       | `StackPanel` Vertical | `GtkBox` 垂直    |
+| `Row`      | `div` flex row       | `view`     | `HStack`         | `Row`          | `StackPanel` Horizontal | `GtkBox` 水平  |
+| `Text`     | `span`               | `text`     | `Text`           | `Text`         | `TextBlock`           | `GtkLabel`       |
+| `Button`   | `button`             | `button`   | `Button`         | `Button`       | `Button`              | `GtkButton`      |
+| `Input`    | `input`              | `input`    | `TextField`      | `TextField`    | `TextBox`             | `GtkEntry`       |
+| `Checkbox` | checkbox `input`     | `checkbox` | `Toggle`         | `Checkbox`     | `CheckBox`            | `GtkCheckButton` |
+| `Image`    | `img`                | `image`    | `AsyncImage`     | 内核下载 + `Image` | `Image` + `BitmapImage` | 内核下载 + `GtkPicture` |
+
+要和元素映射一起定稿、写进 GRAMMAR 的布局规范：
+
+- 长度一律是逻辑像素：pt / dp / DIP / CSS px。小程序用 `px`，不用 `rpx`。
+- `Column` / `Row`：子元素沿主轴从起点排列，交叉轴起点对齐，不自动拉伸；`gap`、`padding` 语义同 CSS。各后端必须显式设置这些默认值，例如 SwiftUI 的 `VStack` 默认居中，必须写成 `VStack(alignment: .leading)`。
+- 颜色：新增 `PropType::Color`，接受 `#RGB` / `#RRGGBB` / `#RRGGBBAA`。字面量在编译期校验并预解析；动态值由平台壳解析，非法值按透明处理并在调试构建中打警告。
+- `Image`：没有内置网络图片控件的平台（Compose、GTK）通过内核的 `fetch` 下载并缓存，避免引入 Coil 之类的第三方依赖。
+
+## 逻辑层
+
+### `@weft-ui/runtime`
+
+| 入口      | 内容                                                         |
+| --------- | ------------------------------------------------------------ |
+| `.`       | `core.ts`（model 基类、脏位、调度器、`AppBase`）+ DOM 块（现状） |
+| `./remote` | 通用的块运行时：按 `ViewLayout` 维护 scope 树，flush 时产出 ops，按 `(scope, handler)` 分发事件。由现有 `wx.ts` 泛化而来 |
+| `./wechat` | 小程序 sink：ops → `setData` 路径；视图组件 `view()`         |
+| `./native` | 原生 sink：ops → 二进制缓冲 → `__weft.commit`；接收 `__weft.dispatch` |
+| `./testing` | 无头渲染器                                                  |
+
+生成的逻辑模块只依赖 `./remote` 的接口，不知道 sink 是哪个。所以小程序和 4 个原生平台的 JS 产物完全相同，只有 sink 不同。
+
+### `@weft-ui/platform`
+
+按平台切换实现，用 package.json 的条件导出，Vite 按环境设置 `resolve.conditions`：
+
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "weft-web": "./src/web.ts",
+      "weft-wechat": "./src/wechat.ts",
+      "weft-native": "./src/native.ts"
+    }
+  }
+}
+```
+
+第一阶段的 API：
+
+| API                                              | web            | wechat                 | 原生（平台壳实现）                                      |
+| ------------------------------------------------ | -------------- | ---------------------- | ------------------------------------------------------- |
+| `run(app)`                                       | 挂载到 `#app`  | 注册 `App()` + 单页面  | 交给内核挂载根 scope                                    |
+| `fetch`（子集：方法、头、字符串 / `ArrayBuffer` 请求体，`text` / `json` / `arrayBuffer`） | 全局 `fetch` | `wx.request`       | NSURLSession / OkHttp / HttpClient / libsoup            |
+| `storage`（异步 KV：`get` / `set` / `remove`）     | `localStorage` | `wx.*Storage`          | UserDefaults / SharedPreferences / ApplicationData / 文件 |
+| `platform`（`os`、`version`）                     | ✓              | ✓                      | ✓                                                       |
+| `isSupported(name)`                              | ✓              | ✓                      | ✓                                                       |
+
+- 不支持的 API 也会导出，签名不变，调用时抛 `PlatformError("fetch is not supported on <platform>")`。应用可以先用 `isSupported` 判断。
+- Hermes 环境缺的基础设施由内核作为全局注入，第三方库能直接用：`setTimeout` / `setInterval` / `clear*`、`queueMicrotask`、`console`（转发到 os_log / logcat / OutputDebugString / stderr）、`TextEncoder` / `TextDecoder`。
+- 原生调用路径：`native.ts` 调 `__weft.call(module, method, args)` 拿到 Promise → 内核通过 C ABI 回调平台壳 → 平台壳异步完成后回到 UI 线程，调用 `weft_runtime_resolve`。每个平台 API 是一个 module，第一阶段手写，等 API 数量多了再考虑从 TS 声明生成绑定。
+
+### 生命周期
+
+不新增宿主级生命周期 API，沿用 [PLAN.md 的组件生命周期](PLAN.md#生命周期)：元素和组件调用的 `onMount` / `onUnmount` 参数接受事件，宿主通过生成的 `onXxx` 接收。触发顺序（子先于父）、在一次 flush 内收集、flush 结束后分发，这些规则全部由 `runtime/remote` 在 JS 侧实现，所有平台共用；原生端不用上报挂载。
+
+## 构建：Vite 集成
+
+插件改名为 `@weft-ui/vite`（与 `example` 一致），选项：
+
+```ts
+weft({
+  platforms: ["web", "wechat", "ios", "macos", "android", "windows", "linux"],
+  app: { id: "com.example.exp", name: "Exp" },   // 包名 / Bundle ID / AppID 的来源
+  include: "src/**/*.weft",                       // 应用级 Program 的范围
+});
+```
+
+### Environment API 的用法
+
+- 每个平台对应一个 Vite environment（名字就是平台名）。`WEFT_PLATFORM` 决定构建哪几个：可以是单个平台，也可以是逗号分隔的列表；没设置时只构建 `web`。`vite build --app` 配合 `builder.buildApp` 构建 `platforms` 里的全部平台。
+- `configEnvironment` 为每个环境设置：
+  - `resolve.conditions`：`weft-<platform>`；
+  - `define.__WEFT_PLATFORM__`；
+  - `build.outDir`：`apps/<platform>/weft/js`；
+  - 原生和小程序环境打成单文件（关闭代码分割），`build.target` 设为 Hermes 支持的语法集合（具体集合在 P3 用 test262 子集实测后确定）。
+- `buildStart` 对应用级 Program 编译一次并缓存；`transform` 从缓存里返回 `.weft` 的逻辑模块；`generateBundle` 把视图源码和布局哈希写进 `apps/<platform>/weft/`。`.d.weft.ts` 的生成方式不变。
+
+### `apps/<platform>/` 目录约定
+
+| 部分     | 位置                     | 归属                                                         |
+| -------- | ------------------------ | ------------------------------------------------------------ |
+| 工程模板 | `apps/<platform>/` 其余文件 | 首次构建时从 `@weft-ui/native-<platform>` 复制，**之后归用户**：图标、签名、Info.plist、Manifest 等，插件不再覆盖 |
+| 生成区   | `apps/<platform>/weft/`  | 每次构建整体重写：JS bundle（原生平台是 `bundle.hbc`）、视图源码、布局哈希。加入 `.gitignore` |
+
+模板通过生成区里固定的入口文件（如 `weft/Generated.swift`、`weft/CMakeLists.txt`）引用生成代码。用户改模板不会和生成代码冲突。
+
+### 调用宿主构建工具
+
+在 `buildApp`（或单环境构建的 `closeBundle`）里执行：
+
+| 平台      | 命令                                                     | 宿主机要求 |
+| --------- | -------------------------------------------------------- | ---------- |
+| `ios`     | `xcodebuild -scheme <App> -sdk iphonesimulator`（release 模式用 `iphoneos`） | macOS      |
+| `macos`   | `xcodebuild -scheme <App>`                               | macOS      |
+| `android` | `./gradlew assembleDebug`（release 模式用 `assembleRelease`） | 任意       |
+| `windows` | `dotnet build -c Debug`（release 模式用 `-c Release`）     | Windows    |
+| `linux`   | `cmake -B build && cmake --build build`                  | Linux      |
+| `wechat`  | 无；可选调微信开发者工具 CLI 预览                        | 任意       |
+| `web`     | 无                                                       | 任意       |
+
+- `vite build --mode release` 对应各工具的 Release 配置。
+- 宿主机和平台不匹配（比如在 macOS 上构建 `windows`）时照常生成工程，跳过原生构建，并打一条警告。`WEFT_NATIVE=0` 强制只生成工程。
+- 原生平台在 bundle 之后调用 `hermesc -O -emit-binary` 生成字节码。`hermesc` 按宿主操作系统随 `@weft-ui/native-*` 的依赖分发。
+- 缺少工具链时给出可操作的提示，包括缺什么、怎么装。以后整理成 `weft doctor`。
+
+## 原生运行时
+
+```
+native/
+  core/      C++：嵌入 Hermes、__weft 全局（commit / dispatch / call）、ops 编码、
+             定时器与微任务、console、平台调用路由、LIS 工具；CMake；CTest
+  apple/     Swift Package WeftKit：内核绑定、ops 解码 → 状态类、SwiftUI 辅助视图
+  android/   Gradle 模块（AAR）：JNI 胶水、Kotlin 解码、Compose 辅助
+  windows/   C# 项目 Weft.WinUI：P/Invoke、解码、控件辅助
+  linux/     C++：GTK 主循环集成、解码、控件辅助
+packages/
+  native-ios / native-macos / native-android / native-windows / native-linux
+             npm 包：工程模板 + 平台运行时 + 预编译的 Hermes 和内核
+```
+
+内核 C ABI（草案）：
+
+```c
+typedef struct weft_runtime weft_runtime;
+
+typedef struct {
+  void *ctx;
+  void (*commit)(void *ctx, const uint8_t *ops, size_t len);      /* 一批视图 ops，回调期间有效 */
+  void (*schedule)(void *ctx, uint64_t delay_ms);                  /* 请求在 delay 后调用 tick */
+  void (*call)(void *ctx, uint32_t id, const char *module,
+               const char *method, const uint8_t *args, size_t len); /* 平台 API */
+  void (*log)(void *ctx, int level, const char *msg, size_t len);
+} weft_host;
+
+weft_runtime *weft_runtime_new(const weft_host *host, const uint8_t *bytecode, size_t len,
+                               uint64_t layout_hash);
+void weft_runtime_tick(weft_runtime *rt);   /* 执行到期的定时器并清空微任务队列 */
+bool weft_runtime_dispatch(weft_runtime *rt, uint32_t scope, uint32_t handler,
+                           const uint8_t *payload, size_t len); /* 返回受控值是否被接受 */
+void weft_runtime_resolve(weft_runtime *rt, uint32_t id, bool ok,
+                          const uint8_t *result, size_t len);
+void weft_runtime_free(weft_runtime *rt);
+```
+
+- 内核自己不开线程，事件循环归平台壳所有。`schedule` 由平台壳映射到 `DispatchQueue.main`、主线程 `Handler`、`DispatcherQueue`、`g_timeout_add`。
+- Hermes 版本固定，由我们的 CI 为每个目标（iOS / macOS xcframework、Android 4 种 ABI、Windows x64/arm64、Linux x64/arm64）预编译。Hermes 官方没有提供 Windows 和 Linux 的预编译产物，这部分由我们长期维护。
+
+## 测试策略
+
+逻辑层在所有非 web 平台上完全相同，所以测试分成两层：
+
+1. **协议一致性**（JS，跑在 CI 主力机上）：`conformance/` 下的 `.weft` 夹具加脚本化交互，在无头渲染器上记录 ops 日志并和黄金文件比对。同一套夹具也在 web（happy-dom）和小程序（现有的 WXML 解释器）上跑，断言最终的树结构一致。
+2. **平台渲染**：每个平台只验证“ops → 控件”这一层。
+   - 内核：CTest 在 Hermes 里跑同一批夹具，ops 日志必须和 JS 无头渲染器逐字节一致。
+   - 各平台用 XCUITest / Compose UI Test / WinAppDriver / GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 目前只用到 `Column` / `Text` / `Button` / `if`，在 P4 之前要扩充到覆盖全部内置元素和 `for` 列表（可以把 TodoList 并进来），否则平台渲染测试测不到 `Input`、`Checkbox`、`Image` 和列表移动。
+   - 后端 crate 对生成的源码做快照测试，只用来审查变更，不用来证明行为正确。
+
+## 从现状迁移
+
+删除 Rust 宿主（逻辑层统一为 JS 之后，它属于冗余代码）：
+
+- 仓库根 crate `weft-ui`（`src/`，包括 wry / tao 依赖）。根 `Cargo.toml` 只保留 workspace。
+- `crates/compiler/src/codegen/rust.rs`、`crates/compiler/src/build.rs`（`compile()` 和 `CompileError`）。
+- `crates/host-tests`（`examples/todo-rust` 随下文整个 `examples/` 一起删除）。
+- `packages/runtime/src/remote.ts`、`tsconfig.rust.json`、`src/js/`。它的 hold/ack 设计并入视图协议。
+- README 和 PLAN.md 中对应的章节。
+
+保留并重构：
+
+- `codegen/web/{host,expr,js}.rs` → `codegen-js`；`dom.rs`、`blocks.rs` 中 DOM 部分 → `codegen-web`；`wx.rs` 泛化为 `codegen-js` 的 remote 模式；`wxml.rs`、`miniprogram.rs` → `codegen-wechat`。
+- `packages/runtime/src/wx.ts` 拆成 `remote.ts`（通用块运行时）和 `wechat.ts`（sink）。
+- `packages/miniprogram` 的 CLI 被 `WEFT_PLATFORM=wechat vite build` 取代。它的 `./testing`（WXML 解释器）保留，作为测试工具。
+
+示例目录收敛为一个：
+
+- `examples/exp` 移动到仓库根的 `./example`，作为唯一的跨平台示例。`pnpm-workspace.yaml` 中的 `examples/*` 改为 `example`；它的 `package.json` 补上包名和对 `@weft-ui/vite`、`@weft-ui/platform` 的依赖。
+- 删除整个 `examples/` 目录（`todo-web`、`todo-wx`、`todo-rust`）。删除前，把 `todo-web` 的 happy-dom 端到端测试迁到 `packages/vite-plugin/test`，把 `todo-wx` 的 `setData` 负载断言迁到 `packages/miniprogram/test`，TodoList 作为夹具一起迁过去，不丢测试覆盖。
+- README 的三段 Demo 说明合并成一段 `example` 的用法（`pnpm --filter example build:<platform>`）。
+
+`example` 需要顺手修正的地方：`platforms` 里的 `"mac"` 应为 `"macos"`；`App.weft` 的 `if` 两个分支文案写反了（`clicked` 为真时显示的是 “Hello, world!”）；`index.ts` 里的 `app.onMount` 要有对应的事件才成立，`App.weft` 需补上 `event Mount` 和 `Column(onMount = Mount)`。
+
+## 里程碑
+
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段：
+
+| 阶段 | 内容                                                         | 验收标准                                                     |
+| ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| P0   | 删除 Rust 宿主；拆分 crate；`Codegen` trait、`Platform`、`driver`；`check_many`；WASM 改为导出 `compileApp(entries, platform, load)`；插件改名 `@weft-ui/vite`；`examples/exp` 移到 `./example`，迁走 todo 测试后删除整个 `examples/` | 现有 web 和小程序测试（含迁入的 todo 测试）全部通过，TodoList 夹具的生成产物不变 |
+| P1   | `ViewLayout` + 二进制 ops 规范；`runtime/remote`、`wechat` sink、无头渲染器；`codegen-js` remote 模式；`conformance/` 夹具 | 小程序 `setData` 负载与 P0 一致（或有说明地更新）；ops 黄金文件覆盖 `if` / `for` / 插槽 / 跨文件组件 / 受控输入 |
+| P2   | Vite environments、`WEFT_PLATFORM`、`apps/<platform>/` 模板与生成区约定；`@weft-ui/platform`（web、wechat 两种实现）；`PropType::Color` 与布局规范定稿 | `example` 能 `build:web`、`build:wechat`，产物可直接运行；调用不支持的 API 时抛 `PlatformError` |
+| P3   | `native/core`：Hermes 嵌入、C ABI、定时器 / 微任务 / console、平台调用路由；`hermesc` 接入构建；确定 Hermes 语法目标 | CTest 在 Hermes 里跑 conformance 夹具，ops 日志与 JS 无头渲染器逐字节一致 |
+| P4   | Apple：`codegen-swiftui`、WeftKit、Xcode 模板、`xcodebuild`；先做 macOS，再做 iOS | `example` 在 macOS 与 iOS 模拟器上运行；XCUITest 点击流程通过 |
+| P5   | Android：`codegen-compose`、AAR、Gradle 模板                 | 模拟器上运行；Compose UI Test 通过                           |
+| P6   | Windows：`codegen-winui`（C#）、Weft.WinUI、dotnet 模板       | Windows 上运行；WinAppDriver 点击流程通过                    |
+| P7   | Linux：`codegen-gtk`、CMake 模板                             | Linux 上运行；无头 GTK 下点击流程通过                        |
+| P8   | 开发体验：原生端连 dev server 整包重载、`weft doctor`、CI 矩阵（含 Hermes 预编译）、LSP 和格式化（原 M5） | 修改 `.weft` 或 `.ts` 后原生应用自动重载                      |
+
+```mermaid
+flowchart LR
+  P0 --> P1 --> P2
+  P1 --> P3
+  P3 --> P4 & P5 & P6 & P7
+  P2 --> P4 & P5 & P6 & P7
+  P4 & P5 & P6 & P7 --> P8
+```
+
+- 先做 macOS：开发机就是 macOS，反馈最快，也能先验证响应式那一类后端。Android 紧随其后，复用同一类结构。WinUI 和 GTK 都是命令式后端，可以并行，GTK 也可以先在 macOS 上用 Homebrew 的 GTK 4 开发。
+- P3 完成后，P4–P7 互不依赖，可以分给不同的人并行做。
+
+## 风险
+
+| 风险                                                     | 应对                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------ |
+| 6 套布局引擎语义不一致                                   | 元素集合保持最小；布局规范写进 GRAMMAR，各后端显式设置默认值；conformance 夹具按平台截图比对 |
+| Hermes 的语法和内置对象覆盖不全（`Intl`、部分新语法）     | P3 实测确定 `build.target`，交给 Oxc 降级；`Intl` 不列入 `@weft-ui/platform` 承诺范围 |
+| Windows / Linux 上的 Hermes 要自己编译和维护             | 固定版本，CI 缓存预编译产物，升级集中处理                     |
+| UI 线程上的 JS 太重导致卡顿                              | 协议保留 hold/ack，必要时把 Hermes 挪到独立线程，不需要改生成代码 |
+| 受控输入与各平台 IME 的交互                              | 组字期间不回滚；每个平台的 UI 测试覆盖中文输入法            |
+| WinUI 3 非打包部署和 Windows App SDK 运行时分发          | 模板默认自包含（self-contained）部署                         |
+| 原生包体积（每个架构的 Hermes 约 2–3 MB）                 | 只打字节码，不带 Hermes 编译器；Android 按 ABI 拆包          |
+
+## 待定（不在本计划范围）
+
+- 多页面导航和多窗口。需要语言层面的设计，小程序的多页面模型是主要约束。
+- 平台特有元素（`Ios.xxx`、`Wx.xxx`），沿用 PLAN.md 的命名空间方案，在 `driver` 里做能力检查。
+- Web 端是否可选“逻辑放到 Worker、经视图协议渲染”。协议本身已经支持，只缺 DOM sink。

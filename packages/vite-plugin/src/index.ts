@@ -3,6 +3,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultServerConditions } from "vite";
 import { type AppResult, type Platform, compileApp } from "@weft-ui/compiler";
+import { APPLE, WEFT_KIT, packageManifest, xcodebuild } from "./apple.ts";
 import { HERMES_TARGET, NATIVE, compileBytecode } from "./native.ts";
 
 /** Every target platform, in the order of docs/PLAN-v2.md. */
@@ -72,6 +73,20 @@ function outDir(root: string, platform: Platform): string {
 }
 
 /**
+ * How a template file escapes the `__WEFT_APP_NAME__` / `__WEFT_APP_ID__`
+ * placeholders it holds, or `undefined` if it is copied verbatim.
+ */
+function placeholderEscape(name: string): ((value: string) => string) | undefined {
+  // JSON and Xcode project files hold placeholders inside double-quoted strings with the same escapes.
+  if (name.endsWith(".json") || name.endsWith(".pbxproj")) return (value) => JSON.stringify(value).slice(1, -1);
+  if (name.endsWith(".xcscheme")) {
+    const entities: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" };
+    return (value) => value.replace(/[&<>"']/g, (c) => entities[c]!);
+  }
+  return undefined;
+}
+
+/**
  * Copies the platform's project template into `apps/<platform>/` unless the
  * directory already holds anything besides the generated area: after the
  * first build the template belongs to the user. Returns `false` if the
@@ -89,12 +104,11 @@ function copyTemplate(root: string, platform: Platform, app: { id: string; name:
     const path = relative(template, source).replace(/(^|[\\/])_gitignore$/, "$1.gitignore");
     const target = join(project, path);
     mkdirSync(dirname(target), { recursive: true });
-    if (!file.name.endsWith(".json")) {
+    const escape = placeholderEscape(file.name);
+    if (!escape) {
       cpSync(source, target);
       continue;
     }
-    // JSON templates hold placeholders inside string literals.
-    const escape = (value: string) => JSON.stringify(value).slice(1, -1);
     writeFileSync(target, readFileSync(source, "utf8")
       .replaceAll("__WEFT_APP_NAME__", escape(app.name))
       .replaceAll("__WEFT_APP_ID__", escape(app.id)));
@@ -125,8 +139,10 @@ function writeGenerated(root: string, platform: Platform, result: AppResult) {
  * single file in `apps/<platform>/weft/js/`, writes the generated views
  * next to it, and copies the project template into `apps/<platform>/` on
  * the first build. Native platforms also compile the bundle to Hermes
- * bytecode (`weft/bundle.hbc`). Environments not named after a platform
- * (dev server, Vitest) compile for the Web.
+ * bytecode (`weft/bundle.hbc`); iOS and macOS then write `weft/Package.swift`
+ * and build the Xcode project with `xcodebuild` on macOS hosts unless
+ * `WEFT_NATIVE=0`. Environments not named after a platform (dev server,
+ * Vitest) compile for the Web.
  */
 export default function weft(options: WeftOptions = {}): Plugin {
   const configured = options.platforms ?? [...PLATFORMS];
@@ -240,7 +256,8 @@ export default function weft(options: WeftOptions = {}): Plugin {
       });
       writeGenerated(root, platform, app);
       if (!NATIVE.includes(platform)) return;
-      const generated = join(root, "apps", platform, "weft");
+      const project = join(root, "apps", platform);
+      const generated = join(project, "weft");
       try {
         await compileBytecode(join(generated, "js/index.js"), join(generated, "bundle.hbc"));
       } catch (error) {
@@ -248,6 +265,19 @@ export default function weft(options: WeftOptions = {}): Plugin {
       }
       if (!templated) {
         this.warn(`there is no ${platform} project template yet; generated apps/${platform}/weft/ only`);
+        return;
+      }
+      if (!APPLE.includes(platform)) return;
+      writeFileSync(join(generated, "Package.swift"), packageManifest(WEFT_KIT));
+      if (process.env.WEFT_NATIVE === "0") return;
+      if (process.platform !== "darwin") {
+        this.warn(`xcodebuild needs macOS; generated apps/${platform}/ without building it`);
+        return;
+      }
+      try {
+        await xcodebuild(project, platform, this.environment.config.mode === "release");
+      } catch (error) {
+        this.error(error as Error);
       }
     },
   };

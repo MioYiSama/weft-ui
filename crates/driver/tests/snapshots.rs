@@ -177,24 +177,34 @@ fn layout() {
     assert_eq!(json, stored, "TodoList/layout.json");
 }
 
-/// Native platforms run the mini program's logic modules with another sink;
-/// until their view backends exist, their only view file is the layout.
+#[test]
+fn macos() {
+    check(Platform::Macos);
+}
+
+/// iOS and macOS share one SwiftUI backend; platform differences live in WeftKit.
+#[test]
+fn ios_views_equal_macos_views() {
+    assert_eq!(generate(Platform::Ios), generate(Platform::Macos));
+}
+
+/// Native platforms run the mini program's logic modules with another sink,
+/// next to the layout and the views of their backend.
 #[test]
 fn native_platforms_share_the_remote_logic() {
     let wechat = generate(Platform::Wechat);
-    for platform in [
-        Platform::Ios,
-        Platform::Macos,
-        Platform::Android,
-        Platform::Windows,
-        Platform::Linux,
+    for (platform, views) in [
+        (Platform::Ios, &["Generated.swift"][..]),
+        (Platform::Macos, &["Generated.swift"]),
+        (Platform::Android, &[]),
+        (Platform::Windows, &[]),
+        (Platform::Linux, &[]),
     ] {
         let native = generate(platform);
-        assert_eq!(
-            native.keys().collect::<Vec<_>>(),
-            ["TodoList.d.ts", "TodoList.js", "layout.json"],
-            "{platform}"
-        );
+        let mut expected = vec!["TodoList.d.ts", "TodoList.js", "layout.json"];
+        expected.extend(views);
+        expected.sort_unstable();
+        assert_eq!(native.keys().collect::<Vec<_>>(), expected, "{platform}");
         assert_eq!(native["TodoList.js"], wechat["TodoList.js"], "{platform}");
         assert_eq!(
             native["TodoList.d.ts"], wechat["TodoList.d.ts"],

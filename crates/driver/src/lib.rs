@@ -6,6 +6,7 @@
 //! view files from the platform's [`Codegen`] backend.
 
 use weft_ui_codegen_js::JsModule;
+use weft_ui_codegen_swiftui::SwiftUi;
 use weft_ui_codegen_wechat::Wechat;
 use weft_ui_compiler::codegen::{Codegen, Context, OutputFile, Platform};
 use weft_ui_compiler::ir::Program;
@@ -31,9 +32,10 @@ pub struct AppOutput {
 /// Declaration names must be unique across the whole app. On compilation
 /// errors the output holds only diagnostics.
 ///
-/// Native platforms get the remote mode logic modules and, until their view
-/// backends exist, only `layout.json`: the layout the native views must
-/// implement, including its hash.
+/// Native platforms get the remote mode logic modules, `layout.json` (the
+/// layout the native views implement, including its hash) and the views of
+/// their backend: SwiftUI for iOS and macOS; the other native backends do
+/// not exist yet.
 pub fn compile_app(
     entries: &[&str],
     platform: Platform,
@@ -84,10 +86,14 @@ fn generate(
         | Platform::Windows
         | Platform::Linux => {
             let layout = ViewLayout::new(program);
-            let views = vec![OutputFile {
+            let mut views = vec![OutputFile {
                 path: "layout.json".to_owned(),
                 contents: layout.to_json(),
             }];
+            let cx = Context::new(program, Some(&layout), platform);
+            if matches!(platform, Platform::Ios | Platform::Macos) {
+                views.extend(SwiftUi.generate(&cx));
+            }
             (remote(&layout), views, Some(layout))
         }
     }

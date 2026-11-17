@@ -363,6 +363,18 @@ void weft_runtime_free(weft_runtime *rt);
 
 - **测试**：CTest 包括内核单元测试（定时器、微任务、console、平台调用、会话与哈希校验、LIS、解码器，JS 用例由子项目构建的 `hermesc` 编译）和 conformance：`conformance/native/build.ts` 用 @weft-ui/vite 把每个夹具打成 `bundle.hbc`，`weft_conformance` 作为平台壳运行它：校验并应用每批 ops，通过 `weft_runtime_dispatch` 执行脚本里的点击和编辑（含受控输入回滚），写出带注释的 ops 日志，与 `conformance/golden/` 逐字节比对。脚本在 Hermes 里通过平台模块 `conformance` 请求宿主操作，夹具的 `Script.web` 改名为 `App`（它是导入方构建出的根组件类）。`WEFT_CONFORMANCE=OFF` 可以跳过需要 Node 的这部分。
 
+### P4 的实现
+
+macOS 和 iOS 已按上文实现，`example` 在两端运行，XCUITest 点击流程通过。细节和出入：
+
+- **内核产物**：`native/apple/build-core.sh` 用 CMake 为 macOS（arm64 + x86_64）、iOS 模拟器（arm64 + x86_64）和 iOS 真机（arm64）各构建一次 `weft_core`，把它和 Hermes 的静态库（`hermesvmlean_a`、`jsi`、`boost_context`）合并成一个 `libWeftCore.a`，再打成 `native/apple/build/WeftCore.xcframework`（带 `weft/runtime.h` 和模块 `WeftCore`）。交叉构建用 `native/core/build` 这个宿主构建里的 `hermesc` 编译 Hermes 的内部字节码（`IMPORT_HOST_COMPILERS`），没有时先构建它。SDK 以路径传给 CMake：Hermes 是子项目，它自己按 `HERMES_APPLE_TARGET_PLATFORM` 解析 SDK 名为时已晚。产物在 P8 随 CI 预编译之前需要本地构建一次（约 5 分钟）。
+- **WeftKit**（`native/apple`，Swift Package，Swift 6 语言模式）：`WeftSession` 持有内核运行时，`commit` 回调里同步解码 ops（`OpReader`）并应用到 scope 树；scope 0 是挂根组件的虚拟 scope，被 `branch` 换掉、不在 `rows` 里的 scope 连同后代一起销毁。定时器走 `DispatchQueue.main`，平台调用在主 actor 的 `Task` 里完成后调用 `weft_runtime_resolve`，保证不在内核回调里重入。平台模块：`fetch` 用 URLSession（没有状态码的 `data:` / `file:` 响应按 200），`storage` 用 `UserDefaults`（键前缀 `weft.storage.`）。`console` 和内核诊断写到 `os_log`（subsystem `dev.weft`）；启动失败或 ops 异常时根视图显示原因。
+- **视图后端**（`crates/codegen-swiftui`）：iOS 和 macOS 生成同一份 `weft/Generated.swift`，平台差异全在 WeftKit 里。每个模板生成一个 `@Observable` 的 `WeftScope` 子类 `S{n}`（值槽 `v{i}`、挂载点 `p{i}`，`apply` / `mount` 是生成的 `switch`）和一个视图 `V{n}`；`branch` 挂载点按模板类型 `switch`，`list` 是 `ForEach`，`instance` 直接持有被调组件的 scope 类型，只有插槽内容和根组件经过 `AnyView`。`Column` / `Row` 是 `VStack(alignment: .leading)` / `HStack(alignment: .top)`，`spacing` 默认 0；`padding` / `width` / `height` / `background` 按 CSS 的 content-box 叠加（`weftBox`）。`Input` 和 `Checkbox` 没用 SwiftUI 的 `TextField` / `Toggle`：它们的绑定在被拒绝时不会刷新控件，组字状态也拿不到，所以 WeftKit 用 `NSTextField` / `UITextField` 和 `NSButton` 复选框 / `UISwitch` 包装成受控控件：编辑同步 `dispatch`，返回 `false` 时立刻恢复成被控值槽的值；输入法组字期间（`hasMarkedText` / `markedTextRange`）不上报，提交后才上报。`Input` 宽 200pt（CSS 输入框的默认宽度约 20 个字符）。根视图是纵向 `ScrollView`，内容从左上角开始。
+- **工程**：模板在 `packages/vite-plugin/templates/{macos,ios}/`（与小程序模板同一约定；挪进 `@weft-ui/native-*` 包是 P8 的打包工作），是 Xcode 16 格式的 `App.xcodeproj`：`App/` 和 `UITests/` 是同步文件夹（新文件自动加入），target 和 scheme 固定叫 `App`，产品名和 Bundle ID 来自 `app.name` / `app.id`（插件对 `.pbxproj` 和 `.xcscheme` 也替换占位符）。生成区 `weft/` 是本地 Swift Package `WeftApp`：插件写的 `Package.swift` 依赖 WeftKit（目前指向工作区的 `native/apple`），编译 `Generated.swift`，`bundle.hbc` 作为资源。模板的 `App.swift` 只有 `WindowGroup { WeftAppView() }`。macOS 默认开启 App Sandbox 和出站网络权限。
+- **构建**：`writeBundle` 在 `apps/<platform>/` 里执行 `xcodebuild -project App.xcodeproj -scheme App -destination <generic/platform=macOS | iOS Simulator> -derivedDataPath build build`，产物在 `apps/<platform>/build/Build/Products/`；`--mode release` 用 Release 配置，iOS 改为真机（需要在工程里配置签名）。非 macOS 宿主或 `WEFT_NATIVE=0` 时只生成工程；缺少 `WeftCore.xcframework` 或 Xcode 时给出怎么补的提示。
+- **example**：扩充为覆盖全部内置元素：`Row`、带样式的 `Text`、网络 `Image`、受控 `Input`（超过 12 个字符的草稿被拒绝）、按草稿禁用的 `Button`、`for` 待办列表里的 `Checkbox` 和删除按钮。`apps/macos/` 和 `apps/ios/` 随仓库提交（模板归用户），`UITests` 改成这个点击流程，用 `pnpm --filter example test:macos` / `test:ios`（`WEFT_IOS_DEVICE` 选模拟器，默认 `iPhone 17`）运行。
+- **测试**：WeftKit 的 `swift test` 覆盖 ops 解码；`driver` 的快照包括 `macos/Generated.swift`，并断言 iOS 与 macOS 的产物相同；`@weft-ui/vite` 的测试在 `WEFT_NATIVE=0` 下检查 Apple 工程的生成。
+
 ## 测试策略
 
 逻辑层在所有非 web 平台上完全相同，所以测试分成两层：
@@ -370,7 +382,7 @@ void weft_runtime_free(weft_runtime *rt);
 1. **协议一致性**（JS，跑在 CI 主力机上）：`conformance/` 下的 `.weft` 夹具加脚本化交互，在无头渲染器上记录 ops 日志并和黄金文件比对。同一套夹具也在 web（happy-dom）和小程序（现有的 WXML 解释器）上跑，断言最终的树结构一致。实现上每一步之后都比较三端归一化后的树（元素类型和主要值）以及宿主处理器收到的事件；黄金文件在 `conformance/golden/`，用 `WEFT_UPDATE_SNAPSHOTS=1 pnpm --filter @weft-ui/conformance test` 重写。
 2. **平台渲染**：每个平台只验证“ops → 控件”这一层。
    - 内核：CTest 在 Hermes 里跑同一批夹具，ops 日志必须和 JS 无头渲染器逐字节一致。
-   - 各平台用 XCUITest / Compose UI Test / WinAppDriver / GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 目前只用到 `Column` / `Text` / `Button` / `if`，在 P4 之前要扩充到覆盖全部内置元素和 `for` 列表（可以把 TodoList 并进来），否则平台渲染测试测不到 `Input`、`Checkbox`、`Image` 和列表移动。
+   - 各平台用 XCUITest / Compose UI Test / WinAppDriver / GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 在 P4 扩充为覆盖全部内置元素和 `for` 列表（见[P4 的实现](#p4-的实现)），点击流程包括受控输入的回滚、复选框和删除列表行。
    - 后端 crate 对生成的源码做快照测试，只用来审查变更，不用来证明行为正确。
 
 ## 从现状迁移
@@ -399,7 +411,7 @@ void weft_runtime_free(weft_runtime *rt);
 
 ## 里程碑
 
-M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P3 已完成）：
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P4 已完成）：
 
 | 阶段 | 内容                                                         | 验收标准                                                     |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |

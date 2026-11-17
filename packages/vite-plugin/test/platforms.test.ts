@@ -190,8 +190,8 @@ test("a comma-separated WEFT_PLATFORM builds each platform", async () => {
 });
 
 test("a native platform bundles the logic for the kernel and compiles it to Hermes bytecode", async () => {
-  await build("macos", ["macos"]);
-  const generated = join(root, "apps/macos/weft");
+  await build("android", ["android"]);
+  const generated = join(root, "apps/android/weft");
   expect((await readdir(generated)).sort()).toEqual(["bundle.hbc", "js", "layout.json"]);
   // The Hermes bytecode file magic, little-endian.
   const hbc = await readFile(join(generated, "bundle.hbc"));
@@ -202,6 +202,30 @@ test("a native platform bundles the logic for the kernel and compiles it to Herm
   const bundle = await readFile(join(generated, "js/index.js"), "utf8");
   expect(bundle).toContain("__weft");
   expect(bundle).toContain(layout.hash);
+});
+
+test("Apple platforms generate an Xcode project around the WeftApp package", async () => {
+  const previous = process.env.WEFT_NATIVE;
+  process.env.WEFT_NATIVE = "0";
+  try {
+    await build("ios", ["ios"]);
+  } finally {
+    if (previous === undefined) delete process.env.WEFT_NATIVE;
+    else process.env.WEFT_NATIVE = previous;
+  }
+  const project = join(root, "apps/ios");
+  expect((await readdir(project)).sort()).toEqual([".gitignore", "App", "App.xcodeproj", "UITests", "weft"]);
+  expect((await readdir(join(project, "weft"))).sort())
+    .toEqual(["Generated.swift", "Package.swift", "bundle.hbc", "js", "layout.json"]);
+  const pbxproj = await readFile(join(project, "App.xcodeproj/project.pbxproj"), "utf8");
+  expect(pbxproj).toContain('PRODUCT_NAME = "Test \\"App\\"";');
+  expect(pbxproj).toContain('PRODUCT_BUNDLE_IDENTIFIER = "com.example.test";');
+  const scheme = await readFile(join(project, "App.xcodeproj/xcshareddata/xcschemes/App.xcscheme"), "utf8");
+  expect(scheme).toContain('BuildableName = "Test &quot;App&quot;.app"');
+  // The views implement the layout the bundle was compiled with.
+  const { hash } = JSON.parse(await readFile(join(project, "weft/layout.json"), "utf8"));
+  expect(await readFile(join(project, "weft/Generated.swift"), "utf8")).toContain(`layoutHash: 0x${hash},`);
+  expect(await readFile(join(project, "weft/Package.swift"), "utf8")).toMatch(/\.package\(path: ".*native\/apple"\)/);
 });
 
 test("compile errors fail the build with rendered diagnostics", async () => {

@@ -186,17 +186,13 @@ pub(crate) struct Analysis {
     pub program: Option<Program>,
 }
 
-pub(crate) fn analyze(entry: &str, loader: &mut dyn SourceLoader) -> Analysis {
+pub(crate) fn analyze(entries: &[&str], loader: &mut dyn SourceLoader) -> Analysis {
     let mut sources = SourceMap::new();
     let mut diags = Vec::new();
-    let files = modules::load(entry, loader, &mut sources, &mut diags);
-    let program = if files.is_empty() {
-        None
-    } else {
-        Some(check(&files, &sources, &mut diags))
-    };
+    let loaded = modules::load(entries, loader, &mut sources, &mut diags);
+    let program = check(&loaded.files, loaded.entries, &sources, &mut diags);
     diags.sort_by_key(|d| (d.span.file, d.span.start));
-    let program = program.filter(|_| !diags.iter().any(Diagnostic::is_error));
+    let program = (!diags.iter().any(Diagnostic::is_error)).then_some(program);
     Analysis {
         sources,
         diagnostics: diags,
@@ -206,6 +202,7 @@ pub(crate) fn analyze(entry: &str, loader: &mut dyn SourceLoader) -> Analysis {
 
 fn check(
     files: &[modules::LoadedFile],
+    entries: Vec<FileId>,
     sources: &SourceMap,
     diags: &mut Vec<Diagnostic>,
 ) -> Program {
@@ -326,7 +323,7 @@ fn check(
         .collect();
 
     Program {
-        entry: FileId(0),
+        entries,
         modules,
         models: cx.models,
         events: cx.events,

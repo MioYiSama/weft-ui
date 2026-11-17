@@ -1,0 +1,11 @@
+[package]
+name = "weft-ui-driver"
+version = { workspace = true }
+edition = { workspace = true }
+description = "Application-level compilation entry point dispatching Weft UI platforms to their backends"
+
+[dependencies]
+weft-ui-codegen-js = { path = "../codegen-js" }
+weft-ui-codegen-web = { path = "../codegen-web" }
+weft-ui-codegen-wechat = { path = "../codegen-wechat" }
+weft-ui-compiler = { path = "../compiler" }

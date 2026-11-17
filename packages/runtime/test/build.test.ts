@@ -7,7 +7,6 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
 
 const builds = [
-  { config: "tsconfig.rust.json", committed: "../../../src/js/", files: ["core.js", "index.js", "remote.js"] },
   { config: "tsconfig.wx.json", committed: "../../miniprogram/runtime/", files: ["core.js", "wx.js"] },
 ];
 

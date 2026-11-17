@@ -1,7 +1,7 @@
 //! M1: semantic analysis, dependency analysis and the view IR.
 
 use weft_ui_compiler::ir::{BindingKind, Handler, NodeKind, PropValue, SlotRef};
-use weft_ui_compiler::{Compilation, MemoryLoader, check, dependency_report};
+use weft_ui_compiler::{Compilation, MemoryLoader, check, check_many, dependency_report};
 
 const DEMO: &str = include_str!("fixtures/TodoList.weft");
 
@@ -300,4 +300,42 @@ component C(u: U) {
             "c.weft:11:28: mismatched types: expected `String`, found `Int`",
         ]
     );
+}
+
+#[test]
+fn app_programs_share_imports_and_names() {
+    let mut loader = MemoryLoader::new();
+    loader.insert("m.weft", "model M { name: String }");
+    loader.insert(
+        "a.weft",
+        "import \"./m.weft\"\ncomponent A(m: M) { Text(m.name) }",
+    );
+    loader.insert(
+        "b.weft",
+        "import \"./m.weft\"\ncomponent B(m: M) { Text(m.name) }",
+    );
+    loader.insert("c.weft", "component A() { Text(\"c\") }");
+
+    let app = check_many(&["a.weft", "b.weft", "./a.weft"], &mut loader);
+    let program = app
+        .program
+        .as_ref()
+        .unwrap_or_else(|| panic!("{}", app.render_diagnostics()));
+    let paths: Vec<&str> = program.modules.iter().map(|m| m.path.as_str()).collect();
+    assert_eq!(paths, ["a.weft", "b.weft", "m.weft"]);
+    let entries: Vec<&str> = program
+        .entries
+        .iter()
+        .map(|&file| program.module(file).path.as_str())
+        .collect();
+    assert_eq!(entries, ["a.weft", "b.weft"]);
+
+    let clash = check_many(&["a.weft", "c.weft"], &mut loader);
+    assert!(clash.program.is_none());
+    let messages: Vec<&str> = clash
+        .diagnostics
+        .iter()
+        .map(|d| d.message.as_str())
+        .collect();
+    assert_eq!(messages, ["`A` is declared more than once"]);
 }

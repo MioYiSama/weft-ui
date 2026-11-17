@@ -4,19 +4,4 @@ edition = "2024"
 
 [workspace]
 resolver = "3"
-members = ["crates/*", "examples/todo-rust"]
-
-[package]
-name = "weft-ui"
-version = { workspace = true }
-edition = { workspace = true }
-description = "Rust host runtime for Weft UI views running in a WebView"
-
-[features]
-# Headless driver for testing generated components without a window.
-test-util = []
-
-[dependencies]
-serde_json = "1.0.154"
-tao = "0.37.2"
-wry = "0.57.1"
+members = ["crates/*"]

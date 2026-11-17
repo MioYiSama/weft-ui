@@ -19,47 +19,56 @@ function loadCompiler() {
   return compiler;
 }
 
-/** Compiles Web bindings, copying the result before releasing its WASM allocation. */
-export async function compileWeb(entry: string, load: (path: string) => string, runtime: string) {
+/** Target platform; matches `WEFT_PLATFORM`. */
+export type Platform = "web" | "wechat" | "ios" | "macos" | "android" | "windows" | "linux";
+
+/** Generated JS logic module of one `.weft` file. */
+export interface LogicModule {
+  /** Normalized source path, as the compiler loaded it. */
+  source: string;
+  code: string;
+  dts: string;
+}
+
+/** Generated view file, relative to the platform's output root. */
+export interface OutputFile {
+  path: string;
+  contents: string;
+}
+
+export interface AppResult {
+  /** One module per `.weft` file, entries first; empty on errors. */
+  logic: LogicModule[];
+  /** Empty on errors and for `web`, whose DOM code lives in the logic modules. */
+  views: OutputFile[];
+  /** Rendered diagnostics; empty when there are none. */
+  diagnostics: string;
+  hasErrors: boolean;
+  /** Normalized paths of every loaded source. */
+  files: string[];
+}
+
+/**
+ * Compiles `entries` and their imports as one app-level program, so names must be unique across the app.
+ * Throws for platforms without a backend yet. Copies the result before releasing its WASM allocation.
+ */
+export async function compileApp(
+  entries: string[],
+  platform: Platform,
+  load: (path: string) => string,
+): Promise<AppResult> {
   const module = await loadCompiler();
-  const output = module.compile(entry, load, runtime);
+  const output = module.compileApp(entries, platform, load);
   try {
+    const code = output.logicCode;
+    const dts = output.logicDts;
+    const contents = output.viewContents;
     return {
-      code: output.code,
-      dts: output.dts,
+      logic: output.logicSources.map((source, index) => ({ source, code: code[index]!, dts: dts[index]! })),
+      views: output.viewPaths.map((path, index) => ({ path, contents: contents[index]! })),
       diagnostics: output.diagnostics,
       hasErrors: output.hasErrors,
       files: output.files,
-    };
-  } finally {
-    output.free();
-  }
-}
-
-/** Generated file paths are relative to the output directory. */
-export interface MiniprogramResult {
-  files?: { path: string; contents: string }[];
-  diagnostics: string;
-  hasErrors: boolean;
-  sources: string[];
-}
-
-/** Compiles mini program files; entry and loader paths must be relative to a source root. */
-export async function compileMiniprogram(
-  entry: string,
-  load: (path: string) => string,
-  runtime: string,
-): Promise<MiniprogramResult> {
-  const module = await loadCompiler();
-  const output = module.compileMiniprogram(entry, load, runtime);
-  try {
-    const paths = output.paths;
-    const contents = output.contents;
-    return {
-      files: paths?.map((path, index) => ({ path, contents: contents![index]! })),
-      diagnostics: output.diagnostics,
-      hasErrors: output.hasErrors,
-      sources: output.files,
     };
   } finally {
     output.free();

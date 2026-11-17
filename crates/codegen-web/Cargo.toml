@@ -1,0 +1,9 @@
+[package]
+name = "weft-ui-codegen-web"
+version = { workspace = true }
+edition = { workspace = true }
+description = "Web DOM backend for Weft UI"
+
+[dependencies]
+weft-ui-codegen-js = { path = "../codegen-js" }
+weft-ui-compiler = { path = "../compiler" }

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, posix, relative, resolve, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileMiniprogram } from "@weft-ui/compiler";
+import { compileApp } from "@weft-ui/compiler";
 
 /** Sources share a root; generated paths preserve their layout beneath outDir. */
 export interface BuildOptions {
@@ -51,14 +51,14 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
     }
     return readFileSync(join(root, normalized), "utf8");
   };
+  const output = await compileApp(entries, "wechat", load);
+  if (output.hasErrors) throw new Error(output.diagnostics);
   const files = new Map<string, string>();
-  const warnings: string[] = [];
-  for (const entry of entries) {
-    const output = await compileMiniprogram(entry, load, "weft-runtime/wx.js");
-    if (output.hasErrors) throw new Error(output.diagnostics);
-    if (output.diagnostics) warnings.push(output.diagnostics);
-    for (const file of output.files!) files.set(file.path, file.contents);
+  for (const module of output.logic) {
+    files.set(module.source.replace(/\.weft$/, ".js"), module.code);
+    files.set(module.source.replace(/\.weft$/, ".d.ts"), module.dts);
   }
+  for (const file of output.views) files.set(file.path, file.contents);
 
   const runtimeDir = options.runtimeDir ?? fileURLToPath(new URL("../runtime/", import.meta.url));
   for (const file of await readdir(runtimeDir, { withFileTypes: true })) {
@@ -71,5 +71,5 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
   for (const [path, contents] of files) {
     if (await writeChanged(join(options.outDir, path), contents)) written.push(path);
   }
-  return { written, warnings: warnings.join("\n") };
+  return { written, warnings: output.diagnostics };
 }

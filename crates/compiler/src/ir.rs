@@ -46,7 +46,8 @@ id_type! {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
-    pub entry: FileId,
+    /// Entry modules in the order they were given, without duplicates.
+    pub entries: Vec<FileId>,
     pub modules: Vec<Module>,
     pub models: Vec<Model>,
     pub events: Vec<Event>,
@@ -54,6 +55,16 @@ pub struct Program {
 }
 
 impl Program {
+    /// The module of `file`; modules are stored in file order.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `file` is not part of the program.
+    #[must_use]
+    pub fn module(&self, file: FileId) -> &Module {
+        &self.modules[file.index()]
+    }
+
     #[must_use]
     pub fn model(&self, id: ModelId) -> &Model {
         &self.models[id.index()]

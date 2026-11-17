@@ -1,13 +1,12 @@
 //! Compiler for the Weft UI description language.
 //!
-//! [`check`] loads an entry module and its imports through a [`SourceLoader`],
-//! reports diagnostics, and on success yields the typed view IR
-//! ([`ir::Program`]) with dependency information for every binding.
+//! [`check_many`] loads entry modules and their imports through a
+//! [`SourceLoader`], reports diagnostics, and on success yields the typed view
+//! IR ([`ir::Program`]) with dependency information for every binding.
 //!
-//! Rust hosts call [`compile`] from `build.rs`; JS hosts use the WASM build
-//! through the Vite plugin.
+//! Platform backends implement [`codegen::Codegen`] in their own crates; the
+//! `weft-ui-driver` crate dispatches a [`codegen::Platform`] to them.
 
-mod build;
 pub mod codegen;
 mod deps;
 pub mod diagnostic;
@@ -18,7 +17,6 @@ mod sema;
 pub mod span;
 pub mod syntax;
 
-pub use build::{CompileError, compile};
 pub use diagnostic::{Diagnostic, Severity};
 pub use loader::{MemoryLoader, SourceLoader};
 pub use report::dependency_report;
@@ -49,10 +47,19 @@ impl Compilation {
 
 /// Parses, resolves, and type checks `entry` and every module it imports.
 ///
-/// `entry` is a `/`-separated path handed to `loader`; imports are resolved
-/// relative to the importing module.
+/// Same as [`check_many`] with a single entry.
 pub fn check(entry: &str, loader: &mut dyn SourceLoader) -> Compilation {
-    let analysis = sema::analyze(entry, loader);
+    check_many(&[entry], loader)
+}
+
+/// Parses, resolves, and type checks `entries` and every module they import
+/// as one program, so declaration names must be unique across all of them.
+///
+/// Entries are `/`-separated paths handed to `loader`; imports are resolved
+/// relative to the importing module. Entries come first in the program's
+/// file order.
+pub fn check_many(entries: &[&str], loader: &mut dyn SourceLoader) -> Compilation {
+    let analysis = sema::analyze(entries, loader);
     Compilation {
         sources: analysis.sources,
         diagnostics: analysis.diagnostics,

@@ -13,29 +13,43 @@ pub(crate) struct LoadedFile {
     pub imports: Vec<(FileId, Span)>,
 }
 
-/// Loads `entry` and everything it imports. The returned vector is indexed by
-/// [`FileId`]; it is empty if the entry module itself cannot be loaded.
+/// Loaded modules, indexed by [`FileId`].
+pub(crate) struct Loaded {
+    pub files: Vec<LoadedFile>,
+    /// Entry modules in the given order, without duplicates.
+    pub entries: Vec<FileId>,
+}
+
+/// Loads `entries` and everything they import. An entry that cannot be
+/// loaded is reported and kept as an empty module.
 pub(crate) fn load(
-    entry: &str,
+    entries: &[&str],
     loader: &mut dyn SourceLoader,
     sources: &mut SourceMap,
     diags: &mut Vec<Diagnostic>,
-) -> Vec<LoadedFile> {
-    let entry = normalize(entry);
-    let text = match loader.load(&entry) {
-        Ok(text) => text,
-        Err(err) => {
-            let file = sources.add(entry.clone(), String::new());
+) -> Loaded {
+    let mut ids: HashMap<String, FileId> = HashMap::new();
+    let mut entry_ids = Vec::with_capacity(entries.len());
+    for entry in entries {
+        let entry = normalize(entry);
+        if ids.contains_key(&entry) {
+            continue;
+        }
+        let (text, error) = match loader.load(&entry) {
+            Ok(text) => (text, None),
+            Err(err) => (String::new(), Some(err)),
+        };
+        let id = sources.add(entry.clone(), text);
+        if let Some(err) = error {
             diags.push(Diagnostic::error(
-                Span::new(file, 0, 0),
+                Span::new(id, 0, 0),
                 format!("cannot load entry module `{entry}`: {err}"),
             ));
-            return Vec::new();
         }
-    };
+        ids.insert(entry, id);
+        entry_ids.push(id);
+    }
 
-    let mut ids: HashMap<String, FileId> = HashMap::new();
-    ids.insert(entry.clone(), sources.add(entry, text));
     let mut files: Vec<LoadedFile> = Vec::new();
     // Files are parsed in id order; imports append new ids as they are found.
     while files.len() < sources.files().len() {
@@ -78,5 +92,8 @@ pub(crate) fn load(
         }
         files.push(LoadedFile { ast: tree, imports });
     }
-    files
+    Loaded {
+        files,
+        entries: entry_ids,
+    }
 }

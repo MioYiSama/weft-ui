@@ -1,11 +1,10 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync } from "node:fs";
 import { dirname, join, basename } from "node:path";
 import type { Plugin } from "vite";
-import { compileWeb } from "@weft-ui/compiler";
+import { compileApp } from "@weft-ui/compiler";
 
 /** Options for compiling Weft views and generating adjacent TypeScript declarations. */
 export interface WeftOptions {
-  runtime?: string;
   dts?: boolean;
 }
 
@@ -27,7 +26,6 @@ function* weftFiles(directory: string): Generator<string> {
 
 /** Compiles `.weft` imports with the Rust compiler and Web DOM backend. */
 export default function weft(options: WeftOptions = {}): Plugin {
-  const runtime = options.runtime ?? "@weft-ui/runtime";
   let root = process.cwd();
 
   return {
@@ -39,19 +37,21 @@ export default function weft(options: WeftOptions = {}): Plugin {
     async buildStart() {
       if (options.dts === false) return;
       for (const entry of weftFiles(root)) {
-        const output = await compileWeb(entry, (path) => readFileSync(path, "utf8"), runtime);
-        if (!output.hasErrors && output.dts !== undefined) writeDeclarations(entry, output.dts);
+        const output = await compileApp([entry], "web", (path) => readFileSync(path, "utf8"));
+        const logic = output.logic.find((module) => module.source === entry);
+        if (!output.hasErrors && logic) writeDeclarations(entry, logic.dts);
       }
     },
     async transform(code, id) {
       const entry = id.split("?", 1)[0]!.replaceAll("\\", "/");
       if (!entry.endsWith(".weft")) return;
-      const output = await compileWeb(entry, (path) => path === entry ? code : readFileSync(path, "utf8"), runtime);
+      const output = await compileApp([entry], "web", (path) => path === entry ? code : readFileSync(path, "utf8"));
       for (const file of output.files) this.addWatchFile(file);
       if (output.hasErrors) this.error(output.diagnostics);
       if (output.diagnostics) this.warn(output.diagnostics);
-      if (options.dts !== false && output.dts !== undefined) writeDeclarations(entry, output.dts);
-      return { code: output.code!, map: null };
+      const logic = output.logic.find((module) => module.source === entry)!;
+      if (options.dts !== false) writeDeclarations(entry, logic.dts);
+      return { code: logic.code, map: null };
     },
   };
 }

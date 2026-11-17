@@ -1,0 +1,20 @@
+{
+  "name": "example",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@weft-ui/vite": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  },
+  "scripts": {
+    "build:android": "WEFT_PLATFORM=android vite build",
+    "build:ios": "WEFT_PLATFORM=ios vite build",
+    "build:linux": "WEFT_PLATFORM=linux vite build",
+    "build:macos": "WEFT_PLATFORM=macos vite build",
+    "build:web": "WEFT_PLATFORM=web vite build",
+    "build:wechat": "WEFT_PLATFORM=wechat vite build",
+    "build:windows": "WEFT_PLATFORM=windows vite build"
+  }
+}

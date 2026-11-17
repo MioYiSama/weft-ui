@@ -1,0 +1,20 @@
+model Model {
+    clicked: Bool
+}
+
+event Click
+event Mount
+
+component App(model: Model) {
+    Column(onMount = Mount) {
+        if (model.clicked) {
+            Text("You clicked!")
+        } else {
+            Text("Hello, world!")
+        }
+
+        Button(onClick = Click) {
+            Text("Click me")
+        }
+    }
+}

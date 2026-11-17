@@ -5,11 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./remote": "./src/remote.ts",
     "./wx": "./src/wx.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.rust.json && tsc -p tsconfig.wx.json",
+    "build": "tsc -p tsconfig.wx.json",
     "test": "vitest run"
   },
   "devDependencies": {

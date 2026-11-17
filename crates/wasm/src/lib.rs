@@ -1,12 +1,11 @@
-//! WebAssembly bindings for compiling Weft modules with a JavaScript source loader.
+//! WebAssembly bindings for compiling Weft apps with a JavaScript source loader.
 
 use std::io;
 
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 use weft_ui_compiler::SourceLoader;
-use weft_ui_compiler::codegen::miniprogram::{self, MiniprogramOptions};
-use weft_ui_compiler::codegen::web::{self, WebOptions};
+use weft_ui_compiler::codegen::Platform;
 
 #[wasm_bindgen]
 extern "C" {
@@ -31,124 +30,75 @@ impl SourceLoader for JsLoader<'_> {
     }
 }
 
-/// Generated modules, rendered diagnostics, and all loaded source paths.
+/// Generated logic modules and view files, rendered diagnostics, and all
+/// loaded source paths. Parallel arrays keep the boundary to plain strings.
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone)]
-pub struct CompileOutput {
-    /// JavaScript module, present only when compilation succeeds.
-    pub code: Option<String>,
-    /// TypeScript declarations, present only when compilation succeeds.
-    pub dts: Option<String>,
+pub struct AppOutput {
+    /// Normalized `.weft` path of each logic module; empty on errors.
+    #[wasm_bindgen(js_name = logicSources)]
+    pub logic_sources: Vec<String>,
+    /// ES module source of each logic module.
+    #[wasm_bindgen(js_name = logicCode)]
+    pub logic_code: Vec<String>,
+    /// TypeScript declarations of each logic module.
+    #[wasm_bindgen(js_name = logicDts)]
+    pub logic_dts: Vec<String>,
+    /// View file paths relative to the platform's generated directory.
+    #[wasm_bindgen(js_name = viewPaths)]
+    pub view_paths: Vec<String>,
+    /// View file contents corresponding to `viewPaths`.
+    #[wasm_bindgen(js_name = viewContents)]
+    pub view_contents: Vec<String>,
     /// Diagnostics with source locations and snippets; empty when there are none.
     pub diagnostics: String,
     /// Whether compilation reported any errors.
     #[wasm_bindgen(js_name = hasErrors)]
     pub has_errors: bool,
-    /// Normalized paths of every loaded file in the import closure.
+    /// Normalized paths of every loaded file.
     pub files: Vec<String>,
 }
 
-/// Checks an entry and generates Web bindings using the synchronous JavaScript loader.
+/// Compiles `entries` and their imports as one app for `platform`.
 ///
 /// `load(path)` must return source text. Thrown exceptions become compiler diagnostics.
-/// `runtime` names the runtime module imported by the generated JavaScript.
-#[wasm_bindgen]
-#[must_use]
-pub fn compile(entry: &str, load: &Function, runtime: &str) -> CompileOutput {
-    let compilation = weft_ui_compiler::check(entry, &mut JsLoader(load));
-    let has_errors = compilation.has_errors();
-    let diagnostics = compilation.render_diagnostics();
-    let files = compilation
-        .sources
-        .files()
-        .iter()
-        .map(|file| file.path().to_owned())
-        .collect();
-    let generated = compilation
-        .program
-        .as_ref()
-        .filter(|_| !has_errors)
-        .map(|program| {
-            web::generate(
-                program,
-                &WebOptions {
-                    runtime: runtime.to_owned(),
-                },
-            )
-        });
-    let (code, dts) = match generated {
-        Some(module) => (Some(module.code), Some(module.dts)),
-        None => (None, None),
-    };
-    CompileOutput {
-        code,
-        dts,
-        diagnostics,
-        has_errors,
-        files,
-    }
-}
-
-/// Generated mini program files, rendered diagnostics, and all loaded source paths.
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Debug, Clone)]
-pub struct MiniprogramOutput {
-    /// Output paths relative to the output directory, present only on success.
-    pub paths: Option<Vec<String>>,
-    /// Output contents corresponding to `paths`, present only on success.
-    pub contents: Option<Vec<String>>,
-    /// Diagnostics with source locations and snippets; empty when there are none.
-    pub diagnostics: String,
-    /// Whether compilation reported any errors.
-    #[wasm_bindgen(js_name = hasErrors)]
-    pub has_errors: bool,
-    /// Normalized paths of every loaded file in the import closure.
-    pub files: Vec<String>,
-}
-
-/// Checks an entry and generates mini program files using a synchronous JavaScript loader.
 ///
-/// `load(path)` must return source text. Thrown exceptions become compiler diagnostics.
-/// Source paths must be relative to the output root. `runtime` is relative to that root.
-#[wasm_bindgen(js_name = compileMiniprogram)]
-#[must_use]
-pub fn compile_miniprogram(entry: &str, load: &Function, runtime: &str) -> MiniprogramOutput {
-    let compilation = weft_ui_compiler::check(entry, &mut JsLoader(load));
-    let has_errors = compilation.has_errors();
-    let diagnostics = compilation.render_diagnostics();
-    let files = compilation
-        .sources
-        .files()
-        .iter()
-        .map(|file| file.path().to_owned())
-        .collect();
-    let generated = compilation
-        .program
-        .as_ref()
-        .filter(|_| !has_errors)
-        .map(|program| {
-            miniprogram::generate(
-                program,
-                &MiniprogramOptions {
-                    runtime: runtime.to_owned(),
-                },
-            )
-        });
-    let (paths, contents) = match generated {
-        Some(files) => {
-            let (paths, contents) = files
-                .into_iter()
-                .map(|file| (file.path, file.contents))
-                .unzip();
-            (Some(paths), Some(contents))
-        }
-        None => (None, None),
-    };
-    MiniprogramOutput {
-        paths,
-        contents,
-        diagnostics,
-        has_errors,
-        files,
-    }
+/// # Errors
+///
+/// Throws when `platform` is unknown or has no backend yet.
+#[wasm_bindgen(js_name = compileApp)]
+pub fn compile_app(
+    entries: Vec<String>,
+    platform: &str,
+    load: &Function,
+) -> Result<AppOutput, JsError> {
+    let platform: Platform = platform.parse()?;
+    let entries: Vec<&str> = entries.iter().map(String::as_str).collect();
+    let output = weft_ui_driver::compile_app(&entries, platform, &mut JsLoader(load))?;
+    let compilation = &output.compilation;
+    let (logic_sources, (logic_code, logic_dts)) = output
+        .logic
+        .into_iter()
+        .map(|module| (module.source, (module.code, module.dts)))
+        .unzip();
+    let (view_paths, view_contents) = output
+        .views
+        .into_iter()
+        .map(|file| (file.path, file.contents))
+        .unzip();
+    Ok(AppOutput {
+        logic_sources,
+        logic_code,
+        logic_dts,
+        view_paths,
+        view_contents,
+        diagnostics: compilation.render_diagnostics(),
+        has_errors: compilation.has_errors(),
+        files: compilation
+            .sources
+            .files()
+            .iter()
+            .map(|file| file.path().to_owned())
+            .collect(),
+    })
 }

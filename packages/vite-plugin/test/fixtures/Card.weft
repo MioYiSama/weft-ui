@@ -1,0 +1,7 @@
+component Card(title: String, body: Children, footer: String = "end") {
+  Column(padding = 4) {
+    Text(title, bold = true)
+    body
+    Text(footer)
+  }
+}

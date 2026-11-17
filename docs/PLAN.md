@@ -309,6 +309,35 @@ app.on_submit_async(|model, e| async move {
 - 内置元素集合要尽量小，并且在所有后端都能实现。平台特有元素以 `Web.xxx`、`Wx.xxx` 等命名空间区分，在不支持的后端上编译报错。
 - 第一阶段桌面端可以先借用 Web 后端跑在 WebView 中，自绘后端放到后期。
 
+### Web 后端（M2）
+
+组成：
+
+| 位置                     | 作用                                                                 |
+| ------------------------ | -------------------------------------------------------------------- |
+| `weft_ui_compiler::codegen::web` | 每个 `.weft` 生成一个 ES 模块和一份 `.d.ts`（TS 宿主绑定 + DOM 后端） |
+| `crates/wasm`            | `wasm-bindgen` 导出 `compile(entry, load, runtime)`，源码由 JS 回调读取 |
+| `packages/runtime`       | `@weft-ui/runtime`：model 基类、脏位 scope、微任务调度、`if`/`for`/插槽块 |
+| `packages/vite-plugin`   | `@weft-ui/vite-plugin`：转换 `.weft`，在源文件旁写 `X.d.weft.ts`      |
+| `examples/todo-web`      | Demo 与端到端测试（happy-dom，含 MutationObserver 粒度断言）         |
+
+构建：`pnpm install && pnpm build:wasm`，之后 `pnpm test`，Demo 用 `pnpm --filter todo-web dev`。TS 侧需要开启 `allowArbitraryExtensions` 才能找到 `X.d.weft.ts`。
+
+JS 宿主约定（在上文 Demo 基础上的具体化）：
+
+- model 编译成带 getter/setter 的类，构造时把宿主传入的普通对象（含嵌套 model 和数组）转换成实例。setter 比较新旧值，值变了才通知。
+- 数组字段在 `.d.ts` 中是 `readonly T[]`，运行时被冻结：修改列表必须赋新数组（如 `filter`、展开），`push` 会直接抛 `TypeError`，不会出现改了却不刷新的情况。数组元素本身仍可原地修改字段。
+- 根组件构造参数按声明顺序排列（`Children` 参数除外），有默认值的参数可以省略。`app.model` 和处理器的第一个参数都是第一个参数的值。
+- `onXxx(handler)` 返回取消注册的函数；处理器可以是 `async`。另有 `app.unmount()`，以及 `tick()`（等待下一次 flush 完成，测试中常用）。
+- `Input` / `Checkbox` 是受控的：事件发出后，如果宿主没有改对应的 model，flush 结束时恢复成绑定值。
+
+更新机制：
+
+- 脏位布局直接采用 IR 的 slot 表。每个组件实例和每个 `for` 行都是一个 scope，各有自己的脏位字。flush 按深度排序，保证父组件先于子组件。
+- model 实例按字段通知订阅者（watch）：非空嵌套 model 逐字段订阅；`T?` 型 model 整体占一位，并深度订阅其中可达的 model；数组只靠字段 setter 检测，元素变化由各 `for` 行对自己的元素订阅。
+- 每个块只在祖先 scope 的脏位与块内绑定的依赖位有交集时才进入；行内元素字段变化只更新这一行。列表按 key 对齐：复用的行接收新元素时只标记值变了的字段；移动行时只移动最长递增子序列之外的行。
+- 事件参数和 key 在触发或对齐时按当前值求值，所以 DOM 后端不使用 `Handler` / `Key` 绑定（它们留给小程序后端）。
+
 ## 工具链
 
 - **构建集成**：Rust 用 `build.rs` + `include_weft!` 宏；JS/TS 用 Vite 插件（`.weft` 作为模块导入，同时生成 `.d.ts`）。
@@ -323,7 +352,7 @@ app.on_submit_async(|model, e| async move {
 | ---- | -------------------------------------------------------------------- | ------------------------------------------ | ---- |
 | M0   | 语法定稿；解析器 + AST + 错误报告                                    | Demo 能解析，错误信息带位置                | 完成，语法见 [GRAMMAR.md](GRAMMAR.md) |
 | M1   | 语义分析 + 依赖分析 + 视图 IR                                        | 能输出 Demo 每个绑定点的依赖集合           | 完成，`cargo run -p weft-ui-compiler --example deps -- <file>` |
-| M2   | TS 宿主绑定 + Web DOM 后端 + Vite 插件                               | Demo 在浏览器中可交互，更新粒度符合预期    |      |
+| M2   | TS 宿主绑定 + Web DOM 后端 + Vite 插件                               | Demo 在浏览器中可交互，更新粒度符合预期    | 完成，见 [Web 后端（M2）](#web-后端m2)、`examples/todo-web` |
 | M3   | Rust 宿主绑定 + `build.rs` 集成 + WebView 运行                        | Rust 版 Demo 跑通                          |      |
 | M4   | 微信小程序后端                                                       | Demo 在开发者工具中运行，`setData` 只发送变化路径 |      |
 | M5   | LSP + 格式化 + 解释器预览                                            | 编辑器内有诊断和补全，保存后预览热更新     |      |

@@ -1,0 +1,41 @@
+import "./models.weft"
+import "./Card.weft"
+
+component ItemRow(item: Item, prefix: String) {
+  Row(onMount = Shown(item.id), onUnmount = Hidden(item.id)) {
+    Checkbox(item.done, onChange = Toggle(item.id, !item.done))
+    Text("${prefix}${item.label}")
+    for (tag in item.tags; key = tag) {
+      Text(tag, color = "gray")
+    }
+  }
+}
+
+component Board(model: BoardModel) {
+  state query = ""
+  state clicks = 0
+
+  Column(onMount = Loaded) {
+    Text(model.owner?.name ?? "nobody")
+    Text(model.note.text)
+    if (model.mode == 0) {
+      Text("zero")
+    } else if (model.mode == 1) {
+      Text("one")
+    } else {
+      Text("many")
+    }
+    Input(query, onChange = { v -> query = v })
+    Text("q: ${query}")
+    Button(onClick = { clicks += 1 }) {
+      Text("clicks ${clicks}")
+    }
+    for (group in model.groups; key = group.id) {
+      Card(title = group.title) {
+        for (item in group.items; key = item.id) {
+          ItemRow(item = item, prefix = query)
+        }
+      }
+    }
+  }
+}

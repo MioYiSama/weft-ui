@@ -4,6 +4,7 @@
 //! reports diagnostics, and on success yields the typed view IR
 //! ([`ir::Program`]) with dependency information for every binding.
 
+pub mod codegen;
 mod deps;
 pub mod diagnostic;
 pub mod ir;

@@ -231,6 +231,19 @@ model Todo { id: Int }
 }
 
 #[test]
+fn events_with_clashing_handler_names_are_rejected() {
+    let src = "
+event FooBar
+event foo_bar(id: Int)
+event Other
+";
+    assert_eq!(
+        diagnostics(&[("app.weft", src)]),
+        ["app.weft:3:7: event `foo_bar` clashes with event `FooBar` in host bindings"]
+    );
+}
+
+#[test]
 fn import_cycles_and_missing_modules_are_reported() {
     let a = "import \"b.weft\"\nimport \"missing.weft\"\n";
     let b = "import \"a.weft\"\n";

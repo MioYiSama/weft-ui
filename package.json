@@ -1,0 +1,10 @@
+{
+  "name": "weft-ui-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.28.12",
+  "scripts": {
+    "build:wasm": "pnpm --filter @weft-ui/vite-plugin build:wasm",
+    "test": "pnpm -r --if-present test"
+  }
+}

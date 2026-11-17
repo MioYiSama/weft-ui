@@ -239,6 +239,7 @@ fn check(
             .collect();
         item_ids.push(ids);
     }
+    report_handler_name_clashes(&cx.events, diags);
 
     let items = || {
         files.iter().enumerate().flat_map(|(fi, f)| {
@@ -414,6 +415,37 @@ fn declare(
         },
     );
     Some(kind)
+}
+
+/// Hosts derive registration methods from event names (`onFooBar`,
+/// `on_foo_bar`), so names differing only in case or underscores would clash.
+fn report_handler_name_clashes(events: &[Event], diags: &mut Vec<Diagnostic>) {
+    let mut seen: HashMap<String, &Event> = HashMap::new();
+    for event in events {
+        let key: String = event
+            .name
+            .chars()
+            .filter(|&c| c != '_')
+            .map(|c| c.to_ascii_lowercase())
+            .collect();
+        if let Some(prev) = seen.get(&key) {
+            diags.push(
+                Diagnostic::error(
+                    event.span,
+                    format!(
+                        "event `{}` clashes with event `{}` in host bindings",
+                        event.name, prev.name
+                    ),
+                )
+                .with_secondary(prev.span, "other event declared here")
+                .with_note(
+                    "handler registration names ignore case and underscores, e.g. `onFooBar` / `on_foo_bar`",
+                ),
+            );
+        } else {
+            seen.insert(key, event);
+        }
+    }
 }
 
 fn signature(

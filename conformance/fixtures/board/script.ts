@@ -9,7 +9,7 @@ export const script: Script<Board> = {
   dir: import.meta.dirname,
   entry: "Board.weft",
   component: "Board",
-  web: Board,
+  App: Board,
   model: () => ({
     owner: null,
     note: { text: "note" },

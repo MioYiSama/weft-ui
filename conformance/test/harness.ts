@@ -50,8 +50,8 @@ export interface Script<A extends AppLike> {
   entry: string;
   /** Root component name. */
   component: string;
-  /** The root component compiled for the Web. */
-  web: AppClass<A>;
+  /** The root component as the importing build compiles it: for the Web in Vitest, in remote mode in native bundles. */
+  App: AppClass<A>;
   model(): A["model"];
   /** Registers host handlers; `log` records what they see, compared across platforms. */
   setup(app: A, log: (entry: string) => void): void;
@@ -240,7 +240,7 @@ function domClassify(e: Element): Classified<Element> {
 export function web<A extends AppLike>(script: Script<A>): Driver<A> {
   const target = document.createElement("div");
   document.body.append(target);
-  const { app, log } = start(script, script.web, target);
+  const { app, log } = start(script, script.App, target);
   const find = (type: string, index: number) => {
     const found: [Element, string][] = [];
     reduce([...target.children], domClassify, found);

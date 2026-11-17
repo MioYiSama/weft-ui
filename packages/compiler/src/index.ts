@@ -54,7 +54,8 @@ export interface AppResult {
 
 /**
  * Compiles `entries` and their imports as one app-level program, so names must be unique across the app.
- * Throws for platforms without a backend yet. Copies the result before releasing its WASM allocation.
+ * Native platforms get the remote mode logic and `layout.json` as their only view file until their view backends exist.
+ * Copies the result before releasing its WASM allocation.
  */
 export async function compileApp(
   entries: string[],

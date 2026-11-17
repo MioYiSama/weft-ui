@@ -96,4 +96,48 @@ attach 0 0 1
 - `commit()`：一次 flush 结束，应用整批。
 - `close()`：unmount，丢弃所有 scope。
 
-小程序 sink（`./wechat`）不编码，直接把 ops 翻译成 `setData` 路径，数据形状见 [PLAN.md 的小程序后端](PLAN.md#m4小程序后端)；无头渲染器经过二进制编码；原生 sink（P3）把缓冲交给 `__weft.commit`。
+小程序 sink（`./wechat`）不编码，直接把 ops 翻译成 `setData` 路径，数据形状见 [PLAN.md 的小程序后端](PLAN.md#m4小程序后端)；无头渲染器经过二进制编码；原生 sink（`./native`）把缓冲交给 `__weft.commit`，见下一节。
+
+## 原生内核
+
+原生平台的 JS bundle 跑在 `native/core` 的内核里：内核嵌入 Hermes，执行 `bundle.hbc`，通过 C ABI（[`native/core/include/weft/runtime.h`](../native/core/include/weft/runtime.h)）和平台壳通信。内核不开线程，所有函数都在 UI 线程上调用，且不能在 `weft_host` 回调里重入。
+
+### `__weft` 全局
+
+内核在 bundle 运行前安装，`@weft-ui/runtime/native` 和 `@weft-ui/platform` 的原生实现通过它工作：
+
+| 成员                              | 含义                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| `open(hash, dispatch)`            | sink 的 `open`。`hash` 与平台壳传给 `weft_runtime_new` 的布局哈希不同就抛错，已有 app 打开时也抛错 |
+| `commit(buffer, offset, length)`  | 一批 ops。内核把这段字节直接交给 `weft_host.commit`，不复制  |
+| `close()`                         | sink 的 `close`；之后的事件被忽略                            |
+| `supports(module)`                | 平台壳是否实现平台模块 `module`                              |
+| `call(module, method, args?)`     | 平台调用，返回 `Promise<ArrayBuffer>`。`args` 是字符串（按 UTF-8 发送）、`ArrayBuffer` 或其视图。模块不受支持时立即以 `Error` 拒绝 |
+| `version`                         | 平台壳报告的系统版本（`weft_host.version`）                  |
+
+内核还注入 `setTimeout` / `setInterval` / `clearTimeout` / `clearInterval`、`queueMicrotask` 和 `console`（`debug` / `log` / `info` / `warn` / `error` 对应 `weft_host.log` 的 0–3 级；非字符串参数按 JSON 输出，错误对象输出 `stack`）。`TextEncoder` / `TextDecoder` 由 Hermes 自带。
+
+### 事件循环
+
+- `weft_runtime_new` 执行 bundle（bundle 在其中挂载 app），之后每个会执行 JS 的入口（`new`、`tick`、`dispatch`、`resolve`）返回前都清空微任务队列。所以 `weft_runtime_new` 返回时第一批 ops 已经提交。
+- 定时器按到期时间、同一时间按设置顺序执行，每个定时器之后清空一次微任务；在一次 `tick` 里新设的定时器留到下一次。内核用 `weft_host.schedule(delay)` 请求下一次 `tick`，平台壳可以合并请求，提前或多余的 `tick` 无害。
+- 未捕获的异常（bundle、定时器、微任务、事件处理函数里）以 `WEFT_LOG_ERROR` 报告，不终止运行时。bundle 本身抛错（包括布局哈希不一致）时 `weft_runtime_new` 返回 `NULL`。
+
+### 事件载荷
+
+`weft_runtime_dispatch(rt, scope, slot, payload, len)` 的 `payload` 是一个按[二进制编码](#二进制编码版本-1)的值（标签字节加数据），无载荷的事件传空。返回值即 `Session.dispatch` 的返回值。
+
+### 平台调用
+
+`__weft.call` 分配调用 id 并调用 `weft_host.call(id, module, method, args)`；平台壳异步完成后在 UI 线程调用 `weft_runtime_resolve(id, ok, result)`，每个 id 恰好一次。`ok` 时 Promise 以 `result` 的 `ArrayBuffer` 副本兑现，否则以消息为 `result`（UTF-8）的 `Error` 拒绝。字节的含义由各模块约定：
+
+| 模块      | 方法                         | 参数                                                         | 结果                                       |
+| --------- | ---------------------------- | ------------------------------------------------------------ | ------------------------------------------ |
+| `fetch`   | `request`                    | 帧：`u32 头长度（小端） \| 头（UTF-8 JSON）\| 请求体`，头是 `{"url", "method", "headers"}` | 同样的帧，头是 `{"status"}`，之后是响应体 |
+| `storage` | `get` / `set` / `remove`     | JSON 数组：`[key]` 或 `[key, value]`                         | `get`：JSON 字符串或 `null`；其余为空      |
+
+`@weft-ui/platform` 在 `supports(api)` 为假时直接抛 `PlatformError`，不发起调用。
+
+### 列表移动
+
+自己移动原生行的平台壳（WinUI、GTK）可以用 `weft_stable_rows(old, new, stable)`：它标出新顺序里保持原位的行（旧位置的最长递增子序列），其余行需要移动或插入。C++ 平台壳可以用 `weft/ops.hpp` 解码 ops，解码不分配内存，字符串和行列表直接指向这批字节。

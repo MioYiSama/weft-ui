@@ -10,5 +10,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["fixtures", "test", "vitest.config.ts"]
+  "include": ["fixtures", "native", "test", "vitest.config.ts"]
 }

@@ -6,7 +6,7 @@ export const script: Script<TodoList> = {
   dir: import.meta.dirname,
   entry: "TodoList.weft",
   component: "TodoList",
-  web: TodoList,
+  App: TodoList,
   model: () => ({
     draft: "",
     todos: [

@@ -72,6 +72,24 @@ pub fn generate(program: &Program, file: FileId, runtime: &str, mode: Mode<'_>) 
     }
 }
 
+/// Generates the remote mode logic module of `file`, importing
+/// `@weft-ui/runtime/remote`. The WeChat mini program and the native
+/// platforms share it; only the sink differs.
+///
+/// # Panics
+///
+/// Panics if `file` is not part of the program or `layout` was derived from
+/// another program.
+#[must_use]
+pub fn remote_module(program: &Program, layout: &ViewLayout, file: FileId) -> JsModule {
+    generate(
+        program,
+        file,
+        "@weft-ui/runtime/remote",
+        Mode::Remote(layout),
+    )
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Symbol {
     Model(ModelId),

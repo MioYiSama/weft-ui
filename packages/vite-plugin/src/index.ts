@@ -3,6 +3,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultServerConditions } from "vite";
 import { type AppResult, type Platform, compileApp } from "@weft-ui/compiler";
+import { HERMES_TARGET, NATIVE, compileBytecode } from "./native.ts";
 
 /** Every target platform, in the order of docs/PLAN-v2.md. */
 export const PLATFORMS: readonly Platform[] = ["web", "wechat", "ios", "macos", "android", "windows", "linux"];
@@ -73,13 +74,14 @@ function outDir(root: string, platform: Platform): string {
 /**
  * Copies the platform's project template into `apps/<platform>/` unless the
  * directory already holds anything besides the generated area: after the
- * first build the template belongs to the user.
+ * first build the template belongs to the user. Returns `false` if the
+ * platform has no template yet.
  */
-function copyTemplate(root: string, platform: Platform, app: { id: string; name: string }) {
-  const project = join(root, "apps", platform);
-  if (existsSync(project) && readdirSync(project).some((name) => name !== "weft")) return;
+function copyTemplate(root: string, platform: Platform, app: { id: string; name: string }): boolean {
   const template = fileURLToPath(new URL(`../templates/${platform}/`, import.meta.url));
-  if (!existsSync(template)) throw new Error(`weft: there is no project template for ${platform} yet`);
+  if (!existsSync(template)) return false;
+  const project = join(root, "apps", platform);
+  if (existsSync(project) && readdirSync(project).some((name) => name !== "weft")) return true;
   for (const file of globSync("**/*", { cwd: template, withFileTypes: true })) {
     if (!file.isFile()) continue;
     const source = join(file.parentPath, file.name);
@@ -97,6 +99,7 @@ function copyTemplate(root: string, platform: Platform, app: { id: string; name:
       .replaceAll("__WEFT_APP_NAME__", escape(app.name))
       .replaceAll("__WEFT_APP_ID__", escape(app.id)));
   }
+  return true;
 }
 
 /** Rewrites `apps/<platform>/weft/` apart from the bundle that Vite wrote into `js/`. */
@@ -121,8 +124,9 @@ function writeGenerated(root: string, platform: Platform, result: AppResult) {
  * `.weft` files matched by `include` as one program, bundles `entry` into a
  * single file in `apps/<platform>/weft/js/`, writes the generated views
  * next to it, and copies the project template into `apps/<platform>/` on
- * the first build. Environments not named after a platform (dev server,
- * Vitest) compile for the Web.
+ * the first build. Native platforms also compile the bundle to Hermes
+ * bytecode (`weft/bundle.hbc`). Environments not named after a platform
+ * (dev server, Vitest) compile for the Web.
  */
 export default function weft(options: WeftOptions = {}): Plugin {
   const configured = options.platforms ?? [...PLATFORMS];
@@ -160,9 +164,12 @@ export default function weft(options: WeftOptions = {}): Plugin {
         };
       }
       // Platform apps run in a browser, a mini program logic layer or Hermes: never a server.
+      const native = NATIVE.includes(platform);
       const environment: EnvironmentOptions = {
         consumer: "client",
-        resolve: { conditions: [`weft-${platform}`, ...defaultClientConditions] },
+        resolve: {
+          conditions: [`weft-${platform}`, ...(native ? ["weft-native"] : []), ...defaultClientConditions],
+        },
         define: { __WEFT_PLATFORM__: JSON.stringify(platform) },
       };
       if (platform === "web") return { ...environment, build: { outDir: outDir(root, platform) } };
@@ -172,8 +179,8 @@ export default function weft(options: WeftOptions = {}): Plugin {
           outDir: outDir(root, platform),
           emptyOutDir: true,
           copyPublicDir: false,
-          // Mini program logic layers run ES2020; the Hermes syntax target is settled in P3.
-          target: "es2020",
+          // Mini program logic layers run ES2020.
+          target: native ? HERMES_TARGET : "es2020",
           rolldownOptions: {
             input: resolve(root, entry),
             output: {
@@ -223,15 +230,25 @@ export default function weft(options: WeftOptions = {}): Plugin {
       if (options.dts !== false) writeDeclarations(file, logic.dts);
       return { code: logic.code, map: null };
     },
-    writeBundle() {
+    async writeBundle() {
       const platform = platformOf(this.environment.name);
       const app = apps.get(this.environment.name);
       if (platform === "web" || !app) return;
-      copyTemplate(root, platform, {
+      const templated = copyTemplate(root, platform, {
         id: options.app?.id ?? "",
         name: options.app?.name ?? basename(root),
       });
       writeGenerated(root, platform, app);
+      if (!NATIVE.includes(platform)) return;
+      const generated = join(root, "apps", platform, "weft");
+      try {
+        await compileBytecode(join(generated, "js/index.js"), join(generated, "bundle.hbc"));
+      } catch (error) {
+        this.error(error as Error);
+      }
+      if (!templated) {
+        this.warn(`there is no ${platform} project template yet; generated apps/${platform}/weft/ only`);
+      }
     },
   };
 }

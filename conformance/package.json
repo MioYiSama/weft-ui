@@ -9,6 +9,7 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@weft-ui/miniprogram": "workspace:*",
+    "@weft-ui/platform": "workspace:*",
     "@weft-ui/runtime": "workspace:*",
     "@weft-ui/vite": "workspace:*",
     "happy-dom": "^21.0.4",

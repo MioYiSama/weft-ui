@@ -251,7 +251,7 @@ weft({
   - `resolve.conditions`：`weft-<platform>`；
   - `define.__WEFT_PLATFORM__`；
   - `build.outDir`：`apps/<platform>/weft/js`；
-  - 原生和小程序环境打成单文件（关闭代码分割），`build.target` 设为 Hermes 支持的语法集合（具体集合在 P3 用 test262 子集实测后确定）。
+  - 原生和小程序环境打成单文件（关闭代码分割），原生环境的 `build.target` 设为 Hermes 支持的语法集合（P3 用 test262 子集实测后定为 `es2022`，见[P3 的实现](#p3-的实现)）。
 - `buildStart` 对应用级 Program 编译一次并缓存；`transform` 从缓存里返回 `.weft` 的逻辑模块；`generateBundle` 把视图源码和布局哈希写进 `apps/<platform>/weft/`。`.d.weft.ts` 的生成方式不变。
 
 ### `apps/<platform>/` 目录约定
@@ -288,7 +288,7 @@ Web 和小程序两条路径已按上文实现（`packages/vite-plugin`），细
 
 - `vite build` 本身就是 app 构建：插件设置 `builder`，`buildApp` 依次构建选中的平台。`WEFT_PLATFORM` 只能取 `platforms` 选项里的平台。开发服务器和 Vitest 的环境（`client` / `ssr`）不以平台命名，按 `web` 编译，条件导出用 `weft-web`。
 - `web` 是普通的 Vite 应用：入口是项目根的 `index.html`，`build.outDir` 是整个 `apps/web/`（没有模板和生成区之分）。`run(app)` 挂载到 `#app`。
-- 非 web 平台的逻辑入口由新增选项 `entry` 指定（默认 `src/index.ts`）；小程序 bundle 为 CommonJS 单文件，`build.target` 暂为 `es2020`。原生平台的驱动还没有后端，构建会报 “platform has no backend yet”。
+- 非 web 平台的逻辑入口由新增选项 `entry` 指定（默认 `src/index.ts`）；小程序 bundle 为 CommonJS 单文件，`build.target` 暂为 `es2020`。原生平台的构建在 P3 接通（见[P3 的实现](#p3-的实现)）。
 - 小程序工程模板在 `packages/vite-plugin/templates/wechat/`：`app.js` 只做 `require("./weft/js/index.js")`，`app.json` 的唯一页面是生成区的 `weft/index`。bundle 里 `run(app)` 注册 `App({ weft: { view, mount, unmount } })`；生成的页面在 `onReady` 挂载、`onUnload` 卸载，生成的视图组件 `weft/view.js` 调用 `getApp().weft.view(表)`。布局哈希在表里，sink 在 `open` 时与逻辑层比对。模板只在 `apps/<platform>/` 除 `weft/` 外为空时复制，模板里的 JSON 用 `__WEFT_APP_NAME__` / `__WEFT_APP_ID__` 占位。
 - `@weft-ui/miniprogram` 的 `build()` 和 CLI `weft-mp` 已删除。测试工具 `@weft-ui/miniprogram/testing` 提供 `launch(apps/wechat)`，在 Node 里运行整个小程序工程；单元测试用 `compile` 写出不打包的逻辑模块，再用 `loadView` 加载视图组件。
 - `@weft-ui/platform`：异步 API 在不支持时返回以 `PlatformError` 拒绝的 Promise，同步 API 直接抛出；Web 上 `fetch` / `storage` 按特性检测判断是否支持。`platform.os` 是平台名，`version` 在 Web 上是 `navigator.userAgent`，在小程序上是微信版本号。`__WEFT_PLATFORM__` 的类型由 `@weft-ui/platform` 声明。
@@ -335,6 +335,34 @@ void weft_runtime_free(weft_runtime *rt);
 - 内核自己不开线程，事件循环归平台壳所有。`schedule` 由平台壳映射到 `DispatchQueue.main`、主线程 `Handler`、`DispatcherQueue`、`g_timeout_add`。
 - Hermes 版本固定，由我们的 CI 为每个目标（iOS / macOS xcframework、Android 4 种 ABI、Windows x64/arm64、Linux x64/arm64）预编译。Hermes 官方没有提供 Windows 和 Linux 的预编译产物，这部分由我们长期维护。
 
+### P3 的实现
+
+`native/core` 已按上文实现，内核与 bundle、平台壳之间的完整约定见 [PROTOCOL.md 的原生内核](PROTOCOL.md#原生内核)。细节和出入：
+
+- **Hermes**：固定为 Hermes V1 的 `hermes-v260318099.0.8`。CMake 用 FetchContent 从 `github.com/meta/hermes` 拉源码作为子项目构建（`-DFETCHCONTENT_SOURCE_DIR_HERMES=<checkout>` 可复用已有的检出），内核只链接不带编译器的 `hermesvmlean_a`，所以只能执行字节码。预编译产物和 CI 矩阵仍在 P8。
+- **C ABI**：定稿在 `native/core/include/weft/runtime.h`。相对草案，`weft_host` 多了 `supports(module)`（`isSupported` 是同步的，需要平台壳直接回答）和 `version`（`platform.version`）；新增 `weft_stable_rows`（LIS 工具）。字节码必须 4 字节对齐，并在运行时存活期间保持有效，内核不复制。`weft_runtime_new` 在 bundle 抛错（包括布局哈希不一致）时返回 `NULL`。
+- **全局**：`setTimeout` / `setInterval` / `clear*`、`queueMicrotask`（Hermes 开启微任务队列，Promise 和它共用一个队列）、`console` 由内核注入；`TextEncoder` / `TextDecoder` 直接用 Hermes 自带的扩展。
+- **C++ 工具**：`weft/ops.hpp` 是不分配内存的 ops 解码器和文本形式（数字按 JS 的 `Number#toString` 输出），给 Linux 平台壳和测试用。
+- **逻辑层**：`driver` 对原生平台生成与小程序相同的 remote 模式逻辑模块（`codegen-js` 的 `remote_module`），视图文件暂时只有 `layout.json`，各平台的视图后端在 P4–P7 加入。`@weft-ui/runtime/native` 是原生 sink；`@weft-ui/platform` 的 `weft-native` 条件导出（插件为原生环境同时设置 `weft-<platform>` 和 `weft-native`）把 `run` / `fetch` / `storage` 接到 `__weft`，各平台模块的字节格式见 PROTOCOL.md。
+- **构建**：原生环境打成 IIFE 单文件 `weft/js/index.js`，再由 `hermesc -O -emit-binary -Xes6-block-scoping -Xasync-generators` 编译成 `weft/bundle.hbc`，与 `layout.json` 一起写进生成区。`hermesc` 来自与内核同一版本的 npm 包 `hermes-compiler`（@weft-ui/vite 的依赖，带 macOS、Linux x64、Windows x64 的二进制），`WEFT_HERMESC` 可以覆盖。还没有工程模板的平台只生成 `weft/` 并给出警告，也还不调用宿主构建工具。
+- **语法目标**：用 `native/core/test262/run.ts` 在 test262（`2e58f87`）里按特性抽样（每个特性最多 300 个用例），经 `hermesc` 编译、`hvm` 运行。默认参数下 `let` / `const` 没有块级作用域（循环里的闭包共享同一个绑定），async generator 无法编译；加上 `-Xes6-block-scoping -Xasync-generators` 后，ES2015–ES2022 的语法特性除 `let`（31 / 67，失败几乎都是 `eval`、TDZ 和把 `let` 当标识符的非严格代码）外通过率都在 86% 以上，失败集中在 `eval`、带转义的关键字、私有名的复合赋值早期错误等边角。ES2024 的正则 `v` 标志和 ES2025 的正则修饰符、重复命名分组不支持，这些交给 Oxc 降级也无能为力。所以 `build.target` 定为 `es2022`，Hermes 升级时重跑这个脚本。
+
+  | 特性（版本）                      | 通过 / 抽样 |
+  | --------------------------------- | ----------- |
+  | `class`（ES2015）                 | 289 / 300   |
+  | `generators`（ES2015）            | 292 / 300   |
+  | `async-functions`（ES2017）       | 286 / 300   |
+  | `object-rest`（ES2018）           | 297 / 300   |
+  | `async-iteration`（ES2018）       | 283 / 300   |
+  | `optional-chaining`（ES2020）     | 54 / 56     |
+  | `logical-assignment-operators`（ES2021） | 96 / 108 |
+  | `class-fields-private`（ES2022）  | 283 / 300   |
+  | `class-static-block`（ES2022）    | 65 / 66     |
+  | `regexp-v-flag`（ES2024）         | 51 / 182    |
+  | `regexp-modifiers`（ES2025）      | 160 / 230   |
+
+- **测试**：CTest 包括内核单元测试（定时器、微任务、console、平台调用、会话与哈希校验、LIS、解码器，JS 用例由子项目构建的 `hermesc` 编译）和 conformance：`conformance/native/build.ts` 用 @weft-ui/vite 把每个夹具打成 `bundle.hbc`，`weft_conformance` 作为平台壳运行它：校验并应用每批 ops，通过 `weft_runtime_dispatch` 执行脚本里的点击和编辑（含受控输入回滚），写出带注释的 ops 日志，与 `conformance/golden/` 逐字节比对。脚本在 Hermes 里通过平台模块 `conformance` 请求宿主操作，夹具的 `Script.web` 改名为 `App`（它是导入方构建出的根组件类）。`WEFT_CONFORMANCE=OFF` 可以跳过需要 Node 的这部分。
+
 ## 测试策略
 
 逻辑层在所有非 web 平台上完全相同，所以测试分成两层：
@@ -371,7 +399,7 @@ void weft_runtime_free(weft_runtime *rt);
 
 ## 里程碑
 
-M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P2 已完成）：
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P3 已完成）：
 
 | 阶段 | 内容                                                         | 验收标准                                                     |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |

@@ -10,7 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@weft-ui/compiler": "workspace:*"
+    "@weft-ui/compiler": "workspace:*",
+    "hermes-compiler": "260318099.0.8"
   },
   "peerDependencies": {
     "vite": "^8.3.8"

@@ -1,8 +1,8 @@
 //! WeChat mini program backend.
 //!
-//! The logic layer is the remote mode of `weft-ui-codegen-js`: [`module`]
-//! generates each `.weft` module with bare `@weft-ui/runtime/remote` imports
-//! for Vite to resolve and bundle.
+//! The logic layer is the remote mode of `weft-ui-codegen-js`
+//! (`remote_module`), with bare `@weft-ui/runtime/remote` imports for Vite
+//! to resolve and bundle.
 //!
 //! The view layer ([`Wechat`]) generates files relative to the app's
 //! `weft/` directory: `view.js`, `view.json`, and `view.wxml` define one
@@ -15,27 +15,7 @@ mod elements;
 mod table;
 mod wxml;
 
-use weft_ui_codegen_js::{JsModule, Mode};
 use weft_ui_compiler::codegen::{Codegen, Context, OutputFile};
-use weft_ui_compiler::ir::Program;
-use weft_ui_compiler::span::FileId;
-use weft_ui_compiler::view::ViewLayout;
-
-/// Generates the logic module of `file`, importing `@weft-ui/runtime/remote`.
-///
-/// # Panics
-///
-/// Panics if `file` is not part of the program or `layout` was derived from
-/// another program.
-#[must_use]
-pub fn module(program: &Program, layout: &ViewLayout, file: FileId) -> JsModule {
-    weft_ui_codegen_js::generate(
-        program,
-        file,
-        "@weft-ui/runtime/remote",
-        Mode::Remote(layout),
-    )
-}
 
 /// View components of the mini program backend.
 #[derive(Debug, Clone, Copy, Default)]

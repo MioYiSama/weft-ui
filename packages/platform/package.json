@@ -7,7 +7,8 @@
     ".": {
       "types": "./src/index.d.ts",
       "weft-web": "./src/web.ts",
-      "weft-wechat": "./src/wechat.ts"
+      "weft-wechat": "./src/wechat.ts",
+      "weft-native": "./src/native.ts"
     }
   },
   "scripts": {

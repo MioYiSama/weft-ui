@@ -70,7 +70,7 @@ pub struct AppOutput {
 ///
 /// # Errors
 ///
-/// Throws when `platform` is unknown or has no backend yet.
+/// Throws when `platform` is unknown.
 #[wasm_bindgen(js_name = compileApp)]
 pub fn compile_app(
     entries: Vec<String>,
@@ -79,7 +79,7 @@ pub fn compile_app(
 ) -> Result<AppOutput, JsError> {
     let platform: Platform = platform.parse()?;
     let entries: Vec<&str> = entries.iter().map(String::as_str).collect();
-    let output = weft_ui_driver::compile_app(&entries, platform, &mut JsLoader(load))?;
+    let output = weft_ui_driver::compile_app(&entries, platform, &mut JsLoader(load));
     let compilation = &output.compilation;
     let (logic_sources, (logic_code, logic_dts)) = output
         .logic

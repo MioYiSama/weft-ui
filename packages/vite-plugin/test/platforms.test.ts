@@ -8,6 +8,7 @@ import { launch } from "@weft-ui/miniprogram/testing";
 import { Window } from "happy-dom";
 import { createBuilder } from "vite";
 import { afterEach, beforeEach, expect, test } from "vitest";
+import type { Platform } from "@weft-ui/compiler";
 import weft from "../src/index.ts";
 
 const APP = `model Model {
@@ -69,7 +70,7 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-async function build(platform: string | undefined) {
+async function build(platform: string | undefined, platforms: Platform[] = ["web", "wechat"]) {
   const previous = process.env.WEFT_PLATFORM;
   if (platform === undefined) delete process.env.WEFT_PLATFORM;
   else process.env.WEFT_PLATFORM = platform;
@@ -78,7 +79,7 @@ async function build(platform: string | undefined) {
       root,
       configFile: false,
       logLevel: "silent",
-      plugins: [weft({ platforms: ["web", "wechat"], app: { id: "com.example.test", name: "Test \"App\"" } })],
+      plugins: [weft({ platforms, app: { id: "com.example.test", name: "Test \"App\"" } })],
     });
     await builder.buildApp();
   } finally {
@@ -186,6 +187,21 @@ test("a comma-separated WEFT_PLATFORM builds each platform", async () => {
   await build("web, wechat");
   expect(existsSync(join(root, "apps/web/index.html"))).toBe(true);
   expect(existsSync(join(root, "apps/wechat/weft/js/index.js"))).toBe(true);
+});
+
+test("a native platform bundles the logic for the kernel and compiles it to Hermes bytecode", async () => {
+  await build("macos", ["macos"]);
+  const generated = join(root, "apps/macos/weft");
+  expect((await readdir(generated)).sort()).toEqual(["bundle.hbc", "js", "layout.json"]);
+  // The Hermes bytecode file magic, little-endian.
+  const hbc = await readFile(join(generated, "bundle.hbc"));
+  expect(hbc.readBigUInt64LE(0)).toBe(0x1f1903c103bc1fc6n);
+  const layout = JSON.parse(await readFile(join(generated, "layout.json"), "utf8"));
+  expect(layout.templates[0].label).toBe("App");
+  // `@weft-ui/platform` resolves to the native implementation, which mounts through the kernel.
+  const bundle = await readFile(join(generated, "js/index.js"), "utf8");
+  expect(bundle).toContain("__weft");
+  expect(bundle).toContain(layout.hash);
 });
 
 test("compile errors fail the build with rendered diagnostics", async () => {

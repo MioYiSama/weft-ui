@@ -19,7 +19,23 @@ endforeach()
 add_custom_target(weft_core_test_bundles DEPENDS ${bundles})
 
 add_executable(weft_core_tests kernel_test.cpp)
-target_link_libraries(weft_core_tests PRIVATE weft::core)
+# Only the C ABI crosses the Windows DLL boundary. Compile the C++ ops
+# helper into the test hosts, and place runtime DLLs beside each executable.
+function(weft_test_host target)
+  target_link_libraries(${target} PRIVATE weft::core)
+  if(MSVC)
+    target_compile_options(${target} PRIVATE /utf-8)
+  endif()
+  if(WIN32 AND WEFT_CORE_SHARED)
+    target_sources(${target} PRIVATE ${PROJECT_SOURCE_DIR}/src/ops.cpp)
+    add_custom_command(TARGET ${target} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_RUNTIME_DLLS:${target}> $<TARGET_FILE_DIR:${target}>
+      COMMAND_EXPAND_LISTS
+      VERBATIM)
+  endif()
+endfunction()
+weft_test_host(weft_core_tests)
 add_dependencies(weft_core_tests weft_core_test_bundles)
 foreach(name timers microtasks console text calls session refused stable_rows ops)
   add_test(NAME core.${name} COMMAND weft_core_tests ${CMAKE_CURRENT_BINARY_DIR}/js ${name})
@@ -34,7 +50,7 @@ if(WEFT_CONFORMANCE)
   get_filename_component(repo ${PROJECT_SOURCE_DIR}/../.. ABSOLUTE)
   set(out ${CMAKE_CURRENT_BINARY_DIR}/conformance)
   add_executable(weft_conformance conformance.cpp)
-  target_link_libraries(weft_conformance PRIVATE weft::core)
+  weft_test_host(weft_conformance)
   add_test(NAME conformance.build COMMAND ${WEFT_NODE} ${repo}/conformance/native/build.ts ${out})
   set_tests_properties(conformance.build PROPERTIES FIXTURES_SETUP conformance_bundles)
   file(GLOB goldens CONFIGURE_DEPENDS ${repo}/conformance/golden/*.ops)

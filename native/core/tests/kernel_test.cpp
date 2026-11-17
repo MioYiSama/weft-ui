@@ -141,12 +141,18 @@ void timers() {
   Shell shell;
   CHECK(shell.start("timers"));
   CHECK(shell.tick_in.has_value());
+  // Deliberately deliver the first tick late. OS timer granularity (notably
+  // on Windows) cannot guarantee a tick between the 10 ms and 20 ms timers.
+  // Overdue timers run in deadline order; nested timers and repeats must
+  // still wait for the next tick, rather than running in this batch.
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  shell.tick_in.reset();
+  weft_runtime_tick(shell.rt);
+  CHECK_EQ(shell.lines(), (std::vector<std::string>{"a 0", "args 1 two", "interval 1", "outer", "b 20", "done"}));
+  CHECK(shell.tick_in.has_value());
   shell.pump();
   auto lines = shell.lines();
-  CHECK(index_of(lines, "a 0") < index_of(lines, "args 1 two"));
-  CHECK(index_of(lines, "outer") < index_of(lines, "nested"));
-  CHECK(index_of(lines, "nested") < index_of(lines, "b 20"));
-  CHECK_EQ(lines.back(), std::string("done"));
+  CHECK(index_of(lines, "done") < index_of(lines, "nested"));
   CHECK_EQ(std::count_if(lines.begin(), lines.end(), [](auto &l) { return l.rfind("interval", 0) == 0; }), 3);
   index_of(lines, "interval 3");
   CHECK(std::find(lines.begin(), lines.end(), "cancelled") == lines.end());

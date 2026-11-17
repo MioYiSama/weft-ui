@@ -9,4 +9,5 @@ weft-ui-codegen-js = { path = "../codegen-js" }
 weft-ui-codegen-swiftui = { path = "../codegen-swiftui" }
 weft-ui-codegen-web = { path = "../codegen-web" }
 weft-ui-codegen-wechat = { path = "../codegen-wechat" }
+weft-ui-codegen-winui = { path = "../codegen-winui" }
 weft-ui-compiler = { path = "../compiler" }

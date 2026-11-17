@@ -2,7 +2,7 @@
 import { existsSync, realpathSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { launch } from "@weft-ui/miniprogram/testing";
 import { Window } from "happy-dom";
@@ -10,6 +10,7 @@ import { createBuilder } from "vite";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import type { Platform } from "@weft-ui/compiler";
 import weft from "../src/index.ts";
+import { WEFT_WINUI } from "../src/windows.ts";
 
 const APP = `model Model {
     clicked: Bool,
@@ -226,6 +227,34 @@ test("Apple platforms generate an Xcode project around the WeftApp package", asy
   const { hash } = JSON.parse(await readFile(join(project, "weft/layout.json"), "utf8"));
   expect(await readFile(join(project, "weft/Generated.swift"), "utf8")).toContain(`layoutHash: 0x${hash},`);
   expect(await readFile(join(project, "weft/Package.swift"), "utf8")).toMatch(/\.package\(path: ".*native\/apple"\)/);
+});
+
+test("Windows generates a dotnet project around the generated views", async () => {
+  const previous = process.env.WEFT_NATIVE;
+  process.env.WEFT_NATIVE = "0";
+  try {
+    await build("windows", ["windows"]);
+  } finally {
+    if (previous === undefined) delete process.env.WEFT_NATIVE;
+    else process.env.WEFT_NATIVE = previous;
+  }
+  const project = join(root, "apps/windows");
+  expect((await readdir(project)).sort())
+    .toEqual([".gitignore", "App.csproj", "App.xaml", "App.xaml.cs", "UITests", "app.manifest", "weft"]);
+  expect((await readdir(join(project, "weft"))).sort())
+    .toEqual(["Generated.cs", "Weft.targets", "bundle.hbc", "js", "layout.json"]);
+  const csproj = await readFile(join(project, "App.csproj"), "utf8");
+  expect(csproj).toContain("<Product>Test &quot;App&quot;</Product>");
+  expect(csproj).toContain('<AssemblyMetadata Include="WeftAppId" Value="com.example.test" />');
+  expect(await readFile(join(project, "App.xaml.cs"), "utf8")).toContain('Title = "Test \\"App\\""');
+  // The views implement the layout the bundle was compiled with.
+  const { hash } = JSON.parse(await readFile(join(project, "weft/layout.json"), "utf8"));
+  expect(await readFile(join(project, "weft/Generated.cs"), "utf8")).toContain(`LayoutHash = 0x${hash}UL;`);
+  // The shell is referenced relative to the generated area, so the project builds wherever the workspace is.
+  const targets = await readFile(join(project, "weft/Weft.targets"), "utf8");
+  const shell = relative(realpathSync(join(project, "weft")), WEFT_WINUI).replaceAll("/", "\\");
+  expect(targets).toContain(`<Import Project="$(MSBuildThisFileDirectory)${shell}\\Weft.WinUI.targets" />`);
+  expect(existsSync(join(WEFT_WINUI, "Weft.WinUI.targets"))).toBe(true);
 });
 
 test("compile errors fail the build with rendered diagnostics", async () => {

@@ -19,6 +19,7 @@
     "build:wechat": "WEFT_PLATFORM=wechat vite build",
     "build:windows": "WEFT_PLATFORM=windows vite build",
     "test:ios": "xcodebuild test -project apps/ios/App.xcodeproj -scheme App -destination \"platform=iOS Simulator,name=${WEFT_IOS_DEVICE:-iPhone 17}\" -derivedDataPath apps/ios/build",
-    "test:macos": "xcodebuild test -project apps/macos/App.xcodeproj -scheme App -destination platform=macOS -derivedDataPath apps/macos/build"
+    "test:macos": "xcodebuild test -project apps/macos/App.xcodeproj -scheme App -destination platform=macOS -derivedDataPath apps/macos/build",
+    "test:windows": "dotnet test apps/windows/UITests"
   }
 }

@@ -8,6 +8,7 @@
 use weft_ui_codegen_js::JsModule;
 use weft_ui_codegen_swiftui::SwiftUi;
 use weft_ui_codegen_wechat::Wechat;
+use weft_ui_codegen_winui::WinUi;
 use weft_ui_compiler::codegen::{Codegen, Context, OutputFile, Platform};
 use weft_ui_compiler::ir::Program;
 use weft_ui_compiler::view::ViewLayout;
@@ -34,8 +35,8 @@ pub struct AppOutput {
 ///
 /// Native platforms get the remote mode logic modules, `layout.json` (the
 /// layout the native views implement, including its hash) and the views of
-/// their backend: SwiftUI for iOS and macOS; the other native backends do
-/// not exist yet.
+/// their backend: SwiftUI for iOS and macOS, WinUI 3 for Windows; the other
+/// native backends do not exist yet.
 pub fn compile_app(
     entries: &[&str],
     platform: Platform,
@@ -93,6 +94,8 @@ fn generate(
             let cx = Context::new(program, Some(&layout), platform);
             if matches!(platform, Platform::Ios | Platform::Macos) {
                 views.extend(SwiftUi.generate(&cx));
+            } else if platform == Platform::Windows {
+                views.extend(WinUi.generate(&cx));
             }
             (remote(&layout), views, Some(layout))
         }

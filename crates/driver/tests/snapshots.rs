@@ -182,6 +182,11 @@ fn macos() {
     check(Platform::Macos);
 }
 
+#[test]
+fn windows() {
+    check(Platform::Windows);
+}
+
 /// iOS and macOS share one SwiftUI backend; platform differences live in WeftKit.
 #[test]
 fn ios_views_equal_macos_views() {
@@ -197,7 +202,7 @@ fn native_platforms_share_the_remote_logic() {
         (Platform::Ios, &["Generated.swift"][..]),
         (Platform::Macos, &["Generated.swift"]),
         (Platform::Android, &[]),
-        (Platform::Windows, &[]),
+        (Platform::Windows, &["Generated.cs"]),
         (Platform::Linux, &[]),
     ] {
         let native = generate(platform);

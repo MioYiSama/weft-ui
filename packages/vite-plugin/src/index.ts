@@ -5,6 +5,7 @@ import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultS
 import { type AppResult, type Platform, compileApp } from "@weft-ui/compiler";
 import { APPLE, WEFT_KIT, packageManifest, xcodebuild } from "./apple.ts";
 import { HERMES_TARGET, NATIVE, compileBytecode } from "./native.ts";
+import { WEFT_WINUI, dotnetBuild, targets } from "./windows.ts";
 
 /** Every target platform, in the order of docs/PLAN-v2.md. */
 export const PLATFORMS: readonly Platform[] = ["web", "wechat", "ios", "macos", "android", "windows", "linux"];
@@ -77,11 +78,16 @@ function outDir(root: string, platform: Platform): string {
  * placeholders it holds, or `undefined` if it is copied verbatim.
  */
 function placeholderEscape(name: string): ((value: string) => string) | undefined {
-  // JSON and Xcode project files hold placeholders inside double-quoted strings with the same escapes.
-  if (name.endsWith(".json") || name.endsWith(".pbxproj")) return (value) => JSON.stringify(value).slice(1, -1);
-  if (name.endsWith(".xcscheme")) {
-    const entities: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" };
-    return (value) => value.replace(/[&<>"']/g, (c) => entities[c]!);
+  // JSON, Xcode project and C# files hold placeholders inside double-quoted strings with the same escapes.
+  if (name.endsWith(".json") || name.endsWith(".pbxproj") || name.endsWith(".cs")) {
+    return (value) => JSON.stringify(value).slice(1, -1);
+  }
+  const entities: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" };
+  const xml = (value: string) => value.replace(/[&<>"']/g, (c) => entities[c]!);
+  if (name.endsWith(".xcscheme")) return xml;
+  // MSBuild expands `$(…)`, `@(…)` and `%(…)` and splits on `;` in project files; `%XX` escapes them.
+  if (name.endsWith(".csproj")) {
+    return (value) => xml(value.replace(/[%$@;?*']/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`));
   }
   return undefined;
 }
@@ -267,17 +273,31 @@ export default function weft(options: WeftOptions = {}): Plugin {
         this.warn(`there is no ${platform} project template yet; generated apps/${platform}/weft/ only`);
         return;
       }
-      if (!APPLE.includes(platform)) return;
-      writeFileSync(join(generated, "Package.swift"), packageManifest(WEFT_KIT));
-      if (process.env.WEFT_NATIVE === "0") return;
-      if (process.platform !== "darwin") {
-        this.warn(`xcodebuild needs macOS; generated apps/${platform}/ without building it`);
-        return;
-      }
-      try {
-        await xcodebuild(project, platform, this.environment.config.mode === "release");
-      } catch (error) {
-        this.error(error as Error);
+      const release = this.environment.config.mode === "release";
+      if (APPLE.includes(platform)) {
+        writeFileSync(join(generated, "Package.swift"), packageManifest(WEFT_KIT));
+        if (process.env.WEFT_NATIVE === "0") return;
+        if (process.platform !== "darwin") {
+          this.warn(`xcodebuild needs macOS; generated apps/${platform}/ without building it`);
+          return;
+        }
+        try {
+          await xcodebuild(project, platform, release);
+        } catch (error) {
+          this.error(error as Error);
+        }
+      } else if (platform === "windows") {
+        writeFileSync(join(generated, "Weft.targets"), targets(generated, WEFT_WINUI));
+        if (process.env.WEFT_NATIVE === "0") return;
+        if (process.platform !== "win32") {
+          this.warn(`the Windows build needs a Windows host; generated apps/${platform}/ without building it`);
+          return;
+        }
+        try {
+          await dotnetBuild(project, release);
+        } catch (error) {
+          this.error(error as Error);
+        }
       }
     },
   };

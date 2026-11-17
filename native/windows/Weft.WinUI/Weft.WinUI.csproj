@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Weft.WinUI: the Windows platform shell of the Weft native kernel. It runs
+       the kernel (weft_core.dll, built by ../build-core.ps1), applies its view
+       protocol ops to the scopes of the views that weft-ui-codegen-winui
+       generates, and implements the platform modules. Apps reference it through
+       ../Weft.WinUI.targets. -->
+  <PropertyGroup>
+    <!-- Keep in sync with the app template (packages/vite-plugin/templates/windows). -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <UseWinUI>true</UseWinUI>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Weft.WinUI</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Weft.WinUI.Tests" />
+  </ItemGroup>
+
+</Project>

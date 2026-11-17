@@ -20,11 +20,12 @@ export const HERMES_TARGET = "es2022";
  */
 export const HERMESC_FLAGS = ["-O", "-emit-binary", "-Xes6-block-scoping", "-Xasync-generators", "-w"];
 
-/** `hermesc` of the `hermes-compiler` package, per host. */
+/** `hermesc` of the `hermes-compiler` package, per host. Windows on Arm runs the x64 build under emulation. */
 const BINARIES: Partial<Record<string, string>> = {
   "darwin-arm64": "osx-bin/hermesc",
   "darwin-x64": "osx-bin/hermesc",
   "linux-x64": "linux64-bin/hermesc",
+  "win32-arm64": "win64-bin/hermesc.exe",
   "win32-x64": "win64-bin/hermesc.exe",
 };
 

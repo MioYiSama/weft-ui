@@ -100,7 +100,7 @@ attach 0 0 1
 
 ## 原生内核
 
-原生平台的 JS bundle 跑在 `native/core` 的内核里：内核嵌入 Hermes，执行 `bundle.hbc`，通过 C ABI（[`native/core/include/weft/runtime.h`](../native/core/include/weft/runtime.h)）和平台壳通信。iOS / macOS 的平台壳是 `native/apple` 的 WeftKit。内核不开线程，所有函数都在 UI 线程上调用，且不能在 `weft_host` 回调里重入。
+原生平台的 JS bundle 跑在 `native/core` 的内核里：内核嵌入 Hermes，执行 `bundle.hbc`，通过 C ABI（[`native/core/include/weft/runtime.h`](../native/core/include/weft/runtime.h)）和平台壳通信。iOS / macOS 的平台壳是 `native/apple` 的 WeftKit，Windows 的是 `native/windows` 的 Weft.WinUI（通过 P/Invoke 加载 `weft_core.dll`）。内核不开线程，所有函数都在 UI 线程上调用，且不能在 `weft_host` 回调里重入。
 
 ### `__weft` 全局
 

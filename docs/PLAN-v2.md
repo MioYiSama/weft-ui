@@ -375,6 +375,19 @@ macOS 和 iOS 已按上文实现，`example` 在两端运行，XCUITest 点击�
 - **example**：扩充为覆盖全部内置元素：`Row`、带样式的 `Text`、网络 `Image`、受控 `Input`（超过 12 个字符的草稿被拒绝）、按草稿禁用的 `Button`、`for` 待办列表里的 `Checkbox` 和删除按钮。`apps/macos/` 和 `apps/ios/` 随仓库提交（模板归用户），`UITests` 改成这个点击流程，用 `pnpm --filter example test:macos` / `test:ios`（`WEFT_IOS_DEVICE` 选模拟器，默认 `iPhone 17`）运行。
 - **测试**：WeftKit 的 `swift test` 覆盖 ops 解码；`driver` 的快照包括 `macos/Generated.swift`，并断言 iOS 与 macOS 的产物相同；`@weft-ui/vite` 的测试在 `WEFT_NATIVE=0` 下检查 Apple 工程的生成。
 
+### P6 的实现
+
+Windows 已按上文实现（P5 暂缓），`example` 在 Windows 11 ARM64 上运行，UI Automation 点击流程通过。细节和出入：
+
+- **内核产物**：`native/windows/build-core.ps1 [-Arch arm64|x64] [-HermesSource <检出>]` 自己进入 VS 开发环境，用 VS 自带的 CMake + Ninja 构建 `native/windows/build/win-<arch>/weft_core.dll`。新增 CMake 选项 `WEFT_CORE_SHARED`：内核编成 DLL，Hermes 仍是静态库链接进去，只有 C ABI 跨 DLL 边界。全程用静态 MSVC 运行时（`CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded`，`CMP0091` 默认 NEW 让 Hermes 子项目也生效），DLL 只依赖系统 DLL（`KERNEL32`、`WINMM` 和 Windows 自带的 ICU `icuuc` / `icuin`，Hermes 在 Windows 上用它做 Unicode 处理），应用不需要 VC++ 运行库；Boost.Context 在 Windows 上用 `winfib` 实现，因为 Hermes 附带的 Boost 的 ARMASM 汇编模块不兼容新版 CMake。构建 Hermes 需要 PATH 上有 Python 3。约 7 分钟。默认架构是宿主架构，x64 可在 ARM64 宿主上交叉构建（x64 的 `hermesc` 在仿真下运行）。`hermes-compiler` 只带 x64 的 Windows `hermesc`，插件在 ARM64 Windows 上同样用它。
+- **Weft.WinUI**（`native/windows/Weft.WinUI`，C#，`net10.0-windows10.0.19041.0`，Windows App SDK 2.6）：结构与 WeftKit 对应。`WeftSession` 通过 `LibraryImport` 调用内核，回调是 `[UnmanagedCallersOnly]` 静态方法，`commit` 里同步解码 ops（`OpReader`）并应用到 scope 树；定时器是 UI 线程 `DispatcherQueue` 上的一个 `DispatcherQueueTimer`（按最早的请求合并），平台调用在 `DispatcherQueue.TryEnqueue` 里异步完成后回到 UI 线程调用 `weft_runtime_resolve`。平台模块：`fetch` 用 `HttpClient`，`storage` 是 `%LOCALAPPDATA%\<app id>\storage.json`（app id 来自应用程序集的 `WeftAppId` 元数据，模板按 `app.id` 填写）。`console` 和内核诊断写到 `OutputDebugString`；启动失败或 ops 异常时根视图显示原因。
+- **命令式挂载**：WinUI 没有 DOM 的注释锚点，也没有布局透明的容器，所以 scope 的顶层节点不占容器：`WeftRegion` 是一段有序的兄弟节点（容器的子节点，或 scope 的顶层节点），挂载点是其中的占位，展开成子 scope 的控件。挂载点变化时向上找到真正的容器（`StackPanel`）和起始下标，只改动这一段：先删掉消失的子 scope 的控件，再用 `weft_stable_rows` 标出保持相对顺序的行，其余行从后往前移动或插入，未移动的行（包括其中有焦点的输入框）不离开控件树。还没挂上树的 scope 只记录结构，挂上时整棵子树一次插入。
+- **视图后端**（`crates/codegen-winui`）：生成 `weft/Generated.cs`，每个模板一个 `file sealed class S{n} : WeftScope`：构造函数按先序创建元素包装（`WeftStack` / `WeftText` / `WeftButton` / `WeftInput` / `WeftCheckbox` / `WeftImage`），写静态属性，放进父区域，挂载点注册为 `Point(this, i)`；有值槽的元素存为字段，`Apply` 是生成的 `switch`，属性名就是 `.weft` 属性名的 PascalCase。布局默认值和受控逻辑都在包装里：`Column` / `Row` 是 `StackPanel`（`Spacing` 默认 0），子元素在交叉轴起点对齐，`width` / `height` 按 content-box 加上 `padding`；按钮内容是水平 `StackPanel`；`Checkbox` 去掉 `CheckBox` 默认的 120 DIP 最小宽度；`Input` 宽 200 DIP。`Input` 是 `TextBox`：`TextChanging`（`IsContentChanging`）里同步 `dispatch`，被拒绝时恢复成值槽的值并保留光标位置，`TextCompositionStarted` / `Ended` 之间不上报；`Checkbox` 在 `Checked` / `Unchecked` 里上报，被拒绝时恢复。`set` 写回的值与值槽相同，不会再被上报。`Image` 是 `Image` + `BitmapImage`，宽高规则与 SwiftUI 相同（都不设保持原尺寸、设一边等比、都设拉伸）。
+- **工程**：模板在 `packages/vite-plugin/templates/windows/`：`App.csproj`（WinExe，非打包、自包含部署：`WindowsPackageType=None`、`WindowsAppSDKSelfContained`、`SelfContained`，构建产物直接运行，不需要安装 .NET 和 Windows App SDK 运行时；`RuntimeIdentifier` 默认是宿主架构，`dotnet build -r win-x64` 可改）、`App.xaml`（合并 `XamlControlsResources`）、`App.xaml.cs`（窗口标题来自 `app.name`，内容是 `WeftApp.Start()`，`WeftWindow.Resize` 按 DIP 设 480×640）、`app.manifest`（PerMonitorV2）和 `UITests/`。可执行文件固定叫 `App.exe`，`app.name` 作为窗口标题和 `Product`。插件对 `.cs` 按 C# 字符串、对 `.csproj` 按 XML 加 MSBuild 的 `%XX` 转义替换占位符。生成区由插件写的 `weft/Weft.targets` 接入：它导入 `native/windows/Weft.WinUI.targets`（相对生成区的路径，工作区在哪都能构建），后者引用 Weft.WinUI 项目、把对应 RID 的 `weft_core.dll` 复制到输出目录（缺少时报错并给出 `build-core.ps1` 命令），`bundle.hbc` 复制到 `weft\bundle.hbc`；`Generated.cs` 由 SDK 默认的通配编译。
+- **构建**：`writeBundle` 在 `apps/windows/` 里执行 `dotnet build App.csproj -c Debug|Release`，产物在 `apps/windows/bin/<配置>/net10.0-windows10.0.19041.0/<rid>/App.exe`。非 Windows 宿主或 `WEFT_NATIVE=0` 时只生成工程。`example` 的脚本用了 `WEFT_PLATFORM=… vite build` 这种 POSIX 写法，工作区开启 pnpm 的 `shellEmulator`，在 Windows 上也能直接 `pnpm --filter example build:windows`。
+- **UI 测试**：没有用 WinAppDriver：它 2020 年后不再维护，需要开发者模式和单独安装、单独启动的服务。改用同样基于 UI Automation 的 FlaUI（NuGet 包，`dotnet test` 直接运行）。`apps/windows/UITests` 是 MSTest 项目，启动最近构建的 `App.exe`，按 macOS 的点击流程断言（按钮和 `if`、受控输入回滚、`for` 行、复选框、删除行）。逐字输入用 UI Automation 的 `ValuePattern` 在当前值后追加一个字符，不经过键盘，因此不受桌面输入法影响（用键盘模拟时中文输入法会把字母组字成汉字）。UI Automation 需要交互式桌面会话，从 SSH 运行时要经计划任务转到登录用户的会话。用 `pnpm --filter example test:windows` 运行。
+- **测试**：`native/windows/Weft.WinUI.Tests`（MSTest）覆盖 ops 解码和颜色解析；`driver` 的快照包括 `windows/Generated.cs`；`@weft-ui/vite` 的测试在 `WEFT_NATIVE=0` 下检查 Windows 工程的生成；Windows 上的 CTest（内核单元测试和 conformance）与 macOS 相同。
+
 ## 测试策略
 
 逻辑层在所有非 web 平台上完全相同，所以测试分成两层：
@@ -382,7 +395,7 @@ macOS 和 iOS 已按上文实现，`example` 在两端运行，XCUITest 点击�
 1. **协议一致性**（JS，跑在 CI 主力机上）：`conformance/` 下的 `.weft` 夹具加脚本化交互，在无头渲染器上记录 ops 日志并和黄金文件比对。同一套夹具也在 web（happy-dom）和小程序（现有的 WXML 解释器）上跑，断言最终的树结构一致。实现上每一步之后都比较三端归一化后的树（元素类型和主要值）以及宿主处理器收到的事件；黄金文件在 `conformance/golden/`，用 `WEFT_UPDATE_SNAPSHOTS=1 pnpm --filter @weft-ui/conformance test` 重写。
 2. **平台渲染**：每个平台只验证“ops → 控件”这一层。
    - 内核：CTest 在 Hermes 里跑同一批夹具，ops 日志必须和 JS 无头渲染器逐字节一致。
-   - 各平台用 XCUITest / Compose UI Test / WinAppDriver / GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 在 P4 扩充为覆盖全部内置元素和 `for` 列表（见[P4 的实现](#p4-的实现)），点击流程包括受控输入的回滚、复选框和删除列表行。
+   - 各平台用 XCUITest / Compose UI Test / UI Automation（FlaUI，见[P6 的实现](#p6-的实现)）/ GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 在 P4 扩充为覆盖全部内置元素和 `for` 列表（见[P4 的实现](#p4-的实现)），点击流程包括受控输入的回滚、复选框和删除列表行。
    - 后端 crate 对生成的源码做快照测试，只用来审查变更，不用来证明行为正确。
 
 ## 从现状迁移
@@ -411,7 +424,7 @@ macOS 和 iOS 已按上文实现，`example` 在两端运行，XCUITest 点击�
 
 ## 里程碑
 
-M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P4 已完成）：
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P4、P6 已完成）：
 
 | 阶段 | 内容                                                         | 验收标准                                                     |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -421,7 +434,7 @@ M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLA
 | P3   | `native/core`：Hermes 嵌入、C ABI、定时器 / 微任务 / console、平台调用路由；`hermesc` 接入构建；确定 Hermes 语法目标 | CTest 在 Hermes 里跑 conformance 夹具，ops 日志与 JS 无头渲染器逐字节一致 |
 | P4   | Apple：`codegen-swiftui`、WeftKit、Xcode 模板、`xcodebuild`；先做 macOS，再做 iOS | `example` 在 macOS 与 iOS 模拟器上运行；XCUITest 点击流程通过 |
 | P5   | Android：`codegen-compose`、AAR、Gradle 模板                 | 模拟器上运行；Compose UI Test 通过                           |
-| P6   | Windows：`codegen-winui`（C#）、Weft.WinUI、dotnet 模板       | Windows 上运行；WinAppDriver 点击流程通过                    |
+| P6   | Windows：`codegen-winui`（C#）、Weft.WinUI、dotnet 模板       | Windows 上运行；UI Automation（FlaUI）点击流程通过           |
 | P7   | Linux：`codegen-gtk`、CMake 模板                             | Linux 上运行；无头 GTK 下点击流程通过                        |
 | P8   | 开发体验：原生端连 dev server 整包重载、`weft doctor`、CI 矩阵（含 Hermes 预编译）、LSP 和格式化（原 M5） | 修改 `.weft` 或 `.ts` 后原生应用自动重载                      |
 

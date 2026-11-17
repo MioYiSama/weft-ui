@@ -1,0 +1,8 @@
+[package]
+name = "weft-ui-codegen-winui"
+version = { workspace = true }
+edition = { workspace = true }
+description = "WinUI 3 backend (Windows) for Weft UI"
+
+[dependencies]
+weft-ui-compiler = { path = "../compiler" }

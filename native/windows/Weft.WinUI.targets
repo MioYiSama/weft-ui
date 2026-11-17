@@ -1,0 +1,21 @@
+<Project>
+
+  <!-- Links a Weft app project against the Windows shell: the Weft.WinUI
+       library and the native kernel built by build-core.ps1 for the app's
+       runtime identifier. Imported by the weft/Weft.targets that @weft-ui/vite
+       generates. -->
+  <PropertyGroup>
+    <WeftCore>$(MSBuildThisFileDirectory)build\$(RuntimeIdentifier)\weft_core.dll</WeftCore>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Weft.WinUI\Weft.WinUI.csproj" />
+    <None Include="$(WeftCore)" Link="weft_core.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+  <Target Name="WeftCheckCore" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(RuntimeIdentifier)' == ''" Text="weft: set a RuntimeIdentifier (win-x64 or win-arm64) in the app project" />
+    <Error Condition="!Exists('$(WeftCore)')" Text="weft: the native kernel for $(RuntimeIdentifier) is missing ($(WeftCore)); build it with native/windows/build-core.ps1 -Arch $(RuntimeIdentifier.Substring(4))" />
+  </Target>
+
+</Project>

@@ -2,3 +2,6 @@ packages:
   - packages/*
   - example
   - conformance
+
+# Scripts such as `WEFT_PLATFORM=windows vite build` also run on Windows hosts.
+shellEmulator: true

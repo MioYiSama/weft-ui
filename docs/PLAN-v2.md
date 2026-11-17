@@ -151,6 +151,8 @@ pub struct OutputFile { pub path: String, pub contents: String }
 - **生命周期**：规则同 PLAN.md。在原生平台上，“插入渲染树”指 commit 已提交到原生控件树，由 JS 在 commit 返回后触发，不等同于 SwiftUI 的 `onAppear`（可见）。
 - **无头渲染器**：`@weft-ui/runtime/testing` 把 ops 应用到一棵内存树上，作为协议的参考实现，所有一致性测试都基于它（见[测试](#测试策略)）。
 
+P1 已按此实现，完整规范（布局 JSON、编码、根挂载、事件返回值）见 [PROTOCOL.md](PROTOCOL.md)。与上文的出入：值槽类型取元素属性的类型，目前只有 `Int` / `Bool` / `String`（数字统一按 f64 编码）；根组件实例挂在虚拟 scope 0 的挂载点 0 上（`attach 0 0 <id>`）；scope id 按 app 分配，保证同一脚本的 ops 日志与运行顺序无关。
+
 ### 两类视图后端
 
 | 类别   | 平台                 | 生成内容                                                     |
@@ -326,7 +328,7 @@ void weft_runtime_free(weft_runtime *rt);
 
 逻辑层在所有非 web 平台上完全相同，所以测试分成两层：
 
-1. **协议一致性**（JS，跑在 CI 主力机上）：`conformance/` 下的 `.weft` 夹具加脚本化交互，在无头渲染器上记录 ops 日志并和黄金文件比对。同一套夹具也在 web（happy-dom）和小程序（现有的 WXML 解释器）上跑，断言最终的树结构一致。
+1. **协议一致性**（JS，跑在 CI 主力机上）：`conformance/` 下的 `.weft` 夹具加脚本化交互，在无头渲染器上记录 ops 日志并和黄金文件比对。同一套夹具也在 web（happy-dom）和小程序（现有的 WXML 解释器）上跑，断言最终的树结构一致。实现上每一步之后都比较三端归一化后的树（元素类型和主要值）以及宿主处理器收到的事件；黄金文件在 `conformance/golden/`，用 `WEFT_UPDATE_SNAPSHOTS=1 pnpm --filter @weft-ui/conformance test` 重写。
 2. **平台渲染**：每个平台只验证“ops → 控件”这一层。
    - 内核：CTest 在 Hermes 里跑同一批夹具，ops 日志必须和 JS 无头渲染器逐字节一致。
    - 各平台用 XCUITest / Compose UI Test / WinAppDriver / GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 目前只用到 `Column` / `Text` / `Button` / `if`，在 P4 之前要扩充到覆盖全部内置元素和 `for` 列表（可以把 TodoList 并进来），否则平台渲染测试测不到 `Input`、`Checkbox`、`Image` 和列表移动。
@@ -358,7 +360,7 @@ void weft_runtime_free(weft_runtime *rt);
 
 ## 里程碑
 
-M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段：
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0、P1 已完成）：
 
 | 阶段 | 内容                                                         | 验收标准                                                     |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |

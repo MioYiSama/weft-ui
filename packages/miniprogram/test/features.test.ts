@@ -38,7 +38,7 @@ beforeAll(async () => {
   await build({ entries: [join(fixtures, "Board.weft")], outDir: out });
   // Generated modules exist only after the build.
   ({ Board } = await import(pathToFileURL(join(out, "Board.js")).href));
-  ({ tick } = await import(pathToFileURL(join(out, "weft-runtime/wx.js")).href));
+  ({ tick } = await import(pathToFileURL(join(out, "weft-runtime/remote.js")).href));
 });
 
 afterAll(async () => {

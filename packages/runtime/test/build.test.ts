@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
 
 const builds = [
-  { config: "tsconfig.wx.json", committed: "../../miniprogram/runtime/", files: ["core.js", "wx.js"] },
+  { config: "tsconfig.wechat.json", committed: "../../miniprogram/runtime/", files: ["core.js", "remote.js", "wechat.js"] },
 ];
 
 test.each(builds)("committed $config output matches a fresh TypeScript build", async ({ config, committed, files }) => {

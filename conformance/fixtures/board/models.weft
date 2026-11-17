@@ -1,0 +1,32 @@
+model User {
+  name: String,
+}
+
+model Note {
+  text: String,
+}
+
+model Item {
+  id: Int,
+  label: String,
+  done: Bool,
+  tags: String[],
+}
+
+model Group {
+  id: Int,
+  title: String,
+  items: Item[],
+}
+
+model BoardModel {
+  owner: User?,
+  note: Note,
+  mode: Int,
+  groups: Group[],
+}
+
+event Toggle(id: Int, value: Bool)
+event Loaded
+event Shown(id: Int)
+event Hidden(id: Int)

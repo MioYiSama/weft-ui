@@ -8,6 +8,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use crate::ir::Program;
+use crate::view::ViewLayout;
 
 /// Target platform; the string form matches `WEFT_PLATFORM`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -89,13 +90,20 @@ impl FromStr for Platform {
 pub struct Context<'p> {
     /// Application-level program: every `.weft` file of the app.
     pub program: &'p Program,
+    /// View protocol layout of the program; `None` for `web`, whose logic
+    /// modules write the DOM directly.
+    pub layout: Option<&'p ViewLayout>,
     pub platform: Platform,
 }
 
 impl<'p> Context<'p> {
     #[must_use]
-    pub fn new(program: &'p Program, platform: Platform) -> Self {
-        Self { program, platform }
+    pub fn new(program: &'p Program, layout: Option<&'p ViewLayout>, platform: Platform) -> Self {
+        Self {
+            program,
+            layout,
+            platform,
+        }
     }
 }
 

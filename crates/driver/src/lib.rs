@@ -11,6 +11,7 @@ use weft_ui_codegen_js::JsModule;
 use weft_ui_codegen_wechat::Wechat;
 use weft_ui_compiler::codegen::{Codegen, Context, OutputFile, Platform};
 use weft_ui_compiler::ir::Program;
+use weft_ui_compiler::view::ViewLayout;
 use weft_ui_compiler::{Compilation, SourceLoader};
 
 /// Result of [`compile_app`].
@@ -22,6 +23,9 @@ pub struct AppOutput {
     pub logic: Vec<JsModule>,
     /// View files relative to `apps/<platform>/weft/`; empty on errors.
     pub views: Vec<OutputFile>,
+    /// View protocol layout shared by the logic modules and the view files;
+    /// `None` on errors and for `web`.
+    pub layout: Option<ViewLayout>,
 }
 
 /// The platform has no backend yet.
@@ -58,15 +62,16 @@ pub fn compile_app(
 ) -> Result<AppOutput, UnsupportedPlatformError> {
     let backend = Backend::of(platform)?;
     let compilation = weft_ui_compiler::check_many(entries, loader);
-    let (logic, views) = match &compilation.program {
-        Some(program) => backend.generate(program, platform),
-        None => (Vec::new(), Vec::new()),
-    };
-    Ok(AppOutput {
+    let mut output = AppOutput {
         compilation,
-        logic,
-        views,
-    })
+        logic: Vec::new(),
+        views: Vec::new(),
+        layout: None,
+    };
+    if let Some(program) = &output.compilation.program {
+        (output.logic, output.views, output.layout) = backend.generate(program, platform);
+    }
+    Ok(output)
 }
 
 /// Platforms with an implemented backend.
@@ -89,7 +94,11 @@ impl Backend {
         }
     }
 
-    fn generate(self, program: &Program, platform: Platform) -> (Vec<JsModule>, Vec<OutputFile>) {
+    fn generate(
+        self,
+        program: &Program,
+        platform: Platform,
+    ) -> (Vec<JsModule>, Vec<OutputFile>, Option<ViewLayout>) {
         let files = program.modules.iter().map(|m| m.file);
         match self {
             // DOM code lives in the logic modules; there are no view files.
@@ -98,13 +107,16 @@ impl Backend {
                     .map(|file| weft_ui_codegen_web::module(program, file))
                     .collect(),
                 Vec::new(),
+                None,
             ),
-            Backend::Wechat => (
-                files
-                    .map(|file| weft_ui_codegen_wechat::module(program, file))
-                    .collect(),
-                Wechat.generate(&Context::new(program, platform)),
-            ),
+            Backend::Wechat => {
+                let layout = ViewLayout::new(program);
+                let logic = files
+                    .map(|file| weft_ui_codegen_wechat::module(program, &layout, file))
+                    .collect();
+                let views = Wechat.generate(&Context::new(program, Some(&layout), platform));
+                (logic, views, Some(layout))
+            }
         }
     }
 }

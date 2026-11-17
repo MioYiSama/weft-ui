@@ -41,6 +41,10 @@ export interface AppResult {
   logic: LogicModule[];
   /** Empty on errors and for `web`, whose DOM code lives in the logic modules. */
   views: OutputFile[];
+  /** View protocol layout as JSON (see docs/PROTOCOL.md); empty on errors and for `web`. */
+  layout: string;
+  /** Hexadecimal hash of the layout; empty when there is no layout. */
+  layoutHash: string;
   /** Rendered diagnostics; empty when there are none. */
   diagnostics: string;
   hasErrors: boolean;
@@ -66,6 +70,8 @@ export async function compileApp(
     return {
       logic: output.logicSources.map((source, index) => ({ source, code: code[index]!, dts: dts[index]! })),
       views: output.viewPaths.map((path, index) => ({ path, contents: contents[index]! })),
+      layout: output.layout,
+      layoutHash: output.layoutHash,
       diagnostics: output.diagnostics,
       hasErrors: output.hasErrors,
       files: output.files,

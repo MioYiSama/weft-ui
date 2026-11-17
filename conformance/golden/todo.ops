@@ -1,0 +1,44 @@
+# mount
+create 1 0  # TodoList
+set 1 0 ""  # Input.value
+set 1 1 "expand"  # Text.value
+attach 0 0 1
+
+# expand
+set 1 1 "collapse"  # Text.value
+create 2 1  # TodoList:if8.0
+create 3 2  # TodoList:for7
+set 3 0 "a"  # Text.value
+create 4 2  # TodoList:for7
+set 4 0 "b"  # Text.value
+create 5 2  # TodoList:for7
+set 5 0 "c"  # Text.value
+rows 2 0 [3 4 5]
+branch 1 0 2
+
+# type a transformed value
+set 1 0 "MILK"  # Input.value
+
+# type a rejected value
+(no ops)
+
+# rename an item
+set 4 0 "B"  # Text.value
+
+# reverse the list
+rows 2 0 [5 4 3]
+
+# remove the first row
+rows 2 0 [4 3]
+
+# append a row
+create 6 2  # TodoList:for7
+set 6 0 "d"  # Text.value
+rows 2 0 [4 3 6]
+
+# assign equal values
+(no ops)
+
+# collapse
+set 1 1 "expand"  # Text.value
+branch 1 0 0

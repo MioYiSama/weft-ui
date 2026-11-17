@@ -1,0 +1,102 @@
+# mount
+create 1 1  # Board
+set 1 0 "nobody"  # Text.value
+set 1 1 "note"  # Text.value
+create 2 4  # Board:if5.0
+branch 1 0 2
+set 1 2 ""  # Input.value
+set 1 3 "q: "  # Text.value
+set 1 4 "clicks 0"  # Text.value
+create 3 7  # Board:for13
+create 4 2  # Card
+set 4 0 "first"  # Text.value
+create 5 8  # Board:slot12
+create 6 9  # Board:for11
+create 7 0  # ItemRow
+set 7 0 false  # Checkbox.checked
+set 7 1 "a"  # Text.value
+create 8 3  # ItemRow:for3
+set 8 0 "x"  # Text.value
+rows 7 0 [8]
+attach 6 0 7
+create 9 9  # Board:for11
+create 10 0  # ItemRow
+set 10 0 true  # Checkbox.checked
+set 10 1 "b"  # Text.value
+attach 9 0 10
+rows 5 0 [6 9]
+attach 4 0 5
+set 4 1 "end"  # Text.value
+attach 3 0 4
+create 11 7  # Board:for13
+create 12 2  # Card
+set 12 0 "second"  # Text.value
+create 13 8  # Board:slot12
+create 14 9  # Board:for11
+create 15 0  # ItemRow
+set 15 0 false  # Checkbox.checked
+set 15 1 "c"  # Text.value
+attach 14 0 15
+rows 13 0 [14]
+attach 12 0 13
+set 12 1 "end"  # Text.value
+attach 11 0 12
+rows 1 1 [3 11]
+attach 0 0 1
+
+# type into the state input
+set 1 2 "z"  # Input.value
+set 1 3 "q: z"  # Text.value
+set 7 1 "za"  # Text.value
+set 10 1 "zb"  # Text.value
+set 15 1 "zc"  # Text.value
+
+# click the counter
+set 1 4 "clicks 1"  # Text.value
+
+# toggle an item
+set 7 0 true  # Checkbox.checked
+
+# toggle the locked item
+(no ops)
+
+# set the optional owner
+set 1 0 "ann"  # Text.value
+
+# rename the owner
+set 1 0 "bob"  # Text.value
+
+# switch to the else-if branch
+create 16 5  # Board:if5.1
+branch 1 0 16
+
+# switch to the else branch
+create 17 6  # Board:if5.2
+branch 1 0 17
+
+# rename an item inside slot content
+set 15 1 "zC"  # Text.value
+
+# add a group in front
+create 18 7  # Board:for13
+create 19 2  # Card
+set 19 0 "third"  # Text.value
+create 20 8  # Board:slot12
+create 21 9  # Board:for11
+create 22 0  # ItemRow
+set 22 0 true  # Checkbox.checked
+set 22 1 "zd"  # Text.value
+create 23 3  # ItemRow:for3
+set 23 0 "y"  # Text.value
+create 24 3  # ItemRow:for3
+set 24 0 "w"  # Text.value
+rows 22 0 [23 24]
+attach 21 0 22
+rows 20 0 [21]
+attach 19 0 20
+set 19 1 "end"  # Text.value
+attach 18 0 19
+rows 1 1 [18 3 11]
+
+# remove the first group
+rows 1 1 [18 11]

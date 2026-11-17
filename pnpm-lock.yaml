@@ -8,6 +8,36 @@ importers:
 
   .: {}
 
+  conformance:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.6
+        version: 26.6.6
+      '@weft-ui/compiler':
+        specifier: workspace:*
+        version: link:../packages/compiler
+      '@weft-ui/miniprogram':
+        specifier: workspace:*
+        version: link:../packages/miniprogram
+      '@weft-ui/runtime':
+        specifier: workspace:*
+        version: link:../packages/runtime
+      '@weft-ui/vite':
+        specifier: workspace:*
+        version: link:../packages/vite-plugin
+      happy-dom:
+        specifier: ^21.0.4
+        version: 21.0.4
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.8
+        version: 8.3.8(@types/node@26.6.6)
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@26.6.6)(happy-dom@21.0.4)(vite@8.3.8(@types/node@26.6.6))
+
   example:
     dependencies:
       '@weft-ui/vite':

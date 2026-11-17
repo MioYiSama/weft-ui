@@ -298,9 +298,9 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 
 | 位置                                    | 作用                                                                                           |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `crates/codegen-wechat` | 每个 `.weft` 生成 `X.js` + `X.d.ts`；每个入口另生成视图组件 `X-view.{js,json,wxml}`            |
+| `crates/codegen-wechat` | 每个 `.weft` 生成 `X.js` + `X.d.ts`；每个入口另生成视图组件 `X-view.{js,json,wxml}`；整个应用一份 `weft-layout.js`（模板到 `setData` key 的映射表，供 sink 使用） |
 | `crates/wasm`                           | 导出 `compileApp(entries, "wechat", load)`                                                |
-| `packages/runtime/src/wx.ts`            | 数据块运行时（`if` / `for` / 插槽 / 组件实例）、提交钩子、事件分发；与 `core.ts` 一起编译到 `packages/miniprogram/runtime/` |
+| `packages/runtime/src/remote.ts` / `wechat.ts` | 通用块运行时（产出[视图协议](PROTOCOL.md) ops）/ 小程序 sink（ops → `setData`）和视图组件 `view()`；与 `core.ts` 一起编译到 `packages/miniprogram/runtime/`（P1 起，原 `wx.ts`） |
 | `packages/miniprogram`                  | `@weft-ui/miniprogram`：`build()` 与 CLI `weft-mp`；`./testing` 提供 Node 下的 WXML 解释器和 `setData` 记录 |
 | `packages/miniprogram/test`            | 小程序端到端测试，含 TodoList，逐条断言 `setData` 负载                                      |
 
@@ -317,16 +317,16 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 | key          | 内容                                                    |
 | ------------ | ------------------------------------------------------- |
 | `n{N}_{i}`   | 属性值、文本                                             |
-| `e{N}`       | 事件处理器 id，WXML 中写成 `data-h`，由视图组件的 `$e` 分发 |
+| `e{N}`       | 事件处理器 id（sink 分配），WXML 中写成 `data-h`，由视图组件的 `$e` 分发 |
 | `i{N}` / `b{N}` | `if` 当前分支下标 / 分支数据                          |
-| `l{N}`       | `for` 的行数组，每行带 key `k`                           |
+| `l{N}`       | `for` 的行数组，每行带 `k`（行的 scope id，用作 `wx:key`） |
 | `c{N}`       | 组件实例数据                                             |
 | `y{N}`       | 插槽数据，`t` 是插槽模板名（`{组件}-s{N}`）               |
 
 `setData` 规则：
 
 - 每次 flush 每个视图只调用一次 `setData`。块的 `set` 用 `===` 比较新旧值，只发送变化的叶子，路径如 `r.b8.l7[2].n3_0`。
-- 列表只在末尾追加时发送新行的下标路径（`l7[3]`）；删除、移动、插入时整体发送行数组，复用的行保留原有处理器 id。
+- 列表只在末尾追加时发送新行的下标路径（`l7[3]`）；删除、移动、插入时整体发送行数组，复用的行保留原有处理器 id；顺序没变时不发送。
 - 同一次 flush 中被其他路径覆盖的路径（祖先已整体发送）会被丢弃。
 
 ## 工具链

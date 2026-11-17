@@ -16,7 +16,8 @@ beforeEach(async () => {
   outDir = join(temporary, "output");
   runtimeDir = join(temporary, "runtime");
   await mkdir(runtimeDir);
-  await writeFile(join(runtimeDir, "wx.js"), 'export * from "./core.js";\n');
+  await writeFile(join(runtimeDir, "remote.js"), 'export * from "./core.js";\n');
+  await writeFile(join(runtimeDir, "wechat.js"), "export const view = () => ({});\n");
   await writeFile(join(runtimeDir, "core.js"), "export {};\n");
   await writeFile(join(runtimeDir, "ignored.d.ts"), "export {};\n");
 });
@@ -30,7 +31,8 @@ test("builds the import closure, view component and runtime with resolvable JS i
   expect(result.warnings).toBe("");
   expect(result.written.toSorted()).toEqual([
     "Main-view.js", "Main-view.json", "Main-view.wxml", "Main.d.ts", "Main.js",
-    "shared/models.d.ts", "shared/models.js", "weft-runtime/core.js", "weft-runtime/wx.js",
+    "shared/models.d.ts", "shared/models.js", "weft-layout.js",
+    "weft-runtime/core.js", "weft-runtime/remote.js", "weft-runtime/wechat.js",
   ].toSorted());
   expect(JSON.parse(await readFile(join(outDir, "Main-view.json"), "utf8"))).toEqual({ component: true });
   expect(await readFile(join(outDir, "Main-view.wxml"), "utf8")).toContain("wx:for");
@@ -65,7 +67,7 @@ test("preserves paths under an explicit root and merges multiple entry closures"
     "app/Main.js", "app/Main-view.js", "app/Secondary.js", "app/Secondary-view.js", "app/shared/models.js",
   ]));
   expect(result.written.filter((path) => path === "app/shared/models.js")).toHaveLength(1);
-  expect(await readFile(join(outDir, "app/Main.js"), "utf8")).toContain("../weft-runtime/wx.js");
+  expect(await readFile(join(outDir, "app/Main.js"), "utf8")).toContain("../weft-runtime/remote.js");
 });
 
 test("rejects entries outside the source root", async () => {

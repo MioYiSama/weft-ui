@@ -5,10 +5,12 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./wx": "./src/wx.ts"
+    "./remote": "./src/remote.ts",
+    "./wechat": "./src/wechat.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.wx.json",
+    "build": "tsc -p tsconfig.wechat.json",
     "test": "vitest run"
   },
   "devDependencies": {

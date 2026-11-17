@@ -19,7 +19,7 @@ export declare class TodoList {
   onTextChanged(handler: (model: TodoListModel, event: TextChanged) => void): () => void;
   onRemove(handler: (model: TodoListModel, event: Remove) => void): () => void;
   $on(name: string, handler: (model: TodoListModel, event: object) => unknown): () => void;
-  /** Renders into a generated view component, e.g. `page.selectComponent("#view")`. */
+  /** Renders into a view sink, or a generated mini program view component, e.g. `page.selectComponent("#view")`. */
   mount(view: object): void;
   unmount(): void;
 }

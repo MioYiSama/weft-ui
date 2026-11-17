@@ -1,0 +1,221 @@
+/**
+ * Binary encoding of view protocol ops (docs/PROTOCOL.md), its decoder, and
+ * the one-line text form of an op used by dumps and golden files.
+ */
+
+import type { Ops, Value } from "./remote.ts";
+
+/** Protocol version written as the first byte of every batch. */
+export const VERSION = 1;
+
+const CREATE = 1;
+const SET = 2;
+const BRANCH = 3;
+const ROWS = 4;
+const ATTACH = 5;
+
+const FALSE = 0;
+const TRUE = 1;
+const NUMBER = 2;
+const STRING = 3;
+
+/** A decoded op. */
+export type Op =
+  | { op: "create"; scope: number; template: number }
+  | { op: "set"; scope: number; slot: number; value: Value }
+  | { op: "branch"; scope: number; point: number; child: number }
+  | { op: "rows"; scope: number; point: number; children: number[] }
+  | { op: "attach"; scope: number; point: number; child: number };
+
+/** Writes ops into one reusable buffer; `take` hands out each batch. */
+export class OpWriter implements Ops {
+  #bytes = new Uint8Array(256);
+  #view = new DataView(this.#bytes.buffer);
+  #length = 0;
+  #encoder = new TextEncoder();
+
+  /** Whether no op was written since the last `take`. */
+  get empty(): boolean {
+    return this.#length === 0;
+  }
+
+  /**
+   * Returns the batch written since the last call and starts a new one, or
+   * `null` if it is empty. The bytes are only valid until the next write.
+   */
+  take(): Uint8Array | null {
+    if (this.#length === 0) return null;
+    const batch = this.#bytes.subarray(0, this.#length);
+    this.#length = 0;
+    return batch;
+  }
+
+  create(scope: number, template: number): void {
+    this.#op(CREATE, 8);
+    this.#u32(scope);
+    this.#u32(template);
+  }
+
+  set(scope: number, slot: number, value: Value): void {
+    if (typeof value === "string") {
+      // UTF-8 needs at most three bytes per UTF-16 code unit.
+      this.#op(SET, 13 + value.length * 3);
+      this.#u32(scope);
+      this.#u32(slot);
+      this.#bytes[this.#length++] = STRING;
+      const start = this.#length + 4;
+      const { written } = this.#encoder.encodeInto(value, this.#bytes.subarray(start));
+      this.#u32(written);
+      this.#length += written;
+    } else if (typeof value === "number") {
+      this.#op(SET, 17);
+      this.#u32(scope);
+      this.#u32(slot);
+      this.#bytes[this.#length++] = NUMBER;
+      this.#view.setFloat64(this.#length, value, true);
+      this.#length += 8;
+    } else {
+      this.#op(SET, 9);
+      this.#u32(scope);
+      this.#u32(slot);
+      this.#bytes[this.#length++] = value ? TRUE : FALSE;
+    }
+  }
+
+  branch(scope: number, point: number, child: number): void {
+    this.#op(BRANCH, 12);
+    this.#u32(scope);
+    this.#u32(point);
+    this.#u32(child);
+  }
+
+  rows(scope: number, point: number, children: readonly number[]): void {
+    this.#op(ROWS, 12 + children.length * 4);
+    this.#u32(scope);
+    this.#u32(point);
+    this.#u32(children.length);
+    for (const child of children) this.#u32(child);
+  }
+
+  attach(scope: number, point: number, child: number): void {
+    this.#op(ATTACH, 12);
+    this.#u32(scope);
+    this.#u32(point);
+    this.#u32(child);
+  }
+
+  /** Writes the batch header if needed and the opcode, reserving `size` more bytes. */
+  #op(code: number, size: number): void {
+    this.#reserve(size + 2);
+    if (this.#length === 0) this.#bytes[this.#length++] = VERSION;
+    this.#bytes[this.#length++] = code;
+  }
+
+  #reserve(size: number): void {
+    const needed = this.#length + size;
+    if (needed <= this.#bytes.length) return;
+    let capacity = this.#bytes.length * 2;
+    while (capacity < needed) capacity *= 2;
+    const bytes = new Uint8Array(capacity);
+    bytes.set(this.#bytes.subarray(0, this.#length));
+    this.#bytes = bytes;
+    this.#view = new DataView(bytes.buffer);
+  }
+
+  #u32(value: number): void {
+    this.#view.setUint32(this.#length, value, true);
+    this.#length += 4;
+  }
+}
+
+/** Decodes one batch; throws on an unknown version, opcode or value tag, or truncated input. */
+export function decode(batch: Uint8Array): Op[] {
+  const view = new DataView(batch.buffer, batch.byteOffset, batch.byteLength);
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let at = 0;
+  const need = (size: number) => {
+    if (at + size > batch.length) throw new Error(`weft ops: truncated batch at byte ${at}`);
+  };
+  const u8 = () => {
+    need(1);
+    return batch[at++];
+  };
+  const u32 = () => {
+    need(4);
+    const value = view.getUint32(at, true);
+    at += 4;
+    return value;
+  };
+  const version = u8();
+  if (version !== VERSION) throw new Error(`weft ops: unsupported version ${version}`);
+  const ops: Op[] = [];
+  while (at < batch.length) {
+    const code = u8();
+    switch (code) {
+      case CREATE:
+        ops.push({ op: "create", scope: u32(), template: u32() });
+        break;
+      case SET: {
+        const scope = u32();
+        const slot = u32();
+        const tag = u8();
+        let value: Value;
+        if (tag === FALSE || tag === TRUE) {
+          value = tag === TRUE;
+        } else if (tag === NUMBER) {
+          need(8);
+          value = view.getFloat64(at, true);
+          at += 8;
+        } else if (tag === STRING) {
+          const length = u32();
+          need(length);
+          value = decoder.decode(batch.subarray(at, at + length));
+          at += length;
+        } else {
+          throw new Error(`weft ops: unknown value tag ${tag} at byte ${at - 1}`);
+        }
+        ops.push({ op: "set", scope, slot, value });
+        break;
+      }
+      case BRANCH:
+        ops.push({ op: "branch", scope: u32(), point: u32(), child: u32() });
+        break;
+      case ROWS: {
+        const scope = u32();
+        const point = u32();
+        const count = u32();
+        const children: number[] = [];
+        for (let i = 0; i < count; i++) children.push(u32());
+        ops.push({ op: "rows", scope, point, children });
+        break;
+      }
+      case ATTACH:
+        ops.push({ op: "attach", scope: u32(), point: u32(), child: u32() });
+        break;
+      default:
+        throw new Error(`weft ops: unknown opcode ${code} at byte ${at - 1}`);
+    }
+  }
+  return ops;
+}
+
+/** The text form of a value: `true` / `false`, a JS number, or a JSON string. */
+export function formatValue(value: Value): string {
+  return typeof value === "string" ? JSON.stringify(value) : String(value);
+}
+
+/** The text form of an op, e.g. `set 3 0 "milk"` or `rows 2 0 [4 5]`. */
+export function formatOp(op: Op): string {
+  switch (op.op) {
+    case "create":
+      return `create ${op.scope} ${op.template}`;
+    case "set":
+      return `set ${op.scope} ${op.slot} ${formatValue(op.value)}`;
+    case "branch":
+      return `branch ${op.scope} ${op.point} ${op.child}`;
+    case "rows":
+      return `rows ${op.scope} ${op.point} [${op.children.join(" ")}]`;
+    case "attach":
+      return `attach ${op.scope} ${op.point} ${op.child}`;
+  }
+}

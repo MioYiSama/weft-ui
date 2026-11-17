@@ -6,8 +6,8 @@
 //! import closure, so hosts only reference the entry module.
 //!
 //! The block code depends on the [`Mode`]: DOM blocks are written by a
-//! [`DomView`] (`weft-ui-codegen-web`), remote blocks hold plain data for a
-//! separate view layer ([`remote`]).
+//! [`DomView`] (`weft-ui-codegen-web`), remote blocks drive the scopes of
+//! the view protocol for a separate view layer ([`remote`]).
 
 pub mod blocks;
 pub mod expr;
@@ -22,6 +22,7 @@ use weft_ui_compiler::ir::{
     ComponentId, EventId, ModelId, Module, NodeKind, ParamKind, Program, Type,
 };
 use weft_ui_compiler::span::FileId;
+use weft_ui_compiler::view::ViewLayout;
 
 use blocks::{Consts, offset};
 use js::Code;
@@ -42,9 +43,10 @@ pub struct JsModule {
 pub enum Mode<'v> {
     /// Browser DOM through `view`; modules import each other as `.weft` files.
     Dom(&'v dyn DomView),
-    /// Data blocks for a separate view layer; modules import each other as
-    /// `.js` files at [`remote_module_path`].
-    Remote,
+    /// Scopes of the view protocol `layout`, rendered by a separate view
+    /// layer; modules import each other as `.js` files at
+    /// [`remote_module_path`].
+    Remote(&'v ViewLayout),
 }
 
 /// Writes the DOM create functions of components.
@@ -151,7 +153,7 @@ impl<'p> Links<'p> {
         let specifier = js::relative_specifier(&self.entry.path, &module.path);
         js::string(&match self.mode {
             Mode::Dom(_) => specifier,
-            Mode::Remote => remote_module_path(&specifier),
+            Mode::Remote(_) => remote_module_path(&specifier),
         })
     }
 
@@ -284,7 +286,9 @@ fn code(program: &Program, links: &Links<'_>, runtime: &str) -> String {
         components.line("");
         match links.mode {
             Mode::Dom(view) => view.component(program, id, &mut consts, &mut components),
-            Mode::Remote => remote::component(program, id, &mut consts, &mut components),
+            Mode::Remote(layout) => {
+                remote::component(program, layout, id, &mut consts, &mut components);
+            }
         }
         components.line("");
         host::app_class(program, id, links.mode, &mut converters, &mut components);

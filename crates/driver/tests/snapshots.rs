@@ -83,6 +83,24 @@ fn wechat() {
     check(Platform::Wechat);
 }
 
+/// The view protocol layout is the same for every non-Web platform.
+#[test]
+fn layout() {
+    let mut loader = MemoryLoader::new();
+    loader.insert("TodoList.weft", TODO_LIST);
+    let output = compile_app(&["TodoList.weft"], Platform::Wechat, &mut loader)
+        .unwrap_or_else(|err| panic!("{err}"));
+    let json = output.layout.expect("wechat has a layout").to_json();
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots/TodoList/layout.json");
+    if std::env::var_os("WEFT_UPDATE_SNAPSHOTS").is_some() {
+        fs::write(&path, &json).expect("snapshot is writable");
+        return;
+    }
+    let stored =
+        fs::read_to_string(&path).unwrap_or_else(|err| panic!("{}: {err}", path.display()));
+    assert_eq!(json, stored, "TodoList/layout.json");
+}
+
 #[test]
 fn native_platforms_have_no_backend_yet() {
     let mut loader = MemoryLoader::new();

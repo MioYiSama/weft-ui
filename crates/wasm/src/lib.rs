@@ -50,6 +50,11 @@ pub struct AppOutput {
     /// View file contents corresponding to `viewPaths`.
     #[wasm_bindgen(js_name = viewContents)]
     pub view_contents: Vec<String>,
+    /// View protocol layout as JSON; empty on errors and for `web`.
+    pub layout: String,
+    /// Hexadecimal layout hash; empty when there is no layout.
+    #[wasm_bindgen(js_name = layoutHash)]
+    pub layout_hash: String,
     /// Diagnostics with source locations and snippets; empty when there are none.
     pub diagnostics: String,
     /// Whether compilation reported any errors.
@@ -86,12 +91,17 @@ pub fn compile_app(
         .into_iter()
         .map(|file| (file.path, file.contents))
         .unzip();
+    let (layout, layout_hash) = output.layout.as_ref().map_or_else(Default::default, |l| {
+        (l.to_json(), format!("{:016x}", l.hash()))
+    });
     Ok(AppOutput {
         logic_sources,
         logic_code,
         logic_dts,
         view_paths,
         view_contents,
+        layout,
+        layout_hash,
         diagnostics: compilation.render_diagnostics(),
         has_errors: compilation.has_errors(),
         files: compilation

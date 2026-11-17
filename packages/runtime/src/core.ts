@@ -1,8 +1,8 @@
 /**
  * Backend-independent half of the runtime: reactive model storage, watches
  * that map model changes to dirty bits, the flush scheduler, expression
- * helpers, and event handler registration. `index.ts` (Web DOM) and `wx.ts`
- * (WeChat mini program) build their blocks on top of it.
+ * helpers, and event handler registration. `index.ts` (Web DOM) and
+ * `remote.ts` (view protocol scopes) build their blocks on top of it.
  */
 
 /* ------------------------------------------------------------------------ */

@@ -1,22 +1,29 @@
 //! WXML templates of the mini program backend.
 //!
 //! Every component becomes a `<template>` that renders the data object of one
-//! instance (keys are listed in [`weft_ui_codegen_js::remote`]); nested
-//! blocks are reached through their key (`b3.n7_0`, `r0.n9_0`). Slot content
-//! is rendered by a template of the calling component, chosen at run time
+//! instance (keys are listed in [`crate::elements`]); nested scopes are
+//! reached through their key (`b3.n7_0`, `r0.n9_0`). Slot content is
+//! rendered by a template of the calling component, chosen at run time
 //! through `t`, so all templates of the app live in one file.
 
-use weft_ui_codegen_js::remote::{
-    Target, Value, controlled_event, event_attr, handler_prop, prop_value, slot_template, target,
-};
-use weft_ui_compiler::ir::{Component, Element, NodeId, NodeKind, Program};
+use weft_ui_compiler::ir::{Component, ComponentId, Element, NodeId, NodeKind, Program};
+use weft_ui_compiler::view::ViewLayout;
+
+use crate::elements::{Target, Value, event_attr, prop_value, target};
+
+/// Template rendering the children a component call passes to a slot.
+pub(crate) fn slot_template(comp: &Component, node: NodeId) -> String {
+    format!("{}-s{}", comp.name, node.0)
+}
 
 /// Templates for every component of the program.
-pub(crate) fn templates(program: &Program) -> String {
+pub(crate) fn templates(program: &Program, layout: &ViewLayout) -> String {
     let mut out = String::new();
-    for comp in &program.components {
+    for (index, comp) in program.components.iter().enumerate() {
         let mut markup = Markup {
             program,
+            layout,
+            id: ComponentId(u32::try_from(index).expect("component ids fit in u32")),
             comp,
             slots: Vec::new(),
         };
@@ -58,6 +65,8 @@ fn is_void(element: Element) -> bool {
 
 struct Markup<'a> {
     program: &'a Program,
+    layout: &'a ViewLayout,
+    id: ComponentId,
     comp: &'a Component,
     /// Slot content templates found so far: name and body.
     slots: Vec<(String, String)>,
@@ -140,7 +149,7 @@ impl Markup<'_> {
         }
         let mut text = String::new();
         for (index, prop) in props.iter().enumerate() {
-            let Some(value) = prop_value(element, id, index, prop) else {
+            let Some(value) = prop_value(self.layout, self.id, element, id, index, prop) else {
                 continue;
             };
             let value = match value {
@@ -160,10 +169,8 @@ impl Markup<'_> {
                 }
             }
         }
-        let event = handler_prop(props)
-            .map(|prop| event_attr(element, prop.name))
-            .or_else(|| controlled_event(element));
-        if let Some(event) = event {
+        if self.layout.event_slot(self.id, id).is_some() {
+            let event = event_attr(element);
             attrs.push_str(&format!(
                 " {event}=\"$e\" data-h=\"{{{{{prefix}e{}}}}}\"",
                 id.0

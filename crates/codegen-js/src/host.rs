@@ -148,13 +148,13 @@ pub(crate) fn app_class(
             }
         }
     }
-    // Mini program views render the root through its template.
-    let template = match mode {
+    // Remote views check that they were generated from the same layout.
+    let hash = match mode {
         Mode::Dom(_) => String::new(),
-        Mode::Remote => format!(", {}", js::string(&comp.name)),
+        Mode::Remote(layout) => format!(", \"{:016x}\"", layout.hash()),
     };
     out.line(format!(
-        "constructor({}) {{ super({}$c, [{}]{template}); }}",
+        "constructor({}) {{ super({}$c, [{}]{hash}); }}",
         params.join(", "),
         comp.name,
         args.join(", ")
@@ -274,8 +274,8 @@ pub(crate) fn app_dts(program: &Program, id: ComponentId, mode: Mode<'_>, out: &
     ));
     match mode {
         Mode::Dom(_) => out.line("mount(target: Node): void;"),
-        Mode::Remote => {
-            out.line("/** Renders into a generated view component, e.g. `page.selectComponent(\"#view\")`. */");
+        Mode::Remote(_) => {
+            out.line("/** Renders into a view sink, or a generated mini program view component, e.g. `page.selectComponent(\"#view\")`. */");
             out.line("mount(view: object): void;");
         }
     }

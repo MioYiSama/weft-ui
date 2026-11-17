@@ -3,6 +3,8 @@
 //! [`check_many`] loads entry modules and their imports through a
 //! [`SourceLoader`], reports diagnostics, and on success yields the typed view
 //! IR ([`ir::Program`]) with dependency information for every binding.
+//! [`view::ViewLayout`] derives the view protocol layout from it for the
+//! platforms whose view layer is separate from the JS logic layer.
 //!
 //! Platform backends implement [`codegen::Codegen`] in their own crates; the
 //! `weft-ui-driver` crate dispatches a [`codegen::Platform`] to them.
@@ -16,6 +18,7 @@ mod report;
 mod sema;
 pub mod span;
 pub mod syntax;
+pub mod view;
 
 pub use diagnostic::{Diagnostic, Severity};
 pub use loader::{MemoryLoader, SourceLoader};

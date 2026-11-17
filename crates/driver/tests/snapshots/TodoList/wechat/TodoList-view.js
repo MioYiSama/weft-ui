@@ -1,3 +1,4 @@
-import { view } from "./weft-runtime/wx.js";
+import { view } from "./weft-runtime/wechat.js";
+import { layout } from "./weft-layout.js";
 
-Component(view(["TodoList"]));
+Component(view(layout));

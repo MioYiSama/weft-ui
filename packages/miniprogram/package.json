@@ -4,17 +4,14 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
     "./testing": "./src/testing.ts"
-  },
-  "bin": {
-    "weft-mp": "./src/cli.ts"
   },
   "scripts": {
     "test": "vitest run"
   },
   "dependencies": {
-    "@weft-ui/compiler": "workspace:*"
+    "@weft-ui/compiler": "workspace:*",
+    "@weft-ui/runtime": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

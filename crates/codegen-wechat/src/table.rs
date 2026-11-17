@@ -1,4 +1,4 @@
-//! The WeChat sink's table (`weft-layout.js`): for every layout template, the
+//! The WeChat sink's table embedded in `view.js`: for every layout template, the
 //! data keys of its value slots, event slots and mount points.
 //!
 //! Entry fields, all optional:
@@ -8,7 +8,7 @@
 //! | `n`   | WXML template rendering a component body as the view's root     |
 //! | `t`   | WXML template of slot content, stored in the scope's data as `t` |
 //! | `i`   | branch index of an `if` branch template                        |
-//! | `v`   | `[key, unit]` per value slot; unit `1` appends `px`, `2` maps a flag to `font-weight` |
+//! | `v`   | `[key, unit]` per value slot; unit `1` appends `px`, `2` maps a flag to `font-weight`, `3` validates a color |
 //! | `e`   | `[key, controlled value slot or -1]` per event slot; the key holds the handler id |
 //! | `p`   | key per mount point; `[indexKey, dataKey]` for branches         |
 //! | `d`   | constants that cannot be inlined into WXML, by key             |
@@ -20,17 +20,17 @@ use weft_ui_compiler::view::{PointKind, Template, TemplateKind, ViewLayout, View
 use crate::elements::{Target, inline, target, value_key};
 use crate::wxml::slot_template;
 
-/// The `weft-layout.js` module.
-pub(crate) fn module(program: &Program, layout: &ViewLayout) -> String {
+/// The table object literal passed to the view runtime.
+pub(crate) fn object(program: &Program, layout: &ViewLayout) -> String {
     let mut out = Code::default();
-    out.open("export const layout = {");
+    out.open("{");
     out.line(format!("hash: \"{:016x}\",", layout.hash()));
     out.open("templates: [");
     for template in layout.templates() {
         out.line(format!("{},", entry(program, template)));
     }
     out.close("],");
-    out.close("};");
+    out.close("}");
     let mut text = String::new();
     out.write_to(&mut text);
     text

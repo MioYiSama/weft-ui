@@ -5,16 +5,13 @@
  * view is reduced to the same neutral tree so they can be compared.
  */
 
-import { readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { compileApp } from "@weft-ui/compiler";
-import { build } from "@weft-ui/miniprogram";
-import { type Element as WxElement, loadView } from "@weft-ui/miniprogram/testing";
+import { type Element as WxElement, compile, loadView } from "@weft-ui/miniprogram/testing";
 import { tick as webTick } from "@weft-ui/runtime";
-import type { Value } from "@weft-ui/runtime/remote";
+import { type Value, tick as remoteTick } from "@weft-ui/runtime/remote";
 import { type Renderer, type ViewElement, render } from "@weft-ui/runtime/testing";
 import { Window } from "happy-dom";
 
@@ -123,14 +120,11 @@ export interface Built<A extends AppLike> {
 
 export async function buildFixture<A extends AppLike>(script: Script<A>): Promise<Built<A>> {
   const out = await mkdtemp(join(tmpdir(), "weft-conformance-"));
-  await build({ entries: [join(script.dir, script.entry)], outDir: out });
-  const output = await compileApp([script.entry], "wechat", (path) => readFileSync(join(script.dir, path), "utf8"));
-  if (output.hasErrors) throw new Error(output.diagnostics);
+  const { layout } = await compile({ entries: [join(script.dir, script.entry)], outDir: out });
   const stem = script.entry.replace(/\.weft$/, "");
   // Generated modules exist only after the build.
   const module = await import(pathToFileURL(join(out, `${stem}.js`)).href);
-  const runtime = await import(pathToFileURL(join(out, "weft-runtime/remote.js")).href);
-  return { out, layout: output.layout, App: module[script.component] as AppClass<A>, tick: runtime.tick };
+  return { out, layout, App: module[script.component] as AppClass<A>, tick: remoteTick };
 }
 
 function start<A extends AppLike>(script: Script<A>, App: AppClass<A>, target: unknown): { app: A; log: string[] } {
@@ -196,7 +190,7 @@ function wxClassify(e: WxElement | string): Classified<WxElement | string> | nul
 
 /** The mini program view component, rendered by the WXML interpreter. */
 export async function wechat<A extends AppLike>(script: Script<A>, built: Built<A>): Promise<Driver<A>> {
-  const view = await loadView(join(built.out, `${script.entry.replace(/\.weft$/, "")}-view`));
+  const view = loadView(built.out);
   const { app, log } = start(script, built.App, view);
   const find = (type: string, index: number) => {
     const found: [WxElement | string, string][] = [];

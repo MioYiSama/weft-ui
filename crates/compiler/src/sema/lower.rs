@@ -3,6 +3,7 @@
 use std::collections::BTreeSet;
 use std::ops::Range;
 
+use crate::color::Color;
 use crate::deps;
 use crate::diagnostic::Diagnostic;
 use crate::ir::{
@@ -316,6 +317,17 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             let (value, binding) = match prop.kind {
                 PropKind::Value(ty) => {
                     let expr = self.expr_as(&arg.value, &ty.to_type());
+                    if ty == builtins::PropType::Color
+                        && let ExprKind::Str(value) = &expr.kind
+                        && Color::parse(value).is_none()
+                    {
+                        self.error(
+                            arg.value.span,
+                            format!(
+                                "invalid color `{value}`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`"
+                            ),
+                        );
+                    }
                     let binding = self.bind(BindingKind::Prop(prop.name), expr_deps(&expr));
                     (PropValue::Expr(expr), binding)
                 }

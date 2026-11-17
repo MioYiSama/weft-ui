@@ -282,6 +282,17 @@ weft({
 - 原生平台在 bundle 之后调用 `hermesc -O -emit-binary` 生成字节码。`hermesc` 按宿主操作系统随 `@weft-ui/native-*` 的依赖分发。
 - 缺少工具链时给出可操作的提示，包括缺什么、怎么装。以后整理成 `weft doctor`。
 
+### P2 的实现
+
+Web 和小程序两条路径已按上文实现（`packages/vite-plugin`），细节和出入：
+
+- `vite build` 本身就是 app 构建：插件设置 `builder`，`buildApp` 依次构建选中的平台。`WEFT_PLATFORM` 只能取 `platforms` 选项里的平台。开发服务器和 Vitest 的环境（`client` / `ssr`）不以平台命名，按 `web` 编译，条件导出用 `weft-web`。
+- `web` 是普通的 Vite 应用：入口是项目根的 `index.html`，`build.outDir` 是整个 `apps/web/`（没有模板和生成区之分）。`run(app)` 挂载到 `#app`。
+- 非 web 平台的逻辑入口由新增选项 `entry` 指定（默认 `src/index.ts`）；小程序 bundle 为 CommonJS 单文件，`build.target` 暂为 `es2020`。原生平台的驱动还没有后端，构建会报 “platform has no backend yet”。
+- 小程序工程模板在 `packages/vite-plugin/templates/wechat/`：`app.js` 只做 `require("./weft/js/index.js")`，`app.json` 的唯一页面是生成区的 `weft/index`。bundle 里 `run(app)` 注册 `App({ weft: { view, mount, unmount } })`；生成的页面在 `onReady` 挂载、`onUnload` 卸载，生成的视图组件 `weft/view.js` 调用 `getApp().weft.view(表)`。布局哈希在表里，sink 在 `open` 时与逻辑层比对。模板只在 `apps/<platform>/` 除 `weft/` 外为空时复制，模板里的 JSON 用 `__WEFT_APP_NAME__` / `__WEFT_APP_ID__` 占位。
+- `@weft-ui/miniprogram` 的 `build()` 和 CLI `weft-mp` 已删除。测试工具 `@weft-ui/miniprogram/testing` 提供 `launch(apps/wechat)`，在 Node 里运行整个小程序工程；单元测试用 `compile` 写出不打包的逻辑模块，再用 `loadView` 加载视图组件。
+- `@weft-ui/platform`：异步 API 在不支持时返回以 `PlatformError` 拒绝的 Promise，同步 API 直接抛出；Web 上 `fetch` / `storage` 按特性检测判断是否支持。`platform.os` 是平台名，`version` 在 Web 上是 `navigator.userAgent`，在小程序上是微信版本号。`__WEFT_PLATFORM__` 的类型由 `@weft-ui/platform` 声明。
+
 ## 原生运行时
 
 ```
@@ -360,7 +371,7 @@ void weft_runtime_free(weft_runtime *rt);
 
 ## 里程碑
 
-M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0、P1 已完成）：
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P2 已完成）：
 
 | 阶段 | 内容                                                         | 验收标准                                                     |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |

@@ -139,6 +139,28 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 - `for` 必须有 `key`，类型为 `Int` 或 `String`；被迭代对象必须是数组。
 - 自定义组件不允许不经过 `if` / `for` 的递归实例化。
 
+### 内置元素与布局
+
+所有平台支持同一组内置元素和属性（P2 定稿）。只保证布局语义一致，外观贴近各平台原生风格。
+
+| 元素       | 属性（位置参数加粗）                                         | 事件                         | 子节点 |
+| ---------- | ------------------------------------------------------------ | ---------------------------- | ------ |
+| `Column`   | `padding` `gap` `width` `height`: `Int`，`background`: `Color` | —                            | 有     |
+| `Row`      | 同 `Column`                                                  | —                            | 有     |
+| `Text`     | **`value`**: `String`，`color`: `Color`，`size`: `Int`，`bold`: `Bool` | —                  | 无     |
+| `Button`   | `disabled`: `Bool`                                           | `onClick`                    | 有     |
+| `Input`    | **`value`**: `String`，`placeholder`: `String`，`disabled`: `Bool` | `onChange(String)`     | 无     |
+| `Checkbox` | **`checked`**: `Bool`，`disabled`: `Bool`                    | `onChange(Bool)`             | 无     |
+| `Image`    | **`src`**: `String`，`width` `height`: `Int`                 | —                            | 无     |
+
+所有元素另有 `onMount` / `onUnmount`。
+
+- **长度**：`Int`，单位是逻辑像素：iOS / macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px；小程序用 `px`，不用 `rpx`。
+- **`Column` / `Row`**：子元素沿主轴（`Column` 纵向、`Row` 横向）从起点依次排列，交叉轴对齐起点，不拉伸、不自动撑满；`gap` 是相邻子元素的间距，`padding` 是四边相同的内边距，语义同 CSS。平台默认值不同时由后端显式设置，例如 Web 和小程序写 `align-items:flex-start`，SwiftUI 写 `VStack(alignment: .leading)`。
+- **`width` / `height`**：固定尺寸；不写时由内容决定。
+- **颜色**：`Color` 属性接受 `#RGB`、`#RRGGBB` 或 `#RRGGBBAA`（十六进制，大小写不限），在类型检查中按 `String` 处理。字面量在编译期校验，不合法时报错，并预解析为 RGBA 写进视图布局；动态值由平台在运行时解析，不合法时按透明处理，在开发构建中打警告。
+- **`Image`**：`src` 是图片 URL，没有内置网络图片控件的平台由内核下载。
+
 ### 依赖分析
 
 - 依赖是“根 + 字段路径”：根为组件参数、`state` 或 `for` 变量，例如 `model.user.name`、`expanded`、`todo.name`。

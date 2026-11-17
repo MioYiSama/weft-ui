@@ -11,6 +11,7 @@ use weft_ui_codegen_js::blocks::{
 };
 use weft_ui_codegen_js::expr::{Env, expr};
 use weft_ui_codegen_js::js::{self, Code};
+use weft_ui_compiler::color::Color;
 use weft_ui_compiler::ir::{
     Component, ComponentId, DepRoot, Element, NodeId, NodeKind, Program, Prop, PropValue,
 };
@@ -58,7 +59,7 @@ enum Target {
     Disabled,
     Attr(&'static str),
     Px(&'static str),
-    Css(&'static str),
+    Color(&'static str),
     Bold,
 }
 
@@ -75,8 +76,8 @@ fn target(element: Element, prop: &str) -> Target {
         (_, "width") => Target::Px("width"),
         (_, "height") => Target::Px("height"),
         (_, "size") => Target::Px("font-size"),
-        (_, "background") => Target::Css("background"),
-        (_, "color") => Target::Css("color"),
+        (_, "background") => Target::Color("background"),
+        (_, "color") => Target::Color("color"),
         (_, "bold") => Target::Bold,
         (element, prop) => unreachable!("`{}` has no property `{prop}`", element.name()),
     }
@@ -85,8 +86,16 @@ fn target(element: Element, prop: &str) -> Target {
 /// Tag, fixed attributes and base style of an element.
 fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
     match element {
-        Element::Column => ("div", "", "display:flex;flex-direction:column"),
-        Element::Row => ("div", "", "display:flex;flex-direction:row"),
+        Element::Column => (
+            "div",
+            "",
+            "display:flex;flex-direction:column;align-items:flex-start",
+        ),
+        Element::Row => (
+            "div",
+            "",
+            "display:flex;flex-direction:row;align-items:flex-start",
+        ),
         Element::Text => ("span", "", ""),
         Element::Button => ("button", " type=\"button\"", ""),
         Element::Input => ("input", "", ""),
@@ -121,7 +130,10 @@ fn apply(target: Target, node: &str, value: &str) -> String {
             "{node}.style.setProperty({}, $.px({value}));",
             js::string(name)
         ),
-        Target::Css(name) => format!("{node}.style.setProperty({}, {value});", js::string(name)),
+        Target::Color(name) => format!(
+            "{node}.style.setProperty({}, $.color({value}));",
+            js::string(name)
+        ),
         Target::Bold => format!("{node}.style.fontWeight = {value} ? \"bold\" : \"\";"),
     }
 }
@@ -216,7 +228,11 @@ impl<'a> Gen<'a> {
                     attrs.push('"');
                 }
                 (Target::Px(name), Literal::Int(v)) => add_style(format!("{name}:{v}px")),
-                (Target::Css(name), Literal::Str(s)) => add_style(format!("{name}:{s}")),
+                (Target::Color(name), Literal::Str(s)) => add_style(format!(
+                    "{name}:{}",
+                    Color::parse(s)
+                        .expect("color literals were validated during semantic analysis")
+                )),
                 (target, _) => unreachable!("literal of the wrong type for {target:?}"),
             }
         }

@@ -1,4 +1,4 @@
-import * as $ from "./weft-runtime/remote.js";
+import * as $ from "@weft-ui/runtime/remote";
 
 export class Todo extends $.Model {
   static from(v) { return v instanceof Todo ? v : new Todo(v); }

@@ -83,6 +83,86 @@ fn wechat() {
     check(Platform::Wechat);
 }
 
+#[test]
+fn color_codegen_and_unified_wechat_view() {
+    let src = r##"
+component C(color: String) {
+  Column(background = color) {
+    Row(background = "#AbC") {
+      Text("x", color = color)
+      Text("y", color = "#12345680")
+    }
+  }
+}
+"##;
+    let mut loader = MemoryLoader::new();
+    loader.insert("ui/C.weft", src);
+    for platform in [Platform::Web, Platform::Wechat] {
+        let output =
+            compile_app(&["ui/C.weft"], platform, &mut loader).expect("platform has a backend");
+        assert!(
+            output.compilation.diagnostics.is_empty(),
+            "{}",
+            output.compilation.render_diagnostics()
+        );
+        let code = &output.logic[0].code;
+        if platform == Platform::Web {
+            assert_eq!(code.matches("$.color(").count(), 4);
+            assert!(code.contains("background:#aabbcc"));
+            assert!(code.contains("color:#12345680"));
+            assert_eq!(code.matches("align-items:flex-start").count(), 2);
+            continue;
+        }
+        assert!(code.starts_with("import * as $ from \"@weft-ui/runtime/remote\";"));
+        let files: BTreeMap<&str, &str> = output
+            .views
+            .iter()
+            .map(|file| (file.path.as_str(), file.contents.as_str()))
+            .collect();
+        assert_eq!(
+            files.keys().copied().collect::<Vec<_>>(),
+            [
+                "index.js",
+                "index.json",
+                "index.wxml",
+                "view.js",
+                "view.json",
+                "view.wxml"
+            ]
+        );
+        assert!(files["view.js"].starts_with("Component(getApp().weft.view({\n"));
+        assert!(files["view.js"].ends_with("}));\n"));
+        assert_eq!(files["view.js"].matches(", 3]").count(), 2);
+        assert!(!files["view.js"].contains("import "));
+        assert!(!files["view.js"].contains("require("));
+        assert!(files["view.wxml"].contains("background:#aabbcc"));
+        assert!(files["view.wxml"].contains("color:#12345680"));
+        assert_eq!(
+            files["view.wxml"].matches("align-items:flex-start").count(),
+            2
+        );
+        assert!(
+            files["index.js"].contains("getApp().weft.mount(this.selectComponent(\"#weft\"));")
+        );
+        assert!(files["index.js"].contains("getApp().weft.unmount();"));
+    }
+}
+
+#[test]
+fn remote_imports_preserve_weft_extensions() {
+    let mut loader = MemoryLoader::new();
+    loader.insert("ui/C.weft", "import \"./D.weft\"\ncomponent C() { D() }");
+    loader.insert("ui/D.weft", "component D() { Text(\"x\") }");
+    let output =
+        compile_app(&["ui/C.weft"], Platform::Wechat, &mut loader).expect("wechat has a backend");
+    assert!(
+        output.compilation.diagnostics.is_empty(),
+        "{}",
+        output.compilation.render_diagnostics()
+    );
+    assert!(output.logic[0].code.contains("from \"./D.weft\""));
+}
+
 /// The view protocol layout is the same for every non-Web platform.
 #[test]
 fn layout() {

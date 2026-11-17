@@ -10,6 +10,7 @@
 //! `weft-ui-driver` crate dispatches a [`codegen::Platform`] to them.
 
 pub mod codegen;
+pub mod color;
 mod deps;
 pub mod diagnostic;
 pub mod ir;

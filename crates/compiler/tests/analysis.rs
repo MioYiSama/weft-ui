@@ -32,6 +32,118 @@ fn diagnostics(files: &[(&str, &str)]) -> Vec<String> {
 }
 
 #[test]
+fn color_literals_accept_hex_formats() {
+    let src = r##"
+component C() {
+  Column(background = "#aBc") {
+    Row(background = "#AABBCCdd") {
+      Text("x", color = "#012345")
+    }
+  }
+}
+"##;
+    assert_eq!(diagnostics(&[("c.weft", src)]), Vec::<String>::new());
+}
+
+#[test]
+fn invalid_color_literals_report_the_value_span() {
+    let src = r#"component C() {
+  Column(background = "red") {
+    Text("x", color = "gray")
+  }
+}"#;
+    assert_eq!(
+        diagnostics(&[("c.weft", src)]),
+        [
+            "c.weft:2:23: invalid color `red`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`",
+            "c.weft:3:23: invalid color `gray`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`",
+        ]
+    );
+}
+
+#[test]
+fn dynamic_colors_accept_strings_without_literal_validation() {
+    let src = r#"
+component C(color: String) {
+  Column(background = color) { Text("x", color = color) }
+}
+"#;
+    assert_eq!(diagnostics(&[("c.weft", src)]), Vec::<String>::new());
+}
+
+#[test]
+fn layout_preserves_color_property_types_and_normalizes_constants() {
+    use weft_ui_compiler::color::Color;
+    use weft_ui_compiler::view::{Constant, ValueType, ViewLayout, ViewNodeKind};
+
+    let src = r##"
+component C(color: String) {
+  Column(background = "#AbC") {
+    Text("x", color = color)
+    Text("y", color = "#AABBCC80")
+  }
+}
+"##;
+    let compilation = compile(&[("c.weft", src)]);
+    let program = compilation
+        .program
+        .as_ref()
+        .expect("valid color props compile");
+    let layout = ViewLayout::new(program);
+    let template = &layout.templates()[0];
+    assert_eq!(template.values.len(), 1);
+    assert_eq!(template.values[0].prop, "color");
+    assert_eq!(template.values[0].ty, ValueType::Color);
+    let constants: Vec<&Constant> = template
+        .nodes
+        .iter()
+        .filter_map(|node| match &node.kind {
+            ViewNodeKind::Element { props, .. } => Some(props),
+            ViewNodeKind::Point(_) => None,
+        })
+        .flatten()
+        .filter(|prop| matches!(prop.name, "background" | "color"))
+        .map(|prop| &prop.value)
+        .collect();
+    assert_eq!(
+        constants,
+        [
+            &Constant::Color(Color {
+                r: 170,
+                g: 187,
+                b: 204,
+                a: 255
+            }),
+            &Constant::Color(Color {
+                r: 170,
+                g: 187,
+                b: 204,
+                a: 128
+            }),
+        ]
+    );
+    assert_eq!(constants[0].to_string(), "\"#aabbcc\"");
+    assert_eq!(constants[1].to_string(), "\"#aabbcc80\"");
+    assert!(layout.to_json().contains("\"type\": \"Color\""));
+}
+
+#[test]
+fn colors_still_require_string_values() {
+    let src = r#"component C() {
+  Column(background = 1) {
+    Text("x", color = false)
+  }
+}"#;
+    assert_eq!(
+        diagnostics(&[("c.weft", src)]),
+        [
+            "c.weft:2:23: mismatched types: expected `String`, found `Int`",
+            "c.weft:3:23: mismatched types: expected `String`, found `Bool`",
+        ]
+    );
+}
+
+#[test]
 fn demo_dependency_report() {
     let compilation = compile(&[("ui/TodoList.weft", DEMO)]);
     let program = compilation

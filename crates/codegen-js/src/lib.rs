@@ -44,8 +44,7 @@ pub enum Mode<'v> {
     /// Browser DOM through `view`; modules import each other as `.weft` files.
     Dom(&'v dyn DomView),
     /// Scopes of the view protocol `layout`, rendered by a separate view
-    /// layer; modules import each other as `.js` files at
-    /// [`remote_module_path`].
+    /// layer; modules import each other as `.weft` files for Vite to resolve.
     Remote(&'v ViewLayout),
 }
 
@@ -71,12 +70,6 @@ pub fn generate(program: &Program, file: FileId, runtime: &str, mode: Mode<'_>) 
         code: code(program, &links, runtime),
         dts: dts(program, &links),
     }
-}
-
-/// Path of the remote-mode JS module generated for the `.weft` file `path`.
-#[must_use]
-pub fn remote_module_path(path: &str) -> String {
-    format!("{}.js", path.strip_suffix(".weft").unwrap_or(path))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -150,11 +143,7 @@ impl<'p> Links<'p> {
     }
 
     fn specifier(&self, module: &Module) -> String {
-        let specifier = js::relative_specifier(&self.entry.path, &module.path);
-        js::string(&match self.mode {
-            Mode::Dom(_) => specifier,
-            Mode::Remote(_) => remote_module_path(&specifier),
-        })
+        js::string(&js::relative_specifier(&self.entry.path, &module.path))
     }
 
     fn is_own(&self, symbol: Symbol) -> bool {

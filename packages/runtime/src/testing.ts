@@ -23,7 +23,7 @@ export interface TemplateLayout {
   kind: "component" | "branch" | "row" | "slot";
   roots: number[];
   nodes: NodeLayout[];
-  values: { node: number; prop: string; type: "Int" | "Bool" | "String" }[];
+  values: { node: number; prop: string; type: "Int" | "Bool" | "String" | "Color" }[];
   events: { node: number; event: string; payload: string | null; controls: number | null }[];
   points: PointLayout[];
 }

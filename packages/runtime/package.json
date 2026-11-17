@@ -9,12 +9,7 @@
     "./wechat": "./src/wechat.ts",
     "./testing": "./src/testing.ts"
   },
-  "scripts": {
-    "build": "tsc -p tsconfig.wechat.json",
-    "test": "vitest run"
-  },
   "devDependencies": {
-    "typescript": "^7.0.2",
-    "vitest": "^5.1.0"
+    "typescript": "^7.0.2"
   }
 }

@@ -1,18 +1,28 @@
 /**
- * Headless stand-in for a generated view component, for tests that run
+ * Headless stand-in for the mini program framework, for tests that run
  * without WeChat DevTools.
  *
- * `loadView` imports the view component written by `build` (its `Component`
- * call is captured), records every `setData` payload, applies the paths to
- * the view data like the mini program framework does, and renders the
- * generated WXML against that data. The renderer covers the WXML subset the
- * compiler emits: `<template name/is/data>`, `wx:if` / `wx:elif` / `wx:else`,
- * `wx:for` with `wx:for-item`, and `{{path}}`, `{{path === n}}`, `{{true}}`
- * and `{{...path}}` expressions.
+ * - `launch` runs a whole mini program project as `WEFT_PLATFORM=wechat
+ *   vite build` leaves it in `apps/wechat/`: `app.js`, the first page of
+ *   `app.json` and the view component it uses.
+ * - `compile` writes the logic modules and the generated area of an app
+ *   without bundling, so tests can construct root components themselves;
+ *   `loadView` loads the view component of such an output directory.
+ *
+ * A view records every `setData` payload, applies the paths to its data
+ * like the framework does, and renders the generated WXML against that
+ * data. The renderer covers the WXML subset the compiler emits:
+ * `<template name/is/data>`, `wx:if` / `wx:elif` / `wx:else`, `wx:for` with
+ * `wx:for-item`, and `{{path}}`, `{{path === n}}`, `{{true}}` and
+ * `{{...path}}` expressions.
  */
 
-import { readFile } from "node:fs/promises";
-import { pathToFileURL } from "node:url";
+import { readFileSync, realpathSync } from "node:fs";
+import { mkdir, symlink, writeFile } from "node:fs/promises";
+import { dirname, extname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { compileApp } from "@weft-ui/compiler";
+import { view } from "@weft-ui/runtime/wechat";
 
 type Data = Record<string, unknown>;
 
@@ -27,6 +37,16 @@ interface ViewOptions {
   data: Data;
   lifetimes: { created(this: unknown): void; detached(this: unknown): void };
   methods: { $e(this: unknown, event: object): unknown };
+}
+
+interface PageOptions {
+  onLoad?(this: PageInstance, query: Data): void;
+  onReady?(this: PageInstance): void;
+  onUnload?(this: PageInstance): void;
+}
+
+interface PageInstance {
+  selectComponent(selector: string): TestView | null;
 }
 
 /** A mounted-looking view component instance. */
@@ -51,31 +71,159 @@ export interface TestView {
   detach(): void;
 }
 
-/**
- * Loads the view component at `path` (without extension, e.g.
- * `out/TodoList-view`). Modules it imports are shared with the test, so
- * import root components from the same output directory.
- */
-export async function loadView(path: string): Promise<TestView> {
-  const scope = globalThis as { Component?: (options: ViewOptions) => void };
-  const previous = scope.Component;
-  let options: ViewOptions | undefined;
-  scope.Component = (captured) => {
-    options = captured;
-  };
-  try {
-    // The path is only known at run time; a fresh query per load makes every
-    // view module run and register its own options.
-    await import(`${pathToFileURL(`${path}.js`).href}?view=${++loads}`);
-  } finally {
-    scope.Component = previous;
-  }
-  if (!options) throw new Error(`${path}.js did not call Component()`);
-  const templates = parseTemplates(await readFile(`${path}.wxml`, "utf8"));
-  return createView(options, templates);
+/* ---- Scripts ------------------------------------------------------------- */
+
+/** Framework globals of mini program scripts. */
+interface Globals {
+  App(options: Data): void;
+  Page(options: PageOptions): void;
+  Component(options: ViewOptions): void;
+  getApp(): Data | undefined;
+  wx: object;
 }
 
-let loads = 0;
+/**
+ * Runs the CommonJS script at `path` with the framework globals, resolving
+ * `require` relative to it like the mini program does.
+ */
+function run(path: string, globals: Globals, cache = new Map<string, { exports: unknown }>()): unknown {
+  const cached = cache.get(path);
+  if (cached) return cached.exports;
+  const module = { exports: {} as unknown };
+  cache.set(path, module);
+  const require = (specifier: string) => {
+    const target = resolve(dirname(path), specifier);
+    return run(extname(target) ? target : `${target}.js`, globals, cache);
+  };
+  const names = Object.keys(globals) as (keyof Globals)[];
+  // Script parameters shadow the test process's globals, as the framework's module wrapper does.
+  new Function("require", "module", "exports", ...names, readFileSync(path, "utf8"))(
+    require, module, module.exports, ...names.map((name) => globals[name]),
+  );
+  return module.exports;
+}
+
+/** Globals that record what the scripts register. */
+function framework(wx: object) {
+  const registered: { app?: Data; page?: PageOptions; component?: ViewOptions } = {};
+  const globals: Globals = {
+    App: (options) => {
+      registered.app = options;
+    },
+    Page: (options) => {
+      registered.page = options;
+    },
+    Component: (options) => {
+      registered.component = options;
+    },
+    getApp: () => registered.app,
+    wx,
+  };
+  return { registered, globals };
+}
+
+/** Runs the view component script at `path` and renders its WXML. */
+function component(path: string, globals: Globals, registered: { component?: ViewOptions }): TestView {
+  registered.component = undefined;
+  run(`${path}.js`, globals);
+  if (!registered.component) throw new Error(`${path}.js did not call Component()`);
+  return createView(registered.component, parseTemplates(readFileSync(`${path}.wxml`, "utf8")));
+}
+
+/** A launched mini program. */
+export interface MiniProgram {
+  /** What `app.js` passed to `App()`. */
+  app: Data;
+  /** The view component instance on the first page. */
+  view: TestView;
+  /** Runs the page's `onUnload`. */
+  unload(): void;
+}
+
+/**
+ * Launches the mini program project in `project`: runs `app.js`, then loads
+ * the first page of `app.json` with its view component and runs the page's
+ * `onLoad` and `onReady`. `wx` is the API object the scripts see.
+ */
+export function launch(project: string, options: { wx?: object } = {}): MiniProgram {
+  const { registered, globals } = framework(options.wx ?? {});
+  run(join(project, "app.js"), globals);
+  const app = registered.app;
+  if (!app) throw new Error("app.js did not call App()");
+  const config = JSON.parse(readFileSync(join(project, "app.json"), "utf8")) as { pages: string[] };
+  const page = join(project, config.pages[0]!);
+  const usingComponents: Record<string, string> =
+    JSON.parse(readFileSync(`${page}.json`, "utf8")).usingComponents ?? {};
+  const components = new Map<string, TestView>();
+  let view: TestView | undefined;
+  for (const node of parse(readFileSync(`${page}.wxml`, "utf8"))) {
+    if (typeof node === "string" || !(node.tag in usingComponents)) continue;
+    view = component(resolve(dirname(page), usingComponents[node.tag]!), globals, registered);
+    if (node.attrs.id) components.set(`#${node.attrs.id}`, view);
+  }
+  if (!view) throw new Error(`${page}.wxml uses no component`);
+  run(`${page}.js`, globals);
+  const pageOptions = registered.page;
+  if (!pageOptions) throw new Error(`${page}.js did not call Page()`);
+  const instance: PageInstance = { selectComponent: (selector) => components.get(selector) ?? null };
+  pageOptions.onLoad?.call(instance, {});
+  pageOptions.onReady?.call(instance);
+  return { app, view, unload: () => pageOptions.onUnload?.call(instance) };
+}
+
+/* ---- Unbundled output ---------------------------------------------------- */
+
+/** Sources share a root; generated paths preserve their layout beneath outDir. */
+export interface CompileOptions {
+  entries: string[];
+  outDir: string;
+  /** Defaults to the first entry's directory. */
+  root?: string;
+}
+
+// Path arithmetic instead of `new URL`: DOM test environments replace the global `URL`.
+const runtime = realpathSync(join(dirname(fileURLToPath(import.meta.url)), "../node_modules/@weft-ui/runtime"));
+
+/**
+ * Compiles an app for the mini program into `outDir`: every logic module at
+ * `X.js` (its `.weft` imports pointed at the `.js` files), the generated
+ * area (`view.*`, `index.*`), and a `node_modules` link to
+ * `@weft-ui/runtime`, so the modules resolve the same runtime instance as
+ * the test. Throws rendered diagnostics on errors; returns the layout JSON.
+ */
+export async function compile(options: CompileOptions): Promise<{ layout: string }> {
+  const root = resolve(options.root ?? dirname(resolve(options.entries[0]!)));
+  const entries = options.entries.map((entry) => relative(root, resolve(entry)).replaceAll("\\", "/"));
+  const output = await compileApp(entries, "wechat", (path) => readFileSync(join(root, path), "utf8"));
+  if (output.hasErrors) throw new Error(output.diagnostics);
+  const files = new Map<string, string>();
+  for (const module of output.logic) {
+    const code = module.code.replace(/(from\s*["'][^"']*)\.weft(["'])/g, "$1.js$2");
+    files.set(module.source.replace(/\.weft$/, ".js"), code);
+  }
+  for (const file of output.views) files.set(file.path, file.contents);
+  for (const [path, contents] of files) {
+    const target = join(options.outDir, path);
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, contents);
+  }
+  const link = join(options.outDir, "node_modules/@weft-ui/runtime");
+  await mkdir(dirname(link), { recursive: true });
+  await symlink(runtime, link, "junction");
+  return { layout: output.layout };
+}
+
+/**
+ * Loads the view component written by `compile` into `dir`, backed by the
+ * WeChat sink of `@weft-ui/runtime/wechat`. Mount root components into it.
+ */
+export function loadView(dir: string): TestView {
+  const { registered, globals } = framework({});
+  globals.getApp = () => ({ weft: { view } });
+  return component(join(dir, "view"), globals, registered);
+}
+
+/* ---- View component ------------------------------------------------------ */
 
 function createView(options: ViewOptions, templates: Templates): TestView {
   const view: TestView & Data = {

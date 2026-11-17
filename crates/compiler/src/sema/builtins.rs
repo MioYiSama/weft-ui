@@ -8,6 +8,7 @@ pub(crate) enum PropType {
     Int,
     Bool,
     String,
+    Color,
 }
 
 impl PropType {
@@ -15,7 +16,7 @@ impl PropType {
         match self {
             PropType::Int => Type::Int,
             PropType::Bool => Type::Bool,
-            PropType::String => Type::String,
+            PropType::String | PropType::Color => Type::String,
         }
     }
 }
@@ -87,7 +88,7 @@ const LAYOUT: [PropSpec; 5] = [
     value("gap", PropType::Int),
     value("width", PropType::Int),
     value("height", PropType::Int),
-    value("background", PropType::String),
+    value("background", PropType::Color),
 ];
 
 pub(crate) struct ElementSpec {
@@ -115,7 +116,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 7] = [
         name: "Text",
         props: &[
             main_value("value", PropType::String),
-            value("color", PropType::String),
+            value("color", PropType::Color),
             value("size", PropType::Int),
             value("bold", PropType::Bool),
         ],
@@ -162,6 +163,19 @@ pub(crate) const ELEMENTS: [ElementSpec; 7] = [
 
 pub(crate) fn element(name: &str) -> Option<&'static ElementSpec> {
     ELEMENTS.iter().find(|e| e.name == name)
+}
+
+/// Declared value type of a built-in element property.
+pub(crate) fn prop_type(element: Element, name: &str) -> PropType {
+    ELEMENTS
+        .iter()
+        .find(|spec| spec.element == element)
+        .and_then(|spec| spec.props.iter().find(|prop| prop.name == name))
+        .and_then(|prop| match prop.kind {
+            PropKind::Value(ty) => Some(ty),
+            _ => None,
+        })
+        .expect("every element value property has a declared type")
 }
 
 impl Element {

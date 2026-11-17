@@ -6,7 +6,8 @@
 //! template holds the static element tree with constants inlined, plus the
 //! dynamic parts the logic layer drives at run time:
 //!
-//! - value slots: dynamic properties and text, written by `set` ops;
+//! - value slots: dynamic properties and text, written by `set` ops; color
+//!   properties have semantic type `Color` and travel as strings;
 //! - event slots: user events reported back with `dispatch`;
 //! - mount points: where child scopes are inserted by `branch`, `rows` and
 //!   `attach` ops.
@@ -17,9 +18,11 @@
 
 use std::fmt::{self, Write as _};
 
+use crate::color::Color;
 use crate::ir::{
-    Component, ComponentId, Element, Expr, ExprKind, NodeId, NodeKind, Program, PropValue, Type,
+    Component, ComponentId, Element, Expr, ExprKind, NodeId, NodeKind, Program, PropValue,
 };
+use crate::sema::builtins::{self, PropType};
 
 /// Index into [`ViewLayout::templates`]; the same number the logic layer
 /// sends in `create` ops.
@@ -105,6 +108,8 @@ pub enum Constant {
     Int(i64),
     Bool(bool),
     String(String),
+    /// A validated color, formatted as normalized lowercase hex.
+    Color(Color),
 }
 
 /// Type of the values a slot receives or an event carries.
@@ -113,15 +118,16 @@ pub enum ValueType {
     Int,
     Bool,
     String,
+    Color,
 }
 
 impl ValueType {
-    fn of(ty: &Type) -> Self {
+    fn of(ty: PropType) -> Self {
         match ty {
-            Type::Int => ValueType::Int,
-            Type::Bool => ValueType::Bool,
-            Type::String => ValueType::String,
-            other => unreachable!("element properties are scalars, found {other:?}"),
+            PropType::Int => ValueType::Int,
+            PropType::Bool => ValueType::Bool,
+            PropType::String => ValueType::String,
+            PropType::Color => ValueType::Color,
         }
     }
 
@@ -131,6 +137,7 @@ impl ValueType {
             ValueType::Int => "Int",
             ValueType::Bool => "Bool",
             ValueType::String => "String",
+            ValueType::Color => "Color",
         }
     }
 }
@@ -471,6 +478,7 @@ impl fmt::Display for Constant {
             Constant::Int(v) => write!(f, "{v}"),
             Constant::Bool(v) => write!(f, "{v}"),
             Constant::String(s) => f.write_str(&quote(s)),
+            Constant::Color(color) => write!(f, "\"{color}\""),
         }
     }
 }
@@ -494,12 +502,15 @@ fn controlled_prop(element: Element) -> Option<&'static str> {
 /// The handler property reporting user edits of a controlled element.
 const EDIT_EVENT: &str = "onChange";
 
-fn constant(expr: &Expr) -> Option<Constant> {
+fn constant(expr: &Expr, ty: PropType) -> Option<Constant> {
     match &expr.kind {
+        ExprKind::Str(s) if ty == PropType::Color => Some(Constant::Color(
+            Color::parse(s).expect("color literals were validated during semantic analysis"),
+        )),
         ExprKind::Str(s) => Some(Constant::String(s.clone())),
         ExprKind::Int(v) => Some(Constant::Int(*v)),
         ExprKind::Bool(v) => Some(Constant::Bool(*v)),
-        ExprKind::Coerce { expr, .. } => constant(expr),
+        ExprKind::Coerce { expr, .. } => constant(expr, ty),
         _ => None,
     }
 }
@@ -594,8 +605,9 @@ impl Builder<'_> {
                             None
                         }
                         PropValue::Expr(value) => {
+                            let ty = builtins::prop_type(*element, prop.name);
                             let fixed = (prop.binding.is_none() && controlled != Some(prop.name))
-                                .then(|| constant(value))
+                                .then(|| constant(value, ty))
                                 .flatten();
                             match fixed {
                                 Some(value) => {
@@ -610,10 +622,10 @@ impl Builder<'_> {
                                     draft.values.push(ValueSlot {
                                         node: local,
                                         prop: prop.name,
-                                        ty: ValueType::of(&value.ty),
+                                        ty: ValueType::of(ty),
                                     });
                                     if controlled == Some(prop.name) {
-                                        edited = Some((slot, ValueType::of(&value.ty)));
+                                        edited = Some((slot, ValueType::of(ty)));
                                     }
                                     Some(slot)
                                 }

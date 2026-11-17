@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, afterEach, beforeAll, expect, test } from "vitest";
-import { build } from "../src/index.ts";
-import { loadView } from "../src/testing.ts";
+import { tick } from "@weft-ui/runtime/remote";
+import { compile, loadView } from "../src/testing.ts";
 
 const fixtures = fileURLToPath(new URL("../../vite-plugin/test/fixtures/", import.meta.url));
 
@@ -22,14 +22,12 @@ interface TodoList {
 
 let out: string;
 let TodoList: new (model: TodoListModel) => TodoList;
-let tick: () => Promise<void>;
 
 beforeAll(async () => {
   out = await mkdtemp(join(tmpdir(), "weft-wx-todo-"));
-  await build({ entries: [join(fixtures, "TodoList.weft")], outDir: out });
+  await compile({ entries: [join(fixtures, "TodoList.weft")], outDir: out });
   // Generated modules exist only after the build.
   ({ TodoList } = await import(pathToFileURL(join(out, "TodoList.js")).href));
-  ({ tick } = await import(pathToFileURL(join(out, "weft-runtime/remote.js")).href));
 });
 
 afterAll(async () => {
@@ -44,7 +42,7 @@ afterEach(() => {
 
 /** Mounts the fixture and waits for the first `setData`. */
 async function mount(options: { handlers?: boolean } = {}) {
-  const view = await loadView(join(out, "TodoList-view"));
+  const view = loadView(out);
   const app = new TodoList({
     draft: "",
     todos: [

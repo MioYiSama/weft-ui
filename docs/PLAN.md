@@ -298,19 +298,20 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 
 | 位置                                    | 作用                                                                                           |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `crates/codegen-wechat` | 每个 `.weft` 生成 `X.js` + `X.d.ts`；每个入口另生成视图组件 `X-view.{js,json,wxml}`；整个应用一份 `weft-layout.js`（模板到 `setData` key 的映射表，供 sink 使用） |
+| `crates/codegen-wechat` | 每个 `.weft` 生成一个 remote 模式逻辑模块（由 Vite 打进 `apps/wechat/weft/js/index.js`）；生成区另有整个应用共用的视图组件 `view.{js,json,wxml}`（`view.js` 内嵌模板到 `setData` key 的映射表）和页面 `index.{js,json,wxml}`（P2 起） |
 | `crates/wasm`                           | 导出 `compileApp(entries, "wechat", load)`                                                |
-| `packages/runtime/src/remote.ts` / `wechat.ts` | 通用块运行时（产出[视图协议](PROTOCOL.md) ops）/ 小程序 sink（ops → `setData`）和视图组件 `view()`；与 `core.ts` 一起编译到 `packages/miniprogram/runtime/`（P1 起，原 `wx.ts`） |
-| `packages/miniprogram`                  | `@weft-ui/miniprogram`：`build()` 与 CLI `weft-mp`；`./testing` 提供 Node 下的 WXML 解释器和 `setData` 记录 |
+| `packages/runtime/src/remote.ts` / `wechat.ts` | 通用块运行时（产出[视图协议](PROTOCOL.md) ops）/ 小程序 sink（ops → `setData`）和视图组件 `view()`（P1 起，原 `wx.ts`） |
+| `packages/platform`                     | `@weft-ui/platform` 的小程序实现：`run(app)` 注册 `App({ weft })`，页面和视图组件通过 `getApp().weft` 挂载 |
+| `packages/miniprogram`                  | `@weft-ui/miniprogram/testing`：Node 下的小程序框架替身（`launch` 运行整个 `apps/wechat/`）、`compile` / `loadView`、WXML 解释器和 `setData` 记录 |
 | `packages/miniprogram/test`            | 小程序端到端测试，含 TodoList，逐条断言 `setData` 负载                                      |
 
-构建：`pnpm build:wasm` 后可用 `weft-mp --out <输出目录> <入口.weft>`，同时复制 runtime 到 `weft-runtime/`。修改 `packages/runtime` 后运行 `pnpm build:runtime` 重新生成 `packages/miniprogram/runtime/`。
+构建：`WEFT_PLATFORM=wechat vite build`（见 [PLAN-v2.md 的构建](PLAN-v2.md#构建vite-集成)），用微信开发者工具打开 `apps/wechat/`。
 
 宿主约定：
 
-- 生成的模块与 Web 后端导出相同的 model 类和根组件类（同一份 `.d.ts` 约定），区别只有 `mount(view)`：参数是页面里 `X-view` 组件的实例，如 `app.mount(this.selectComponent("#todo"))`。页面在 `usingComponents` 中引用 `weft/X-view`。
+- 生成的模块与 Web 后端导出相同的 model 类和根组件类（同一份 `.d.ts` 约定），区别只有 `mount(view)`：参数是视图组件的实例。应用调用 `@weft-ui/platform` 的 `run(app)`，生成的页面在 `onReady` 里把 app 挂到页面上的 `<weft-view id="weft">`。
 - 视图组件卸载时自动 `unmount`；`Input` / `Checkbox` 仍是受控的。事件分发后同步 flush：宿主没有接受的输入，事件返回值把输入框恢复成绑定值；没有接受的开关通过两次 `setData` 切回原值。
-- 每个入口的整个组件闭包生成在一个 WXML 里（WXML 的 `import` 不传递，插槽要用动态 `<template is>` 引用调用方的模板）。
+- 整个应用的组件生成在一个 WXML 里（WXML 的 `import` 不传递，插槽要用动态 `<template is>` 引用调用方的模板）。
 
 数据布局（`N` 是 IR 中的节点编号）：
 

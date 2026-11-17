@@ -27,7 +27,7 @@ JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块�
 
 - **模板编号**：先是每个组件体，按 Program 中组件的顺序，所以模板 `i` 就是组件 `i` 的组件体；之后按出现顺序是各组件内的 `if` 分支（每个分支一个）、`for` 行体和插槽内容。`label` 只用于调试：`TodoList`、`TodoList:if8.0`（节点 8 的第 0 个分支）、`TodoList:for7`、`Board:slot12`。
 - **节点**：`nodes` 是模板内的局部节点表，`roots` 是顶层节点。元素节点带静态属性 `props`（没有绑定的字面量，平台直接内联进模板，不占槽位）和子节点；`{"point": n}` 是挂载点 `n` 在树中的位置。
-- **值槽** `values[i]`：节点的一个动态属性，`type` 是 `Int` / `Bool` / `String`。受控属性（`Input.value`、`Checkbox.checked`）即使是常量也总是值槽。
+- **值槽** `values[i]`：节点的一个动态属性，`type` 是元素属性声明的类型：`Int` / `Bool` / `String` / `Color`。`Color` 槽的值是字符串，由平台解析（规则见 [GRAMMAR.md 的内置元素与布局](GRAMMAR.md#内置元素与布局)）；静态颜色已在编译期校验，`props` 里写成规范化的 `#rrggbb` 或 `#rrggbbaa`。受控属性（`Input.value`、`Checkbox.checked`）即使是常量也总是值槽。
 - **事件槽** `events[i]`：节点的一个事件属性，`payload` 是载荷类型（`null` 表示无载荷）。`Input` / `Checkbox` 总有 `onChange` 事件槽，`controls` 是它控制的值槽下标，其余事件为 `null`。生命周期属性（`onMount` / `onUnmount`）由 JS 处理，不进入布局。
 - **挂载点** `points[i]`：`branch`（`templates` 依次是各分支的模板）、`list`（`template` 是行体）、`instance`（`template` 是被实例化组件的组件体）或 `slot`（插槽内容由使用方提供，可以是任意 `slot` 种类的模板）。
 - **哈希**：去掉 `hash` 字段后的 JSON 的 FNV-1a 64 位哈希，16 位十六进制。它同时写进 JS 逻辑（`App` 构造参数）和平台视图，sink 在 `open` 时比对，不一致直接报错。

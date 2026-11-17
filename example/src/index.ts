@@ -1,17 +1,18 @@
 import { App } from "./App.weft";
-// 将平台API都抽象出来
-import { run, fetch } from "@weft-ui/platform";
+// Platform APIs share one signature everywhere; unsupported ones reject with PlatformError.
+import { run, storage } from "@weft-ui/platform";
 
 const app = new App({
   clicked: false,
 });
 
-app.onMount(async (model, event) => {
-  await fetch("https://example.com");
+app.onMount(async (model) => {
+  model.clicked = (await storage.get("clicked")) === "true";
 });
 
-app.onClick((model, event) => {
+app.onClick((model) => {
   model.clicked = true;
+  void storage.set("clicked", "true");
 });
 
 run(app);

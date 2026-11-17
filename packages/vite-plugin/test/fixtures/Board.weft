@@ -6,7 +6,7 @@ component ItemRow(item: Item, prefix: String) {
     Checkbox(item.done, onChange = Toggle(item.id, !item.done))
     Text("${prefix}${item.label}")
     for (tag in item.tags; key = tag) {
-      Text(tag, color = "gray")
+      Text(tag, color = "#808080")
     }
   }
 }

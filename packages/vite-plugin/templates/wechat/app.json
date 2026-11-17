@@ -1,0 +1,6 @@
+{
+  "pages": ["weft/index"],
+  "window": {
+    "navigationBarTitleText": "__WEFT_APP_NAME__"
+  }
+}

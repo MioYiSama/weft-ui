@@ -1,5 +1,0 @@
-import "../x.weft"
-
-component Main() {
-  Text("outside")
-}

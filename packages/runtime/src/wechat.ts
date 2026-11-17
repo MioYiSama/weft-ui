@@ -12,6 +12,7 @@
  * `(scope, event slot)`.
  */
 
+import { color } from "./core.ts";
 import type { Session, Sink, Value } from "./remote.ts";
 
 type Data = Record<string, unknown>;
@@ -70,6 +71,7 @@ interface Scope {
 
 const PX = 1;
 const BOLD = 2;
+const COLOR = 3;
 
 /** Renders one app into a view component through `setData`. */
 export class WechatSink implements Sink {
@@ -133,7 +135,10 @@ export class WechatSink implements Sink {
   set(id: number, slot: number, value: Value): void {
     const scope = this.#scope(id);
     const [key, unit] = scope.keys.v![slot];
-    scope.o[key] = unit === PX ? `${value}px` : unit === BOLD ? (value ? "bold" : "normal") : value;
+    scope.o[key] = unit === PX ? `${value}px`
+      : unit === BOLD ? (value ? "bold" : "normal")
+      : unit === COLOR ? color(value as string)
+      : value;
     if (!scope.fresh) this.#pend(scope, key);
   }
 

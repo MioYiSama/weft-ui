@@ -30,7 +30,7 @@ pub(crate) enum Target {
 /// Conversion of a style value to CSS, done by the sink.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Unit {
-    Raw,
+    Color,
     Px,
     Bold,
 }
@@ -39,7 +39,7 @@ impl Unit {
     /// Code of the unit in the sink's table.
     pub(crate) fn code(self) -> u8 {
         match self {
-            Unit::Raw => 0,
+            Unit::Color => 3,
             Unit::Px => 1,
             Unit::Bold => 2,
         }
@@ -59,8 +59,8 @@ pub(crate) fn target(element: Element, prop: &str) -> Target {
         (_, "width") => Target::Style("width", Unit::Px),
         (_, "height") => Target::Style("height", Unit::Px),
         (_, "size") => Target::Style("font-size", Unit::Px),
-        (_, "background") => Target::Style("background", Unit::Raw),
-        (_, "color") => Target::Style("color", Unit::Raw),
+        (_, "background") => Target::Style("background", Unit::Color),
+        (_, "color") => Target::Style("color", Unit::Color),
         (_, "bold") => Target::Style("font-weight", Unit::Bold),
         (element, prop) => unreachable!("`{}` has no property `{prop}`", element.name()),
     }
@@ -102,9 +102,8 @@ fn markup_safe(s: &str) -> bool {
 /// Markup text of a constant, or `None` if it must be sent as data.
 pub(crate) fn inline(target: Target, constant: &Constant) -> Option<String> {
     match (target, constant) {
-        (Target::Text | Target::Attr(_) | Target::Style(_, Unit::Raw), Constant::String(s)) => {
-            markup_safe(s).then(|| s.clone())
-        }
+        (Target::Text | Target::Attr(_), Constant::String(s)) => markup_safe(s).then(|| s.clone()),
+        (Target::Style(_, Unit::Color), Constant::Color(color)) => Some(color.to_string()),
         (Target::Flag(_), Constant::Bool(b)) => Some(b.to_string()),
         (Target::Style(_, Unit::Px), Constant::Int(v)) => Some(format!("{v}px")),
         (Target::Style(_, Unit::Bold), Constant::Bool(b)) => {

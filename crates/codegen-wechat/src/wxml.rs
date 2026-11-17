@@ -48,8 +48,16 @@ fn template(name: &str, body: &str, out: &mut String) {
 /// Tag, fixed attributes and base style of an element.
 fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
     match element {
-        Element::Column => ("view", "", "display:flex;flex-direction:column"),
-        Element::Row => ("view", "", "display:flex;flex-direction:row"),
+        Element::Column => (
+            "view",
+            "",
+            "display:flex;flex-direction:column;align-items:flex-start",
+        ),
+        Element::Row => (
+            "view",
+            "",
+            "display:flex;flex-direction:row;align-items:flex-start",
+        ),
         Element::Text => ("text", "", ""),
         // Mini buttons are centered with auto margins by default.
         Element::Button => ("button", " size=\"mini\"", "margin:0"),

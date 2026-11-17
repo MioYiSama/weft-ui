@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, afterEach, beforeAll, expect, test } from "vitest";
-import { build } from "../src/index.ts";
-import { type Element, type TestView, loadView } from "../src/testing.ts";
+import { tick } from "@weft-ui/runtime/remote";
+import { type Element, type TestView, compile, loadView } from "../src/testing.ts";
 
 // The Web backend's feature fixture: nested components, slots, defaults,
 // lifecycle events, optional models and `if / else if / else`.
@@ -31,14 +31,12 @@ interface Board {
 
 let out: string;
 let Board: new (model: BoardModel) => Board;
-let tick: () => Promise<void>;
 
 beforeAll(async () => {
   out = await mkdtemp(join(tmpdir(), "weft-wx-"));
-  await build({ entries: [join(fixtures, "Board.weft")], outDir: out });
+  await compile({ entries: [join(fixtures, "Board.weft")], outDir: out });
   // Generated modules exist only after the build.
   ({ Board } = await import(pathToFileURL(join(out, "Board.js")).href));
-  ({ tick } = await import(pathToFileURL(join(out, "weft-runtime/remote.js")).href));
 });
 
 afterAll(async () => {
@@ -51,7 +49,7 @@ afterEach(() => {
 });
 
 async function mount(options: { acceptToggles?: boolean } = {}) {
-  const view = await loadView(join(out, "Board-view"));
+  const view = loadView(out);
   const app = new Board({
     owner: null,
     note: { text: "note" },
@@ -112,9 +110,9 @@ test("renders nested components, slots and defaults", async () => {
   const title = view.all("text").find((t) => text(t) === "first")!;
   expect(title.attrs.style).toBe("font-weight:bold");
   const card = view.all("view").find((v) => String(v.attrs.style).includes("padding"))!;
-  expect(card.attrs.style).toBe("display:flex;flex-direction:column;padding:4px");
+  expect(card.attrs.style).toBe("display:flex;flex-direction:column;align-items:flex-start;padding:4px");
   const tag = view.all("text").find((t) => text(t) === "x")!;
-  expect(tag.attrs.style).toBe("color:gray");
+  expect(tag.attrs.style).toBe("color:#808080");
   expect(view.all("switch").map((s) => s.attrs.checked)).toEqual([false, true, false]);
 });
 

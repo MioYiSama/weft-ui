@@ -1,5 +1,0 @@
-import "./shared/models.weft"
-
-component Secondary(item: Item) {
-  Text(item.label)
-}

@@ -325,7 +325,7 @@ app.on_submit_async(|model, e| async move {
 
 JS 宿主约定（在上文 Demo 基础上的具体化）：
 
-- model 编译成带 getter/setter 的类，构造时把宿主传入的普通对象（含嵌套 model 和数组）转换成实例。setter 比较新旧值，值变了才通知。
+- model 编译成带 getter/setter 的类，构造时把宿主传入的普通对象（含嵌套 model 和数组）转换成实例。setter 比较新旧值，值变了才通知。实例的 `toJSON()` 返回按字段名组织的普通对象。
 - 数组字段在 `.d.ts` 中是 `readonly T[]`，运行时被冻结：修改列表必须赋新数组（如 `filter`、展开），`push` 会直接抛 `TypeError`，不会出现改了却不刷新的情况。数组元素本身仍可原地修改字段。
 - 根组件构造参数按声明顺序排列（`Children` 参数除外），有默认值的参数可以省略。`app.model` 和处理器的第一个参数都是第一个参数的值。
 - `onXxx(handler)` 返回取消注册的函数；处理器可以是 `async`。另有 `app.unmount()`，以及 `tick()`（等待下一次 flush 完成，测试中常用）。
@@ -337,6 +337,51 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 - model 实例按字段通知订阅者（watch）：非空嵌套 model 逐字段订阅；`T?` 型 model 整体占一位，并深度订阅其中可达的 model；数组只靠字段 setter 检测，元素变化由各 `for` 行对自己的元素订阅。
 - 每个块只在祖先 scope 的脏位与块内绑定的依赖位有交集时才进入；行内元素字段变化只更新这一行。列表按 key 对齐：复用的行接收新元素时只标记值变了的字段；移动行时只移动最长递增子序列之外的行。
 - 事件参数和 key 在触发或对齐时按当前值求值，所以 DOM 后端不使用 `Handler` / `Key` 绑定（它们留给小程序后端）。
+
+### Rust 宿主（M3）
+
+Rust 宿主持有 model，视图沿用 Web DOM 后端，跑在 WebView（tao + wry）里。两边通过 IPC 交换 JSON。
+
+组成：
+
+| 位置                               | 作用                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------ |
+| `weft_ui_compiler::codegen::rust`  | 整个导入闭包生成一个 Rust 文件：model 结构体、`XxxMut` 访问器、`events`、根组件类型，内嵌各文件的 Web 模块 |
+| `weft_ui_compiler::compile`        | `build.rs` 入口：读文件、输出 `cargo:rerun-if-changed`，写 `$OUT_DIR/weft/<文件名>.rs`  |
+| `weft-ui`（仓库根 crate）          | `include_weft!`、`run`、`App`、`ModelHandle`；`test-util` feature 提供无窗口的 `testing::Driver` |
+| `packages/runtime/src/remote.ts`   | 页面侧桥接 `connect()`；与 runtime 一起编译到 `src/js/`，由 Rust crate 内嵌            |
+| `examples/todo-rust`               | Rust 版 Demo（`cargo run -p todo-rust`），`tests/` 用 `Driver` 跑协议                  |
+| `crates/host-tests`                | 嵌套 / 可空 model、关键字字段名、跨文件组件、非 model 首参数的生成代码测试          |
+
+修改 `packages/runtime` 后运行 `pnpm build:runtime` 重新生成 `src/js/`，`pnpm test` 会检查它是否过期。
+
+Rust 宿主约定（在上文 Demo 基础上的具体化）：
+
+- model 是普通结构体（字段公开，派生 `Debug, Clone, PartialEq, Default`），宿主直接用结构体字面量构造。DSL 字段名是 Rust 关键字时用原始标识符（`r#type`），`self` / `super` / `crate` / `Self` 加后缀 `_`。
+- 处理器拿到 `&mut XxxMut<'_>`：读字段走 `Deref`；`set_x(v)` 值变了才记录；`x_mut()` 返回 `&mut T` 并直接记录；嵌套的非空 model 字段 `x_mut()` 返回下一层的 `XxxMut`，按字段路径记录（如 `user.address.city`）。数组和 `T?` 整体记录，替换后由 JS 侧按 key 对齐，只更新变化的字段。
+- 根组件为每个组件生成（任何组件都可以做根）。`new` 按声明顺序接收全部值参数（不支持省略默认值）。处理器的 model 是第一个参数；第一个参数不是 model 时，处理器拿到 `&mut ()`，与 JS 宿主中 `app.model` 不可修改的语义一致。
+- `on_xxx(handler)` 注册同步处理器，`on_xxx_async(handler)` 注册异步处理器（参数是 `ModelHandle<Model>`），都不提供取消注册。`run(app)` 打开窗口并运行事件循环，不返回。
+- 每个 `include_weft!` 包含整个导入闭包，所以两个入口共享的 `.weft` 文件会在 Rust 中各生成一份类型。需要共享类型时，用一个入口导入全部组件。
+
+协议（页面 → 宿主走 `window.ipc.postMessage`，宿主 → 页面走 `evaluate_script`）：
+
+```mermaid
+sequenceDiagram
+  participant P as 页面（remote.ts）
+  participant H as Rust 宿主
+  P->>H: {"type":"ready"}（每次加载页面）
+  H->>P: __weft.start({args})（完整快照，清空待发变更）
+  P->>H: {"type":"event", name, payload}（hold 受控输入）
+  Note over H: 同步处理器记录变更路径，投递一次 flush
+  H->>P: __weft.apply({patches: [[path, value]], acks})
+  Note over P: 按路径赋值给 model setter，释放 acks 个 hold
+```
+
+- 宿主的 flush 与 JS 一致：标脏时如果没有待执行的 flush，就向 tao 事件循环投递一个；同一轮的多个事件、多次修改合并为一条 `apply`，覆盖关系的路径只保留最短的那条。
+- `acks` 是自上次 flush 以来处理的事件数。页面每发出一个事件就 `hold()` 一次，收到 ack 才释放：受控 `Input` / `Checkbox` 等宿主处理完再决定是否恢复成绑定值，避免输入闪烁和光标跳动。
+- 异步处理器的 future 在 UI 线程的本地执行器里运行，waker 通过事件循环代理唤醒，可以从其他线程调用。
+- 页面通过自定义协议 `weft://localhost/`（Windows / Android 上是 `http://weft.localhost/`）加载，模块按 `/<模块路径>` 提供，runtime 在 `/__weft/`。
+- `Float` 的 `NaN` / 无穷大没有 JSON 表示，传给视图时变成 `null`；`Int` 在 JS 中是双精度数，超过 2^53 会丢精度。
 
 ## 工具链
 
@@ -353,7 +398,7 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 | M0   | 语法定稿；解析器 + AST + 错误报告                                    | Demo 能解析，错误信息带位置                | 完成，语法见 [GRAMMAR.md](GRAMMAR.md) |
 | M1   | 语义分析 + 依赖分析 + 视图 IR                                        | 能输出 Demo 每个绑定点的依赖集合           | 完成，`cargo run -p weft-ui-compiler --example deps -- <file>` |
 | M2   | TS 宿主绑定 + Web DOM 后端 + Vite 插件                               | Demo 在浏览器中可交互，更新粒度符合预期    | 完成，见 [Web 后端（M2）](#web-后端m2)、`examples/todo-web` |
-| M3   | Rust 宿主绑定 + `build.rs` 集成 + WebView 运行                        | Rust 版 Demo 跑通                          |      |
+| M3   | Rust 宿主绑定 + `build.rs` 集成 + WebView 运行                        | Rust 版 Demo 跑通                          | 完成，见 [Rust 宿主（M3）](#rust-宿主m3)、`examples/todo-rust` |
 | M4   | 微信小程序后端                                                       | Demo 在开发者工具中运行，`setData` 只发送变化路径 |      |
 | M5   | LSP + 格式化 + 解释器预览                                            | 编辑器内有诊断和补全，保存后预览热更新     |      |
 | M6   | 桌面自绘后端                                                         | Demo 在原生窗口中运行                      |      |

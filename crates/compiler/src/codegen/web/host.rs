@@ -110,6 +110,16 @@ pub(super) fn model_class(program: &Program, id: ModelId, conv: &mut Converters,
         };
         out.line(format!("set {name}(v) {{ {set} }}"));
     }
+    let fields: Vec<String> = model
+        .fields
+        .iter()
+        .enumerate()
+        .map(|(index, field)| format!("{}: this.$v[{index}]", js::object_key(&field.name)))
+        .collect();
+    out.line(format!(
+        "toJSON() {{ return {{ {} }}; }}",
+        fields.join(", ")
+    ));
     out.close("}");
 }
 
@@ -247,6 +257,9 @@ pub(super) fn app_dts(program: &Program, id: ComponentId, out: &mut Code) {
             js::binding(&event.name)
         ));
     }
+    out.line(format!(
+        "$on(name: string, handler: (model: {model}, event: object) => unknown): () => void;"
+    ));
     out.line("mount(target: Node): void;");
     out.line("unmount(): void;");
     out.close("}");

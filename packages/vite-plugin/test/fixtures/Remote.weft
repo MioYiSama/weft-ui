@@ -1,0 +1,36 @@
+model User {
+  name: String,
+}
+
+model Todo {
+  id: Int,
+  name: String,
+  owner: User,
+  watchers: User[],
+}
+
+model RemoteModel {
+  user: User,
+  draft: String,
+  accepted: Bool,
+  todos: Todo[],
+}
+
+event TextChanged(value: String)
+event Toggled(value: Bool)
+event Select(todo: Todo)
+
+component RemoteView(model: RemoteModel, title: String = "remote") {
+  Column {
+    Text(title)
+    Text(model.user.name)
+    Input(model.draft, onChange = TextChanged)
+    Checkbox(model.accepted, onChange = Toggled)
+    for (todo in model.todos; key = todo.id) {
+      Row {
+        Text(todo.name)
+        Button(onClick = Select(todo)) { Text("select") }
+      }
+    }
+  }
+}

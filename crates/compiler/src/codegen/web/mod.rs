@@ -43,7 +43,19 @@ pub struct JsModule {
 /// Generates the host module of the program's entry file.
 #[must_use]
 pub fn generate(program: &Program, options: &WebOptions) -> JsModule {
-    let links = Links::new(program);
+    generate_module(program, program.entry, options)
+}
+
+/// Generates the host module of `file`, which must belong to the program's
+/// import closure. Its imports are specified relative to `file`, so the
+/// modules of a whole closure can be served side by side.
+///
+/// # Panics
+///
+/// Panics if `file` is not part of the program.
+#[must_use]
+pub fn generate_module(program: &Program, file: FileId, options: &WebOptions) -> JsModule {
+    let links = Links::new(program, file);
     JsModule {
         code: code(program, &links, options),
         dts: dts(program, &links),
@@ -84,7 +96,7 @@ struct Links<'p> {
 }
 
 impl<'p> Links<'p> {
-    fn new(program: &'p Program) -> Self {
+    fn new(program: &'p Program, file: FileId) -> Self {
         let module = |file: FileId| {
             program
                 .modules
@@ -92,7 +104,7 @@ impl<'p> Links<'p> {
                 .find(|m| m.file == file)
                 .expect("every file of the program has a module")
         };
-        let entry = module(program.entry);
+        let entry = module(file);
         let closures = entry
             .imports
             .iter()
@@ -154,17 +166,18 @@ impl<'p> Links<'p> {
             .expect("groups only contain direct imports")
     }
 
-    /// Every symbol of other files, for re-export.
+    /// Every symbol of other files in this module's import closure, for
+    /// re-export.
     fn foreign(&self) -> impl Iterator<Item = Symbol> + '_ {
         let program = self.program;
         let models = (0..program.models.len()).map(|i| Symbol::Model(ModelId(offset(i))));
         let events = (0..program.events.len()).map(|i| Symbol::Event(EventId(offset(i))));
         let components =
             (0..program.components.len()).map(|i| Symbol::Component(ComponentId(offset(i))));
-        models
-            .chain(events)
-            .chain(components)
-            .filter(|&s| !self.is_own(s))
+        models.chain(events).chain(components).filter(|&s| {
+            let file = s.file(program);
+            !self.is_own(s) && self.closures.iter().any(|(_, c)| c.contains(&file))
+        })
     }
 }
 

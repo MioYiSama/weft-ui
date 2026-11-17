@@ -1,0 +1,14 @@
+import "./models.weft"
+import "./lib/Badge.weft"
+
+component ProfileView(profile: Profile) {
+  Column(onMount = Loaded) {
+    Text(profile.user.name)
+    Text(profile.user.address.city)
+    Text(profile.best?.name ?? "none")
+    Badge(label = "visits", count = profile.visits)
+    Button(onClick = Rename(profile.user)) {
+      Text("rename")
+    }
+  }
+}

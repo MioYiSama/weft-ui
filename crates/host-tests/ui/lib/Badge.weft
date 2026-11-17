@@ -1,0 +1,7 @@
+event Clicked(count: Int)
+
+component Badge(label: String, count: Int = 0) {
+  Button(onClick = Clicked(count)) {
+    Text("${label} ${count}")
+  }
+}

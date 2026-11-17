@@ -220,6 +220,28 @@ let scheduled = false;
 let epoch = 0;
 let pendingEvents: [App, string, object][] = [];
 let afterFlush: (() => void)[] = [];
+let deferredRestores: (() => void)[] = [];
+let holds = 0;
+
+/** Defers controlled-input restores until every hold is released. */
+export function hold(): () => void {
+  holds++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    holds--;
+    schedule();
+  };
+}
+
+function restoreAfterFlush(restore: () => void): void {
+  afterFlush.push(() => {
+    if (holds > 0) deferredRestores.push(restore);
+    else restore();
+  });
+  schedule();
+}
 
 function schedule(): void {
   if (!scheduled) {
@@ -265,6 +287,11 @@ function flush(): void {
   pendingEvents = [];
   afterFlush = [];
   for (const [app, name, payload] of events) app.$emit(name, payload);
+  if (holds === 0) {
+    const restores = deferredRestores;
+    deferredRestores = [];
+    for (const restore of restores) restore();
+  }
   for (const callback of callbacks) callback();
 }
 
@@ -711,19 +738,17 @@ export function checked(node: Controlled, value: boolean): void {
 export function input(node: Controlled, handler: ((value: string) => void) | null): void {
   node.addEventListener("input", () => {
     handler?.(node.value);
-    afterFlush.push(() => {
+    restoreAfterFlush(() => {
       if (node.value !== node.$v) node.value = node.$v as string;
     });
-    schedule();
   });
 }
 
 export function checkbox(node: Controlled, handler: ((value: boolean) => void) | null): void {
   node.addEventListener("change", () => {
     handler?.(node.checked);
-    afterFlush.push(() => {
+    restoreAfterFlush(() => {
       if (node.checked !== node.$v) node.checked = node.$v as boolean;
     });
-    schedule();
   });
 }

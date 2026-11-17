@@ -3,7 +3,11 @@
 //! [`check`] loads an entry module and its imports through a [`SourceLoader`],
 //! reports diagnostics, and on success yields the typed view IR
 //! ([`ir::Program`]) with dependency information for every binding.
+//!
+//! Rust hosts call [`compile`] from `build.rs`; JS hosts use the WASM build
+//! through the Vite plugin.
 
+mod build;
 pub mod codegen;
 mod deps;
 pub mod diagnostic;
@@ -14,6 +18,7 @@ mod sema;
 pub mod span;
 pub mod syntax;
 
+pub use build::{CompileError, compile};
 pub use diagnostic::{Diagnostic, Severity};
 pub use loader::{MemoryLoader, SourceLoader};
 pub use report::dependency_report;

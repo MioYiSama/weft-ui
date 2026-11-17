@@ -1,0 +1,3 @@
+<view class="page">
+  <todo-list id="todo" />
+</view>

@@ -4,6 +4,8 @@ use std::borrow::Cow;
 
 /// JS runtime shared by all view modules (`@weft-ui/runtime`).
 const RUNTIME_JS: &str = include_str!("js/index.js");
+/// Backend-independent part of the runtime, imported by `index.js`.
+const CORE_JS: &str = include_str!("js/core.js");
 /// Page side of the host protocol (`@weft-ui/runtime/remote`).
 const REMOTE_JS: &str = include_str!("js/remote.js");
 
@@ -78,6 +80,7 @@ impl View {
                 Cow::Owned(index_html.as_bytes().to_vec()),
             ),
             "/__weft/index.js" => (JS, Cow::Borrowed(RUNTIME_JS.as_bytes())),
+            "/__weft/core.js" => (JS, Cow::Borrowed(CORE_JS.as_bytes())),
             "/__weft/remote.js" => (JS, Cow::Borrowed(REMOTE_JS.as_bytes())),
             _ => {
                 let module = self.modules.iter().find(|m| m.path == path)?;

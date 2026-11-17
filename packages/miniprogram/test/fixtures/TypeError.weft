@@ -1,0 +1,3 @@
+component TypeError() {
+  Text(42)
+}

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "Weft Todo",
+  "usingComponents": {
+    "todo-list": "../../weft/TodoList-view"
+  }
+}

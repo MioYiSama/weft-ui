@@ -1,0 +1,10 @@
+model Item {
+  id: Int,
+  label: String,
+}
+
+model AppModel {
+  items: Item[],
+}
+
+event Selected(id: Int)

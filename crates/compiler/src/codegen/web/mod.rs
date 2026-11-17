@@ -3,11 +3,17 @@
 //! Each `.weft` file becomes one ES module plus a `.d.ts`. A module imports
 //! what it uses from its direct imports and re-exports every symbol of its
 //! import closure, so hosts only reference the entry module.
+//!
+//! The WeChat mini program backend ([`crate::codegen::miniprogram`]) shares
+//! the host binding and swaps the DOM create functions for data blocks.
 
+mod blocks;
 mod dom;
 mod expr;
 mod host;
 mod js;
+mod wx;
+mod wxml;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -55,11 +61,51 @@ pub fn generate(program: &Program, options: &WebOptions) -> JsModule {
 /// Panics if `file` is not part of the program.
 #[must_use]
 pub fn generate_module(program: &Program, file: FileId, options: &WebOptions) -> JsModule {
-    let links = Links::new(program, file);
+    backend_module(program, file, &options.runtime, Backend::Dom)
+}
+
+/// Rendering backend of a generated host module.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::codegen) enum Backend {
+    /// Browser DOM; modules import each other as `.weft` files.
+    Dom,
+    /// WeChat mini program; modules import each other as `.js` files.
+    Wx,
+}
+
+/// Generates the host module of `file` for `backend`, importing the runtime
+/// from `runtime`.
+pub(in crate::codegen) fn backend_module(
+    program: &Program,
+    file: FileId,
+    runtime: &str,
+    backend: Backend,
+) -> JsModule {
+    let links = Links::new(program, file, backend);
     JsModule {
-        code: code(program, &links, options),
+        code: code(program, &links, runtime),
         dts: dts(program, &links),
     }
+}
+
+/// WXML templates of every component of the program (mini program backend).
+pub(in crate::codegen) fn wxml_templates(program: &Program) -> String {
+    wxml::templates(program)
+}
+
+/// Mini program path of the JS module generated for the `.weft` file `path`.
+pub(in crate::codegen) fn wx_module_path(path: &str) -> String {
+    format!("{}.js", path.strip_suffix(".weft").unwrap_or(path))
+}
+
+/// Relative import specifier between two module paths.
+pub(in crate::codegen) fn relative_specifier(from: &str, to: &str) -> String {
+    js::relative_specifier(from, to)
+}
+
+/// Double-quoted JS string literal.
+pub(in crate::codegen) fn js_string(value: &str) -> String {
+    js::string(value)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -93,10 +139,11 @@ struct Links<'p> {
     entry: &'p Module,
     /// Import closure of each direct import, including itself.
     closures: Vec<(&'p Module, BTreeSet<FileId>)>,
+    backend: Backend,
 }
 
 impl<'p> Links<'p> {
-    fn new(program: &'p Program, file: FileId) -> Self {
+    fn new(program: &'p Program, file: FileId, backend: Backend) -> Self {
         let module = |file: FileId| {
             program
                 .modules
@@ -123,6 +170,7 @@ impl<'p> Links<'p> {
             program,
             entry,
             closures,
+            backend,
         }
     }
 
@@ -137,7 +185,11 @@ impl<'p> Links<'p> {
     }
 
     fn specifier(&self, module: &Module) -> String {
-        js::string(&js::relative_specifier(&self.entry.path, &module.path))
+        let specifier = js::relative_specifier(&self.entry.path, &module.path);
+        js::string(&match self.backend {
+            Backend::Dom => specifier,
+            Backend::Wx => wx_module_path(&specifier),
+        })
     }
 
     fn is_own(&self, symbol: Symbol) -> bool {
@@ -211,13 +263,10 @@ fn used_models(program: &Program, entry: &Module, out: &mut BTreeSet<Symbol>) {
     }
 }
 
-fn code(program: &Program, links: &Links<'_>, options: &WebOptions) -> String {
+fn code(program: &Program, links: &Links<'_>, runtime: &str) -> String {
     let entry = links.entry;
     let mut out = Code::default();
-    out.line(format!(
-        "import * as $ from {};",
-        js::string(&options.runtime)
-    ));
+    out.line(format!("import * as $ from {};", js::string(runtime)));
 
     // Imports: models for converters, create functions of used components.
     let mut used = BTreeSet::new();
@@ -270,13 +319,16 @@ fn code(program: &Program, links: &Links<'_>, options: &WebOptions) -> String {
         models.line("");
         host::model_class(program, id, &mut converters, &mut models);
     }
-    let mut consts = dom::Consts::default();
+    let mut consts = blocks::Consts::default();
     let mut components = Code::default();
     for &id in &entry.components {
         components.line("");
-        dom::component(program, id, &mut consts, &mut components);
+        match links.backend {
+            Backend::Dom => dom::component(program, id, &mut consts, &mut components),
+            Backend::Wx => wx::component(program, id, &mut consts, &mut components),
+        }
         components.line("");
-        host::app_class(program, id, &mut converters, &mut components);
+        host::app_class(program, id, links.backend, &mut converters, &mut components);
     }
 
     out.append(models);
@@ -388,7 +440,7 @@ fn dts(program: &Program, links: &Links<'_>) -> String {
     }
     for &id in &entry.components {
         out.line("");
-        host::app_dts(program, id, &mut out);
+        host::app_dts(program, id, links.backend, &mut out);
     }
     let aliases = own_aliases(program, entry, true);
     if !aliases.is_empty() {

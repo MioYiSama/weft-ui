@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync } from "node:fs";
 import { dirname, join, basename } from "node:path";
 import type { Plugin } from "vite";
-import { compileSource } from "./compiler.ts";
+import { compileWeb } from "@weft-ui/compiler";
 
 /** Options for compiling Weft views and generating adjacent TypeScript declarations. */
 export interface WeftOptions {
@@ -39,14 +39,14 @@ export default function weft(options: WeftOptions = {}): Plugin {
     async buildStart() {
       if (options.dts === false) return;
       for (const entry of weftFiles(root)) {
-        const output = await compileSource(entry, (path) => readFileSync(path, "utf8"), runtime);
+        const output = await compileWeb(entry, (path) => readFileSync(path, "utf8"), runtime);
         if (!output.hasErrors && output.dts !== undefined) writeDeclarations(entry, output.dts);
       }
     },
     async transform(code, id) {
       const entry = id.split("?", 1)[0]!.replaceAll("\\", "/");
       if (!entry.endsWith(".weft")) return;
-      const output = await compileSource(entry, (path) => path === entry ? code : readFileSync(path, "utf8"), runtime);
+      const output = await compileWeb(entry, (path) => path === entry ? code : readFileSync(path, "utf8"), runtime);
       for (const file of output.files) this.addWatchFile(file);
       if (output.hasErrors) this.error(output.diagnostics);
       if (output.diagnostics) this.warn(output.diagnostics);

@@ -5,6 +5,7 @@ use std::io;
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 use weft_ui_compiler::SourceLoader;
+use weft_ui_compiler::codegen::miniprogram::{self, MiniprogramOptions};
 use weft_ui_compiler::codegen::web::{self, WebOptions};
 
 #[wasm_bindgen]
@@ -82,6 +83,70 @@ pub fn compile(entry: &str, load: &Function, runtime: &str) -> CompileOutput {
     CompileOutput {
         code,
         dts,
+        diagnostics,
+        has_errors,
+        files,
+    }
+}
+
+/// Generated mini program files, rendered diagnostics, and all loaded source paths.
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Debug, Clone)]
+pub struct MiniprogramOutput {
+    /// Output paths relative to the output directory, present only on success.
+    pub paths: Option<Vec<String>>,
+    /// Output contents corresponding to `paths`, present only on success.
+    pub contents: Option<Vec<String>>,
+    /// Diagnostics with source locations and snippets; empty when there are none.
+    pub diagnostics: String,
+    /// Whether compilation reported any errors.
+    #[wasm_bindgen(js_name = hasErrors)]
+    pub has_errors: bool,
+    /// Normalized paths of every loaded file in the import closure.
+    pub files: Vec<String>,
+}
+
+/// Checks an entry and generates mini program files using a synchronous JavaScript loader.
+///
+/// `load(path)` must return source text. Thrown exceptions become compiler diagnostics.
+/// Source paths must be relative to the output root. `runtime` is relative to that root.
+#[wasm_bindgen(js_name = compileMiniprogram)]
+#[must_use]
+pub fn compile_miniprogram(entry: &str, load: &Function, runtime: &str) -> MiniprogramOutput {
+    let compilation = weft_ui_compiler::check(entry, &mut JsLoader(load));
+    let has_errors = compilation.has_errors();
+    let diagnostics = compilation.render_diagnostics();
+    let files = compilation
+        .sources
+        .files()
+        .iter()
+        .map(|file| file.path().to_owned())
+        .collect();
+    let generated = compilation
+        .program
+        .as_ref()
+        .filter(|_| !has_errors)
+        .map(|program| {
+            miniprogram::generate(
+                program,
+                &MiniprogramOptions {
+                    runtime: runtime.to_owned(),
+                },
+            )
+        });
+    let (paths, contents) = match generated {
+        Some(files) => {
+            let (paths, contents) = files
+                .into_iter()
+                .map(|file| (file.path, file.contents))
+                .unzip();
+            (Some(paths), Some(contents))
+        }
+        None => (None, None),
+    };
+    MiniprogramOutput {
+        paths,
+        contents,
         diagnostics,
         has_errors,
         files,

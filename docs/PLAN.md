@@ -317,6 +317,7 @@ app.on_submit_async(|model, e| async move {
 | ------------------------ | -------------------------------------------------------------------- |
 | `weft_ui_compiler::codegen::web` | 每个 `.weft` 生成一个 ES 模块和一份 `.d.ts`（TS 宿主绑定 + DOM 后端） |
 | `crates/wasm`            | `wasm-bindgen` 导出 `compile(entry, load, runtime)`，源码由 JS 回调读取 |
+| `packages/compiler`      | `@weft-ui/compiler`：加载 WASM 产物（`wasm/`），供 Vite 插件和小程序构建共用 |
 | `packages/runtime`       | `@weft-ui/runtime`：model 基类、脏位 scope、微任务调度、`if`/`for`/插槽块 |
 | `packages/vite-plugin`   | `@weft-ui/vite-plugin`：转换 `.weft`，在源文件旁写 `X.d.weft.ts`      |
 | `examples/todo-web`      | Demo 与端到端测试（happy-dom，含 MutationObserver 粒度断言）         |
@@ -336,7 +337,7 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 - 脏位布局直接采用 IR 的 slot 表。每个组件实例和每个 `for` 行都是一个 scope，各有自己的脏位字。flush 按深度排序，保证父组件先于子组件。
 - model 实例按字段通知订阅者（watch）：非空嵌套 model 逐字段订阅；`T?` 型 model 整体占一位，并深度订阅其中可达的 model；数组只靠字段 setter 检测，元素变化由各 `for` 行对自己的元素订阅。
 - 每个块只在祖先 scope 的脏位与块内绑定的依赖位有交集时才进入；行内元素字段变化只更新这一行。列表按 key 对齐：复用的行接收新元素时只标记值变了的字段；移动行时只移动最长递增子序列之外的行。
-- 事件参数和 key 在触发或对齐时按当前值求值，所以 DOM 后端不使用 `Handler` / `Key` 绑定（它们留给小程序后端）。
+- 事件参数和 key 在触发或对齐时按当前值求值，所以 Web 和小程序后端都不使用 IR 中的 `Handler` / `Key` 绑定。
 
 ### Rust 宿主（M3）
 
@@ -383,6 +384,45 @@ sequenceDiagram
 - 页面通过自定义协议 `weft://localhost/`（Windows / Android 上是 `http://weft.localhost/`）加载，模块按 `/<模块路径>` 提供，runtime 在 `/__weft/`。
 - `Float` 的 `NaN` / 无穷大没有 JSON 表示，传给视图时变成 `null`；`Int` 在 JS 中是双精度数，超过 2^53 会丢精度。
 
+### 微信小程序后端（M4）
+
+所有绑定都在逻辑层求值，与 Web 后端共用表达式生成、model 类、调度器和 TS 宿主绑定。WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径。
+
+组成：
+
+| 位置                                    | 作用                                                                                           |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `weft_ui_compiler::codegen::miniprogram` | 每个 `.weft` 生成 `X.js` + `X.d.ts`；每个入口另生成视图组件 `X-view.{js,json,wxml}`            |
+| `crates/wasm`                           | 导出 `compileMiniprogram(entry, load, runtime)`                                                |
+| `packages/runtime/src/wx.ts`            | 数据块运行时（`if` / `for` / 插槽 / 组件实例）、提交钩子、事件分发；与 `core.ts` 一起编译到 `packages/miniprogram/runtime/` |
+| `packages/miniprogram`                  | `@weft-ui/miniprogram`：`build()` 与 CLI `weft-mp`；`./testing` 提供 Node 下的 WXML 解释器和 `setData` 记录 |
+| `examples/todo-wx`                      | 小程序版 Demo（开发者工具项目），测试逐条断言 `setData` 负载                                      |
+
+构建：`pnpm build:wasm` 后运行 `pnpm --filter todo-wx build`（`weft-mp --out miniprogram/weft ui/TodoList.weft`，同时复制 runtime 到 `weft-runtime/`），再用开发者工具打开 `examples/todo-wx`。修改 `packages/runtime` 后运行 `pnpm build:runtime`，它也会重新生成 `packages/miniprogram/runtime/`。
+
+宿主约定：
+
+- 生成的模块与 Web 后端导出相同的 model 类和根组件类（同一份 `.d.ts` 约定），区别只有 `mount(view)`：参数是页面里 `X-view` 组件的实例，如 `app.mount(this.selectComponent("#todo"))`。页面在 `usingComponents` 中引用 `weft/X-view`。
+- 视图组件卸载时自动 `unmount`；`Input` / `Checkbox` 仍是受控的。事件分发后同步 flush：宿主没有接受的输入，事件返回值把输入框恢复成绑定值；没有接受的开关通过两次 `setData` 切回原值。
+- 每个入口的整个组件闭包生成在一个 WXML 里（WXML 的 `import` 不传递，插槽要用动态 `<template is>` 引用调用方的模板）。
+
+数据布局（`N` 是 IR 中的节点编号）：
+
+| key          | 内容                                                    |
+| ------------ | ------------------------------------------------------- |
+| `n{N}_{i}`   | 属性值、文本                                             |
+| `e{N}`       | 事件处理器 id，WXML 中写成 `data-h`，由视图组件的 `$e` 分发 |
+| `i{N}` / `b{N}` | `if` 当前分支下标 / 分支数据                          |
+| `l{N}`       | `for` 的行数组，每行带 key `k`                           |
+| `c{N}`       | 组件实例数据                                             |
+| `y{N}`       | 插槽数据，`t` 是插槽模板名（`{组件}-s{N}`）               |
+
+`setData` 规则：
+
+- 每次 flush 每个视图只调用一次 `setData`。块的 `set` 用 `===` 比较新旧值，只发送变化的叶子，路径如 `r.b8.l7[2].n3_0`。
+- 列表只在末尾追加时发送新行的下标路径（`l7[3]`）；删除、移动、插入时整体发送行数组，复用的行保留原有处理器 id。
+- 同一次 flush 中被其他路径覆盖的路径（祖先已整体发送）会被丢弃。
+
 ## 工具链
 
 - **构建集成**：Rust 用 `build.rs` + `include_weft!` 宏；JS/TS 用 Vite 插件（`.weft` 作为模块导入，同时生成 `.d.ts`）。
@@ -399,7 +439,7 @@ sequenceDiagram
 | M1   | 语义分析 + 依赖分析 + 视图 IR                                        | 能输出 Demo 每个绑定点的依赖集合           | 完成，`cargo run -p weft-ui-compiler --example deps -- <file>` |
 | M2   | TS 宿主绑定 + Web DOM 后端 + Vite 插件                               | Demo 在浏览器中可交互，更新粒度符合预期    | 完成，见 [Web 后端（M2）](#web-后端m2)、`examples/todo-web` |
 | M3   | Rust 宿主绑定 + `build.rs` 集成 + WebView 运行                        | Rust 版 Demo 跑通                          | 完成，见 [Rust 宿主（M3）](#rust-宿主m3)、`examples/todo-rust` |
-| M4   | 微信小程序后端                                                       | Demo 在开发者工具中运行，`setData` 只发送变化路径 |      |
+| M4   | 微信小程序后端                                                       | Demo 在开发者工具中运行，`setData` 只发送变化路径 | 完成，见 [微信小程序后端（M4）](#微信小程序后端m4)、`examples/todo-wx` |
 | M5   | LSP + 格式化 + 解释器预览                                            | 编辑器内有诊断和补全，保存后预览热更新     |      |
 | M6   | 桌面自绘后端                                                         | Demo 在原生窗口中运行                      |      |
 

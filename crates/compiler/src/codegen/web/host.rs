@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use crate::ir::{ComponentId, EventId, ModelId, ParamKind, Program, Type};
 
+use super::Backend;
 use super::expr::{Env, expr};
 use super::js::{self, Code};
 
@@ -123,7 +124,13 @@ pub(super) fn model_class(program: &Program, id: ModelId, conv: &mut Converters,
     out.close("}");
 }
 
-pub(super) fn app_class(program: &Program, id: ComponentId, conv: &mut Converters, out: &mut Code) {
+pub(super) fn app_class(
+    program: &Program,
+    id: ComponentId,
+    backend: Backend,
+    conv: &mut Converters,
+    out: &mut Code,
+) {
     let comp = program.component(id);
     out.open(format!("{} extends $.App {{", class_header(&comp.name)));
     let mut params = Vec::new();
@@ -141,8 +148,13 @@ pub(super) fn app_class(program: &Program, id: ComponentId, conv: &mut Converter
             }
         }
     }
+    // Mini program views render the root through its template.
+    let template = match backend {
+        Backend::Dom => String::new(),
+        Backend::Wx => format!(", {}", js::string(&comp.name)),
+    };
     out.line(format!(
-        "constructor({}) {{ super({}$c, [{}]); }}",
+        "constructor({}) {{ super({}$c, [{}]{template}); }}",
         params.join(", "),
         comp.name,
         args.join(", ")
@@ -211,7 +223,7 @@ pub(super) fn event_dts(program: &Program, id: EventId, out: &mut Code) {
     out.line(format!("{} = {body};", declared(&event.name, "type")));
 }
 
-pub(super) fn app_dts(program: &Program, id: ComponentId, out: &mut Code) {
+pub(super) fn app_dts(program: &Program, id: ComponentId, backend: Backend, out: &mut Code) {
     let comp = program.component(id);
     let local = js::binding(&comp.name);
     let header = if local == comp.name {
@@ -260,7 +272,13 @@ pub(super) fn app_dts(program: &Program, id: ComponentId, out: &mut Code) {
     out.line(format!(
         "$on(name: string, handler: (model: {model}, event: object) => unknown): () => void;"
     ));
-    out.line("mount(target: Node): void;");
+    match backend {
+        Backend::Dom => out.line("mount(target: Node): void;"),
+        Backend::Wx => {
+            out.line("/** Renders into a generated view component, e.g. `page.selectComponent(\"#view\")`. */");
+            out.line("mount(view: object): void;");
+        }
+    }
     out.line("unmount(): void;");
     out.close("}");
 }

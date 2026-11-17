@@ -6,22 +6,26 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
 
-test("embedded runtime matches a fresh TypeScript build", async () => {
+const builds = [
+  { config: "tsconfig.rust.json", committed: "../../../src/js/", files: ["core.js", "index.js", "remote.js"] },
+  { config: "tsconfig.wx.json", committed: "../../miniprogram/runtime/", files: ["core.js", "wx.js"] },
+];
+
+test.each(builds)("committed $config output matches a fresh TypeScript build", async ({ config, committed, files }) => {
   const output = await mkdtemp(join(tmpdir(), "weft-runtime-"));
   try {
     const runtime = fileURLToPath(new URL("../", import.meta.url));
-    const committed = fileURLToPath(new URL("../../../src/js/", import.meta.url));
+    const committedDir = fileURLToPath(new URL(committed, import.meta.url));
     const typescript = createRequire(import.meta.url).resolve("typescript/package.json");
     const tsc = join(dirname(typescript), "bin/tsc");
-    execFileSync(process.execPath, [tsc, "-p", "tsconfig.rust.json", "--outDir", output], {
+    execFileSync(process.execPath, [tsc, "-p", config, "--outDir", output], {
       cwd: runtime,
       stdio: "pipe",
     });
-    const files = (await readdir(output)).sort();
-    expect(files).toEqual(["index.js", "remote.js"]);
-    expect((await readdir(committed)).filter((name) => name.endsWith(".js")).sort()).toEqual(files);
+    expect((await readdir(output)).sort()).toEqual(files);
+    expect((await readdir(committedDir)).filter((name) => name.endsWith(".js")).sort()).toEqual(files);
     for (const file of files) {
-      expect(await readFile(join(committed, file), "utf8"), `run pnpm build:runtime (${file})`)
+      expect(await readFile(join(committedDir, file), "utf8"), `run pnpm build:runtime (${file})`)
         .toBe(await readFile(join(output, file), "utf8"));
     }
   } finally {

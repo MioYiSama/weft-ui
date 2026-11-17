@@ -7,8 +7,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build:wasm": "cargo build -p weft-ui-wasm --release --target wasm32-unknown-unknown && wasm-bindgen --target web --out-dir wasm --out-name weft_ui_wasm ../../target/wasm32-unknown-unknown/release/weft_ui_wasm.wasm",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@weft-ui/compiler": "workspace:*"
   },
   "peerDependencies": {
     "vite": "^8.3.8"

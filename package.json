@@ -4,8 +4,8 @@
   "type": "module",
   "packageManager": "pnpm@11.28.12",
   "scripts": {
-    "build:runtime": "pnpm --filter @weft-ui/runtime build:rust",
-    "build:wasm": "pnpm --filter @weft-ui/vite-plugin build:wasm",
+    "build:runtime": "pnpm --filter @weft-ui/runtime build",
+    "build:wasm": "pnpm --filter @weft-ui/compiler build:wasm",
     "test": "pnpm -r --if-present test"
   }
 }

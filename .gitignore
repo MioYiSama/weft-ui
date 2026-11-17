@@ -1,4 +1,6 @@
 /target
 node_modules/
-/packages/vite-plugin/wasm/
+/packages/compiler/wasm/
 *.d.weft.ts
+/examples/todo-wx/miniprogram/weft/
+/examples/todo-wx/project.private.config.json

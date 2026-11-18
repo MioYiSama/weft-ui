@@ -1,0 +1,192 @@
+========================================
+Elements, arguments and children
+========================================
+
+component C() {
+  Column(gap = 4) {
+    Text("a", bold = true)
+    Platform.Thing
+    Button(onClick = Click) {}
+  }
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters)
+    (component_body
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (identifier)
+            (integer)))
+        (block
+          (element
+            (element_name
+              (identifier))
+            (arguments
+              (argument
+                (string
+                  (string_content)))
+              (argument
+                (identifier)
+                (true))))
+          (element
+            (element_name
+              (identifier)
+              (identifier)))
+          (element
+            (element_name
+              (identifier))
+            (arguments
+              (argument
+                (identifier)
+                (identifier)))
+            (block)))))))
+
+========================================
+If chain and for
+========================================
+
+component C(m: M) {
+  if (m.a) {
+    Text("a")
+  } else if (m.b) {
+    Text("b")
+  } else {
+    Text("c")
+  }
+  for (item in m.items; key = item.id) {
+    Text(item.name)
+  }
+  for (x in m.xs) {}
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (component_body
+      (if_node
+        (field_expression
+          (identifier)
+          (identifier))
+        (block
+          (element
+            (element_name
+              (identifier))
+            (arguments
+              (argument
+                (string
+                  (string_content))))))
+        (if_node
+          (field_expression
+            (identifier)
+            (identifier))
+          (block
+            (element
+              (element_name
+                (identifier))
+              (arguments
+                (argument
+                  (string
+                    (string_content))))))
+          (block
+            (element
+              (element_name
+                (identifier))
+              (arguments
+                (argument
+                  (string
+                    (string_content))))))))
+      (for_node
+        (identifier)
+        (field_expression
+          (identifier)
+          (identifier))
+        (field_expression
+          (identifier)
+          (identifier))
+        (block
+          (element
+            (element_name
+              (identifier))
+            (arguments
+              (argument
+                (field_expression
+                  (identifier)
+                  (identifier)))))))
+      (for_node
+        (identifier)
+        (field_expression
+          (identifier)
+          (identifier))
+        (block)))))
+
+========================================
+Lambdas
+========================================
+
+component C() {
+  state n = 0
+  Button(onClick = { n += 1; n = n * 2 }) {}
+  Input(s, onChange = { v -> s = v })
+  Button(onClick = {}) {}
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters)
+    (component_body
+      (state_declaration
+        (identifier)
+        (integer))
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (identifier)
+            (lambda
+              (assignment
+                (identifier)
+                (integer))
+              (assignment
+                (identifier)
+                (binary_expression
+                  (identifier)
+                  (integer))))))
+        (block))
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (identifier))
+          (argument
+            (identifier)
+            (lambda
+              (identifier)
+              (assignment
+                (identifier)
+                (identifier))))))
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (identifier)
+            (lambda)))
+        (block)))))

@@ -1,0 +1,124 @@
+========================================
+Imports and models
+========================================
+
+import "./models.weft"
+model Todo {
+  id: Int,
+  tags: String[],
+  parent: Todo?,
+}
+model Empty {}
+
+----------------------------------------
+
+(source_file
+  (import
+    (string
+      (string_content)))
+  (model_declaration
+    (identifier)
+    (field_list
+      (field
+        (identifier)
+        (type_identifier))
+      (field
+        (identifier)
+        (array_type
+          (type_identifier)))
+      (field
+        (identifier)
+        (optional_type
+          (type_identifier)))))
+  (model_declaration
+    (identifier)
+    (field_list)))
+
+========================================
+Events
+========================================
+
+event Click
+event Toggle(id: Int, value: Bool,)
+event Clear()
+
+----------------------------------------
+
+(source_file
+  (event_declaration
+    (identifier))
+  (event_declaration
+    (identifier)
+    (event_parameters
+      (field
+        (identifier)
+        (type_identifier))
+      (field
+        (identifier)
+        (type_identifier))))
+  (event_declaration
+    (identifier)
+    (event_parameters)))
+
+========================================
+Component with contextual keywords as names
+========================================
+
+component App(model: Model, body: Children, title: String = "x") {
+  state count = 0
+  state draft: String? = null
+  body
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier))
+      (parameter
+        (identifier)
+        (type_identifier))
+      (parameter
+        (identifier)
+        (type_identifier)
+        (string
+          (string_content))))
+    (component_body
+      (state_declaration
+        (identifier)
+        (integer))
+      (state_declaration
+        (identifier)
+        (optional_type
+          (type_identifier))
+        (null))
+      (element
+        (element_name
+          (identifier))))))
+
+========================================
+Comments
+========================================
+
+// leading
+model A { /* inline */ x: Int } // trailing
+/* block
+   comment */
+
+----------------------------------------
+
+(source_file
+  (line_comment)
+  (model_declaration
+    (identifier)
+    (field_list
+      (block_comment)
+      (field
+        (identifier)
+        (type_identifier))))
+  (line_comment)
+  (block_comment))

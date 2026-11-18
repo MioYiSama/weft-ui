@@ -1,0 +1,22 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "weft",
+      "camelcase": "Weft",
+      "title": "Weft",
+      "scope": "source.weft",
+      "path": ".",
+      "file-types": [
+        "weft"
+      ]
+    }
+  ],
+  "metadata": {
+    "version": "0.0.1",
+    "description": "Weft UI grammar for tree-sitter",
+    "links": {
+      "repository": "https://github.com/MioYiSama/weft-ui"
+    }
+  }
+}

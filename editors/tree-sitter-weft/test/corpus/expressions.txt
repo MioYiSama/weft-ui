@@ -1,0 +1,136 @@
+========================================
+Precedence
+========================================
+
+component C() {
+  Text(a ?? b || c && d == e + f * -g)
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters)
+    (component_body
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (binary_expression
+              (identifier)
+              (binary_expression
+                (identifier)
+                (binary_expression
+                  (identifier)
+                  (binary_expression
+                    (identifier)
+                    (binary_expression
+                      (identifier)
+                      (binary_expression
+                        (identifier)
+                        (unary_expression
+                          (identifier))))))))))))))
+
+========================================
+Postfix and conditional
+========================================
+
+component C() {
+  Text(if (u?.name.isEmpty) "none" else u.name.trim().uppercase())
+  Text((a + b) * 2.5e3)
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters)
+    (component_body
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (if_expression
+              (field_expression
+                (field_expression
+                  (identifier)
+                  (identifier))
+                (identifier))
+              (string
+                (string_content))
+              (call_expression
+                (field_expression
+                  (call_expression
+                    (field_expression
+                      (field_expression
+                        (identifier)
+                        (identifier))
+                      (identifier))
+                    (arguments))
+                  (identifier))
+                (arguments))))))
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (binary_expression
+              (parenthesized_expression
+                (binary_expression
+                  (identifier)
+                  (identifier)))
+              (float))))))))
+
+========================================
+Strings
+========================================
+
+component C() {
+  Text("n = ${a.b + 1}! costs $5 \"q\" \u{1F600}\n")
+  Text("${"nested ${x}"}")
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters)
+    (component_body
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (string
+              (string_content)
+              (interpolation
+                (binary_expression
+                  (field_expression
+                    (identifier)
+                    (identifier))
+                  (integer)))
+              (string_content)
+              (string_content)
+              (string_content)
+              (escape_sequence)
+              (string_content)
+              (escape_sequence)
+              (string_content)
+              (escape_sequence)
+              (escape_sequence)))))
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (string
+              (interpolation
+                (string
+                  (string_content)
+                  (interpolation
+                    (identifier)))))))))))

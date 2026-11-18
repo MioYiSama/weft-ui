@@ -1,0 +1,70 @@
+/* Neutral, Geist-based palette shared with the landing page. */
+:root {
+  --sl-font: "Geist Variable";
+  --sl-font-mono: "Geist Mono Variable";
+
+  --sl-color-white: #ededed;
+  --sl-color-gray-1: #ededed;
+  --sl-color-gray-2: #c2c2c2;
+  --sl-color-gray-3: #a1a1a1;
+  --sl-color-gray-4: #707070;
+  --sl-color-gray-5: #2e2e2e;
+  --sl-color-gray-6: #171717;
+  --sl-color-black: #000;
+
+  --sl-color-accent-low: #0b2447;
+  --sl-color-accent: #3291ff;
+  --sl-color-accent-high: #a6d1ff;
+
+  --sl-color-bg-nav: rgb(0 0 0 / 0.8);
+  --sl-color-bg-sidebar: #000;
+}
+
+:root[data-theme="light"] {
+  --sl-color-white: #0a0a0a;
+  --sl-color-gray-1: #171717;
+  --sl-color-gray-2: #383838;
+  --sl-color-gray-3: #666;
+  --sl-color-gray-4: #8f8f8f;
+  --sl-color-gray-5: #d4d4d4;
+  --sl-color-gray-6: #ebebeb;
+  --sl-color-gray-7: #fafafa;
+  --sl-color-black: #fff;
+
+  --sl-color-accent-low: #e5f1ff;
+  --sl-color-accent: #0068d6;
+  --sl-color-accent-high: #00346b;
+
+  --sl-color-bg-nav: rgb(255 255 255 / 0.8);
+  --sl-color-bg-sidebar: #fff;
+}
+
+header.header {
+  backdrop-filter: saturate(180%) blur(8px);
+}
+
+.site-title {
+  gap: 10px;
+  color: var(--sl-color-white);
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.site-title img {
+  height: 22px;
+}
+
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover,
+.sidebar-content a[aria-current="page"]:focus {
+  background-color: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+  font-weight: 600;
+}
+
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+h1#_top {
+  letter-spacing: -0.02em;
+}

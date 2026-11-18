@@ -17,7 +17,7 @@ host="$core/build"
 out="$here/build"
 abis=${WEFT_ANDROID_ABIS:-"arm64-v8a armeabi-v7a x86_64 x86"}
 
-# Minimum API level of docs/PLAN-v2.md; keep in sync with build.gradle.kts.
+# Minimum supported API level; keep in sync with build.gradle.kts.
 min_sdk=24
 
 ndk=${ANDROID_NDK_HOME:-}

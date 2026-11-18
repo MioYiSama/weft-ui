@@ -7,7 +7,7 @@ project(weft_linux LANGUAGES C CXX)
 # The kernel comes prebuilt from build-core.sh.
 
 find_package(PkgConfig REQUIRED)
-# Minimum GTK version of docs/PLAN-v2.md.
+# GTK 4.10 is the minimum supported version.
 pkg_check_modules(WEFT_DEPS REQUIRED IMPORTED_TARGET gtk4>=4.10 libsoup-3.0 json-glib-1.0)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")

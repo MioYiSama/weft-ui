@@ -11,7 +11,7 @@ export const NATIVE: readonly Platform[] = ["ios", "macos", "android", "windows"
 
 /**
  * Syntax the bundle keeps for Hermes; newer syntax is lowered by Vite.
- * Measured with the test262 subset in native/core/test262 (docs/PLAN-v2.md, P3).
+ * Measured with the test262 subset in native/core/test262.
  */
 export const HERMES_TARGET = "es2022";
 

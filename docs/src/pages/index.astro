@@ -1,0 +1,1044 @@
+---
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
+import { Code } from "astro:components";
+import githubDark from "@shikijs/themes/github-dark-default";
+import githubLight from "@shikijs/themes/github-light-default";
+import WeftMark from "../components/WeftMark.astro";
+import weft from "../weft.tmLanguage.json";
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const repo = "https://github.com/MioYiSama/weft-ui";
+const docs = `${base}/grammar/`;
+const title = "Weft — 一份视图，七个平台原生运行";
+const description =
+  "Weft 是一门编译型 UI 语言：用 .weft 描述视图，用 JS/TS 写逻辑，编译成 DOM、微信小程序、SwiftUI、Jetpack Compose、WinUI 3 和 GTK 4 的原生代码。";
+const command = "WEFT_PLATFORM=ios,android,linux vite build";
+
+const view = `model Todo {
+    id: Int,
+    name: String,
+    done: Bool
+}
+
+model Model {
+    draft: String,
+    todos: Todo[]
+}
+
+event Draft(value: String)
+event Add
+event Toggle(id: Int)
+
+component App(model: Model) {
+    Column(padding = 16, gap = 12) {
+        Row(gap = 8) {
+            Input(model.draft, onChange = Draft)
+            Button(onClick = Add) {
+                Text("Add")
+            }
+        }
+
+        for (todo in model.todos; key = todo.id) {
+            Row(gap = 8) {
+                Checkbox(todo.done, onChange = Toggle(todo.id))
+                Text(todo.name)
+            }
+        }
+
+        Text("\${model.todos.length} todos", color = "#6b7280")
+    }
+}`;
+
+const logic = `import { App } from "./App.weft";
+import { run } from "@weft-ui/platform";
+
+const app = new App({ draft: "", todos: [] });
+let nextId = 1;
+
+app.onDraft((model, { value }) => {
+  model.draft = value;
+});
+
+app.onAdd((model) => {
+  const name = model.draft.trim();
+  if (!name) return;
+  model.todos = [...model.todos, { id: nextId++, name, done: false }];
+  model.draft = "";
+});
+
+app.onToggle((model, { id }) => {
+  const todo = model.todos.find((t) => t.id === id);
+  if (todo) todo.done = !todo.done;
+});
+
+run(app);`;
+
+// Theme objects rather than names: the prerender bundle drops Shiki's theme registry.
+const themes = { light: githubLight, dark: githubDark };
+
+const platforms = [
+  { id: "web", view: "DOM", engine: "浏览器", tool: "Vite" },
+  { id: "wechat", view: "WXML", engine: "小程序逻辑层", tool: "开发者工具" },
+  { id: "ios", view: "SwiftUI", engine: "Hermes", tool: "xcodebuild", min: "iOS 17" },
+  { id: "macos", view: "SwiftUI", engine: "Hermes", tool: "xcodebuild", min: "macOS 14" },
+  { id: "android", view: "Jetpack Compose", engine: "Hermes", tool: "Gradle", min: "API 24" },
+  { id: "windows", view: "WinUI 3", engine: "Hermes", tool: "dotnet build", min: "10 1809" },
+  { id: "linux", view: "GTK 4", engine: "Hermes", tool: "CMake", min: "GTK 4.10" },
+];
+
+const features = [
+  {
+    title: "原生视图",
+    body: "每个平台的视图都编译成该平台的原生控件代码。不用 WebView，也不自绘，外观贴近各平台原生风格。",
+    icon: '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',
+  },
+  {
+    title: "编译期依赖分析",
+    body: "类型检查、依赖分析和模板展开都在编译期完成。没有虚拟 DOM，运行时只做细粒度更新。",
+    icon: '<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+  },
+  {
+    title: "单向数据流",
+    body: "视图只能读 model、只能改组件私有的 state。修改 model 必须发出 event，交给逻辑层处理。",
+    icon: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+  },
+  {
+    title: "一份 JS/TS 逻辑",
+    body: "Web 和小程序用平台自带的引擎，其余平台嵌入 Hermes，发布时预编译成字节码。",
+    icon: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+  },
+  {
+    title: "统一平台 API",
+    body: "@weft-ui/platform 在每个平台签名一致：run、fetch、storage、platform。不支持的调用以 PlatformError 拒绝。",
+    icon: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>',
+  },
+  {
+    title: "完整工具链",
+    body: "weft fmt、weft lsp、tree-sitter 语法和 Zed 扩展；TypeScript content mapper 让类型错误直接落在 .weft 源码上。",
+    icon: '<path d="m4 17 6-6-6-6"/><path d="M12 19h8"/>',
+  },
+];
+
+const steps = [
+  { n: "01", title: "描述视图", body: "在 .weft 里声明 model、event 和组件。", code: "App.weft" },
+  { n: "02", title: "编写逻辑", body: "在 TypeScript 里处理事件、修改 model。", code: "index.ts" },
+  { n: "03", title: "编译", body: "Vite 插件调用 WASM 编译器，生成逻辑模块、布局和原生视图代码。", code: "@weft-ui/vite" },
+  { n: "04", title: "出包", body: "生成 apps/<platform>/ 原生工程，再调用宿主构建工具。", code: "apps/<platform>/" },
+];
+
+const github =
+  "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12";
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <script is:inline>
+      // Same storage key as Starlight's theme picker, so both stay in sync.
+      (() => {
+        const stored = localStorage.getItem("starlight-theme");
+        const theme =
+          stored === "light" || stored === "dark"
+            ? stored
+            : matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-inner">
+        <a class="brand" href={`${base}/`}>
+          <WeftMark size={22} />
+          <span>Weft</span>
+        </a>
+        <nav class="links">
+          <a href={`${base}/grammar/`}>语法</a>
+          <a href={`${base}/protocol/`}>视图协议</a>
+        </nav>
+        <div class="nav-actions">
+          <a class="icon-link" href={repo} aria-label="GitHub">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d={github} /></svg>
+          </a>
+          <a class="btn btn-primary btn-sm" href={docs}>文档</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="container hero-content">
+          <a class="pill" href={`${base}/protocol/`}>
+            <span class="pill-dot"></span>
+            7 个平台 · 原生视图 · 一份逻辑
+            <span class="pill-arrow">→</span>
+          </a>
+          <h1>一份视图<br />七个平台原生运行</h1>
+          <p class="lead">
+            Weft 是一门编译型 UI 语言。用 <code>.weft</code> 描述视图，用 JS/TS 写逻辑，编译成 DOM、微信小程序、SwiftUI、Jetpack
+            Compose、WinUI 3 和 GTK 4 的原生代码。
+          </p>
+          <div class="cta">
+            <a class="btn btn-primary" href={docs}>开始阅读 <span aria-hidden="true">→</span></a>
+            <a class="btn btn-secondary" href={repo}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d={github} /></svg>
+              GitHub
+            </a>
+          </div>
+          <div class="command">
+            <span class="prompt">$</span>
+            <code>{command}</code>
+            <button class="copy" type="button" data-copy={command} aria-label="复制命令">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="container section">
+        <div class="window">
+          <div class="window-pane">
+            <div class="tab"><span class="tab-dot weft"></span>App.weft</div>
+            <Code code={view} lang={weft as any} themes={themes} defaultColor={false} />
+          </div>
+          <div class="window-pane">
+            <div class="tab"><span class="tab-dot ts"></span>index.ts</div>
+            <Code code={logic} lang="ts" themes={themes} defaultColor={false} />
+          </div>
+        </div>
+        <p class="caption">视图声明在 <code>.weft</code> 里，状态和业务逻辑留在 TypeScript。视图想改 model，只能发出事件。</p>
+      </section>
+
+      <section class="container section">
+        <div class="section-head">
+          <p class="eyebrow">平台</p>
+          <h2>七个平台，一种写法</h2>
+          <p class="sub">语言不变，后端换成每个平台自己的视图层。原生平台共享同一个嵌入 Hermes 的 C++ 内核。</p>
+        </div>
+        <div class="platforms">
+          {
+            platforms.map((p) => (
+              <div class="platform">
+                <div class="platform-top">
+                  <code class="tag">{p.id}</code>
+                  {p.min && <span class="min">{p.min}</span>}
+                </div>
+                <div class="platform-view">{p.view}</div>
+                <div class="platform-meta">
+                  {p.engine} · {p.tool}
+                </div>
+              </div>
+            ))
+          }
+          <a class="platform platform-link" href={`${base}/protocol/`}>
+            <div class="platform-view">视图协议</div>
+            <div class="platform-meta">JS 逻辑层与各平台视图层之间的 ops 约定 →</div>
+          </a>
+        </div>
+      </section>
+
+      <section class="container section">
+        <div class="section-head">
+          <p class="eyebrow">特性</p>
+          <h2>编译期做完大部分工作</h2>
+          <p class="sub">DSL 只描述视图，不是通用编程语言。剩下的交给编译器和宿主语言。</p>
+        </div>
+        <div class="features">
+          {
+            features.map((f) => (
+              <div class="feature">
+                <svg class="feature-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={f.icon} />
+                <h3>{f.title}</h3>
+                <p>{f.body}</p>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="container section">
+        <div class="section-head">
+          <p class="eyebrow">构建</p>
+          <h2>一条命令，从源码到原生工程</h2>
+        </div>
+        <ol class="steps">
+          {
+            steps.map((s) => (
+              <li class="step">
+                <span class="step-n">{s.n}</span>
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+                <code>{s.code}</code>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <section class="container final">
+        <div class="final-inner">
+          <WeftMark size={40} />
+          <h2>开始用 Weft 编织界面</h2>
+          <p class="sub">从语法规范读起，或者直接看示例工程。</p>
+          <div class="cta">
+            <a class="btn btn-primary" href={docs}>阅读语法</a>
+            <a class="btn btn-secondary" href={`${repo}/tree/master/example`}>查看示例</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="brand" href={`${base}/`}>
+          <WeftMark size={18} />
+          <span>Weft UI</span>
+        </a>
+        <nav class="footer-links">
+          <a href={`${base}/grammar/`}>语法</a>
+          <a href={`${base}/protocol/`}>视图协议</a>
+          <a href={repo}>GitHub</a>
+        </nav>
+        <div class="theme-switch" role="radiogroup" aria-label="主题">
+          <button type="button" data-theme-choice="light" aria-label="浅色">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+          </button>
+          <button type="button" data-theme-choice="auto" aria-label="跟随系统">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+          </button>
+          <button type="button" data-theme-choice="dark" aria-label="深色">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" /></svg>
+          </button>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      for (const button of document.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
+        button.addEventListener("click", async () => {
+          await navigator.clipboard.writeText(button.dataset.copy!);
+          button.classList.add("copied");
+          setTimeout(() => button.classList.remove("copied"), 1200);
+        });
+      }
+
+      const light = matchMedia("(prefers-color-scheme: light)");
+      const choices = document.querySelectorAll<HTMLButtonElement>("[data-theme-choice]");
+      const apply = () => {
+        const stored = localStorage.getItem("starlight-theme");
+        const choice = stored === "light" || stored === "dark" ? stored : "auto";
+        document.documentElement.dataset.theme = choice === "auto" ? (light.matches ? "light" : "dark") : choice;
+        for (const c of choices) c.setAttribute("aria-checked", String(c.dataset.themeChoice === choice));
+      };
+      for (const c of choices) {
+        c.setAttribute("role", "radio");
+        c.addEventListener("click", () => {
+          const choice = c.dataset.themeChoice!;
+          localStorage.setItem("starlight-theme", choice === "auto" ? "" : choice);
+          apply();
+        });
+      }
+      light.addEventListener("change", apply);
+      apply();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #000;
+    --fg: #ededed;
+    --muted: #a1a1a1;
+    --subtle: #707070;
+    --border: #262626;
+    --border-strong: #3d3d3d;
+    --surface: #0a0a0a;
+    --surface-hover: #111;
+    --btn-bg: #ededed;
+    --btn-fg: #0a0a0a;
+    --grid: rgb(255 255 255 / 0.07);
+    --glow-opacity: 0.5;
+    color-scheme: dark;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #fff;
+    --fg: #0a0a0a;
+    --muted: #666;
+    --subtle: #8f8f8f;
+    --border: #ebebeb;
+    --border-strong: #d4d4d4;
+    --surface: #fafafa;
+    --surface-hover: #f2f2f2;
+    --btn-bg: #0a0a0a;
+    --btn-fg: #fff;
+    --grid: rgb(0 0 0 / 0.06);
+    --glow-opacity: 0.35;
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Geist Variable", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  code,
+  pre {
+    font-family: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .astro-code {
+    margin: 0;
+    padding: 20px 24px;
+    font-size: 13px;
+    line-height: 1.7;
+    background: transparent !important;
+    overflow-x: auto;
+  }
+
+  .astro-code span {
+    color: var(--shiki-dark);
+  }
+
+  [data-theme="light"] .astro-code span {
+    color: var(--shiki-light);
+  }
+</style>
+
+<style>
+  .container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Navigation */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
+    backdrop-filter: saturate(180%) blur(8px);
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    max-width: 1200px;
+    height: 64px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -0.02em;
+  }
+
+  .links {
+    display: flex;
+    gap: 24px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .links a:hover,
+  .footer-links a:hover,
+  .icon-link:hover {
+    color: var(--fg);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+  }
+
+  .icon-link {
+    display: inline-flex;
+    color: var(--muted);
+    transition: color 0.15s;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 48px;
+    padding: 0 22px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 500;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      opacity 0.15s;
+  }
+
+  .btn-sm {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  .btn-primary {
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+  }
+
+  .btn-primary:hover {
+    opacity: 0.85;
+  }
+
+  .btn-secondary {
+    border: 1px solid var(--border-strong);
+    background: var(--bg);
+  }
+
+  .btn-secondary:hover {
+    background: var(--surface-hover);
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: center top;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 100%);
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: -260px;
+    left: 50%;
+    width: 900px;
+    height: 520px;
+    transform: translateX(-50%);
+    background: conic-gradient(from 180deg at 50% 50%, #0070f3, #7928ca, #ff0080, #ff4d4d, #f9cb28, #0070f3);
+    filter: blur(120px);
+    opacity: var(--glow-opacity);
+    border-radius: 50%;
+  }
+
+  .hero-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 112px;
+    padding-bottom: 104px;
+    text-align: center;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 32px;
+    padding: 0 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 60%, transparent);
+    font-size: 13px;
+    color: var(--muted);
+    backdrop-filter: blur(8px);
+    transition: color 0.15s;
+  }
+
+  .pill:hover {
+    color: var(--fg);
+  }
+
+  .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #0070f3;
+    box-shadow: 0 0 0 3px color-mix(in srgb, #0070f3 25%, transparent);
+  }
+
+  .pill-arrow {
+    transition: transform 0.15s;
+  }
+
+  .pill:hover .pill-arrow {
+    transform: translateX(2px);
+  }
+
+  h1 {
+    margin: 28px 0 0;
+    font-size: clamp(44px, 7.4vw, 84px);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.05em;
+    background: linear-gradient(180deg, var(--fg) 40%, color-mix(in srgb, var(--fg) 55%, transparent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lead {
+    max-width: 660px;
+    margin: 24px 0 0;
+    text-wrap: balance;
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .lead code,
+  .caption code {
+    font-size: 0.9em;
+    color: var(--fg);
+  }
+
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 36px;
+  }
+
+  .command {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 100%;
+    margin-top: 28px;
+    padding: 0 6px 0 16px;
+    height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    font-size: 13px;
+  }
+
+  .command code {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .prompt {
+    font-family: "Geist Mono Variable", monospace;
+    color: var(--subtle);
+  }
+
+  .copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .copy:hover {
+    background: var(--surface-hover);
+    color: var(--fg);
+  }
+
+  .copy.copied {
+    color: #0cce6b;
+  }
+
+  /* Sections */
+  .section {
+    padding-top: 112px;
+  }
+
+  .section-head {
+    max-width: 640px;
+    margin-bottom: 48px;
+  }
+
+  .eyebrow {
+    margin: 0 0 12px;
+    font-family: "Geist Mono Variable", monospace;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--subtle);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 44px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.04em;
+  }
+
+  .sub {
+    margin: 16px 0 0;
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  /* Code window */
+  .window {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    overflow: hidden;
+    box-shadow: 0 30px 80px -40px rgb(0 0 0 / 0.5);
+  }
+
+  .window-pane {
+    min-width: 0;
+  }
+
+  .window-pane + .window-pane {
+    border-left: 1px solid var(--border);
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+    font-family: "Geist Mono Variable", monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .tab-dot.weft {
+    background: linear-gradient(135deg, #7928ca, #ff0080);
+  }
+
+  .tab-dot.ts {
+    background: #3178c6;
+  }
+
+  .caption {
+    margin: 20px 0 0;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* Platforms */
+  .platforms {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+  }
+
+  .platform {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 168px;
+    padding: 24px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .platform:hover {
+    background: var(--surface);
+  }
+
+  .platform-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .tag {
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .min {
+    font-size: 12px;
+    color: var(--subtle);
+  }
+
+  .platform-view {
+    margin-top: auto;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .platform-meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .platform-link {
+    background: var(--surface);
+  }
+
+  .platform-link:hover {
+    background: var(--surface-hover);
+  }
+
+  /* Features */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+  }
+
+  .feature {
+    padding: 32px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .feature-icon {
+    color: var(--fg);
+  }
+
+  .feature h3,
+  .step h3 {
+    margin: 20px 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .feature p,
+  .step p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  /* Steps */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  .step-n {
+    font-family: "Geist Mono Variable", monospace;
+    font-size: 13px;
+    color: var(--subtle);
+  }
+
+  .step p {
+    flex: 1;
+  }
+
+  .step code {
+    align-self: flex-start;
+    margin-top: 20px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    font-size: 12px;
+  }
+
+  /* Final call to action */
+  .final {
+    padding-top: 112px;
+    padding-bottom: 112px;
+  }
+
+  .final-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 72px 24px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background:
+      radial-gradient(ellipse 60% 80% at 50% 0%, color-mix(in srgb, #0070f3 14%, transparent), transparent),
+      var(--surface);
+    text-align: center;
+  }
+
+  .final-inner h2 {
+    margin-top: 24px;
+  }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    height: 80px;
+  }
+
+  .footer-inner .brand {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .theme-switch {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+
+  .theme-switch button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--subtle);
+    cursor: pointer;
+  }
+
+  .theme-switch button:hover,
+  .theme-switch button[aria-checked="true"] {
+    color: var(--fg);
+  }
+
+  .theme-switch button[aria-checked="true"] {
+    background: var(--surface-hover);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+
+  @media (max-width: 960px) {
+    .window {
+      grid-template-columns: 1fr;
+    }
+
+    .window-pane + .window-pane {
+      border-left: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .platforms,
+    .steps {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .features {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .links {
+      display: none;
+    }
+
+    .hero-content {
+      padding-top: 80px;
+      padding-bottom: 72px;
+    }
+
+    .platforms,
+    .steps,
+    .features {
+      grid-template-columns: 1fr;
+    }
+
+    .footer-inner {
+      flex-wrap: wrap;
+      gap: 16px;
+      height: auto;
+      padding-top: 24px;
+      padding-bottom: 24px;
+    }
+  }
+</style>

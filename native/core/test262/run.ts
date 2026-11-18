@@ -1,7 +1,7 @@
 /**
  * Runs a test262 subset through `hermesc` and the Hermes VM to find the
- * syntax `@weft-ui/vite` must lower for native platforms (see
- * docs/PLAN-v2.md, "Hermes 语法目标"). Every syntax feature that Oxc can
+ * syntax `@weft-ui/vite` must lower for native platforms (`HERMES_TARGET`
+ * in packages/vite/src/native.ts). Every syntax feature that Oxc can
  * lower is probed with the language tests tagged with it; the result is a
  * Markdown table of compile and run results per feature.
  *

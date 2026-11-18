@@ -3,3 +3,5 @@ node_modules/
 /packages/compiler/wasm/
 *.d.weft.ts
 /native/core/build
+/docs/dist
+/docs/.astro

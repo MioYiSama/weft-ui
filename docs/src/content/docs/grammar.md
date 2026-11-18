@@ -1,4 +1,7 @@
-# Weft 语法（M0 定稿）
+---
+title: Weft 语法
+description: .weft 语言的规范语法：词法、EBNF 文法、错误恢复与语义约束。
+---
 
 本文是 `.weft` 语言的规范语法，解析器（`weft_ui_parser::parse`）按此实现。语义规则（作用域、类型、依赖）见文末[语义约束](#语义约束)。
 
@@ -21,7 +24,7 @@
 
 EBNF 记法：`X?` 可选，`X*` 零或多次，`X+` 一或多次，`"tok"` 为 token。
 
-```ebnf
+```text
 File        = Import* Item* EOF ;
 Import      = "import" STRING ;               (* 不允许插值 *)
 Item        = Model | Event | Component ;

@@ -16,7 +16,7 @@ host="$core/build"
 out="$here/build"
 sdks=${WEFT_APPLE_SDKS:-"macosx iphonesimulator iphoneos"}
 
-# Minimum OS versions of docs/PLAN-v2.md; keep in sync with Package.swift.
+# Minimum supported OS versions; keep in sync with Package.swift.
 macos_min=14.0
 ios_min=17.0
 

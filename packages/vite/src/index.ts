@@ -9,7 +9,7 @@ import { HERMES_TARGET, NATIVE, compileBytecode } from "./native.ts";
 import { WEFT_LINUX, cmakeBuild, cmakeLists } from "./linux.ts";
 import { WEFT_WINUI, dotnetBuild, targets } from "./windows.ts";
 
-/** Every target platform, in the order of docs/PLAN-v2.md. */
+/** Every target platform. */
 export const PLATFORMS: readonly Platform[] = ["web", "wechat", "ios", "macos", "android", "windows", "linux"];
 
 /** Options of the Weft Vite plugin. */

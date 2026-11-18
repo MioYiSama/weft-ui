@@ -1,8 +1,0 @@
-[package]
-name = "weft-ui-codegen-swiftui"
-version = { workspace = true }
-edition = { workspace = true }
-description = "SwiftUI backend (iOS and macOS) for Weft UI"
-
-[dependencies]
-weft-ui-compiler = { path = "../compiler" }

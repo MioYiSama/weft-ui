@@ -1,7 +1,7 @@
 // swift-tools-version: 6.0
 // WeftKit: the Apple platform shell of the Weft native kernel. It runs the
 // kernel (binary target WeftCore, built by build-core.sh), applies its view
-// protocol ops to the scopes of the SwiftUI views that weft-ui-codegen-swiftui
+// protocol ops to the scopes of the SwiftUI views that weft_ui_transformer::swiftui
 // generates, and implements the platform modules.
 
 import PackageDescription

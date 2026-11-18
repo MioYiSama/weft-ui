@@ -28,21 +28,19 @@ services:
       - ../../..:/workspace
       - node_modules:/workspace/node_modules
       - compiler_modules:/workspace/packages/compiler/node_modules
-      - miniprogram_modules:/workspace/packages/miniprogram/node_modules
       - platform_modules:/workspace/packages/platform/node_modules
       - runtime_modules:/workspace/packages/runtime/node_modules
-      - vite_modules:/workspace/packages/vite-plugin/node_modules
+      - vite_modules:/workspace/packages/vite/node_modules
       - example_modules:/workspace/example/node_modules
-      - conformance_modules:/workspace/conformance/node_modules
+      - tests_modules:/workspace/tests/node_modules
       - pnpm_store:/home/ubuntu/.local/share/pnpm
 
 volumes:
   node_modules:
   compiler_modules:
-  miniprogram_modules:
   platform_modules:
   runtime_modules:
   vite_modules:
   example_modules:
-  conformance_modules:
+  tests_modules:
   pnpm_store:

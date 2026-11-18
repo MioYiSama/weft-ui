@@ -17,7 +17,7 @@ import type { Session, Sink, Value } from "./remote.ts";
 
 type Data = Record<string, unknown>;
 
-/** Data keys of one layout template (see `crates/codegen-wechat/src/table.rs`). */
+/** Data keys of one layout template (see `crates/transformer/src/wechat/table.rs`). */
 export interface TemplateKeys {
   /** WXML template rendering a component body as the root. */
   n?: string;

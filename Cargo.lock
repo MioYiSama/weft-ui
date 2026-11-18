@@ -583,93 +583,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "weft-ui-ast"
+version = "0.0.0"
+
+[[package]]
 name = "weft-ui-cli"
 version = "0.0.0"
 dependencies = [
  "ignore",
- "weft-ui-compiler",
- "weft-ui-fmt",
- "weft-ui-lsp",
+ "weft-ui-ast",
+ "weft-ui-formatter",
+ "weft-ui-language-server",
 ]
 
 [[package]]
-name = "weft-ui-codegen-compose"
+name = "weft-ui-formatter"
 version = "0.0.0"
 dependencies = [
- "weft-ui-compiler",
+ "weft-ui-ast",
+ "weft-ui-parser",
 ]
 
 [[package]]
-name = "weft-ui-codegen-gtk"
-version = "0.0.0"
-dependencies = [
- "weft-ui-compiler",
-]
-
-[[package]]
-name = "weft-ui-codegen-js"
-version = "0.0.0"
-dependencies = [
- "weft-ui-compiler",
-]
-
-[[package]]
-name = "weft-ui-codegen-swiftui"
-version = "0.0.0"
-dependencies = [
- "weft-ui-compiler",
-]
-
-[[package]]
-name = "weft-ui-codegen-web"
-version = "0.0.0"
-dependencies = [
- "weft-ui-codegen-js",
- "weft-ui-compiler",
-]
-
-[[package]]
-name = "weft-ui-codegen-wechat"
-version = "0.0.0"
-dependencies = [
- "weft-ui-codegen-js",
- "weft-ui-compiler",
-]
-
-[[package]]
-name = "weft-ui-codegen-winui"
-version = "0.0.0"
-dependencies = [
- "weft-ui-compiler",
-]
-
-[[package]]
-name = "weft-ui-compiler"
-version = "0.0.0"
-
-[[package]]
-name = "weft-ui-driver"
-version = "0.0.0"
-dependencies = [
- "weft-ui-codegen-compose",
- "weft-ui-codegen-gtk",
- "weft-ui-codegen-js",
- "weft-ui-codegen-swiftui",
- "weft-ui-codegen-web",
- "weft-ui-codegen-wechat",
- "weft-ui-codegen-winui",
- "weft-ui-compiler",
-]
-
-[[package]]
-name = "weft-ui-fmt"
-version = "0.0.0"
-dependencies = [
- "weft-ui-compiler",
-]
-
-[[package]]
-name = "weft-ui-lsp"
+name = "weft-ui-language-server"
 version = "0.0.0"
 dependencies = [
  "lsp-server",
@@ -677,8 +613,25 @@ dependencies = [
  "serde",
  "serde_json",
  "url",
- "weft-ui-compiler",
- "weft-ui-fmt",
+ "weft-ui-ast",
+ "weft-ui-formatter",
+ "weft-ui-parser",
+ "weft-ui-transformer",
+]
+
+[[package]]
+name = "weft-ui-parser"
+version = "0.0.0"
+dependencies = [
+ "weft-ui-ast",
+]
+
+[[package]]
+name = "weft-ui-transformer"
+version = "0.0.0"
+dependencies = [
+ "weft-ui-ast",
+ "weft-ui-parser",
 ]
 
 [[package]]
@@ -687,8 +640,8 @@ version = "0.0.0"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
- "weft-ui-compiler",
- "weft-ui-driver",
+ "weft-ui-parser",
+ "weft-ui-transformer",
 ]
 
 [[package]]

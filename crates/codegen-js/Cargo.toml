@@ -1,8 +1,0 @@
-[package]
-name = "weft-ui-codegen-js"
-version = { workspace = true }
-edition = { workspace = true }
-description = "JavaScript logic modules (host bindings and block code) for Weft UI"
-
-[dependencies]
-weft-ui-compiler = { path = "../compiler" }

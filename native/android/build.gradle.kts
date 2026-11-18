@@ -1,6 +1,6 @@
 // The Android shell of the Weft native kernel: runs the kernel (libweft.so,
 // built by build-core.sh), applies its view protocol ops to the scopes of
-// the Compose views that weft-ui-codegen-compose generates, and implements
+// the Compose views that weft_ui_transformer::compose generates, and implements
 // the platform modules. Included as the project :weft-android by the
 // weft/settings.gradle.kts that @weft-ui/vite generates; plugin versions
 // come from the app's root build.

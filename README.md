@@ -9,8 +9,8 @@ pnpm install
 pnpm build:wasm
 pnpm --filter example build:web      # Vite app in example/apps/web/
 pnpm --filter example build:wechat   # mini program project in example/apps/wechat/
-pnpm test                       # includes conformance/: headless ops goldens, Web and mini program parity
-cargo test --workspace          # compiler, backends, TodoList snapshots
+pnpm test                       # includes tests/conformance/: headless ops goldens, Web and mini program parity
+cargo test --workspace          # parser, transformer backends, TodoList snapshots
 
 # Native kernel (Hermes is fetched and built from source on the first configure)
 cmake -S native/core -B native/core/build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -51,8 +51,12 @@ weft fmt [--check] [paths...]        # format .weft files (default: current dire
 weft lsp                             # language server on stdio: diagnostics, completion, hover, go to definition, formatting
 ```
 
-Zed: run `zed: install dev extension` and pick `editors/zed/` (needs Rust installed through rustup). The extension starts `weft lsp` from `PATH`; set `lsp.weft.binary.path` in Zed's settings to use another binary. Highlighting, brackets, indentation and the outline come from the tree-sitter grammar in `editors/tree-sitter-weft/`. Zed fetches it from the commit `rev` in `editors/zed/extension.toml` names, so the grammar must be committed and pushed before installing, and `rev` bumped after grammar changes.
+Zed: run `zed: install dev extension` and pick `crates/zed/` (needs Rust installed through rustup). The extension starts `weft lsp` from `PATH`; set `lsp.weft.binary.path` in Zed's settings to use another binary. Highlighting, brackets, indentation and the outline come from the tree-sitter grammar in `packages/tree-sitter/`. Zed fetches the grammar from a pinned commit; see [how to update the pin](packages/tree-sitter/README.md).
+
+## Vite plugin
+
+With `@weft-ui/vite`, `entry` selects the JS/TS entry for non-Web builds, relative to the Vite root. It defaults to the first existing file in `src/index.{js,ts,mjs,mts,cjs,cts}`, in that order. Web builds start from `index.html`. Set `apps` to change the output directory for platform projects (an absolute path or a path relative to the Vite root; default `./apps`). The paths below assume the default.
 
 `WEFT_PLATFORM=<platform> vite build` (comma-separated for several) builds into `apps/<platform>/`. The project template there is copied on the first build and then belongs to you; `apps/<platform>/weft/` is regenerated on every build. Open `apps/wechat/` in WeChat DevTools. Platform APIs come from `@weft-ui/platform` (`run`, `fetch`, `storage`, `platform`, `isSupported`); unsupported ones reject with `PlatformError`. Native platforms (`ios`, `macos`, `android`, `windows`, `linux`) build `apps/<platform>/weft/bundle.hbc` (Hermes bytecode for the kernel in `native/core`) and `layout.json`. `macos` and `ios` also generate SwiftUI views into the `WeftApp` package in `apps/<platform>/weft/`, linked by the Xcode project `apps/<platform>/App.xcodeproj` and its WeftKit shell (`native/apple`), and run `xcodebuild` (`WEFT_NATIVE=0` only generates the project). `windows` generates WinUI 3 views (`weft/Generated.cs`) for the dotnet project `apps/windows/App.csproj`, linked against the Weft.WinUI shell (`native/windows`), and runs `dotnet build` on Windows hosts. `android` generates Jetpack Compose views into the Gradle module `apps/android/weft/` (with the bytecode as an asset), used by the Gradle project `apps/android/` together with its Android shell (`native/android`), and runs `./gradlew assembleDebug` on any host. `linux` generates GTK 4 views (`weft/Generated.cpp`) for the CMake project `apps/linux/`, linked against the C++ shell (`native/linux`), and builds it with CMake on Linux hosts (the executable is `apps/linux/build/app`).
 
-Design notes: [docs/PLAN.md](docs/PLAN.md), grammar: [docs/GRAMMAR.md](docs/GRAMMAR.md), view protocol: [docs/PROTOCOL.md](docs/PROTOCOL.md). `WEFT_UPDATE_SNAPSHOTS=1` rewrites Rust snapshots and conformance goldens. Cross-platform roadmap (native views on every platform, JS logic on Hermes): [docs/PLAN-v2.md](docs/PLAN-v2.md).
+Design notes: [docs/PLAN.md](docs/PLAN.md), grammar: [docs/GRAMMAR.md](docs/GRAMMAR.md), view protocol: [docs/PROTOCOL.md](docs/PROTOCOL.md). `WEFT_UPDATE_SNAPSHOTS=1` rewrites Rust snapshots (`crates/transformer/tests/snapshots/`) and conformance goldens (`tests/conformance/golden/`). Cross-platform roadmap (native views on every platform, JS logic on Hermes): [docs/PLAN-v2.md](docs/PLAN-v2.md).

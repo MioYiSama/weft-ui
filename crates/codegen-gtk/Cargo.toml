@@ -1,8 +1,0 @@
-[package]
-name = "weft-ui-codegen-gtk"
-version = { workspace = true }
-edition = { workspace = true }
-description = "GTK 4 backend (Linux, C++) for Weft UI"
-
-[dependencies]
-weft-ui-compiler = { path = "../compiler" }

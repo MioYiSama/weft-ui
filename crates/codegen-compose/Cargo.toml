@@ -1,8 +1,0 @@
-[package]
-name = "weft-ui-codegen-compose"
-version = { workspace = true }
-edition = { workspace = true }
-description = "Jetpack Compose backend (Android) for Weft UI"
-
-[dependencies]
-weft-ui-compiler = { path = "../compiler" }

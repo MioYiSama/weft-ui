@@ -5,3 +5,5 @@ edition = "2024"
 [workspace]
 resolver = "3"
 members = ["crates/*"]
+# Built by Zed for wasm32-wasip2 with its own lockfile and target directory.
+exclude = ["crates/zed"]

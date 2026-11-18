@@ -4,8 +4,8 @@ use std::io;
 
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
-use weft_ui_compiler::SourceLoader;
-use weft_ui_compiler::codegen::Platform;
+use weft_ui_parser::SourceLoader;
+use weft_ui_transformer::transform::Platform;
 
 #[wasm_bindgen]
 extern "C" {
@@ -79,7 +79,7 @@ pub fn compile_app(
 ) -> Result<AppOutput, JsError> {
     let platform: Platform = platform.parse()?;
     let entries: Vec<&str> = entries.iter().map(String::as_str).collect();
-    let output = weft_ui_driver::compile_app(&entries, platform, &mut JsLoader(load));
+    let output = weft_ui_transformer::compile_app(&entries, platform, &mut JsLoader(load));
     let compilation = &output.compilation;
     let (logic_sources, (logic_code, logic_dts)) = output
         .logic

@@ -1,0 +1,9 @@
+[package]
+name = "weft-ui-transformer"
+version = { workspace = true }
+edition = { workspace = true }
+description = "Semantic analysis and platform backends for Weft UI"
+
+[dependencies]
+weft-ui-ast = { path = "../ast" }
+weft-ui-parser = { path = "../parser" }

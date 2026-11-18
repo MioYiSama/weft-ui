@@ -8,36 +8,6 @@ importers:
 
   .: {}
 
-  conformance:
-    devDependencies:
-      '@types/node':
-        specifier: ^26.6.6
-        version: 26.6.6
-      '@weft-ui/miniprogram':
-        specifier: workspace:*
-        version: link:../packages/miniprogram
-      '@weft-ui/platform':
-        specifier: workspace:*
-        version: link:../packages/platform
-      '@weft-ui/runtime':
-        specifier: workspace:*
-        version: link:../packages/runtime
-      '@weft-ui/vite':
-        specifier: workspace:*
-        version: link:../packages/vite-plugin
-      happy-dom:
-        specifier: ^21.0.4
-        version: 21.0.4
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vite:
-        specifier: ^8.3.8
-        version: 8.3.8(@types/node@26.6.6)
-      vitest:
-        specifier: ^5.1.0
-        version: 5.1.0(@types/node@26.6.6)(happy-dom@21.0.4)(vite@8.3.8(@types/node@26.6.6))
-
   example:
     dependencies:
       '@weft-ui/platform':
@@ -48,7 +18,7 @@ importers:
         version: link:../packages/runtime
       '@weft-ui/vite':
         specifier: workspace:*
-        version: link:../packages/vite-plugin
+        version: link:../packages/vite
     devDependencies:
       vite:
         specifier: ^8.3.8
@@ -62,25 +32,6 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
-
-  packages/miniprogram:
-    dependencies:
-      '@weft-ui/compiler':
-        specifier: workspace:*
-        version: link:../compiler
-      '@weft-ui/runtime':
-        specifier: workspace:*
-        version: link:../runtime
-    devDependencies:
-      '@types/node':
-        specifier: ^26.6.6
-        version: 26.6.6
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vitest:
-        specifier: ^5.1.0
-        version: 5.1.0(@types/node@26.6.6)(happy-dom@21.0.4)(vite@8.3.8(@types/node@26.6.6))
 
   packages/platform:
     dependencies:
@@ -107,7 +58,7 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
-  packages/vite-plugin:
+  packages/vite:
     dependencies:
       '@weft-ui/compiler':
         specifier: workspace:*
@@ -119,15 +70,42 @@ importers:
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
-      '@weft-ui/miniprogram':
-        specifier: workspace:*
-        version: link:../miniprogram
       '@weft-ui/platform':
         specifier: workspace:*
         version: link:../platform
       '@weft-ui/runtime':
         specifier: workspace:*
         version: link:../runtime
+      happy-dom:
+        specifier: ^21.0.4
+        version: 21.0.4
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.8
+        version: 8.3.8(@types/node@26.6.6)
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@26.6.6)(happy-dom@21.0.4)(vite@8.3.8(@types/node@26.6.6))
+
+  tests:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.6
+        version: 26.6.6
+      '@weft-ui/compiler':
+        specifier: workspace:*
+        version: link:../packages/compiler
+      '@weft-ui/platform':
+        specifier: workspace:*
+        version: link:../packages/platform
+      '@weft-ui/runtime':
+        specifier: workspace:*
+        version: link:../packages/runtime
+      '@weft-ui/vite':
+        specifier: workspace:*
+        version: link:../packages/vite
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4

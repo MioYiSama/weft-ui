@@ -1,5 +1,5 @@
 // Conformance host: `weft_conformance <fixture dir> <golden.ops>` runs the
-// fixture bundle (conformance/native) in the kernel and acts as its platform
+// fixture bundle (tests/conformance/native) in the kernel and acts as its platform
 // shell. Like the JS headless renderer (@weft-ui/runtime/testing), it
 // checks every batch against the layout, applies it to a scope tree, and
 // dispatches the script's clicks and edits, rolling back rejected edits.

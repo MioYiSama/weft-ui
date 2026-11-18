@@ -1,4 +1,0 @@
-[package]
-name = "weft-ui-compiler"
-version = { workspace = true }
-edition = { workspace = true }

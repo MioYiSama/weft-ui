@@ -2,11 +2,11 @@
 
   <!-- Weft.WinUI: the Windows platform shell of the Weft native kernel. It runs
        the kernel (weft_core.dll, built by ../build-core.ps1), applies its view
-       protocol ops to the scopes of the views that weft-ui-codegen-winui
+       protocol ops to the scopes of the views that weft_ui_transformer::winui
        generates, and implements the platform modules. Apps reference it through
        ../Weft.WinUI.targets. -->
   <PropertyGroup>
-    <!-- Keep in sync with the app template (packages/vite-plugin/templates/windows). -->
+    <!-- Keep in sync with the app template (packages/vite/templates/windows). -->
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <UseWinUI>true</UseWinUI>

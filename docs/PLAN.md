@@ -203,16 +203,16 @@ flowchart LR
   AST --> Sema[名称解析 + 类型检查]
   Sema --> Dep[依赖分析]
   Dep --> IR[视图 IR]
-  IR --> HostGen[宿主绑定生成<br/>JS / TS]
-  IR --> BackendGen[后端代码生成<br/>DOM / WXML / 桌面]
+  IR --> Bridge[宿主绑定转换<br/>JS / TS]
+  IR --> Backend[后端转换<br/>DOM / WXML / 桌面]
 ```
 
 - **前端**：手写递归下降解析器。要求错误可恢复（LSP 需要），AST 节点带 span。
 - **语义分析**：作用域、类型推导和检查、`state` 只读/可写规则、`for` key 是否存在。
 - **依赖分析**：给每个绑定点（文本、属性、条件、列表）计算它读取的 model 字段路径和 state 集合。
 - **视图 IR**：与宿主、后端都无关的中间表示。由静态节点树、动态绑定表、更新函数组成。
-- **代码生成**：宿主绑定生成和后端生成正交，组合成 `宿主 × 后端` 的产物。
-- 编译器本身用 Rust 实现，crate 为 `weft_ui_compiler`。JS 生态（Vite 插件、LSP）以 WASM 形式分发同一个编译器（`wasm-bindgen`）。编译器核心不直接访问文件系统，源码读取和模块解析由宿主侧传入，这样 WASM 和原生两种形态共用一套接口。
+- **目标转换**：宿主绑定和视图转换分开实现，组合成 `宿主 × 后端` 的产物。
+- 编译器用 Rust 实现：`crates/ast` 定义 AST、源码区间和诊断；`crates/parser` 负责词法、语法分析和导入闭包加载；`crates/transformer` 负责语义、依赖、视图 IR 和布局、IDE 查询，以及各平台的转换。Vite 通过 `crates/wasm`（`wasm-bindgen`）使用同一个编译器；语言服务器原生调用它。编译器核心不直接访问文件系统，由宿主提供源码加载器。
 
 ## 视图更新
 
@@ -249,7 +249,7 @@ app.onSubmit(async (model, e) => {
 
 ## 渲染后端
 
-后端在编译器里实现成一个 trait，输入视图 IR，输出目标代码。
+`weft_ui_transformer::compile_app` 统一分发到各平台的后端模块。小程序和原生视图后端的 `transform` 函数读取 IR 推导出的视图布局并输出目标源码；Web 后端直接从 IR 转换出操作 DOM 的 JS 模块。
 
 | 后端      | 产物                                       | 更新方式                                                            |
 | --------- | ------------------------------------------ | ------------------------------------------------------------------- |
@@ -266,12 +266,12 @@ app.onSubmit(async (model, e) => {
 
 | 位置                     | 作用                                                                 |
 | ------------------------ | -------------------------------------------------------------------- |
-| `crates/codegen-js` + `crates/codegen-web` | 每个 `.weft` 生成一个 ES 模块和一份 `.d.ts`（TS 宿主绑定 + DOM 后端） |
+| `weft_ui_transformer::bridge` + `weft_ui_transformer::web` | 每个 `.weft` 生成一个 ES 模块和一份 `.d.ts`（TS 宿主绑定 + DOM 后端） |
 | `crates/wasm`            | `wasm-bindgen` 导出 `compileApp(entries, platform, load)`，源码由 JS 回调读取 |
 | `packages/compiler`      | `@weft-ui/compiler`：加载 WASM 产物（`wasm/`），供 Vite 插件和小程序构建共用 |
 | `packages/runtime`       | `@weft-ui/runtime`：model 基类、脏位 scope、微任务调度、`if`/`for`/插槽块 |
-| `packages/vite-plugin`   | `@weft-ui/vite`：转换 `.weft`，在源文件旁写 `X.d.weft.ts`      |
-| `packages/vite-plugin/test` | 端到端测试（happy-dom，含 TodoList 与 MutationObserver 粒度断言） |
+| `packages/vite`   | `@weft-ui/vite`：转换 `.weft`，在源文件旁写 `X.d.weft.ts`      |
+| `packages/vite/test` | 端到端测试（happy-dom，含 TodoList 与 MutationObserver 粒度断言） |
 
 构建：`pnpm install && pnpm build:wasm`，之后 `pnpm test`。跨平台示例统一放在 `example/`，构建命令为 `pnpm --filter example build:<platform>`。TS 侧需要开启 `allowArbitraryExtensions` 才能找到 `X.d.weft.ts`。
 
@@ -298,12 +298,12 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 
 | 位置                                    | 作用                                                                                           |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `crates/codegen-wechat` | 每个 `.weft` 生成一个 remote 模式逻辑模块（由 Vite 打进 `apps/wechat/weft/js/index.js`）；生成区另有整个应用共用的视图组件 `view.{js,json,wxml}`（`view.js` 内嵌模板到 `setData` key 的映射表）和页面 `index.{js,json,wxml}`（P2 起） |
+| `weft_ui_transformer::bridge` + `weft_ui_transformer::wechat` | 每个 `.weft` 生成一个 remote 模式逻辑模块（由 Vite 打进 `apps/wechat/weft/js/index.js`）；生成区另有整个应用共用的视图组件 `view.{js,json,wxml}`（`view.js` 内嵌模板到 `setData` key 的映射表）和页面 `index.{js,json,wxml}`（P2 起） |
 | `crates/wasm`                           | 导出 `compileApp(entries, "wechat", load)`                                                |
 | `packages/runtime/src/remote.ts` / `wechat.ts` | 通用块运行时（产出[视图协议](PROTOCOL.md) ops）/ 小程序 sink（ops → `setData`）和视图组件 `view()`（P1 起，原 `wx.ts`） |
 | `packages/platform`                     | `@weft-ui/platform` 的小程序实现：`run(app)` 注册 `App({ weft })`，页面和视图组件通过 `getApp().weft` 挂载 |
-| `packages/miniprogram`                  | `@weft-ui/miniprogram/testing`：Node 下的小程序框架替身（`launch` 运行整个 `apps/wechat/`）、`compile` / `loadView`、WXML 解释器和 `setData` 记录 |
-| `packages/miniprogram/test`            | 小程序端到端测试，含 TodoList，逐条断言 `setData` 负载                                      |
+| `tests/src/miniprogram.ts`              | `@weft-ui/tests` 内的测试工具：Node 下的小程序框架替身（`launch` 运行整个 `apps/wechat/`）、`compile` / `loadView`、WXML 解释器和 `setData` 记录 |
+| `tests/miniprogram`                     | 小程序端到端测试，含 TodoList，逐条断言 `setData` 负载                                      |
 
 构建：`WEFT_PLATFORM=wechat vite build`（见 [PLAN-v2.md 的构建](PLAN-v2.md#构建vite-集成)），用微信开发者工具打开 `apps/wechat/`。
 
@@ -333,8 +333,8 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 ## 工具链
 
 - **构建集成**：JS/TS 用 Vite 插件（`.weft` 作为模块导入，同时生成 `.d.ts`）。
-- **LSP**：诊断、补全、跳转定义、悬停类型。与编译器共用前端和语义分析。
-- **格式化工具**：基于 AST 和注释保留的 `weft fmt`。
+- **LSP**（`crates/language-server`，`weft-ui-language-server`）：诊断、补全、跳转定义、悬停类型。与编译器共用前端和语义分析。
+- **格式化工具**（`crates/formatter`，`weft-ui-formatter`）：基于 AST 并保留注释的 `weft fmt`。
 - **DSL 解释器**：直接解释视图 IR，用于实时预览和热重载，修改 `.weft` 不需要重新编译宿主。宿主侧事件可以 mock，也可以通过 IPC 转发给正在运行的进程。
 - **CLI**：`weft check` / `weft build` / `weft fmt` / `weft preview`。
 
@@ -343,10 +343,10 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 | 阶段 | 内容                                                                 | 验收标准                                   | 状态 |
 | ---- | -------------------------------------------------------------------- | ------------------------------------------ | ---- |
 | M0   | 语法定稿；解析器 + AST + 错误报告                                    | Demo 能解析，错误信息带位置                | 完成，语法见 [GRAMMAR.md](GRAMMAR.md) |
-| M1   | 语义分析 + 依赖分析 + 视图 IR                                        | 能输出 Demo 每个绑定点的依赖集合           | 完成，`cargo run -p weft-ui-compiler --example deps -- <file>` |
-| M2   | TS 宿主绑定 + Web DOM 后端 + Vite 插件                               | Demo 在浏览器中可交互，更新粒度符合预期    | 完成，见 [Web 后端（M2）](#web-后端m2)、`packages/vite-plugin/test` |
+| M1   | 语义分析 + 依赖分析 + 视图 IR                                        | 能输出 Demo 每个绑定点的依赖集合           | 完成，`cargo run -p weft-ui-transformer --example deps -- <file>` |
+| M2   | TS 宿主绑定 + Web DOM 后端 + Vite 插件                               | Demo 在浏览器中可交互，更新粒度符合预期    | 完成，见 [Web 后端（M2）](#web-后端m2)、`packages/vite/test` |
 | M3   | Rust 宿主（已移除）                                                   | —                                          | 已由 [PLAN-v2.md](PLAN-v2.md) 取代，Rust 宿主在 P0 删除 |
-| M4   | 微信小程序后端                                                       | Demo 在开发者工具中运行，`setData` 只发送变化路径 | 完成，见 [微信小程序后端（M4）](#微信小程序后端m4)、`packages/miniprogram/test` |
+| M4   | 微信小程序后端                                                       | Demo 在开发者工具中运行，`setData` 只发送变化路径 | 完成，见 [微信小程序后端（M4）](#微信小程序后端m4)、`tests/miniprogram` |
 | M5   | LSP + 格式化 + 解释器预览                                            | 编辑器内有诊断和补全，保存后预览热更新     |      |
 | M6   | 桌面自绘后端                                                         | Demo 在原生窗口中运行                      |      |
 

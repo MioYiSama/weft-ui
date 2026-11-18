@@ -1,5 +1,5 @@
 # hermesc flags of Weft bundles; keep them in sync with HERMESC_FLAGS in
-# packages/vite-plugin/src/native.ts.
+# packages/vite/src/native.ts.
 set(WEFT_HERMESC_FLAGS -O -emit-binary -Xes6-block-scoping -Xasync-generators -w)
 
 # Kernel tests: each JS file under js/ is compiled by the hermesc of the
@@ -43,7 +43,7 @@ foreach(name timers microtasks console text calls session refused stable_rows op
   add_test(NAME core.${name} COMMAND weft_core_tests ${CMAKE_CURRENT_BINARY_DIR}/js ${name})
 endforeach()
 
-# Protocol conformance: conformance/native/build.ts bundles every fixture
+# Protocol conformance: tests/conformance/native/build.ts bundles every fixture
 # with @weft-ui/vite (including its hermesc step), and weft_conformance runs
 # each bundle against a C++ renderer, comparing the ops log with the golden
 # file the JS headless renderer wrote.
@@ -53,9 +53,9 @@ if(WEFT_CONFORMANCE)
   set(out ${CMAKE_CURRENT_BINARY_DIR}/conformance)
   add_executable(weft_conformance conformance.cpp)
   weft_test_host(weft_conformance)
-  add_test(NAME conformance.build COMMAND ${WEFT_NODE} ${repo}/conformance/native/build.ts ${out})
+  add_test(NAME conformance.build COMMAND ${WEFT_NODE} ${repo}/tests/conformance/native/build.ts ${out})
   set_tests_properties(conformance.build PROPERTIES FIXTURES_SETUP conformance_bundles)
-  file(GLOB goldens CONFIGURE_DEPENDS ${repo}/conformance/golden/*.ops)
+  file(GLOB goldens CONFIGURE_DEPENDS ${repo}/tests/conformance/golden/*.ops)
   foreach(golden IN LISTS goldens)
     get_filename_component(name ${golden} NAME_WE)
     add_test(NAME conformance.${name} COMMAND weft_conformance ${out}/${name} ${golden})

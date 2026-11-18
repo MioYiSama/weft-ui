@@ -2,11 +2,11 @@
 
 JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块）与视图层（小程序 WXML、原生平台、无头渲染器）之间的约定。设计背景见 [PLAN-v2.md 的视图协议](PLAN-v2.md#视图协议)，本文是实现以此为准的规范。
 
-参考实现是 `@weft-ui/runtime/testing` 的无头渲染器：它把每批 ops 编码、解码、按布局校验后应用到内存树上。`conformance/` 的黄金文件就是它记录的 ops 文本。
+参考实现是 `@weft-ui/runtime/testing` 的无头渲染器：它把每批 ops 编码、解码、按布局校验后应用到内存树上。`tests/conformance/golden/` 的黄金文件就是它记录的 ops 文本。
 
 ## 布局
 
-`ViewLayout`（`crates/compiler/src/view.rs`）从整个应用的 Program 推导，JSON 形式由 WASM 的 `compileApp(...).layout` 给出，例子见 `crates/driver/tests/snapshots/TodoList/layout.json`。
+`ViewLayout`（`crates/transformer/src/view.rs`）从整个应用的 Program 推导，JSON 形式由 WASM 的 `compileApp(...).layout` 给出，例子见 `crates/transformer/tests/snapshots/TodoList/layout.json`。
 
 ```json
 {

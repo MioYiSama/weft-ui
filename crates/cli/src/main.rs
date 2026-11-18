@@ -4,9 +4,8 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use weft_ui_compiler::SourceMap;
-use weft_ui_compiler::diagnostic::render_all;
-use weft_ui_fmt::{FormatError, Options};
+use weft_ui_ast::{SourceMap, diagnostic::render_all};
+use weft_ui_formatter::{FormatError, Options};
 
 const USAGE: &str = "\
 Usage: weft <command> [options]
@@ -29,7 +28,7 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("fmt") => fmt(&args[1..]),
-        Some("lsp") => match weft_ui_lsp::run_stdio() {
+        Some("lsp") => match weft_ui_language_server::run_stdio() {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
                 eprintln!("weft lsp: {error}");
@@ -106,7 +105,7 @@ fn fmt(args: &[String]) -> ExitCode {
                 continue;
             }
         };
-        match weft_ui_fmt::format(&source, &options) {
+        match weft_ui_formatter::format(&source, &options) {
             Ok(formatted) if formatted == source => {}
             Ok(_) if check => {
                 println!("{display}");
@@ -137,7 +136,7 @@ fn fmt_stdin(path: &str, options: &Options) -> ExitCode {
         eprintln!("error: reading stdin: {error}");
         return ExitCode::FAILURE;
     }
-    match weft_ui_fmt::format(&source, options) {
+    match weft_ui_formatter::format(&source, options) {
         Ok(formatted) => {
             if let Err(error) = io::stdout().write_all(formatted.as_bytes()) {
                 eprintln!("error: writing stdout: {error}");

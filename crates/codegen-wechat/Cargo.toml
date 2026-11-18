@@ -1,9 +1,0 @@
-[package]
-name = "weft-ui-codegen-wechat"
-version = { workspace = true }
-edition = { workspace = true }
-description = "WeChat mini program backend for Weft UI"
-
-[dependencies]
-weft-ui-codegen-js = { path = "../codegen-js" }
-weft-ui-compiler = { path = "../compiler" }

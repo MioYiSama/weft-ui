@@ -1,0 +1,196 @@
+#include <algorithm>
+#include <stdexcept>
+#include <unordered_set>
+#include <utility>
+
+#include "point.hpp"
+#include "stack.hpp"
+#include "weft/gtk.hpp"
+
+namespace weft {
+
+namespace {
+
+size_t index_of(GtkWidget *container, GtkWidget *widget) {
+  size_t index = 0;
+  for (GtkWidget *child = gtk_widget_get_first_child(container); child != widget;
+       child = gtk_widget_get_next_sibling(child)) {
+    if (!child) throw std::logic_error("the widget is not in the container");
+    index++;
+  }
+  return index;
+}
+
+/// For each scope of `next`, whether its widgets keep their place.
+std::vector<uint8_t> stable_rows(const std::vector<Scope *> &previous, const std::vector<Scope *> &next) {
+  std::vector<uint8_t> stable(next.size(), 0);
+  if (previous.empty() || next.empty()) return stable;
+  std::vector<uint32_t> old_rows;
+  std::vector<uint32_t> new_rows;
+  old_rows.reserve(previous.size());
+  new_rows.reserve(next.size());
+  for (auto *scope : previous) old_rows.push_back(scope->id());
+  for (auto *scope : next) new_rows.push_back(scope->id());
+  weft_stable_rows(old_rows.data(), old_rows.size(), new_rows.data(), new_rows.size(), stable.data());
+  return stable;
+}
+
+}  // namespace
+
+// Scope.
+
+Scope::Scope(uint32_t id, Session &session, size_t points)
+    : id_(id), session_(session), roots_(*this), points_(points) {}
+
+Scope::~Scope() = default;
+
+void Scope::apply(uint32_t, const ops::Value &) {}
+
+bool Scope::dispatch(uint32_t slot) { return session_.dispatch(id_, slot, {}); }
+
+bool Scope::dispatch(uint32_t slot, bool value) { return session_.dispatch(id_, slot, std::string(1, value ? 1 : 0)); }
+
+bool Scope::dispatch(uint32_t slot, std::string_view value) {
+  // Tag 3, the UTF-8 length as a little-endian u32, the bytes.
+  std::string payload(1, char(3));
+  auto length = uint32_t(value.size());
+  for (int shift = 0; shift < 32; shift += 8) payload.push_back(char(length >> shift & 0xff));
+  payload.append(value);
+  return session_.dispatch(id_, slot, payload);
+}
+
+// Region.
+
+void Region::add(const Element &element) {
+  parts_.push_back({element.widget(), nullptr});
+  if (container_) gtk_widget_set_parent(element.widget(), container_);
+}
+
+void Region::point(Scope &owner, size_t index) {
+  auto &point = owner.points_.at(index);
+  point = std::make_unique<Point>(*this);
+  parts_.push_back({nullptr, point.get()});
+}
+
+size_t Region::count() const {
+  size_t count = 0;
+  for (auto &part : parts_) count += part.point ? part.point->count() : 1;
+  return count;
+}
+
+void Region::collect(std::vector<GtkWidget *> &widgets) const {
+  for (auto &part : parts_) {
+    if (!part.point) {
+      widgets.push_back(part.widget);
+      continue;
+    }
+    for (auto *child : part.point->children) child->roots_.collect(widgets);
+  }
+}
+
+size_t Region::offset(const Point &point) const {
+  size_t offset = 0;
+  for (auto &part : parts_) {
+    if (part.point == &point) return offset;
+    offset += part.point ? part.point->count() : 1;
+  }
+  throw std::logic_error("the point belongs to another region");
+}
+
+bool Region::locate(const Point &point, Region *&container, size_t &index) {
+  Region *region = &point.region;
+  index = region->offset(point);
+  while (!region->container_) {
+    Scope *scope = region->scope_;
+    Point *parent = scope->parent_;
+    if (!parent) return false;
+    index += parent->offset(*scope);
+    region = &parent->region;
+    index += region->offset(*parent);
+  }
+  container = region;
+  return true;
+}
+
+void Region::insert(size_t index, GtkWidget *widget) {
+  gtk_widget_insert_before(widget, container_, stack_child(container_, index));
+}
+
+void Region::remove(size_t index, size_t count) {
+  for (size_t i = 0; i < count; i++) gtk_widget_unparent(stack_child(container_, index));
+}
+
+// Point.
+
+size_t Point::count() const {
+  size_t count = 0;
+  for (auto *child : children) count += child->roots_.count();
+  return count;
+}
+
+size_t Point::offset(const Scope &child) const {
+  size_t offset = 0;
+  for (auto *other : children) {
+    if (other == &child) return offset;
+    offset += other->roots_.count();
+  }
+  throw std::logic_error("the scope is not mounted at this point");
+}
+
+void Point::mount(std::vector<Scope *> next) {
+  std::vector<Scope *> old = std::exchange(children, std::move(next));
+  for (auto *child : old) {
+    if (child->parent_ == this) child->parent_ = nullptr;
+  }
+  for (auto *child : children) child->parent_ = this;
+  // Widgets are only placed once the point's scope renders into a stack;
+  // until then mounting its scope places the whole subtree.
+  Region *container = nullptr;
+  size_t start = 0;
+  if (!Region::locate(*this, container, start)) return;
+
+  // Remove the widgets of children that are gone, last first so earlier offsets stay valid.
+  std::unordered_set<Scope *> kept(children.begin(), children.end());
+  std::vector<size_t> offsets(old.size());
+  size_t offset = start;
+  for (size_t i = 0; i < old.size(); i++) {
+    offsets[i] = offset;
+    offset += old[i]->roots_.count();
+  }
+  std::vector<Scope *> survivors;
+  survivors.reserve(old.size());
+  size_t end = offset;
+  for (size_t i = old.size(); i-- > 0;) {
+    if (kept.contains(old[i])) {
+      survivors.push_back(old[i]);
+      continue;
+    }
+    size_t count = old[i]->roots_.count();
+    container->remove(offsets[i], count);
+    end -= count;
+  }
+  std::reverse(survivors.begin(), survivors.end());
+
+  std::vector<uint8_t> stable = stable_rows(survivors, children);
+  std::unordered_set<Scope *> previous(survivors.begin(), survivors.end());
+  std::vector<GtkWidget *> widgets;
+  // Place the children last to first in front of `anchor`, the index where the next child's widgets start.
+  size_t anchor = end;
+  for (size_t i = children.size(); i-- > 0;) {
+    Scope *child = children[i];
+    widgets.clear();
+    child->roots_.collect(widgets);
+    if (stable[i]) {
+      if (!widgets.empty()) anchor = index_of(container->container_, widgets.front());
+      continue;
+    }
+    if (previous.contains(child) && !widgets.empty()) {
+      size_t from = index_of(container->container_, widgets.front());
+      container->remove(from, widgets.size());
+      if (from < anchor) anchor -= widgets.size();
+    }
+    for (size_t j = 0; j < widgets.size(); j++) container->insert(anchor + j, widgets[j]);
+  }
+}
+
+}  // namespace weft

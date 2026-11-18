@@ -400,6 +400,20 @@ Windows 已按上文实现，`example` 在 Windows 11 ARM64 上运行，UI Autom
 - **UI 测试**：没有用 WinAppDriver：它 2020 年后不再维护，需要开发者模式和单独安装、单独启动的服务。改用同样基于 UI Automation 的 FlaUI（NuGet 包，`dotnet test` 直接运行）。`apps/windows/UITests` 是 MSTest 项目，启动最近构建的 `App.exe`，按 macOS 的点击流程断言（按钮和 `if`、受控输入回滚、`for` 行、复选框、删除行）。逐字输入用 UI Automation 的 `ValuePattern` 在当前值后追加一个字符，不经过键盘，因此不受桌面输入法影响（用键盘模拟时中文输入法会把字母组字成汉字）。UI Automation 需要交互式桌面会话，从 SSH 运行时要经计划任务转到登录用户的会话。用 `pnpm --filter example test:windows` 运行。
 - **测试**：`native/windows/Weft.WinUI.Tests`（MSTest）覆盖 ops 解码和颜色解析；`driver` 的快照包括 `windows/Generated.cs`；`@weft-ui/vite` 的测试在 `WEFT_NATIVE=0` 下检查 Windows 工程的生成；Windows 上的 CTest（内核单元测试和 conformance）与 macOS 相同。
 
+### P7 的实现
+
+Linux 已按上文实现，`example` 在 Docker 里的 Ubuntu 26.04（arm64，GTK 4.22）XFCE 桌面上运行，点击流程测试通过。细节和出入：
+
+- **内核产物**：`native/linux/build-core.sh` 为宿主架构构建 `native/linux/build/linux-<arch>/libweft_core.so`（`WEFT_CORE_SHARED`，与 Windows 的 DLL 相同：Hermes 静态链接进去，内核的 C++ 辅助代码和 Hermes 的符号都隐藏，只导出 C ABI），依赖系统的 ICU（Hermes 在 Linux 上用它做 Unicode 处理）和 libstdc++。同一次构建还产出同版本的 `bin/hermesc`：`hermes-compiler` 没有 Linux arm64 的二进制，插件在这种宿主上自动用它（`WEFT_HERMESC` 仍可覆盖）。`WEFT_HERMES_SOURCE` 可复用已有的 Hermes 检出。需要 C++20 编译器、CMake、Ninja、Python 3 和 ICU 开发包；11 核 arm64 上约 2 分钟。
+- **平台壳**（`native/linux`，C++20 静态库 `weft::linux`）：每个应用从源码构建它，依赖 pkg-config 找到的 `gtk4 >= 4.10`、`libsoup-3.0` 和 `json-glib-1.0`。结构与 Weft.WinUI 对应：`weft/gtk.hpp` 是生成代码和工程模板用到的全部接口；`Session` 持有内核运行时，`commit` 回调里用内核的 `weft/ops.hpp` 同步解码 ops（只有 C ABI 跨过共享库，解码器编进平台壳），scope 树与 WinUI 相同。被销毁的 scope 在主循环空闲时才释放，因为销毁它的事件可能仍在它的控件的信号处理函数里。会话随根控件销毁。字节码用 `GMappedFile` 映射（页对齐，内核不复制）；定时器是合并到最早请求的一个 `g_timeout_add`；平台调用在主循环上异步完成后调用 `weft_runtime_resolve`，会话结束时用 `GCancellable` 取消。平台模块：`fetch` 用 libsoup，`storage` 是 `$XDG_DATA_HOME/<app id>/storage.json`（默认 `~/.local/share`，app id 取 `GApplication` 的，其次是程序名），经临时文件原子写入。`console` 和内核诊断写到 stderr；`platform.version` 是发行版版本号（`/etc/os-release` 的 `VERSION_ID`），没有时用内核版本。启动失败或 ops 异常时根视图显示原因。
+- **布局**：GTK 自带的容器做不到布局规范（`GtkBox` 会拉伸子控件，`size_request` 只是最小尺寸，背景只能用 CSS），所以 `Column` / `Row` 是平台壳自己的控件 `WeftStack`：子控件沿主轴按自然尺寸排列，有尺寸请求的（`Input`、设了宽高的 `Image`）按请求，宽度先定、高度按宽度测量；交叉轴起点对齐（按钮内容居中）；`gap`、`padding` 和 content-box 的 `width` / `height` 自己计算，`background` 在快照里画一个矩形。不用 CSS 也就不需要每个控件一个样式提供者。挂载与 WinUI 相同：scope 的顶层节点不占容器，挂载点变化时只改动容器里对应的一段，用 `weft_stable_rows` 标出不动的行，其余行移动或插入。根视图是 `GtkScrolledWindow` 里的 `WeftStack`，内容从左上角开始。
+- **视图后端**（`crates/codegen-gtk`）：生成 `weft/Generated.cpp`，每个模板一个 `weft::Scope` 子类 `S{n}`：构造函数按先序用 `make<weft::Stack>(…)` 等创建元素包装（归 scope 所有），写静态属性，放进父区域，挂载点注册为 `point(*this, i)`；有值槽的元素存为指针字段，`apply` 是生成的 `switch`，属性写入方法是 `set_` 加属性名。字符串常量是 `std::string_view` 字面量（`"…"sv`），控制字符用三位八进制转义；文件末尾定义平台壳声明的 `weft::start_app()`。`Text` 是 `GtkLabel`，颜色、字号（逻辑像素，同 CSS 的 `font-size`）和粗体用 Pango 属性；`Button` 是 `GtkButton`；`Input` 是宽 200 px 的 `GtkEntry`：`changed` 里同步 `dispatch`，被拒绝时恢复成值槽的值并保留光标，平台壳自己替换文本的中间状态（先删后插）不上报，输入法组字（`GtkText` 的 `preedit-changed`）期间不上报；`Checkbox` 是 `GtkCheckButton`，`toggled` 里上报，被拒绝时恢复。`Image` 是 `GtkPicture`，与 Android 相同，不经过 JS 的 `fetch`：平台壳用 libsoup 下载 `http(s)` 图片（其余按本地文件或 URI 用 GIO 读取），`gdk_texture_new_from_bytes` 解码，按 src 在进程内缓存；宽高规则与 SwiftUI 相同，都不设时 1 个图片像素对应 1 个逻辑像素。
+- **工程**：模板在 `packages/vite-plugin/templates/linux/`：`CMakeLists.txt`（项目名 `App`，可执行文件固定叫 `app`）、`main.cpp`（`GtkApplication` 的 id 来自 `app.id`，不合法时不设；窗口标题来自 `app.name`，默认 480×640，内容是 `weft::start_app()`）和 `tests/UITests.cpp`。插件对 `.cpp` 按 C++ 字符串替换占位符。生成区由插件写的 `weft/CMakeLists.txt` 接入：它 `add_subdirectory` 平台壳（相对生成区的路径，工作区在哪都能构建），再调用平台壳的 `weft_views()` 把 `Generated.cpp` 编成静态库；模板对每个可执行文件调用 `weft_app()`：链接视图、输出到构建目录顶层，把 `libweft_core.so` 和 `weft/bundle.hbc` 复制到旁边，运行路径是 `$ORIGIN`，构建目录可以整体搬走。内核产物缺少时 CMake 报错并给出 `build-core.sh`。
+- **构建**：`writeBundle` 在 `apps/linux/` 里执行 `cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug|Release` 和 `cmake --build build --parallel`，可执行文件是 `apps/linux/build/app`。非 Linux 宿主或 `WEFT_NATIVE=0` 时只生成工程；conformance 的打包脚本也设了 `WEFT_NATIVE=0`。
+- **UI 测试**：没有经 AT-SPI 从进程外驱动：那需要辅助功能总线和 Python 绑定，逐字输入还要模拟键盘，受桌面输入法影响。测试和 Compose UI Test 一样在进程内运行：`apps/linux/tests/UITests.cpp` 链接同一份视图，创建窗口、调用 `start_app()`，在真实的显示上按 macOS 的点击流程驱动控件：按钮和复选框用 `gtk_widget_activate`（与键盘激活同一路径，按钮的 `clicked` 在激活动画结束时才发出，所以每一步都等待结果），逐字输入用 `gtk_editable_insert_text` 在末尾插入一个字符，与按键走同一条缓冲区 `changed` 路径。测试注册为 CTest，用 `pnpm --filter example test:linux` 运行，需要 `DISPLAY` 或 `WAYLAND_DISPLAY`。
+- **Docker**：`native/linux/docker/` 是开发和测试用的 Linux 桌面：Ubuntu 26.04 镜像带 GTK 4 / libsoup / json-glib 开发包、ICU、CMake、Ninja、Node.js 和 pnpm，入口在 VNC 显示 `:1`（`vnc://localhost:5901`，密码 `weft`）上启动 XFCE 会话，容器里启动的应用和 UI 测试都显示在这个桌面上。`compose.yaml` 把工作区挂载到 `/workspace`，各个 `node_modules` 是独立的卷，所以容器里的 `pnpm install` 装 Linux 的包，不碰宿主的；编译器 WASM 用宿主构建的。在 macOS 上用 OrbStack 的 Docker 验证（arm64）。
+- **测试**：`driver` 的快照包括 `linux/Generated.cpp`；`@weft-ui/vite` 的测试在 `WEFT_NATIVE=0` 下检查 Linux 工程的生成；Linux 上的 CTest（内核单元测试和 conformance）与 macOS 相同，共享库形式的内核也通过（测试宿主自己编译 ops 解码器）。
+
 ## 测试策略
 
 逻辑层在所有非 web 平台上完全相同，所以测试分成两层：
@@ -407,7 +421,7 @@ Windows 已按上文实现，`example` 在 Windows 11 ARM64 上运行，UI Autom
 1. **协议一致性**（JS，跑在 CI 主力机上）：`conformance/` 下的 `.weft` 夹具加脚本化交互，在无头渲染器上记录 ops 日志并和黄金文件比对。同一套夹具也在 web（happy-dom）和小程序（现有的 WXML 解释器）上跑，断言最终的树结构一致。实现上每一步之后都比较三端归一化后的树（元素类型和主要值）以及宿主处理器收到的事件；黄金文件在 `conformance/golden/`，用 `WEFT_UPDATE_SNAPSHOTS=1 pnpm --filter @weft-ui/conformance test` 重写。
 2. **平台渲染**：每个平台只验证“ops → 控件”这一层。
    - 内核：CTest 在 Hermes 里跑同一批夹具，ops 日志必须和 JS 无头渲染器逐字节一致。
-   - 各平台用 XCUITest / Compose UI Test（见[P5 的实现](#p5-的实现)）/ UI Automation（FlaUI，见[P6 的实现](#p6-的实现)）/ GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 在 P4 扩充为覆盖全部内置元素和 `for` 列表（见[P4 的实现](#p4-的实现)），点击流程包括受控输入的回滚、复选框和删除列表行。
+   - 各平台用 XCUITest / Compose UI Test（见[P5 的实现](#p5-的实现)）/ UI Automation（FlaUI，见[P6 的实现](#p6-的实现)）/ GTK 进程内测试（在 Docker 的 XFCE + VNC 桌面上，见[P7 的实现](#p7-的实现)）跑 `example` 的点击流程。`example` 在 P4 扩充为覆盖全部内置元素和 `for` 列表（见[P4 的实现](#p4-的实现)），点击流程包括受控输入的回滚、复选框和删除列表行。
    - 后端 crate 对生成的源码做快照测试，只用来审查变更，不用来证明行为正确。
 
 ## 从现状迁移
@@ -436,7 +450,7 @@ Windows 已按上文实现，`example` 在 Windows 11 ARM64 上运行，UI Autom
 
 ## 里程碑
 
-M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P6 已完成）：
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P7 已完成）：
 
 | 阶段 | 内容                                                         | 验收标准                                                     |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |

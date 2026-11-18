@@ -1,0 +1,48 @@
+# Linux desktop with the workspace mounted at /workspace:
+#
+#   docker compose -f native/linux/docker/compose.yaml up -d --build
+#   docker compose -f native/linux/docker/compose.yaml exec linux bash
+#
+# Then, in the container: `pnpm install`, `native/linux/build-core.sh`,
+# `pnpm --filter example build:linux` and `pnpm --filter example test:linux`.
+# The compiler WASM (packages/compiler/wasm) comes from the host's
+# `pnpm build:wasm`.
+#
+# The XFCE session is on vnc://localhost:5901 (password `weft`); apps and UI
+# tests started in the container show up there. The workspace's
+# node_modules directories are separate volumes, so `pnpm install` in the
+# container installs Linux packages without touching the host's.
+services:
+  linux:
+    build: .
+    image: weft-linux
+    init: true
+    working_dir: /workspace
+    environment:
+      # Keep pnpm's store in its volume: by default pnpm puts it next to the
+      # project when the store and node_modules are on different file systems.
+      npm_config_store_dir: /home/ubuntu/.local/share/pnpm/store
+    ports:
+      - "127.0.0.1:5901:5901"
+    volumes:
+      - ../../..:/workspace
+      - node_modules:/workspace/node_modules
+      - compiler_modules:/workspace/packages/compiler/node_modules
+      - miniprogram_modules:/workspace/packages/miniprogram/node_modules
+      - platform_modules:/workspace/packages/platform/node_modules
+      - runtime_modules:/workspace/packages/runtime/node_modules
+      - vite_modules:/workspace/packages/vite-plugin/node_modules
+      - example_modules:/workspace/example/node_modules
+      - conformance_modules:/workspace/conformance/node_modules
+      - pnpm_store:/home/ubuntu/.local/share/pnpm
+
+volumes:
+  node_modules:
+  compiler_modules:
+  miniprogram_modules:
+  platform_modules:
+  runtime_modules:
+  vite_modules:
+  example_modules:
+  conformance_modules:
+  pnpm_store:

@@ -6,6 +6,7 @@ import { type AppResult, type Platform, compileApp } from "@weft-ui/compiler";
 import { BUNDLE_ASSET, WEFT_ANDROID, gradleBuild, moduleBuild, settingsFragment } from "./android.ts";
 import { APPLE, WEFT_KIT, packageManifest, xcodebuild } from "./apple.ts";
 import { HERMES_TARGET, NATIVE, compileBytecode } from "./native.ts";
+import { WEFT_LINUX, cmakeBuild, cmakeLists } from "./linux.ts";
 import { WEFT_WINUI, dotnetBuild, targets } from "./windows.ts";
 
 /** Every target platform, in the order of docs/PLAN-v2.md. */
@@ -79,8 +80,8 @@ function outDir(root: string, platform: Platform): string {
  * placeholders it holds, or `undefined` if it is copied verbatim.
  */
 function placeholderEscape(name: string): ((value: string) => string) | undefined {
-  // JSON, Xcode project and C# files hold placeholders inside double-quoted strings with the same escapes.
-  if (name.endsWith(".json") || name.endsWith(".pbxproj") || name.endsWith(".cs")) {
+  // JSON, Xcode project, C# and C++ files hold placeholders inside double-quoted strings with the same escapes.
+  if (name.endsWith(".json") || name.endsWith(".pbxproj") || name.endsWith(".cs") || name.endsWith(".cpp")) {
     return (value) => JSON.stringify(value).slice(1, -1);
   }
   // Kotlin strings are JSON strings in which `$` starts a template.
@@ -156,7 +157,9 @@ function writeGenerated(root: string, platform: Platform, result: AppResult) {
  * and build the Xcode project with `xcodebuild` on macOS hosts, Android
  * makes `weft/` a Gradle module (bytecode in its assets) and builds the APK
  * with the Gradle wrapper, Windows writes `weft/Weft.targets` and runs
- * `dotnet build` on Windows hosts; `WEFT_NATIVE=0` skips the native builds.
+ * `dotnet build` on Windows hosts, Linux writes `weft/CMakeLists.txt` and
+ * builds the CMake project on Linux hosts; `WEFT_NATIVE=0` skips the native
+ * builds.
  * Environments not named after a platform (dev server, Vitest) compile for
  * the Web.
  */
@@ -317,6 +320,18 @@ export default function weft(options: WeftOptions = {}): Plugin {
         }
         try {
           await dotnetBuild(project, release);
+        } catch (error) {
+          this.error(error as Error);
+        }
+      } else if (platform === "linux") {
+        writeFileSync(join(generated, "CMakeLists.txt"), cmakeLists(generated, WEFT_LINUX));
+        if (process.env.WEFT_NATIVE === "0") return;
+        if (process.platform !== "linux") {
+          this.warn(`the Linux build needs a Linux host; generated apps/${platform}/ without building it`);
+          return;
+        }
+        try {
+          await cmakeBuild(project, release);
         } catch (error) {
           this.error(error as Error);
         }

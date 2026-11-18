@@ -22,6 +22,8 @@ const fixtures = join(import.meta.dirname, "../fixtures").replaceAll("\\", "/");
 const driver = join(import.meta.dirname, "driver.ts").replaceAll("\\", "/");
 
 process.env.WEFT_PLATFORM = "linux";
+// Only the bundle is needed, not the app's CMake project.
+process.env.WEFT_NATIVE = "0";
 for (const name of readdirSync(fixtures)) {
   const root = mkdtempSync(join(tmpdir(), `weft-native-${name}-`));
   try {

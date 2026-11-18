@@ -6,6 +6,7 @@
 //! view files from the platform's [`Codegen`] backend.
 
 use weft_ui_codegen_compose::Compose;
+use weft_ui_codegen_gtk::Gtk;
 use weft_ui_codegen_js::JsModule;
 use weft_ui_codegen_swiftui::SwiftUi;
 use weft_ui_codegen_wechat::Wechat;
@@ -37,7 +38,7 @@ pub struct AppOutput {
 /// Native platforms get the remote mode logic modules, `layout.json` (the
 /// layout the native views implement, including its hash) and the views of
 /// their backend: SwiftUI for iOS and macOS, Jetpack Compose for Android,
-/// and WinUI 3 for Windows. Linux does not have a view backend yet.
+/// WinUI 3 for Windows, and GTK 4 for Linux.
 pub fn compile_app(
     entries: &[&str],
     platform: Platform,
@@ -93,13 +94,13 @@ fn generate(
                 contents: layout.to_json(),
             }];
             let cx = Context::new(program, Some(&layout), platform);
-            if matches!(platform, Platform::Ios | Platform::Macos) {
-                views.extend(SwiftUi.generate(&cx));
-            } else if platform == Platform::Android {
-                views.extend(Compose.generate(&cx));
-            } else if platform == Platform::Windows {
-                views.extend(WinUi.generate(&cx));
-            }
+            views.extend(match platform {
+                Platform::Ios | Platform::Macos => SwiftUi.generate(&cx),
+                Platform::Android => Compose.generate(&cx),
+                Platform::Windows => WinUi.generate(&cx),
+                Platform::Linux => Gtk.generate(&cx),
+                Platform::Web | Platform::Wechat => unreachable!("{platform} is not native"),
+            });
             (remote(&layout), views, Some(layout))
         }
     }

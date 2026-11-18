@@ -11,6 +11,7 @@ import { afterEach, beforeEach, expect, test } from "vitest";
 import type { Platform } from "@weft-ui/compiler";
 import { WEFT_ANDROID } from "../src/android.ts";
 import weft from "../src/index.ts";
+import { WEFT_LINUX } from "../src/linux.ts";
 import { WEFT_WINUI } from "../src/windows.ts";
 
 const APP = `model Model {
@@ -192,9 +193,16 @@ test("a comma-separated WEFT_PLATFORM builds each platform", async () => {
 });
 
 test("a native platform bundles the logic for the kernel and compiles it to Hermes bytecode", async () => {
-  await build("linux", ["linux"]);
+  const previous = process.env.WEFT_NATIVE;
+  process.env.WEFT_NATIVE = "0";
+  try {
+    await build("linux", ["linux"]);
+  } finally {
+    if (previous === undefined) delete process.env.WEFT_NATIVE;
+    else process.env.WEFT_NATIVE = previous;
+  }
   const generated = join(root, "apps/linux/weft");
-  expect((await readdir(generated)).sort()).toEqual(["bundle.hbc", "js", "layout.json"]);
+  expect((await readdir(generated)).sort()).toEqual(["CMakeLists.txt", "Generated.cpp", "bundle.hbc", "js", "layout.json"]);
   // The Hermes bytecode file magic, little-endian.
   const hbc = await readFile(join(generated, "bundle.hbc"));
   expect(hbc.readBigUInt64LE(0)).toBe(0x1f1903c103bc1fc6n);
@@ -286,6 +294,30 @@ test("Windows generates a dotnet project around the generated views", async () =
   const shell = relative(realpathSync(join(project, "weft")), WEFT_WINUI).replaceAll("/", "\\");
   expect(targets).toContain(`<Import Project="$(MSBuildThisFileDirectory)${shell}\\Weft.WinUI.targets" />`);
   expect(existsSync(join(WEFT_WINUI, "Weft.WinUI.targets"))).toBe(true);
+});
+
+test("Linux generates a CMake project around the generated views", async () => {
+  const previous = process.env.WEFT_NATIVE;
+  process.env.WEFT_NATIVE = "0";
+  try {
+    await build("linux", ["linux"]);
+  } finally {
+    if (previous === undefined) delete process.env.WEFT_NATIVE;
+    else process.env.WEFT_NATIVE = previous;
+  }
+  const project = join(root, "apps/linux");
+  expect((await readdir(project)).sort()).toEqual([".gitignore", "CMakeLists.txt", "main.cpp", "tests", "weft"]);
+  const main = await readFile(join(project, "main.cpp"), "utf8");
+  expect(main).toContain('kAppId = "com.example.test";');
+  expect(main).toContain('kAppName = "Test \\"App\\"";');
+  // The views implement the layout the bundle was compiled with.
+  const { hash } = JSON.parse(await readFile(join(project, "weft/layout.json"), "utf8"));
+  expect(await readFile(join(project, "weft/Generated.cpp"), "utf8")).toContain(`kLayoutHash = 0x${hash}ull;`);
+  // The shell is referenced relative to the generated area, so the project builds wherever the workspace is.
+  const lists = await readFile(join(project, "weft/CMakeLists.txt"), "utf8");
+  const shell = relative(realpathSync(join(project, "weft")), WEFT_LINUX).replaceAll("\\", "/");
+  expect(lists).toContain(`add_subdirectory("\${CMAKE_CURRENT_LIST_DIR}/${shell}" weft-linux)`);
+  expect(existsSync(join(WEFT_LINUX, "CMakeLists.txt"))).toBe(true);
 });
 
 test("compile errors fail the build with rendered diagnostics", async () => {

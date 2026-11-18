@@ -19,15 +19,17 @@ endforeach()
 add_custom_target(weft_core_test_bundles DEPENDS ${bundles})
 
 add_executable(weft_core_tests kernel_test.cpp)
-# Only the C ABI crosses the Windows DLL boundary. Compile the C++ ops
-# helper into the test hosts, and place runtime DLLs beside each executable.
+# Only the C ABI crosses the boundary of a shared kernel. Compile the C++
+# ops helper into the test hosts, and place Windows DLLs beside each executable.
 function(weft_test_host target)
   target_link_libraries(${target} PRIVATE weft::core)
   if(MSVC)
     target_compile_options(${target} PRIVATE /utf-8)
   endif()
-  if(WIN32 AND WEFT_CORE_SHARED)
+  if(WEFT_CORE_SHARED)
     target_sources(${target} PRIVATE ${PROJECT_SOURCE_DIR}/src/ops.cpp)
+  endif()
+  if(WIN32 AND WEFT_CORE_SHARED)
     add_custom_command(TARGET ${target} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_RUNTIME_DLLS:${target}> $<TARGET_FILE_DIR:${target}>

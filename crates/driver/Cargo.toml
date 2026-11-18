@@ -6,6 +6,7 @@ description = "Application-level compilation entry point dispatching Weft UI pla
 
 [dependencies]
 weft-ui-codegen-compose = { path = "../codegen-compose" }
+weft-ui-codegen-gtk = { path = "../codegen-gtk" }
 weft-ui-codegen-js = { path = "../codegen-js" }
 weft-ui-codegen-swiftui = { path = "../codegen-swiftui" }
 weft-ui-codegen-web = { path = "../codegen-web" }

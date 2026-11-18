@@ -202,6 +202,11 @@ fn windows() {
     check(Platform::Windows);
 }
 
+#[test]
+fn linux() {
+    check(Platform::Linux);
+}
+
 /// iOS and macOS share one SwiftUI backend; platform differences live in WeftKit.
 #[test]
 fn ios_views_equal_macos_views() {
@@ -218,7 +223,7 @@ fn native_platforms_share_the_remote_logic() {
         (Platform::Macos, &["Generated.swift"]),
         (Platform::Android, &["src/main/kotlin/Generated.kt"]),
         (Platform::Windows, &["Generated.cs"]),
-        (Platform::Linux, &[]),
+        (Platform::Linux, &["Generated.cpp"]),
     ] {
         let native = generate(platform);
         let mut expected = vec!["TodoList.d.ts", "TodoList.js", "layout.json"];

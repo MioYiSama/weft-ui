@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import type { Platform } from "@weft-ui/compiler";
+import { WEFT_LINUX } from "./linux.ts";
 
 /** Platforms whose logic runs in the native kernel (`native/core`). */
 export const NATIVE: readonly Platform[] = ["ios", "macos", "android", "windows", "linux"];
@@ -32,16 +34,24 @@ const BINARIES: Partial<Record<string, string>> = {
 /**
  * The `hermesc` that compiles bundles: `WEFT_HERMESC`, else the one shipped
  * by the `hermes-compiler` package, which matches the kernel's Hermes release.
+ * On Linux hosts without a packaged binary (arm64) it is the one that
+ * native/linux/build-core.sh builds with the kernel.
  */
 export function hermesc(): string {
   const override = process.env.WEFT_HERMESC;
   if (override) return override;
   const binary = BINARIES[`${process.platform}-${process.arch}`];
   if (!binary) {
+    if (process.platform === "linux") {
+      const built = join(WEFT_LINUX, `build/linux-${process.arch}/bin/hermesc`);
+      if (existsSync(built)) return built;
+    }
     throw new Error(
       `weft: hermes-compiler ships no hermesc for ${process.platform}-${process.arch}. ` +
-        "Build it with `cmake -S native/core -B native/core/build && cmake --build native/core/build --target hermesc` " +
-        "and point WEFT_HERMESC at native/core/build/bin/hermesc.",
+        (process.platform === "linux"
+          ? "Build it with the kernel by native/linux/build-core.sh, or point WEFT_HERMESC at a hermesc of the kernel's Hermes release."
+          : "Build it with `cmake -S native/core -B native/core/build && cmake --build native/core/build --target hermesc` " +
+            "and point WEFT_HERMESC at native/core/build/bin/hermesc."),
     );
   }
   const manifest = createRequire(import.meta.url).resolve("hermes-compiler/package.json");

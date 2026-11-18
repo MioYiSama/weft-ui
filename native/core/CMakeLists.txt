@@ -62,6 +62,15 @@ target_include_directories(weft_core PUBLIC include)
 target_compile_definitions(weft_core PRIVATE WEFT_CORE_BUILD)
 if(WEFT_CORE_SHARED)
   target_compile_definitions(weft_core PUBLIC WEFT_CORE_SHARED)
+  # Like the Windows DLL, the shared library exports the C ABI only: neither
+  # the kernel's C++ helpers nor the statically linked Hermes.
+  set_target_properties(weft_core PROPERTIES
+    C_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_options(weft_core PRIVATE "LINKER:--exclude-libs,ALL")
+  endif()
 endif()
 if(MSVC)
   target_compile_options(weft_core PRIVATE /utf-8)

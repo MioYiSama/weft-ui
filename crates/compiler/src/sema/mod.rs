@@ -5,10 +5,12 @@ pub(crate) mod builtins;
 mod lower;
 mod modules;
 
+use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap};
 
 use crate::deps;
 use crate::diagnostic::Diagnostic;
+use crate::ide::{self, ProbeContext, RawCall, RawProbe, Recorder, Target};
 use crate::ir::{
     Component, ComponentId, Event, EventId, Field, Model, ModelId, Module, Param, ParamKind,
     Program, Type, type_display,
@@ -57,9 +59,60 @@ pub(crate) struct Checker<'a> {
     pub events: Vec<Event>,
     /// Component signatures; bodies are filled in after all are checked.
     pub components: Vec<Component>,
+    /// Present when analyzing for editor tooling.
+    recorder: Option<RefCell<Recorder>>,
 }
 
 impl Checker<'_> {
+    pub(crate) fn recording(&self) -> bool {
+        self.recorder.is_some()
+    }
+
+    /// Records that the name at `span` refers to `target`.
+    pub(crate) fn record(&self, span: Span, target: impl FnOnce() -> Target) {
+        if let Some(recorder) = &self.recorder {
+            recorder.borrow_mut().refs.push((span, target()));
+        }
+    }
+
+    pub(crate) fn record_call(&self, call: impl FnOnce() -> RawCall) {
+        if let Some(recorder) = &self.recorder {
+            recorder.borrow_mut().calls.push(call());
+        }
+    }
+
+    /// Whether `name` is the probe and no probe was resolved yet.
+    pub(crate) fn is_probe(&self, name: &str) -> bool {
+        self.recorder
+            .as_ref()
+            .is_some_and(|r| r.borrow().is_probe(name))
+    }
+
+    pub(crate) fn set_probe(&self, context: ProbeContext, candidates: Vec<Target>) {
+        if let Some(recorder) = &self.recorder {
+            recorder.borrow_mut().probe = Some(RawProbe {
+                context,
+                candidates,
+            });
+        }
+    }
+
+    /// Declarations visible from `file` that `keep` accepts, in source order.
+    pub(crate) fn visible_decls(
+        &self,
+        file: FileId,
+        keep: impl Fn(DeclKind) -> bool,
+    ) -> Vec<Target> {
+        let visible = &self.visible[file.index()];
+        let mut decls: Vec<&Decl> = self
+            .decls
+            .values()
+            .filter(|d| visible.contains(&d.file) && keep(d.kind))
+            .collect();
+        decls.sort_by_key(|d| (d.span.file, d.span.start));
+        decls.into_iter().map(|d| decl_target(d.kind)).collect()
+    }
+
     /// Resolves a global name as seen from `file`.
     ///
     /// Returns `None` for unknown names without reporting. A name declared in a
@@ -73,6 +126,7 @@ impl Checker<'_> {
         diags: &mut Vec<Diagnostic>,
     ) -> Option<DeclKind> {
         let decl = self.decls.get(name)?;
+        self.record(span, || decl_target(decl.kind));
         if !self.visible[file.index()].contains(&decl.file) {
             let path = self.sources.get(decl.file).path();
             diags.push(
@@ -91,12 +145,31 @@ impl Checker<'_> {
         type_display(ty, &self.models).to_string()
     }
 
+    /// Reports a type probe at `name`; `Children` is offered for parameters.
+    pub(crate) fn probe_type(&self, file: FileId, name: &str, children: bool) {
+        if !self.is_probe(name) {
+            return;
+        }
+        let builtins = ide::BUILTIN_TYPES
+            .iter()
+            .filter(|&&t| children || t != CHILDREN)
+            .map(|t| Target::Symbol(ide::type_symbol(t)));
+        let models = self.visible_decls(file, |k| matches!(k, DeclKind::Model(_)));
+        self.set_probe(ProbeContext::Type, builtins.chain(models).collect());
+    }
+
     pub(crate) fn resolve_type(
         &self,
         file: FileId,
         ty: &ast::TypeExpr,
         diags: &mut Vec<Diagnostic>,
     ) -> Type {
+        if let ast::TypeExprKind::Named(name) = &ty.kind {
+            self.probe_type(file, &name.name, false);
+            if PRIMITIVES.contains(&name.name.as_str()) {
+                self.record(name.span, || Target::Symbol(ide::type_symbol(&name.name)));
+            }
+        }
         match &ty.kind {
             ast::TypeExprKind::Error => Type::Error,
             ast::TypeExprKind::Array(elem) => {
@@ -171,6 +244,14 @@ impl Checker<'_> {
     }
 }
 
+fn decl_target(kind: DeclKind) -> Target {
+    match kind {
+        DeclKind::Model(id) => Target::Model(id),
+        DeclKind::Event(id) => Target::Event(id),
+        DeclKind::Component(id) => Target::Component(id),
+    }
+}
+
 pub(crate) fn article(kind: DeclKind) -> &'static str {
     match kind {
         DeclKind::Model(_) => "a model",
@@ -183,20 +264,44 @@ pub(crate) fn article(kind: DeclKind) -> &'static str {
 pub(crate) struct Analysis {
     pub sources: SourceMap,
     pub diagnostics: Vec<Diagnostic>,
+    /// Present only when no errors were reported and nothing was recorded.
     pub program: Option<Program>,
+    /// When recording: the recorder and the program, even with errors.
+    pub recording: Option<(Recorder, Program)>,
 }
 
 pub(crate) fn analyze(entries: &[&str], loader: &mut dyn SourceLoader) -> Analysis {
+    analyze_recording(entries, loader, None)
+}
+
+pub(crate) fn analyze_recording(
+    entries: &[&str],
+    loader: &mut dyn SourceLoader,
+    recorder: Option<RefCell<Recorder>>,
+) -> Analysis {
     let mut sources = SourceMap::new();
     let mut diags = Vec::new();
     let loaded = modules::load(entries, loader, &mut sources, &mut diags);
-    let program = check(&loaded.files, loaded.entries, &sources, &mut diags);
+    let (program, recorder) = check(
+        &loaded.files,
+        loaded.entries,
+        &sources,
+        &mut diags,
+        recorder,
+    );
     diags.sort_by_key(|d| (d.span.file, d.span.start));
-    let program = (!diags.iter().any(Diagnostic::is_error)).then_some(program);
+    let (program, recording) = match recorder {
+        Some(recorder) => (None, Some((recorder.into_inner(), program))),
+        None => (
+            (!diags.iter().any(Diagnostic::is_error)).then_some(program),
+            None,
+        ),
+    };
     Analysis {
         sources,
         diagnostics: diags,
         program,
+        recording,
     }
 }
 
@@ -205,7 +310,8 @@ fn check(
     entries: Vec<FileId>,
     sources: &SourceMap,
     diags: &mut Vec<Diagnostic>,
-) -> Program {
+    recorder: Option<RefCell<Recorder>>,
+) -> (Program, Option<RefCell<Recorder>>) {
     report_import_cycles(files, sources, diags);
 
     // Declarations: one namespace for the whole import closure.
@@ -224,6 +330,7 @@ fn check(
         models: Vec::new(),
         events: Vec::new(),
         components: Vec::new(),
+        recorder,
     };
     let mut item_ids: Vec<Vec<Option<DeclKind>>> = Vec::with_capacity(files.len());
     for (index, file) in files.iter().enumerate() {
@@ -253,10 +360,16 @@ fn check(
         match (item, id) {
             (ast::Item::Model(m), DeclKind::Model(id)) => {
                 let fields = cx.fields(file, &m.fields, "field", diags);
+                for (index, field) in fields.iter().enumerate() {
+                    cx.record(field.span, || Target::Field(id, index));
+                }
                 cx.models[id.index()].fields = fields;
             }
             (ast::Item::Event(e), DeclKind::Event(id)) => {
                 let params = cx.fields(file, &e.params, "parameter", diags);
+                for (index, param) in params.iter().enumerate() {
+                    cx.record(param.span, || Target::EventParam(id, index));
+                }
                 cx.events[id.index()].params = params;
             }
             _ => {}
@@ -269,6 +382,9 @@ fn check(
     for (file, item, id) in items() {
         if let (ast::Item::Component(c), DeclKind::Component(id)) = (item, id) {
             let params = signature(&cx, file, c, diags);
+            for (index, param) in params.iter().enumerate() {
+                cx.record(param.span, || Target::ComponentParam(id, index));
+            }
             cx.components[id.index()].params = params;
             bodies.push((file, c, id));
         }
@@ -277,7 +393,7 @@ fn check(
     let mut lowered = Vec::with_capacity(bodies.len());
     for &(file, decl, id) in &bodies {
         let params = &cx.components[id.index()].params;
-        let body = Lowerer::new(&cx, diags, file, params).component(decl);
+        let body = Lowerer::new(&cx, diags, file, Some(id), params).component(decl);
         lowered.push((id, body));
     }
     for (id, body) in lowered {
@@ -322,13 +438,14 @@ fn check(
         })
         .collect();
 
-    Program {
+    let program = Program {
         entries,
         modules,
         models: cx.models,
         events: cx.events,
         components: cx.components,
-    }
+    };
+    (program, cx.recorder)
 }
 
 fn declare(
@@ -403,6 +520,7 @@ fn declare(
             DeclKind::Component(ComponentId(offset(cx.components.len() - 1)))
         }
     };
+    cx.record(name.span, || decl_target(kind));
     cx.decls.insert(
         name.name.clone(),
         Decl {
@@ -468,8 +586,14 @@ fn signature(
             ));
             continue;
         }
+        if let ast::TypeExprKind::Named(n) = &param.ty.kind {
+            cx.probe_type(file, &n.name, true);
+        }
         let is_children =
             matches!(&param.ty.kind, ast::TypeExprKind::Named(n) if n.name == CHILDREN);
+        if is_children {
+            cx.record(param.ty.span, || Target::Symbol(ide::type_symbol(CHILDREN)));
+        }
         let kind = if is_children {
             if let Some(prev) = params.iter().find(|p| p.kind == ParamKind::Children) {
                 diags.push(
@@ -492,7 +616,7 @@ fn signature(
         };
         let default = match (&kind, &param.default) {
             (ParamKind::Value(ty), Some(default)) => {
-                let mut lowerer = Lowerer::new(cx, diags, file, &[]);
+                let mut lowerer = Lowerer::new(cx, diags, file, None, &[]);
                 Some(lowerer.expr_as(default, ty))
             }
             _ => None,

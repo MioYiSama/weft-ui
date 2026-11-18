@@ -6,6 +6,7 @@ use std::ops::Range;
 use crate::color::Color;
 use crate::deps;
 use crate::diagnostic::Diagnostic;
+use crate::ide::{self, ProbeContext, RawCall, Symbol, SymbolKind, Target};
 use crate::ir::{
     Arg, Assign, Binding, BindingId, BindingKind, Branch, Coercion, ComponentId, Dep, EmitArg,
     EventId, Expr, ExprKind, FieldId, Handler, InterpPart, Loop, LoopId, Node, NodeId, NodeKind,
@@ -65,6 +66,8 @@ pub(crate) struct Lowerer<'cx, 'd> {
     cx: &'cx Checker<'cx>,
     diags: &'d mut Vec<Diagnostic>,
     file: FileId,
+    /// Component whose body is lowered; `None` for parameter defaults.
+    component: Option<ComponentId>,
     params: &'cx [Param],
     states: Vec<State>,
     nodes: Vec<Node>,
@@ -82,12 +85,14 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         cx: &'cx Checker<'cx>,
         diags: &'d mut Vec<Diagnostic>,
         file: FileId,
+        component: Option<ComponentId>,
         params: &'cx [Param],
     ) -> Self {
         Self {
             cx,
             diags,
             file,
+            component,
             params,
             states: Vec::new(),
             nodes: Vec::new(),
@@ -140,12 +145,17 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
                 .with_secondary(prev.span, "previous definition here"),
             );
         }
-        self.scope.push(Local {
+        let local = Local {
             name: name.to_owned(),
             kind,
             ty,
             span,
-        });
+        };
+        // Parameters are recorded with the component signature.
+        if !matches!(kind, LocalKind::Param(_) | LocalKind::Slot(_)) {
+            self.cx.record(span, || self.local_target(&local));
+        }
+        self.scope.push(local);
     }
 
     fn local(&self, name: &str) -> Option<&Local> {
@@ -154,6 +164,68 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
 
     fn type_name(&self, ty: &Type) -> String {
         self.cx.type_name(ty)
+    }
+
+    // ---- editor index --------------------------------------------------
+
+    fn display_type(&self, ty: &Type) -> String {
+        ide::display_type(ty, &|id| self.cx.models[id.index()].name.clone())
+    }
+
+    fn local_target(&self, local: &Local) -> Target {
+        let (kind, prefix) = match local.kind {
+            LocalKind::Param(p) | LocalKind::Slot(p) => match self.component {
+                Some(component) => return Target::ComponentParam(component, p.index()),
+                None => (SymbolKind::Param, "(parameter) "),
+            },
+            LocalKind::State(_) => (SymbolKind::State, "state "),
+            LocalKind::Item(_) => (SymbolKind::LoopVar, "(loop variable) "),
+            LocalKind::LambdaArg => (SymbolKind::LambdaParam, "(lambda parameter) "),
+        };
+        Target::Symbol(Symbol {
+            kind,
+            name: local.name.clone(),
+            detail: format!("{prefix}{}: {}", local.name, self.display_type(&local.ty)),
+            def: Some(local.span),
+        })
+    }
+
+    /// Reports a probe with the locals `keep` accepts, then `extra`.
+    fn probe_locals(
+        &self,
+        context: ProbeContext,
+        keep: impl Fn(LocalKind) -> bool,
+        extra: Vec<Target>,
+    ) {
+        let locals = self
+            .scope
+            .iter()
+            .filter(|l| keep(l.kind))
+            .map(|l| self.local_target(l));
+        self.cx.set_probe(context, locals.chain(extra).collect());
+    }
+
+    /// Records named arguments matched to `targets` (by slot index) and the
+    /// argument list as a call site.
+    fn record_args(
+        &self,
+        args_span: Span,
+        matched: &[Option<&ast::Arg>],
+        targets: impl Fn(usize) -> Target,
+    ) {
+        if !self.cx.recording() {
+            return;
+        }
+        for (index, arg) in matched.iter().enumerate() {
+            if let Some(name) = arg.and_then(|a| a.name.as_ref()) {
+                self.cx.record(name.span, || targets(index));
+            }
+        }
+        self.cx.record_call(|| RawCall {
+            args: args_span,
+            params: (0..matched.len()).map(&targets).collect(),
+            given: matched.iter().map(Option::is_some).collect(),
+        });
     }
 
     // ---- bindings ------------------------------------------------------
@@ -252,7 +324,19 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             return None;
         }
         let name = first.name.as_str();
+        if self.cx.is_probe(name) {
+            let elements = ide::element_symbols().map(Target::Symbol);
+            let components = self
+                .cx
+                .visible_decls(self.file, |k| matches!(k, DeclKind::Component(_)));
+            self.probe_locals(
+                ProbeContext::Node,
+                |k| matches!(k, LocalKind::Slot(_)),
+                elements.chain(components).collect(),
+            );
+        }
         if let Some(local) = self.local(name) {
+            self.cx.record(first.span, || self.local_target(local));
             let (kind, local_name) = (local.kind, local.name.clone());
             let LocalKind::Slot(param) = kind else {
                 self.error(
@@ -270,6 +354,8 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             return Some(self.push_node(NodeKind::Slot { param }, span, 0..0));
         }
         if let Some(spec) = builtins::element(name) {
+            self.cx
+                .record(first.span, || Target::Symbol(ide::element_symbol(spec)));
             return Some(self.builtin_element(spec, e, span));
         }
         match self.cx.global(self.file, name, first.span, self.diags) {
@@ -309,6 +395,10 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             })
             .collect();
         let matched = self.match_args(spec.name, &slots, &e.args, span);
+        self.record_args(args_span(e, span), &matched, |i| {
+            let owner = (i < spec.props.len()).then_some(spec);
+            Target::Symbol(ide::prop_symbol(owner, &props_spec[i]))
+        });
 
         let first_binding = self.bindings.len();
         let mut props = Vec::new();
@@ -417,6 +507,15 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             required: false,
         }));
         let matched = self.match_args(&callee.name, &slots, &e.args, span);
+        self.record_args(args_span(e, span), &matched, |i| {
+            match value_params.get(i) {
+                Some(&(param, _, _)) => Target::ComponentParam(id, param.index()),
+                None => Target::Symbol(ide::prop_symbol(
+                    None,
+                    &builtins::LIFECYCLE[i - value_params.len()],
+                )),
+            }
+        });
 
         let first_binding = self.bindings.len();
         let mut args = Vec::new();
@@ -659,6 +758,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         let cx = self.cx;
         match &value.kind {
             ast::ExprKind::Ident(name) if self.local(name).is_none() => {
+                self.probe_events(name);
                 let event = self.event_named(name, value.span, prop)?;
                 self.emits.insert(event);
                 let params = &cx.events[event.index()].params;
@@ -718,6 +818,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
                     self.error(callee.span, format!("`{name}` is not an event"));
                     return None;
                 }
+                self.probe_events(name);
                 let event = self.event_named(name, callee.span, prop)?;
                 self.emits.insert(event);
                 let params = &cx.events[event.index()].params;
@@ -730,6 +831,8 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
                     })
                     .collect();
                 let matched = self.match_args(name, &slots, args, value.span);
+                let call_span = Span::new(self.file, callee.span.end, value.span.end);
+                self.record_args(call_span, &matched, |i| Target::EventParam(event, i));
                 let mut deps = Vec::new();
                 let mut emit_args = Vec::with_capacity(params.len());
                 for (param, arg) in params.iter().zip(matched) {
@@ -766,6 +869,15 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
                 self.error(value.span, format!("expected {what} for `{prop}`"));
                 None
             }
+        }
+    }
+
+    fn probe_events(&self, name: &str) {
+        if self.cx.is_probe(name) {
+            let events = self
+                .cx
+                .visible_decls(self.file, |k| matches!(k, DeclKind::Event(_)));
+            self.cx.set_probe(ProbeContext::Handler, events);
         }
     }
 
@@ -817,10 +929,18 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
 
     fn assign(&mut self, assign: &ast::Assign) -> Option<Assign> {
         let target = &assign.target;
+        if self.cx.is_probe(&target.name) {
+            self.probe_locals(
+                ProbeContext::AssignTarget,
+                |k| matches!(k, LocalKind::State(_)),
+                Vec::new(),
+            );
+        }
         let Some(local) = self.local(&target.name) else {
             self.error(target.span, format!("unknown state `{}`", target.name));
             return None;
         };
+        self.cx.record(target.span, || self.local_target(local));
         let (kind, ty) = (local.kind, local.ty.clone());
         let LocalKind::State(state) = kind else {
             let what = match kind {
@@ -968,6 +1088,16 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
     }
 
     fn ident(&mut self, name: &str, span: Span) -> Expr {
+        if self.cx.is_probe(name) {
+            self.probe_locals(
+                ProbeContext::Value,
+                |k| !matches!(k, LocalKind::Slot(_)),
+                Vec::new(),
+            );
+        }
+        if let Some(local) = self.local(name) {
+            self.cx.record(span, || self.local_target(local));
+        }
         if let Some((kind, ty)) = self.local(name).map(|l| (l.kind, l.ty.clone())) {
             let kind = match kind {
                 LocalKind::Param(p) => ExprKind::Param(p),
@@ -1027,6 +1157,9 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         call: Option<&[ast::Arg]>,
         span: Span,
     ) -> Expr {
+        if self.cx.is_probe(&name.name) {
+            self.probe_members(&recv.ty);
+        }
         let (inner, nullable) = match &recv.ty {
             Type::Error => return error_expr(span),
             Type::Optional(inner) if safe => ((**inner).clone(), true),
@@ -1051,9 +1184,9 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         };
         let wrap = |ty: Type| if nullable { ty.optional() } else { ty };
 
-        if let Type::Model(model) = inner {
+        if let Type::Model(model_id) = inner {
             let cx = self.cx;
-            let model = &cx.models[model.index()];
+            let model = &cx.models[model_id.index()];
             let Some(index) = model.fields.iter().position(|f| f.name == name.name) else {
                 let msg = format!("model `{}` has no field `{}`", model.name, name.name);
                 self.error(name.span, msg);
@@ -1063,6 +1196,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
                 self.error(span, format!("field `{}` cannot be called", name.name));
                 return error_expr(span);
             }
+            self.cx.record(name.span, || Target::Field(model_id, index));
             let ty = wrap(model.fields[index].ty.clone());
             return Expr {
                 kind: ExprKind::Field {
@@ -1083,6 +1217,10 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             );
             return error_expr(span);
         };
+        self.cx.record(name.span, || {
+            let member = ide::member_symbol(&inner, &name.name, |t| self.display_type(t));
+            Target::Symbol(member.expect("the member exists"))
+        });
         let args = match (sig.kind, call) {
             (MemberKind::Property, None) => Vec::new(),
             (MemberKind::Property, Some(_)) => {
@@ -1136,6 +1274,25 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             ty: wrap(sig.ret),
             span,
         }
+    }
+
+    /// Reports a member probe on a receiver of type `recv`.
+    fn probe_members(&self, recv: &Type) {
+        let inner = match recv {
+            Type::Optional(inner) => inner,
+            ty => ty,
+        };
+        let candidates = match inner {
+            Type::Model(id) => (0..self.cx.models[id.index()].fields.len())
+                .map(|i| Target::Field(*id, i))
+                .collect(),
+            ty => ide::MEMBER_NAMES
+                .iter()
+                .filter_map(|m| ide::member_symbol(ty, m, |t| self.display_type(t)))
+                .map(Target::Symbol)
+                .collect(),
+        };
+        self.cx.set_probe(ProbeContext::Member, candidates);
     }
 
     fn unary(&mut self, op: UnaryOp, operand: &ast::Expr, span: Span) -> Expr {
@@ -1245,6 +1402,13 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             span,
         }
     }
+}
+
+/// From the end of the element's name to its children block or end.
+fn args_span(e: &ast::ElementNode, span: Span) -> Span {
+    let start = e.path.last().map_or(span.start, |p| p.span.end);
+    let end = e.children.as_ref().map_or(span.end, |b| b.span.start);
+    Span::new(span.file, start, end.max(start))
 }
 
 fn error_expr(span: Span) -> Expr {

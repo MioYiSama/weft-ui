@@ -414,6 +414,18 @@ Linux 已按上文实现，`example` 在 Docker 里的 Ubuntu 26.04（arm64，GT
 - **Docker**：`native/linux/docker/` 是开发和测试用的 Linux 桌面：Ubuntu 26.04 镜像带 GTK 4 / libsoup / json-glib 开发包、ICU、CMake、Ninja、Node.js 和 pnpm，入口在 VNC 显示 `:1`（`vnc://localhost:5901`，密码 `weft`）上启动 XFCE 会话，容器里启动的应用和 UI 测试都显示在这个桌面上。`compose.yaml` 把工作区挂载到 `/workspace`，各个 `node_modules` 是独立的卷，所以容器里的 `pnpm install` 装 Linux 的包，不碰宿主的；编译器 WASM 用宿主构建的。在 macOS 上用 OrbStack 的 Docker 验证（arm64）。
 - **测试**：`driver` 的快照包括 `linux/Generated.cpp`；`@weft-ui/vite` 的测试在 `WEFT_NATIVE=0` 下检查 Linux 工程的生成；Linux 上的 CTest（内核单元测试和 conformance）与 macOS 相同，共享库形式的内核也通过（测试宿主自己编译 ops 解码器）。
 
+### P8 的实现
+
+P8 目前完成了 LSP 和格式化，编辑器集成先只做 Zed。原生端连 dev server 整包重载、`weft doctor`、CI 矩阵和 Hermes 预编译尚未开始。细节：
+
+- **CLI**：新 crate `crates/cli`，二进制叫 `weft`，用 `cargo install --path crates/cli` 安装。`weft fmt [--check] [paths...]` 原地格式化（目录递归查找 `.weft`，遵守 `.gitignore`，默认路径是 `.`；`--check` 只列出需要格式化的文件，有这类文件时退出码为 1）；`weft fmt --stdin [--path <p>]` 从标准输入读、向标准输出写；`weft lsp` 在 stdio 上运行语言服务器。PLAN.md 里的 `check` / `build` / `preview` 子命令还没有加。
+- **格式化**（`crates/fmt`）：基于 AST，用 Wadler 式的分组排版，默认 4 空格缩进、行宽 100。参数列表、事件和组件的参数表放不下时每项一行，并加尾随逗号；`model` 字段总是每行一个，带尾随逗号。字面量（包括字符串插值）按源码原样输出；AST 不记录括号，所以通过区间判断哪些表达式带括号，原样保留一层，不增不删。注释不在 AST 里，lexer 新增 `lex_with_comments` 收集注释区间，格式化器把注释挂到相邻的行级结构上（独占一行的注释放在后面那个结构之前，同一行的注释作为行尾注释）；含注释的分组强制换行。兄弟节点之间最多保留一个空行。格式化完成后会自检：重新 lex 输出，比较 token 序列（忽略尾随逗号、lambda 里的 `;`、元素和事件名后的空 `()`）和注释序列，不一致时报内部错误，不会悄悄丢掉内容。有语法错误的文件不格式化。两处特殊处理：元素名是 `state` / `model` / `event` / `component` 这样的上下文关键字、后面又紧跟标识符时（例如 `state() Text`），去掉空 `()` 会变成声明，所以保留这对括号；`T??` 会被 lex 成 `??`，所以写成 `T? ?`。
+- **语义索引**（`weft_ui_compiler::ide`）：`ide::analyze(entries, loader, probe)` 跑和 `check_many` 相同的分析，同时记录一份 `Index`：每个解析到的名字（声明处和使用处）指向的符号（类型签名、定义位置）、每个调用的参数列表（哪些参数已经给了），以及探针的上下文。记录器以 `RefCell` 的形式挂在 `Checker` 上，普通编译不创建它，生成代码的路径不受影响。分析在有错误时继续进行，所以代码不完整时也能用索引。补全靠探针：LSP 把光标处的标识符换成一个不会和用户代码冲突的名字，重新分析，sema 在第一次解析到这个名字的地方记下上下文（节点、表达式、事件处理器、`.` 之后的成员、类型、lambda 赋值目标）以及在那里合法的名字。`todo.` 这样单独无法解析的代码也能补全成员。
+- **LSP**（`crates/lsp`，基于 `lsp-server` / `lsp-types`）：功能包括诊断、悬停（Weft 语法的签名，例如 `Todo.name: String`、`state count: Int`）、跳转定义（可以跳到未打开的导入文件）、补全（节点位置补元素、组件、插槽和 `if` / `for` / `state`；表达式位置补参数、`state`、循环变量和 lambda 参数；处理器位置补事件；`.` 之后补字段和内置成员；类型位置补内置类型和模型；`(` 或 `,` 之后补尚未给出的参数名，插入 `name = `；顶层补 `import` / `model` / `event` / `component`），以及格式化（缩进取编辑器传来的 `tabSize` / `insertSpaces`）。文档全量同步；每次请求都从打开的文档（未打开的文件从磁盘读）重新分析该文件的导入闭包，文件很小，不保留增量状态。任何文档变化后重新检查所有打开的文档，因为导入方会受影响；每个文档只发布它自己文件里的诊断。位置按 UTF-16 换算。
+- **Zed 扩展**（`editors/zed`）：Rust 写的 WASM 扩展（`zed_extension_api` 0.7），注册 `Weft` 语言（`.weft`、`//` 注释、括号自动配对）和语言服务器 `weft`。它从 PATH 找 `weft` 并以 `weft lsp` 启动，也可以在 Zed 设置的 `lsp.weft.binary` 里指定路径和参数。扩展是独立的 Cargo 工作区，不属于仓库的 workspace。通过 `zed: install dev extension` 安装。高亮、括号匹配、自动缩进和大纲来自 tree-sitter 语法 `editors/tree-sitter-weft`，查询文件在 `editors/zed/languages/weft/`（`highlights.scm` 按 Zed 的规则后写的模式优先）。
+- **tree-sitter 语法**（`editors/tree-sitter-weft`）：按 GRAMMAR.md 写的 `grammar.js`，生成的 `src/parser.c` 一起提交（编辑器直接编译它）。`import` / `model` / `event` / `component` / `state` / `key` 借助 tree-sitter 的关键字提取保持上下文关键字的语义，`model` 仍可以作参数名。字符串里的插值、转义单独成节点。语法不做语义判断，所以按命名约定把作为参数值的大写标识符当作事件高亮。Zed 的 `[grammars.weft]` 只能从 git 仓库的某个提交取语法（`path` 指向子目录），所以 `extension.toml` 固定本仓库里包含语法的提交；`rev` 不能指向包含它自己的提交，改语法要先提交语法，再在下一次提交里更新 `rev`，推送后 Zed 才能取到。
+- **测试**：`ide` 的单元测试覆盖符号签名、定义位置、调用参数和各种探针上下文；`crates/fmt/tests/format.rs` 覆盖每条格式规则、注释位置、CRLF、语法错误，以及仓库里所有 `.weft` 文件的格式化和幂等性；`editors/tree-sitter-weft/test/corpus` 是语法的语料测试（`tree-sitter test`），仓库里所有 `.weft` 文件都能无错误地解析；`crates/lsp/tests/lsp.rs` 通过内存连接走完一次编辑器会话：诊断、修正后清空诊断、悬停、跨文件跳转定义、成员和参数名补全、格式化。
+
 ## 测试策略
 
 逻辑层在所有非 web 平台上完全相同，所以测试分成两层：
@@ -450,7 +462,7 @@ Linux 已按上文实现，`example` 在 Docker 里的 Ubuntu 26.04（arm64，GT
 
 ## 里程碑
 
-M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P7 已完成）：
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P7 已完成，P8 完成了 LSP 和格式化，见 [P8 的实现](#p8-的实现)）：
 
 | 阶段 | 内容                                                         | 验收标准                                                     |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |

@@ -1,0 +1,16 @@
+id = "weft"
+name = "Weft"
+version = "0.0.1"
+schema_version = 1
+authors = ["Weft UI contributors"]
+description = "Weft UI (.weft) support: syntax highlighting, plus diagnostics, completion, hover, go to definition and formatting through `weft lsp`"
+
+[language_servers.weft]
+name = "Weft Language Server"
+languages = ["Weft"]
+
+# Zed clones this commit and builds `path`; point `rev` at the latest commit that changed the grammar.
+[grammars.weft]
+repository = "https://github.com/MioYiSama/weft-ui"
+rev = "522502da064c9ebc229dfe764abe8ad3ed929020"
+path = "editors/tree-sitter-weft"

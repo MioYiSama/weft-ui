@@ -13,6 +13,7 @@ pub mod codegen;
 pub mod color;
 mod deps;
 pub mod diagnostic;
+pub mod ide;
 pub mod ir;
 pub mod loader;
 mod report;

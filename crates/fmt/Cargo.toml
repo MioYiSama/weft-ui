@@ -1,0 +1,8 @@
+[package]
+name = "weft-ui-fmt"
+version = { workspace = true }
+edition = { workspace = true }
+description = "Source formatter for the Weft UI language"
+
+[dependencies]
+weft-ui-compiler = { path = "../compiler" }

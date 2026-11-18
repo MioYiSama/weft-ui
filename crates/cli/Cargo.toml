@@ -1,0 +1,15 @@
+[package]
+name = "weft-ui-cli"
+version = { workspace = true }
+edition = { workspace = true }
+description = "Command-line tools for Weft UI: formatter and language server"
+
+[[bin]]
+name = "weft"
+path = "src/main.rs"
+
+[dependencies]
+ignore = "0.4"
+weft-ui-compiler = { path = "../compiler" }
+weft-ui-fmt = { path = "../fmt" }
+weft-ui-lsp = { path = "../lsp" }

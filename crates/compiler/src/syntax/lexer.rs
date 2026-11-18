@@ -11,22 +11,23 @@ use crate::syntax::token::{Token, TokenKind};
 ///
 /// The returned tokens always end with [`TokenKind::Eof`].
 pub fn lex(file: FileId, text: &str, base: u32, diags: &mut Vec<Diagnostic>) -> Vec<Token> {
-    let mut lexer = Lexer {
-        file,
-        bytes: text.as_bytes(),
-        text,
-        base,
-        pos: 0,
-        diags,
-    };
-    let mut tokens = Vec::new();
-    loop {
-        let token = lexer.next_token();
-        tokens.push(token);
-        if token.kind == TokenKind::Eof {
-            return tokens;
-        }
-    }
+    let mut lexer = Lexer::new(file, text, base, diags, None);
+    lexer.tokens()
+}
+
+/// Like [`lex`], but also returns the spans of all comments (`//` comments
+/// without the line break), in source order. Used by tools that must keep
+/// comments, such as the formatter.
+pub fn lex_with_comments(
+    file: FileId,
+    text: &str,
+    base: u32,
+    diags: &mut Vec<Diagnostic>,
+) -> (Vec<Token>, Vec<Span>) {
+    let mut comments = Vec::new();
+    let mut lexer = Lexer::new(file, text, base, diags, Some(&mut comments));
+    let tokens = lexer.tokens();
+    (tokens, comments)
 }
 
 struct Lexer<'src, 'd> {
@@ -36,9 +37,47 @@ struct Lexer<'src, 'd> {
     base: u32,
     pos: usize,
     diags: &'d mut Vec<Diagnostic>,
+    /// Collects comment spans when present.
+    comments: Option<&'d mut Vec<Span>>,
 }
 
-impl Lexer<'_, '_> {
+impl<'src, 'd> Lexer<'src, 'd> {
+    fn new(
+        file: FileId,
+        text: &'src str,
+        base: u32,
+        diags: &'d mut Vec<Diagnostic>,
+        comments: Option<&'d mut Vec<Span>>,
+    ) -> Self {
+        Self {
+            file,
+            bytes: text.as_bytes(),
+            text,
+            base,
+            pos: 0,
+            diags,
+            comments,
+        }
+    }
+
+    fn tokens(&mut self) -> Vec<Token> {
+        let mut tokens = Vec::new();
+        loop {
+            let token = self.next_token();
+            tokens.push(token);
+            if token.kind == TokenKind::Eof {
+                return tokens;
+            }
+        }
+    }
+
+    fn comment(&mut self, start: usize, end: usize) {
+        let span = self.span(start, end);
+        if let Some(comments) = &mut self.comments {
+            comments.push(span);
+        }
+    }
+
     fn span(&self, start: usize, end: usize) -> Span {
         Span::new(
             self.file,
@@ -56,9 +95,13 @@ impl Lexer<'_, '_> {
             match (self.peek(0), self.peek(1)) {
                 (b' ' | b'\t' | b'\r' | b'\n', _) => self.pos += 1,
                 (b'/', b'/') => {
+                    let start = self.pos;
                     while self.pos < self.bytes.len() && self.bytes[self.pos] != b'\n' {
                         self.pos += 1;
                     }
+                    // The `\r` of a CRLF line break is not part of the comment.
+                    let text = self.text[start..self.pos].trim_end_matches('\r');
+                    self.comment(start, start + text.len());
                 }
                 (b'/', b'*') => {
                     let start = self.pos;
@@ -75,6 +118,7 @@ impl Lexer<'_, '_> {
                             );
                         }
                     }
+                    self.comment(start, self.pos);
                 }
                 _ => return,
             }
@@ -288,6 +332,20 @@ mod tests {
         let (k, d) = kinds(r#""a ${ f("}") } b" x"#);
         assert!(d.is_empty(), "{d:?}");
         assert_eq!(k, [TokenKind::Str, TokenKind::Ident, TokenKind::Eof]);
+    }
+
+    #[test]
+    fn collects_comments_outside_strings() {
+        let src = "a // one\r\n\"// no\" /* two */ b /* open";
+        let mut diags = Vec::new();
+        let (tokens, comments) = lex_with_comments(FileId(0), src, 0, &mut diags);
+        let texts: Vec<&str> = comments
+            .iter()
+            .map(|c| &src[c.start as usize..c.end as usize])
+            .collect();
+        assert_eq!(texts, ["// one", "/* two */", "/* open"]);
+        assert_eq!(tokens.len(), 4);
+        assert_eq!(diags.len(), 1, "unterminated block comment");
     }
 
     #[test]

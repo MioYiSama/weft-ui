@@ -6,3 +6,6 @@ packages:
 
 # Scripts such as `WEFT_PLATFORM=windows vite build` also run on Windows hosts.
 shellEmulator: true
+
+# Accept freshly published versions, as local installs do.
+minimumReleaseAge: 0

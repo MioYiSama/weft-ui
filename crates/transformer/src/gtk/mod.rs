@@ -154,7 +154,7 @@ mod tests {
     fn cpp(source: &str) -> String {
         let mut loader = MemoryLoader::new();
         loader.insert("App.weft", source);
-        let compilation = crate::check("App.weft", &mut loader);
+        let compilation = crate::check(weft_ui_parser::load(&["App.weft"], &mut loader));
         let Some(program) = &compilation.program else {
             panic!("{}", compilation.render_diagnostics());
         };

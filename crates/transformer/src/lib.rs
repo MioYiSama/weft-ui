@@ -1,8 +1,9 @@
 //! Checks Weft UI programs and emits code for platform backends.
 //!
-//! [`check_many`] loads and parses entry modules and their imports with
-//! [`weft_ui_parser`], then lowers the AST to a typed [`ir::Program`] with
-//! dependency information for every binding. [`compile_app`] dispatches this
+//! [`check`] takes a [`ParsedProgram`] (entry modules and their imports, as
+//! loaded by `weft_ui_parser::load`), resolves and type checks it, and lowers
+//! it to a typed [`ir::Program`] with dependency information for every
+//! binding. [`compile_app`] dispatches this
 //! IR to the backend modules for the selected [`transform::Platform`].
 //! Platforms with a separate view layer share a [`view::ViewLayout`] between
 //! their view files and the JS logic modules emitted by [`bridge`].
@@ -23,8 +24,7 @@ pub mod web;
 pub mod wechat;
 pub mod winui;
 
-use weft_ui_ast::{Diagnostic, SourceMap, diagnostic};
-use weft_ui_parser::SourceLoader;
+use weft_ui_ast::{Diagnostic, ParsedProgram, SourceMap, diagnostic};
 
 use crate::bridge::JsModule;
 use crate::ir::Program;
@@ -58,21 +58,13 @@ impl Compilation {
     }
 }
 
-/// Parses, resolves, and type checks `entry` and every module it imports.
+/// Resolves and type checks a parsed import closure as one program, so
+/// declaration names must be unique across all of its modules.
 ///
-/// Same as [`check_many`] with a single entry.
-pub fn check(entry: &str, loader: &mut dyn SourceLoader) -> Compilation {
-    check_many(&[entry], loader)
-}
-
-/// Parses, resolves, and type checks `entries` and every module they import
-/// as one program, so declaration names must be unique across all of them.
-///
-/// Entries are `/`-separated paths handed to `loader`; imports are resolved
-/// relative to the importing module. Entries come first in the program's
-/// file order.
-pub fn check_many(entries: &[&str], loader: &mut dyn SourceLoader) -> Compilation {
-    let analysis = sema::analyze(entries, loader);
+/// The returned diagnostics include those of `parsed`.
+#[must_use]
+pub fn check(parsed: ParsedProgram) -> Compilation {
+    let analysis = sema::analyze(parsed);
     Compilation {
         sources: analysis.sources,
         diagnostics: analysis.diagnostics,
@@ -94,21 +86,17 @@ pub struct AppOutput {
     pub layout: Option<ViewLayout>,
 }
 
-/// Compiles `entries` and their imports as one program for `platform`.
+/// Checks a parsed app (see [`check`]) and transforms it for `platform`.
 ///
-/// Declaration names must be unique across the whole app. On compilation
-/// errors, no logic modules or view files are generated.
+/// On compilation errors, no logic modules or view files are generated.
 ///
 /// Native platforms get the remote mode logic modules, `layout.json` (the
 /// layout the native views implement, including its hash) and the views of
 /// their backend: SwiftUI for iOS and macOS, Jetpack Compose for Android,
 /// WinUI 3 for Windows, and GTK 4 for Linux.
-pub fn compile_app(
-    entries: &[&str],
-    platform: Platform,
-    loader: &mut dyn SourceLoader,
-) -> AppOutput {
-    let compilation = check_many(entries, loader);
+#[must_use]
+pub fn compile_app(parsed: ParsedProgram, platform: Platform) -> AppOutput {
+    let compilation = check(parsed);
     let mut output = AppOutput {
         compilation,
         logic: Vec::new(),

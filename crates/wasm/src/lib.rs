@@ -79,7 +79,8 @@ pub fn compile_app(
 ) -> Result<AppOutput, JsError> {
     let platform: Platform = platform.parse()?;
     let entries: Vec<&str> = entries.iter().map(String::as_str).collect();
-    let output = weft_ui_transformer::compile_app(&entries, platform, &mut JsLoader(load));
+    let parsed = weft_ui_parser::load(&entries, &mut JsLoader(load));
+    let output = weft_ui_transformer::compile_app(parsed, platform);
     let compilation = &output.compilation;
     let (logic_sources, (logic_code, logic_dts)) = output
         .logic

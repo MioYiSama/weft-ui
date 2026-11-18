@@ -4,9 +4,11 @@
 //! represented by `Error` variants so later passes can walk incomplete trees.
 
 pub mod diagnostic;
+mod program;
 pub mod span;
 
 pub use diagnostic::{Diagnostic, Severity};
+pub use program::{ParsedFile, ParsedProgram};
 pub use span::{FileId, SourceMap, Span};
 
 #[derive(Debug, Clone, PartialEq, Eq)]

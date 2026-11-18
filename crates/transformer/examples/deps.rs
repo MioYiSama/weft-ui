@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::{env, fs, io};
 
-use weft_ui_parser::SourceLoader;
+use weft_ui_parser::{SourceLoader, load};
 use weft_ui_transformer::{check, dependency_report};
 
 /// Loads modules from the file system, relative to the current directory.
@@ -23,7 +23,7 @@ fn main() -> ExitCode {
         eprintln!("usage: deps <entry.weft>");
         return ExitCode::FAILURE;
     };
-    let compilation = check(&entry, &mut FsLoader);
+    let compilation = check(load(&[&entry], &mut FsLoader));
     if !compilation.diagnostics.is_empty() {
         eprintln!("{}", compilation.render_diagnostics());
     }

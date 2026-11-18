@@ -3,39 +3,19 @@
 use std::collections::HashMap;
 
 use weft_ui_ast::span::offset;
-use weft_ui_ast::{Diagnostic, File, FileId, SourceMap, Span};
+use weft_ui_ast::{Diagnostic, FileId, ParsedFile, ParsedProgram, SourceMap, Span};
 
 use crate::loader::{SourceLoader, normalize, resolve_import};
 use crate::parse;
 
-/// Parsed module and the direct imports that resolved successfully.
-#[derive(Debug, Clone)]
-pub struct LoadedFile {
-    /// Syntax tree, including error nodes if parsing failed.
-    pub ast: File,
-    /// Successfully loaded direct imports, with the span of the `import`.
-    pub imports: Vec<(FileId, Span)>,
-}
-
-/// Loaded import closure of one or more entry modules.
-#[derive(Debug, Clone)]
-pub struct Loaded {
-    /// Modules in source-map order, indexed by [`FileId::index`].
-    pub files: Vec<LoadedFile>,
-    /// Entry modules in the given order, without duplicates.
-    pub entries: Vec<FileId>,
-}
-
-/// Loads `entries` and everything they import into an empty source map.
+/// Loads and parses `entries` and every module they import.
 ///
-/// Appends loading and parsing diagnostics to `diags`. An entry that cannot be
-/// loaded is reported and kept as an empty module.
-pub fn load(
-    entries: &[&str],
-    loader: &mut dyn SourceLoader,
-    sources: &mut SourceMap,
-    diags: &mut Vec<Diagnostic>,
-) -> Loaded {
+/// Entries are `/`-separated paths handed to `loader`; imports are resolved
+/// relative to the importing module. Entries come first in file order. An
+/// entry that cannot be loaded is reported and kept as an empty module.
+pub fn load(entries: &[&str], loader: &mut dyn SourceLoader) -> ParsedProgram {
+    let mut sources = SourceMap::new();
+    let mut diags = Vec::new();
     let mut ids: HashMap<String, FileId> = HashMap::new();
     let mut entry_ids = Vec::with_capacity(entries.len());
     for entry in entries {
@@ -58,7 +38,7 @@ pub fn load(
         entry_ids.push(id);
     }
 
-    let mut files: Vec<LoadedFile> = Vec::new();
+    let mut files: Vec<ParsedFile> = Vec::new();
     // Files are parsed in id order; imports append new ids as they are found.
     while files.len() < sources.files().len() {
         let id = FileId(offset(files.len()));
@@ -98,10 +78,12 @@ pub fn load(
             }
             imports.push((target_id, import.span));
         }
-        files.push(LoadedFile { ast: tree, imports });
+        files.push(ParsedFile { ast: tree, imports });
     }
-    Loaded {
+    ParsedProgram {
+        sources,
         files,
         entries: entry_ids,
+        diagnostics: diags,
     }
 }

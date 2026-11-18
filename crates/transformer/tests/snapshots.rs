@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use weft_ui_parser::MemoryLoader;
+use weft_ui_parser::{MemoryLoader, load};
 use weft_ui_transformer::compile_app;
 use weft_ui_transformer::transform::Platform;
 
@@ -19,7 +19,7 @@ const TODO_LIST: &str = include_str!("fixtures/TodoList.weft");
 fn generate(platform: Platform) -> BTreeMap<String, String> {
     let mut loader = MemoryLoader::new();
     loader.insert("TodoList.weft", TODO_LIST);
-    let output = compile_app(&["TodoList.weft"], platform, &mut loader);
+    let output = compile_app(load(&["TodoList.weft"], &mut loader), platform);
     assert!(
         output.compilation.diagnostics.is_empty(),
         "{}",
@@ -107,7 +107,7 @@ component C(color: String) {
     let mut loader = MemoryLoader::new();
     loader.insert("ui/C.weft", src);
     for platform in [Platform::Web, Platform::Wechat] {
-        let output = compile_app(&["ui/C.weft"], platform, &mut loader);
+        let output = compile_app(load(&["ui/C.weft"], &mut loader), platform);
         assert!(
             output.compilation.diagnostics.is_empty(),
             "{}",
@@ -161,7 +161,7 @@ fn remote_imports_preserve_weft_extensions() {
     let mut loader = MemoryLoader::new();
     loader.insert("ui/C.weft", "import \"./D.weft\"\ncomponent C() { D() }");
     loader.insert("ui/D.weft", "component D() { Text(\"x\") }");
-    let output = compile_app(&["ui/C.weft"], Platform::Wechat, &mut loader);
+    let output = compile_app(load(&["ui/C.weft"], &mut loader), Platform::Wechat);
     assert!(
         output.compilation.diagnostics.is_empty(),
         "{}",
@@ -175,7 +175,7 @@ fn remote_imports_preserve_weft_extensions() {
 fn layout() {
     let mut loader = MemoryLoader::new();
     loader.insert("TodoList.weft", TODO_LIST);
-    let output = compile_app(&["TodoList.weft"], Platform::Wechat, &mut loader);
+    let output = compile_app(load(&["TodoList.weft"], &mut loader), Platform::Wechat);
     let json = output.layout.expect("wechat has a layout").to_json();
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots/TodoList/layout.json");
     if std::env::var_os("WEFT_UPDATE_SNAPSHOTS").is_some() {

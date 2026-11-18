@@ -9,8 +9,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use weft_ui_ast as ast;
 use weft_ui_ast::span::offset;
-use weft_ui_ast::{Diagnostic, FileId, SourceMap, Span};
-use weft_ui_parser::{SourceLoader, modules};
+use weft_ui_ast::{Diagnostic, FileId, ParsedFile, ParsedProgram, SourceMap, Span};
 
 use crate::deps;
 use crate::ide::{self, ProbeContext, RawCall, RawProbe, Recorder, Target};
@@ -269,25 +268,21 @@ pub(crate) struct Analysis {
     pub recording: Option<(Recorder, Program)>,
 }
 
-pub(crate) fn analyze(entries: &[&str], loader: &mut dyn SourceLoader) -> Analysis {
-    analyze_recording(entries, loader, None)
+pub(crate) fn analyze(parsed: ParsedProgram) -> Analysis {
+    analyze_recording(parsed, None)
 }
 
 pub(crate) fn analyze_recording(
-    entries: &[&str],
-    loader: &mut dyn SourceLoader,
+    parsed: ParsedProgram,
     recorder: Option<RefCell<Recorder>>,
 ) -> Analysis {
-    let mut sources = SourceMap::new();
-    let mut diags = Vec::new();
-    let loaded = modules::load(entries, loader, &mut sources, &mut diags);
-    let (program, recorder) = check(
-        &loaded.files,
-        loaded.entries,
-        &sources,
-        &mut diags,
-        recorder,
-    );
+    let ParsedProgram {
+        sources,
+        files,
+        entries,
+        diagnostics: mut diags,
+    } = parsed;
+    let (program, recorder) = check(&files, entries, &sources, &mut diags, recorder);
     diags.sort_by_key(|d| (d.span.file, d.span.start));
     let (program, recording) = match recorder {
         Some(recorder) => (None, Some((recorder.into_inner(), program))),
@@ -305,7 +300,7 @@ pub(crate) fn analyze_recording(
 }
 
 fn check(
-    files: &[modules::LoadedFile],
+    files: &[ParsedFile],
     entries: Vec<FileId>,
     sources: &SourceMap,
     diags: &mut Vec<Diagnostic>,
@@ -680,11 +675,7 @@ fn find_cycles(edges: &[Vec<(usize, Span)>]) -> Vec<(Vec<usize>, Span)> {
     out
 }
 
-fn report_import_cycles(
-    files: &[modules::LoadedFile],
-    sources: &SourceMap,
-    diags: &mut Vec<Diagnostic>,
-) {
+fn report_import_cycles(files: &[ParsedFile], sources: &SourceMap, diags: &mut Vec<Diagnostic>) {
     let edges: Vec<Vec<(usize, Span)>> = files
         .iter()
         .map(|f| {

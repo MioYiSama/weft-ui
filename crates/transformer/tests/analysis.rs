@@ -1,8 +1,8 @@
 //! M1: semantic analysis, dependency analysis and the view IR.
 
-use weft_ui_parser::MemoryLoader;
+use weft_ui_parser::{MemoryLoader, load};
 use weft_ui_transformer::ir::{BindingKind, Handler, NodeKind, ParamId, PropValue, SlotRef};
-use weft_ui_transformer::{Compilation, check, check_many, dependency_report};
+use weft_ui_transformer::{Compilation, check, dependency_report};
 
 const DEMO: &str = include_str!("fixtures/TodoList.weft");
 
@@ -11,7 +11,7 @@ fn compile(files: &[(&str, &str)]) -> Compilation {
     for (path, text) in files {
         loader.insert(path, *text);
     }
-    check(files[0].0, &mut loader)
+    check(load(&[files[0].0], &mut loader))
 }
 
 /// `path:line:col: message` for every diagnostic.
@@ -429,7 +429,7 @@ fn app_programs_share_imports_and_names() {
     );
     loader.insert("c.weft", "component A() { Text(\"c\") }");
 
-    let app = check_many(&["a.weft", "b.weft", "./a.weft"], &mut loader);
+    let app = check(load(&["a.weft", "b.weft", "./a.weft"], &mut loader));
     let program = app
         .program
         .as_ref()
@@ -443,7 +443,7 @@ fn app_programs_share_imports_and_names() {
         .collect();
     assert_eq!(entries, ["a.weft", "b.weft"]);
 
-    let clash = check_many(&["a.weft", "c.weft"], &mut loader);
+    let clash = check(load(&["a.weft", "c.weft"], &mut loader));
     assert!(clash.program.is_none());
     let messages: Vec<&str> = clash
         .diagnostics

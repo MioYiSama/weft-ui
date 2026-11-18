@@ -6,4 +6,6 @@ description = "Semantic analysis and platform backends for Weft UI"
 
 [dependencies]
 weft-ui-ast = { path = "../ast" }
+
+[dev-dependencies]
 weft-ui-parser = { path = "../parser" }

@@ -139,7 +139,7 @@ impl Server {
             docs: &self.docs,
             overlay: text.map(|text| (path, text)),
         };
-        ide::analyze(&[path], &mut loader, probe)
+        ide::analyze(weft_ui_parser::load(&[path], &mut loader), probe)
     }
 
     /// Re-checks every open document and publishes its diagnostics.
@@ -151,7 +151,8 @@ impl Server {
                     docs: &self.docs,
                     overlay: None,
                 };
-                let compilation = weft_ui_transformer::check(path, &mut loader);
+                let parsed = weft_ui_parser::load(&[path], &mut loader);
+                let compilation = weft_ui_transformer::check(parsed);
                 let entry = LineIndex::new(&doc.text);
                 let diagnostics = compilation
                     .diagnostics

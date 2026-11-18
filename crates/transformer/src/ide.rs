@@ -1,6 +1,6 @@
 //! Semantic queries for editor tooling.
 //!
-//! [`analyze`] runs the same analysis as [`crate::check_many`] and records an
+//! [`analyze`] runs the same analysis as [`crate::check`] and records an
 //! [`Index`] on the way: every resolved name occurrence (for hover and go to
 //! definition), the argument lists of calls (for argument name completion)
 //! and, when asked to, what is valid at a *probe*: an identifier the editor
@@ -11,8 +11,7 @@
 
 use std::cell::RefCell;
 
-use weft_ui_ast::{Diagnostic, FileId, SourceMap, Span};
-use weft_ui_parser::SourceLoader;
+use weft_ui_ast::{Diagnostic, FileId, ParsedProgram, SourceMap, Span};
 
 use crate::ir::{ComponentId, EventId, ModelId, ParamKind, Program, Type};
 use crate::sema;
@@ -27,22 +26,19 @@ pub struct IdeAnalysis {
     pub index: Index,
 }
 
-/// Analyzes `entries` and their imports like [`crate::check_many`] and
-/// records an [`Index`].
+/// Analyzes a parsed import closure like [`crate::check`] and records an
+/// [`Index`].
 ///
 /// With `probe`, the index also describes the first place where an
 /// identifier with exactly that name is resolved (see [`Probe`]). Pick a name
 /// that cannot clash with user code; diagnostics about it are not meaningful.
-pub fn analyze(
-    entries: &[&str],
-    loader: &mut dyn SourceLoader,
-    probe: Option<&str>,
-) -> IdeAnalysis {
+#[must_use]
+pub fn analyze(parsed: ParsedProgram, probe: Option<&str>) -> IdeAnalysis {
     let recorder = Recorder {
         probe_name: probe.map(str::to_owned),
         ..Recorder::default()
     };
-    let analysis = sema::analyze_recording(entries, loader, Some(RefCell::new(recorder)));
+    let analysis = sema::analyze_recording(parsed, Some(RefCell::new(recorder)));
     let (recorder, program) = analysis
         .recording
         .expect("analysis returns the recorder it was given");
@@ -495,7 +491,7 @@ mod tests {
         let mut loader = MemoryLoader::new();
         loader.insert("models.weft", MODELS);
         loader.insert("app.weft", app);
-        analyze(&["app.weft"], &mut loader, probe)
+        analyze(weft_ui_parser::load(&["app.weft"], &mut loader), probe)
     }
 
     fn at<'a>(analysis: &'a IdeAnalysis, app: &str, needle: &str) -> &'a Symbol {

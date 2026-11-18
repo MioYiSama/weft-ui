@@ -169,7 +169,7 @@ mod tests {
             "App.weft",
             r#"component A() { Text("say \"hi\" \\ $name \${x} \n\r\t\u{8}\u{7} café") }"#,
         );
-        let compilation = crate::check("App.weft", &mut loader);
+        let compilation = crate::check(weft_ui_parser::load(&["App.weft"], &mut loader));
         let Some(program) = &compilation.program else {
             panic!("{}", compilation.render_diagnostics());
         };

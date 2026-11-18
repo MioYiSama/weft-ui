@@ -53,6 +53,16 @@ weft lsp                             # language server on stdio: diagnostics, co
 
 Zed: run `zed: install dev extension` and pick `crates/zed/` (needs Rust installed through rustup). The extension starts `weft lsp` from `PATH`; set `lsp.weft.binary.path` in Zed's settings to use another binary. Highlighting, brackets, indentation and the outline come from the tree-sitter grammar in `packages/tree-sitter/`. Zed fetches the grammar from a pinned commit; see [how to update the pin](packages/tree-sitter/README.md).
 
+## TypeScript
+
+Types of `.weft` imports come from the [TypeScript 7.1 content mapper](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers) `@weft-ui/content-mapper` (after `pnpm build:wasm`). Add it as a dev dependency and register it in `tsconfig.json`, as `example/tsconfig.json` does:
+
+```jsonc
+"contentMappers": [{ "package": "@weft-ui/content-mapper", "extensions": [".weft"] }]
+```
+
+Then run `tsc --runExternalCode` (`pnpm --filter example typecheck`); VS Code starts the mapper in trusted workspaces. TypeScript sees each `.weft` file as the declarations of its logic module: Weft errors are reported in the `.weft` file, and the names of models, fields, events, components and parameters map back to their declarations, so type errors, go to definition and find references land in the `.weft` source. Without content mappers, `dts: true` makes the Vite plugin write `X.d.weft.ts` next to every `X.weft` (needs `allowArbitraryExtensions`).
+
 ## Vite plugin
 
 With `@weft-ui/vite`, `entry` selects the JS/TS entry for non-Web builds, relative to the Vite root. It defaults to the first existing file in `src/index.{js,ts,mjs,mts,cjs,cts}`, in that order. Web builds start from `index.html`. Set `apps` to change the output directory for platform projects (an absolute path or a path relative to the Vite root; default `./apps`). The paths below assume the default.

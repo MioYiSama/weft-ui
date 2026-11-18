@@ -1,0 +1,6 @@
+// 模型 😀
+model Todo {
+  id: Int,
+  name: String,
+}
+event Remove(id: Int)

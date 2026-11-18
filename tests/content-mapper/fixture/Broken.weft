@@ -1,0 +1,4 @@
+// 未知类型 😀
+model Broken {
+  value: Missing,
+}

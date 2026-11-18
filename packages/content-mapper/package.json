@@ -1,0 +1,19 @@
+{
+  "name": "@weft-ui/content-mapper",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript content mapper for .weft files",
+  "typescript": {
+    "contentMapper": {
+      "exec": ["node", "src/server.ts"]
+    }
+  },
+  "dependencies": {
+    "@weft-ui/compiler": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

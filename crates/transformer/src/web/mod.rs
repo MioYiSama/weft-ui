@@ -9,7 +9,7 @@ mod dom;
 
 use weft_ui_ast::FileId;
 
-use crate::bridge::{self, JsModule, Mode};
+use crate::bridge::{self, Declarations, JsModule, Mode};
 use crate::ir::Program;
 
 /// Import specifier of the JS runtime used by the generated modules.
@@ -23,4 +23,15 @@ const RUNTIME: &str = "@weft-ui/runtime";
 #[must_use]
 pub fn module(program: &Program, file: FileId) -> JsModule {
     bridge::generate(program, file, RUNTIME, Mode::Dom(&dom::Dom))
+}
+
+/// Generates the declarations of the Web logic module of `file`, as
+/// [`module`] does, with their mappings.
+///
+/// # Panics
+///
+/// Panics if `file` is not part of the program.
+#[must_use]
+pub fn declarations(program: &Program, file: FileId) -> Declarations {
+    bridge::declarations(program, file, Mode::Dom(&dom::Dom))
 }

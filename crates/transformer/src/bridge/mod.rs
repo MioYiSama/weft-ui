@@ -17,9 +17,9 @@ pub(crate) mod js;
 pub(crate) mod remote;
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt;
+use std::fmt::{self, Write};
 
-use weft_ui_ast::FileId;
+use weft_ui_ast::{FileId, Span};
 
 use crate::ir::{ComponentId, EventId, ModelId, Module, NodeKind, ParamKind, Program, Type};
 use crate::view::ViewLayout;
@@ -65,11 +65,73 @@ pub trait DomView: fmt::Debug {
 #[must_use]
 pub fn generate(program: &Program, file: FileId, runtime: &str, mode: Mode<'_>) -> JsModule {
     let links = Links::new(program, file, mode);
+    let mut dts_text = String::new();
+    dts(program, &links).write_to(&mut dts_text);
     JsModule {
         source: links.entry.path.clone(),
         code: code(program, &links, runtime),
-        dts: dts(program, &links),
+        dts: dts_text,
     }
+}
+
+/// TypeScript declarations of one logic module ([`JsModule::dts`]), with
+/// the fragments that name declarations of its `.weft` file.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Declarations {
+    pub text: String,
+    /// Ordered by [`Mapping::start`]; fragments do not overlap.
+    pub mappings: Vec<Mapping>,
+}
+
+/// A fragment of generated text that stands for a span of the `.weft` file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Mapping {
+    /// Byte offset in the generated text.
+    pub start: u32,
+    /// Byte length in the generated text.
+    pub len: u32,
+    /// Always in the module's own file.
+    pub original: Span,
+    pub kind: MappingKind,
+}
+
+/// How a generated fragment relates to its original span.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MappingKind {
+    /// Same text: a declaration's name.
+    Verbatim,
+    /// Same declaration under another name, e.g. `delete$` for `delete`.
+    Alias,
+    /// A different entity derived from the original, e.g. the `onClick`
+    /// handler method of the event `Click`.
+    Atom,
+}
+
+/// Generates the declarations of `file`; [`generate`] returns the same text.
+///
+/// # Panics
+///
+/// Panics if `file` is not part of the program.
+#[must_use]
+pub fn declarations(program: &Program, file: FileId, mode: Mode<'_>) -> Declarations {
+    let links = Links::new(program, file, mode);
+    let mut text = String::new();
+    let mappings = dts(program, &links).write_mapped(&mut text);
+    Declarations { text, mappings }
+}
+
+/// Declarations of a module at `path` whose program has errors: re-exports
+/// of its direct `imports`, so TypeScript still loads and reports them.
+#[must_use]
+pub fn import_declarations<'a>(path: &str, imports: impl IntoIterator<Item = &'a str>) -> String {
+    let mut text = String::new();
+    for import in imports {
+        let specifier = js::string(&js::relative_specifier(path, import));
+        // Infallible: writing to a `String`.
+        let _ = writeln!(text, "export * from {specifier};");
+    }
+    text.push_str("export {};\n");
+    text
 }
 
 /// Generates the remote mode logic module of `file`, importing
@@ -338,7 +400,7 @@ fn own_aliases(program: &Program, entry: &Module, with_events: bool) -> Vec<Stri
         .collect()
 }
 
-fn dts(program: &Program, links: &Links<'_>) -> String {
+fn dts(program: &Program, links: &Links<'_>) -> Code {
     let entry = links.entry;
     let mut out = Code::default();
 
@@ -372,30 +434,21 @@ fn dts(program: &Program, links: &Links<'_>) -> String {
             links.specifier(links.module(file))
         ));
     }
-    for (file, symbols) in links.group(links.foreign()) {
-        let specifier = links.specifier(links.module(file));
-        let (classes, types): (Vec<Symbol>, Vec<Symbol>) = symbols
-            .into_iter()
-            .partition(|s| matches!(s, Symbol::Component(_)));
-        let names = |symbols: &[Symbol]| {
-            symbols
-                .iter()
-                .map(|s| s.name(program))
-                .collect::<Vec<_>>()
-                .join(", ")
+    // `export *` keeps the text independent of what the imports declare, so
+    // TypeScript's per-file content mapper cache stays valid when they change.
+    for (module, _) in &links.closures {
+        out.line(format!("export * from {};", links.specifier(module)));
+    }
+    // `export *` skips `default`.
+    for symbol in links.foreign().filter(|s| s.name(program) == "default") {
+        let keyword = match symbol {
+            Symbol::Component(_) => "export",
+            Symbol::Model(_) | Symbol::Event(_) => "export type",
         };
-        if !types.is_empty() {
-            out.line(format!(
-                "export type {{ {} }} from {specifier};",
-                names(&types)
-            ));
-        }
-        if !classes.is_empty() {
-            out.line(format!(
-                "export {{ {} }} from {specifier};",
-                names(&classes)
-            ));
-        }
+        out.line(format!(
+            "{keyword} {{ default }} from {};",
+            links.specifier(links.provider(symbol))
+        ));
     }
 
     for &id in &entry.models {
@@ -417,7 +470,5 @@ fn dts(program: &Program, links: &Links<'_>) -> String {
         out.line("");
         out.line(format!("export {{ {} }};", aliases.join(", ")));
     }
-    let mut text = String::new();
-    out.write_to(&mut text);
-    text
+    out
 }

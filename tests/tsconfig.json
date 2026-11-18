@@ -6,9 +6,9 @@
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "types": ["node"],
     "strict": true,
-    "allowArbitraryExtensions": true,
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "fixtures", "conformance", "miniprogram", "vite", "vitest.config.ts"]
+  "include": ["src", "fixtures", "conformance", "content-mapper/*.ts", "miniprogram", "vite", "vitest.config.ts"],
+  "contentMappers": [{ "package": "@weft-ui/content-mapper", "extensions": [".weft"] }]
 }

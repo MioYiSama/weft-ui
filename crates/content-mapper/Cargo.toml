@@ -1,0 +1,9 @@
+[package]
+name = "weft-ui-content-mapper"
+version = { workspace = true }
+edition = { workspace = true }
+description = "TypeScript content mapper transform for Weft UI files"
+
+[dependencies]
+weft-ui-parser = { path = "../parser" }
+weft-ui-transformer = { path = "../transformer" }

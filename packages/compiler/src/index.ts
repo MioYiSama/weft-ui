@@ -52,6 +52,54 @@ export interface AppResult {
   files: string[];
 }
 
+/** Unit of content mapper positions: UTF-8 bytes or UTF-16 code units. */
+export type PositionEncoding = "utf-8" | "utf-16";
+
+/** TypeScript content mapper `SpanMapping`: virtual start and length, original start and length, kind, feature bits. */
+export type SpanMapping = [number, number, number, number, number, number];
+
+/** TypeScript text of one `.weft` file for TypeScript's content mappers. */
+export interface ContentMapping {
+  /** Declarations of the file's Web logic module, parsed as a `.ts` file. */
+  text: string;
+  mappings: SpanMapping[];
+  /** Errors located in the file. */
+  diagnostics: { message: string; start: number; length: number }[];
+}
+
+/**
+ * Maps the `.weft` file at `path`, whose unsaved text is `content`, to TypeScript with positions in `encoding`.
+ * `load` reads the files it imports. Copies the result before releasing its WASM allocation.
+ */
+export async function mapContent(
+  path: string,
+  content: string,
+  encoding: PositionEncoding,
+  load: (path: string) => string,
+): Promise<ContentMapping> {
+  const module = await loadCompiler();
+  const output = module.mapContent(path, content, encoding, load);
+  try {
+    const flat = output.mappings;
+    const mappings: SpanMapping[] = [];
+    for (let i = 0; i < flat.length; i += 6) {
+      mappings.push([flat[i]!, flat[i + 1]!, flat[i + 2]!, flat[i + 3]!, flat[i + 4]!, flat[i + 5]!]);
+    }
+    const spans = output.diagnosticSpans;
+    return {
+      text: output.text,
+      mappings,
+      diagnostics: output.diagnosticMessages.map((message, index) => ({
+        message,
+        start: spans[2 * index]!,
+        length: spans[2 * index + 1]!,
+      })),
+    };
+  } finally {
+    output.free();
+  }
+}
+
 /**
  * Compiles `entries` and their imports as one app-level program, so names must be unique across the app.
  * Native platforms get the remote mode logic and `layout.json` as their only view file until their view backends exist.

@@ -9,11 +9,12 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@weft-ui/compiler": "workspace:*",
+    "@weft-ui/content-mapper": "workspace:*",
     "@weft-ui/platform": "workspace:*",
     "@weft-ui/runtime": "workspace:*",
     "@weft-ui/vite": "workspace:*",
     "happy-dom": "^21.0.4",
-    "typescript": "^7.0.2",
+    "typescript": "7.1.0-beta",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"
   }

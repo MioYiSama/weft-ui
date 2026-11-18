@@ -1,9 +1,11 @@
-//! WebAssembly bindings for compiling Weft apps with a JavaScript source loader.
+//! WebAssembly bindings for compiling Weft apps and mapping `.weft` files to
+//! TypeScript, with a JavaScript source loader.
 
 use std::io;
 
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
+use weft_ui_content_mapper::PositionEncoding;
 use weft_ui_parser::SourceLoader;
 use weft_ui_transformer::transform::Platform;
 
@@ -62,6 +64,70 @@ pub struct AppOutput {
     pub has_errors: bool,
     /// Normalized paths of every loaded file.
     pub files: Vec<String>,
+}
+
+/// TypeScript text of one `.weft` file for TypeScript's content mappers.
+/// Flat arrays keep the boundary to plain strings and numbers.
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Debug, Clone)]
+pub struct ContentMapping {
+    /// TypeScript text, parsed as a `.ts` file.
+    pub text: String,
+    /// Six numbers per `SpanMapping` tuple: virtual start and length,
+    /// original start and length, `SpanMapKind`, `SpanMapFeature` bits.
+    pub mappings: Vec<u32>,
+    /// Message of each error in the file.
+    #[wasm_bindgen(js_name = diagnosticMessages)]
+    pub diagnostic_messages: Vec<String>,
+    /// Start and length of each error in `diagnosticMessages`.
+    #[wasm_bindgen(js_name = diagnosticSpans)]
+    pub diagnostic_spans: Vec<u32>,
+}
+
+/// Maps the `.weft` file at `path`, whose unsaved text is `content`, to
+/// TypeScript (see the `weft-ui-content-mapper` crate). Positions are in
+/// `encoding`, `utf-8` or `utf-16`.
+///
+/// `load(path)` must return the source text of imported files. Thrown
+/// exceptions become diagnostics of the importing file.
+///
+/// # Errors
+///
+/// Throws when `encoding` is unknown.
+#[wasm_bindgen(js_name = mapContent)]
+pub fn map_content(
+    path: &str,
+    content: &str,
+    encoding: &str,
+    load: &Function,
+) -> Result<ContentMapping, JsError> {
+    let encoding: PositionEncoding = encoding.parse()?;
+    let result = weft_ui_content_mapper::transform(path, content, &mut JsLoader(load), encoding);
+    let mappings = result
+        .mappings
+        .iter()
+        .flat_map(|m| {
+            [
+                m.virtual_start,
+                m.virtual_length,
+                m.original_start,
+                m.original_length,
+                m.kind.into(),
+                m.features,
+            ]
+        })
+        .collect();
+    let diagnostic_spans = result
+        .diagnostics
+        .iter()
+        .flat_map(|d| [d.start, d.length])
+        .collect();
+    Ok(ContentMapping {
+        text: result.text,
+        mappings,
+        diagnostic_messages: result.diagnostics.into_iter().map(|d| d.message).collect(),
+        diagnostic_spans,
+    })
 }
 
 /// Compiles `entries` and their imports as one app for `platform`.

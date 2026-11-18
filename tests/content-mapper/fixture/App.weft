@@ -1,0 +1,12 @@
+// 应用 😀
+import "./models.weft"
+model List { todos: Todo[] }
+event Click
+component App(list: List) {
+  Column {
+    Button(onClick = Click) { Text("+") }
+    for (todo in list.todos; key = todo.id) {
+      Button(onClick = Remove(todo.id)) { Text(todo.name) }
+    }
+  }
+}

@@ -3,11 +3,13 @@
 
 use std::collections::HashMap;
 
-use crate::ir::{ComponentId, EventId, ModelId, ParamKind, Program, Type};
+use weft_ui_ast::Span;
 
-use super::Mode;
+use crate::ir::{ComponentId, EventId, ModelId, Param, ParamKind, Program, Type};
+
 use super::expr::{Env, expr};
-use super::js::{self, Code};
+use super::js::{self, Code, MappedLine};
+use super::{MappingKind, Mode};
 
 /// Converter constants (`$c{n}`) turning host values into runtime values.
 #[derive(Debug, Default)]
@@ -190,72 +192,72 @@ pub(crate) fn ts_type(program: &Program, ty: &Type) -> String {
     }
 }
 
-fn declared(name: &str, keyword: &str) -> String {
-    let local = js::binding(name);
-    if local == name {
-        format!("export {keyword} {name}")
+/// `export {keyword} Name`, or `{keyword} name$` for a renamed binding,
+/// exported by an alias list instead.
+fn declared(keyword: &str, name: &str, original: Span) -> MappedLine {
+    let line = if js::binding(name) == name {
+        MappedLine::new().push("export ")
     } else {
-        keyword.to_owned() + " " + &local
-    }
+        MappedLine::new()
+    };
+    line.push(keyword).push(" ").binding(name, original)
 }
 
 pub(crate) fn model_dts(program: &Program, id: ModelId, out: &mut Code) {
     let model = program.model(id);
-    out.open(format!("{} {{", declared(&model.name, "interface")));
+    out.open_mapped(declared("interface", &model.name, model.span).push(" {"));
     for field in &model.fields {
-        out.line(format!("{}: {};", field.name, ts_type(program, &field.ty)));
+        out.mapped_line(
+            MappedLine::new()
+                .map(&field.name, field.span, MappingKind::Verbatim)
+                .push(&format!(": {};", ts_type(program, &field.ty))),
+        );
     }
     out.close("}");
 }
 
 pub(crate) fn event_dts(program: &Program, id: EventId, out: &mut Code) {
     let event = program.event(id);
-    let fields: Vec<String> = event
-        .params
-        .iter()
-        .map(|p| format!("{}: {}", p.name, ts_type(program, &p.ty)))
-        .collect();
-    let body = if fields.is_empty() {
-        "{}".to_owned()
-    } else {
-        format!("{{ {} }}", fields.join("; "))
-    };
-    out.line(format!("{} = {body};", declared(&event.name, "type")));
+    let mut line = declared("type", &event.name, event.span).push(" = {");
+    for (index, param) in event.params.iter().enumerate() {
+        line = line
+            .push(if index == 0 { " " } else { "; " })
+            .map(&param.name, param.span, MappingKind::Verbatim)
+            .push(&format!(": {}", ts_type(program, &param.ty)));
+    }
+    let end = if event.params.is_empty() { "};" } else { " };" };
+    out.mapped_line(line.push(end));
 }
 
 pub(crate) fn app_dts(program: &Program, id: ComponentId, mode: Mode<'_>, out: &mut Code) {
     let comp = program.component(id);
-    let local = js::binding(&comp.name);
-    let header = if local == comp.name {
-        format!("export declare class {local} {{")
-    } else {
-        format!("declare class {local} {{")
-    };
-    out.open(header);
+    out.open_mapped(declared("declare class", &comp.name, comp.span).push(" {"));
 
-    let value_params: Vec<(&str, &Type, bool)> = comp
+    let value_params: Vec<(&Param, &Type)> = comp
         .params
         .iter()
         .filter_map(|p| match &p.kind {
-            ParamKind::Value(ty) => Some((p.name.as_str(), ty, p.default.is_some())),
+            ParamKind::Value(ty) => Some((p, ty)),
             ParamKind::Children => None,
         })
         .collect();
-    let params: Vec<String> = value_params
-        .iter()
-        .enumerate()
-        .map(|(i, &(name, ty, has_default))| {
-            let ty = ts_type(program, ty);
-            let required_later = value_params[i + 1..].iter().any(|p| !p.2);
-            let name = js::binding(name);
-            match (has_default, required_later) {
-                (false, _) => format!("{name}: {ty}"),
-                (true, false) => format!("{name}?: {ty}"),
-                (true, true) => format!("{name}: {ty} | undefined"),
-            }
-        })
-        .collect();
-    out.line(format!("constructor({});", params.join(", ")));
+    let mut constructor = MappedLine::new().push("constructor(");
+    for (i, &(param, ty)) in value_params.iter().enumerate() {
+        let ty = ts_type(program, ty);
+        let required_later = value_params[i + 1..]
+            .iter()
+            .any(|(p, _)| p.default.is_none());
+        let annotation = match (param.default.is_some(), required_later) {
+            (false, _) => format!(": {ty}"),
+            (true, false) => format!("?: {ty}"),
+            (true, true) => format!(": {ty} | undefined"),
+        };
+        constructor = constructor
+            .push(if i == 0 { "" } else { ", " })
+            .binding(&param.name, param.span)
+            .push(&annotation);
+    }
+    out.mapped_line(constructor.push(");"));
     let model = value_params
         .first()
         .map_or_else(|| "undefined".to_owned(), |p| ts_type(program, p.1));
@@ -263,11 +265,17 @@ pub(crate) fn app_dts(program: &Program, id: ComponentId, mode: Mode<'_>, out: &
     out.line(format!("readonly model: {model};"));
     for &event in &comp.reachable_events {
         let event = program.event(event);
-        out.line(format!(
-            "{}(handler: (model: {model}, event: {}) => void): () => void;",
-            js::handler_method(&event.name),
+        let method = js::handler_method(&event.name);
+        // Mappings stay within the module's own file.
+        let line = if event.file == comp.file {
+            MappedLine::new().map(&method, event.span, MappingKind::Atom)
+        } else {
+            MappedLine::new().push(&method)
+        };
+        out.mapped_line(line.push(&format!(
+            "(handler: (model: {model}, event: {}) => void): () => void;",
             js::binding(&event.name)
-        ));
+        )));
     }
     out.line(format!(
         "$on(name: string, handler: (model: {model}, event: object) => unknown): () => void;"

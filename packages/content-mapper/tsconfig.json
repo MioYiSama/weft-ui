@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    // DOM: the wasm-bindgen declarations of `@weft-ui/compiler` name `WebAssembly` and fetch types.
+    "lib": ["ES2024", "DOM"],
+    "types": ["node"],
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    // Node runs the sources by stripping types.
+    "erasableSyntaxOnly": true,
+    "noEmit": true
+  },
+  "include": ["src"]
+}

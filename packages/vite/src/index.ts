@@ -32,7 +32,10 @@ export interface WeftOptions {
    * `src/index.{js,ts,mjs,mts,cjs,cts}`, in that order. Web builds start from `index.html`.
    */
   entry?: string;
-  /** Writes `X.d.weft.ts` next to every `X.weft`; defaults to `true`. */
+  /**
+   * Writes `X.d.weft.ts` next to every `X.weft`, for TypeScript setups without the content mapper
+   * `@weft-ui/content-mapper`; they need `allowArbitraryExtensions`. Defaults to `false`.
+   */
   dts?: boolean;
 }
 
@@ -252,7 +255,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
       for (const platform of selected) await builder.build(builder.environments[platform]!);
     },
     async buildStart() {
-      if (options.dts !== false) {
+      if (options.dts) {
         const outputPath = existsSync(appsDir) ? realpathSync(appsDir) : appsDir;
         for (const file of weftFiles(root, outputPath)) {
           const output = await compileApp([file], "web", (path) => readFileSync(path, "utf8"));
@@ -284,7 +287,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
       if (output.hasErrors) this.error(output.diagnostics);
       if (output.diagnostics) this.warn(output.diagnostics);
       const logic = output.logic.find((module) => module.source === file)!;
-      if (options.dts !== false) writeDeclarations(file, logic.dts);
+      if (options.dts) writeDeclarations(file, logic.dts);
       return { code: logic.code, map: null };
     },
     async writeBundle() {

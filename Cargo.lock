@@ -597,6 +597,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "weft-ui-content-mapper"
+version = "0.0.0"
+dependencies = [
+ "weft-ui-parser",
+ "weft-ui-transformer",
+]
+
+[[package]]
 name = "weft-ui-formatter"
 version = "0.0.0"
 dependencies = [
@@ -640,6 +648,7 @@ version = "0.0.0"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+ "weft-ui-content-mapper",
  "weft-ui-parser",
  "weft-ui-transformer",
 ]

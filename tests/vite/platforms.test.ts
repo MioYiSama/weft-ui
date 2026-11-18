@@ -181,7 +181,7 @@ test("WeChat builds a JavaScript entry into a custom apps directory", async () =
   await mkdir(join(root, "apps"));
   await writeFile(join(root, "apps/App.weft"), APP);
 
-  await build("wechat", { apps });
+  await build("wechat", { apps, dts: true });
   expect(existsSync(join(root, "apps/wechat"))).toBe(false);
   expect(existsSync(join(root, apps, "App.d.weft.ts"))).toBe(false);
   expect(existsSync(join(root, "apps/App.d.weft.ts"))).toBe(true);

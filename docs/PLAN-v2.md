@@ -92,7 +92,8 @@ crates/
       compose/      Android
       winui/        Windows（C#）
       gtk/          Linux（C++）
-  wasm/             用 wasm-bindgen 导出 compileApp
+  content-mapper/   weft-ui-content-mapper：TypeScript content mapper 的 transform
+  wasm/             用 wasm-bindgen 导出 compileApp 和 mapContent
 ```
 
 `weft-ui-parser` 依赖 `weft-ui-ast`；`weft-ui-transformer` 依赖两者，并在 crate 内部分发到各平台模块。`weft-ui-wasm` 通过解析器的源码加载接口调用 transformer 的编译入口。
@@ -250,7 +251,7 @@ weft({
   - `define.__WEFT_PLATFORM__`；
   - `build.outDir`：`apps/<platform>/weft/js`；
   - 原生和小程序环境打成单文件（关闭代码分割），原生环境的 `build.target` 设为 Hermes 支持的语法集合（P3 用 test262 子集实测后定为 `es2022`，见[P3 的实现](#p3-的实现)）。
-- `buildStart` 对应用级 Program 编译一次并缓存；`transform` 从缓存里返回 `.weft` 的逻辑模块；`generateBundle` 把视图源码和布局哈希写进 `apps/<platform>/weft/`。`.d.weft.ts` 的生成方式不变。
+- `buildStart` 对应用级 Program 编译一次并缓存；`transform` 从缓存里返回 `.weft` 的逻辑模块；`generateBundle` 把视图源码和布局哈希写进 `apps/<platform>/weft/`。`.weft` 的类型由 `@weft-ui/content-mapper` 提供，`.d.weft.ts` 改为 `dts: true` 时才生成。
 
 ### `apps/<platform>/` 目录约定
 

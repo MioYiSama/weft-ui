@@ -267,13 +267,23 @@ app.onSubmit(async (model, e) => {
 | 位置                     | 作用                                                                 |
 | ------------------------ | -------------------------------------------------------------------- |
 | `weft_ui_transformer::bridge` + `weft_ui_transformer::web` | 每个 `.weft` 生成一个 ES 模块和一份 `.d.ts`（TS 宿主绑定 + DOM 后端） |
-| `crates/wasm`            | `wasm-bindgen` 导出 `compileApp(entries, platform, load)`，源码由 JS 回调读取 |
-| `packages/compiler`      | `@weft-ui/compiler`：加载 WASM 产物（`wasm/`），供 Vite 插件和小程序构建共用 |
+| `crates/content-mapper`  | `weft-ui-content-mapper`：TypeScript content mapper 的 transform，`.weft` → 声明文本 + 区间映射 + 诊断 |
+| `crates/wasm`            | `wasm-bindgen` 导出 `compileApp(entries, platform, load)` 和 `mapContent(path, content, encoding, load)`，源码由 JS 回调读取 |
+| `packages/compiler`      | `@weft-ui/compiler`：加载 WASM 产物（`wasm/`），供 Vite 插件、小程序构建和 content mapper 共用 |
+| `packages/content-mapper` | `@weft-ui/content-mapper`：TypeScript 7.1 content mapper 进程（stdio JSON-RPC） |
 | `packages/runtime`       | `@weft-ui/runtime`：model 基类、脏位 scope、微任务调度、`if`/`for`/插槽块 |
-| `packages/vite`   | `@weft-ui/vite`：转换 `.weft`，在源文件旁写 `X.d.weft.ts`      |
+| `packages/vite`   | `@weft-ui/vite`：转换 `.weft`；`dts: true` 时在源文件旁写 `X.d.weft.ts`      |
 | `packages/vite/test` | 端到端测试（happy-dom，含 TodoList 与 MutationObserver 粒度断言） |
 
-构建：`pnpm install && pnpm build:wasm`，之后 `pnpm test`。跨平台示例统一放在 `example/`，构建命令为 `pnpm --filter example build:<platform>`。TS 侧需要开启 `allowArbitraryExtensions` 才能找到 `X.d.weft.ts`。
+构建：`pnpm install && pnpm build:wasm`，之后 `pnpm test`。跨平台示例统一放在 `example/`，构建命令为 `pnpm --filter example build:<platform>`。
+
+TS 类型：tsconfig 的 `contentMappers` 把 `.weft` 交给 `@weft-ui/content-mapper`，`tsc --runExternalCode` 检查（见 `example/tsconfig.json`）。TypeScript 看到的是该文件 Web 逻辑模块的声明，与 `X.d.weft.ts` 文本相同：
+
+- model、字段、event 及其参数、组件及其参数的名字映射回 `.weft` 中的声明（`Verbatim`，保留字改名的是 `Alias`），`onXxx` 处理方法映射到本文件声明的 event 名（`Atom`）。映射只开启跳转定义、类型定义、实现和查找引用：悬停、补全等属于 Weft LSP，经映射的编辑（重命名、代码操作）会改掉声明却漏掉 `.weft` 里的用法。
+- 本文件的 Weft 错误作为 mapper 诊断报告；导入闭包有错误时文本只 `export *` 直接导入，让 TypeScript 继续转换并报告它们。
+- 再导出写成 `export *`，文本不随导入文件声明的变化而变，TypeScript 按文件缓存的转换结果仍然有效；`import type` 仍按名字取自提供它的导入。
+- 位置编码优先 UTF-8（Rust 的字节偏移），否则换算成 UTF-16。
+- 不支持 content mapper 的环境用 Vite 插件的 `dts: true` 写 `X.d.weft.ts`，需要开启 `allowArbitraryExtensions`。
 
 JS 宿主约定（在上文 Demo 基础上的具体化）：
 
@@ -332,7 +342,7 @@ JS 宿主约定（在上文 Demo 基础上的具体化）：
 
 ## 工具链
 
-- **构建集成**：JS/TS 用 Vite 插件（`.weft` 作为模块导入，同时生成 `.d.ts`）。
+- **构建集成**：JS/TS 用 Vite 插件（`.weft` 作为模块导入）；类型由 TypeScript content mapper `@weft-ui/content-mapper` 提供，`.d.weft.ts` 生成是备选项。
 - **LSP**（`crates/language-server`，`weft-ui-language-server`）：诊断、补全、跳转定义、悬停类型。与编译器共用前端和语义分析。
 - **格式化工具**（`crates/formatter`，`weft-ui-formatter`）：基于 AST 并保留注释的 `weft fmt`。
 - **DSL 解释器**：直接解释视图 IR，用于实时预览和热重载，修改 `.weft` 不需要重新编译宿主。宿主侧事件可以 mock，也可以通过 IPC 转发给正在运行的进程。

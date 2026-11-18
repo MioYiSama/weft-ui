@@ -5,6 +5,7 @@
 //! come from `weft-ui-codegen-js` (through the Web backend for `web`), the
 //! view files from the platform's [`Codegen`] backend.
 
+use weft_ui_codegen_compose::Compose;
 use weft_ui_codegen_js::JsModule;
 use weft_ui_codegen_swiftui::SwiftUi;
 use weft_ui_codegen_wechat::Wechat;
@@ -35,8 +36,8 @@ pub struct AppOutput {
 ///
 /// Native platforms get the remote mode logic modules, `layout.json` (the
 /// layout the native views implement, including its hash) and the views of
-/// their backend: SwiftUI for iOS and macOS, WinUI 3 for Windows; the other
-/// native backends do not exist yet.
+/// their backend: SwiftUI for iOS and macOS, Jetpack Compose for Android,
+/// and WinUI 3 for Windows. Linux does not have a view backend yet.
 pub fn compile_app(
     entries: &[&str],
     platform: Platform,
@@ -94,6 +95,8 @@ fn generate(
             let cx = Context::new(program, Some(&layout), platform);
             if matches!(platform, Platform::Ios | Platform::Macos) {
                 views.extend(SwiftUi.generate(&cx));
+            } else if platform == Platform::Android {
+                views.extend(Compose.generate(&cx));
             } else if platform == Platform::Windows {
                 views.extend(WinUi.generate(&cx));
             }

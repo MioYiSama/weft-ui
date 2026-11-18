@@ -3,6 +3,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultServerConditions } from "vite";
 import { type AppResult, type Platform, compileApp } from "@weft-ui/compiler";
+import { BUNDLE_ASSET, WEFT_ANDROID, gradleBuild, moduleBuild, settingsFragment } from "./android.ts";
 import { APPLE, WEFT_KIT, packageManifest, xcodebuild } from "./apple.ts";
 import { HERMES_TARGET, NATIVE, compileBytecode } from "./native.ts";
 import { WEFT_WINUI, dotnetBuild, targets } from "./windows.ts";
@@ -82,9 +83,15 @@ function placeholderEscape(name: string): ((value: string) => string) | undefine
   if (name.endsWith(".json") || name.endsWith(".pbxproj") || name.endsWith(".cs")) {
     return (value) => JSON.stringify(value).slice(1, -1);
   }
+  // Kotlin strings are JSON strings in which `$` starts a template.
+  if (name.endsWith(".kts") || name.endsWith(".kt")) {
+    return (value) => JSON.stringify(value).slice(1, -1).replaceAll("$", "\\$");
+  }
   const entities: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" };
   const xml = (value: string) => value.replace(/[&<>"']/g, (c) => entities[c]!);
   if (name.endsWith(".xcscheme")) return xml;
+  // Android string resources give quotes, backslashes and leading `@` / `?` meaning; a backslash escapes them.
+  if (name === "strings.xml") return (value) => xml(value.replace(/[\\'"@?]/g, (c) => `\\${c}`));
   // MSBuild expands `$(…)`, `@(…)` and `%(…)` and splits on `;` in project files; `%XX` escapes them.
   if (name.endsWith(".csproj")) {
     return (value) => xml(value.replace(/[%$@;?*']/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`));
@@ -146,9 +153,12 @@ function writeGenerated(root: string, platform: Platform, result: AppResult) {
  * next to it, and copies the project template into `apps/<platform>/` on
  * the first build. Native platforms also compile the bundle to Hermes
  * bytecode (`weft/bundle.hbc`); iOS and macOS then write `weft/Package.swift`
- * and build the Xcode project with `xcodebuild` on macOS hosts unless
- * `WEFT_NATIVE=0`. Environments not named after a platform (dev server,
- * Vitest) compile for the Web.
+ * and build the Xcode project with `xcodebuild` on macOS hosts, Android
+ * makes `weft/` a Gradle module (bytecode in its assets) and builds the APK
+ * with the Gradle wrapper, Windows writes `weft/Weft.targets` and runs
+ * `dotnet build` on Windows hosts; `WEFT_NATIVE=0` skips the native builds.
+ * Environments not named after a platform (dev server, Vitest) compile for
+ * the Web.
  */
 export default function weft(options: WeftOptions = {}): Plugin {
   const configured = options.platforms ?? [...PLATFORMS];
@@ -264,8 +274,11 @@ export default function weft(options: WeftOptions = {}): Plugin {
       if (!NATIVE.includes(platform)) return;
       const project = join(root, "apps", platform);
       const generated = join(project, "weft");
+      // The Android module packages the bytecode as an asset.
+      const bytecode = join(generated, platform === "android" ? BUNDLE_ASSET : "bundle.hbc");
       try {
-        await compileBytecode(join(generated, "js/index.js"), join(generated, "bundle.hbc"));
+        mkdirSync(dirname(bytecode), { recursive: true });
+        await compileBytecode(join(generated, "js/index.js"), bytecode);
       } catch (error) {
         this.error(error as Error);
       }
@@ -283,6 +296,15 @@ export default function weft(options: WeftOptions = {}): Plugin {
         }
         try {
           await xcodebuild(project, platform, release);
+        } catch (error) {
+          this.error(error as Error);
+        }
+      } else if (platform === "android") {
+        writeFileSync(join(generated, "settings.gradle.kts"), settingsFragment(project, WEFT_ANDROID));
+        writeFileSync(join(generated, "build.gradle.kts"), moduleBuild());
+        if (process.env.WEFT_NATIVE === "0") return;
+        try {
+          await gradleBuild(project, release);
         } catch (error) {
           this.error(error as Error);
         }

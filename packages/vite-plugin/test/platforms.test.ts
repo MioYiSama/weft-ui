@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { existsSync, realpathSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,6 +9,7 @@ import { Window } from "happy-dom";
 import { createBuilder } from "vite";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import type { Platform } from "@weft-ui/compiler";
+import { WEFT_ANDROID } from "../src/android.ts";
 import weft from "../src/index.ts";
 import { WEFT_WINUI } from "../src/windows.ts";
 
@@ -191,8 +192,8 @@ test("a comma-separated WEFT_PLATFORM builds each platform", async () => {
 });
 
 test("a native platform bundles the logic for the kernel and compiles it to Hermes bytecode", async () => {
-  await build("android", ["android"]);
-  const generated = join(root, "apps/android/weft");
+  await build("linux", ["linux"]);
+  const generated = join(root, "apps/linux/weft");
   expect((await readdir(generated)).sort()).toEqual(["bundle.hbc", "js", "layout.json"]);
   // The Hermes bytecode file magic, little-endian.
   const hbc = await readFile(join(generated, "bundle.hbc"));
@@ -227,6 +228,36 @@ test("Apple platforms generate an Xcode project around the WeftApp package", asy
   const { hash } = JSON.parse(await readFile(join(project, "weft/layout.json"), "utf8"));
   expect(await readFile(join(project, "weft/Generated.swift"), "utf8")).toContain(`layoutHash: 0x${hash},`);
   expect(await readFile(join(project, "weft/Package.swift"), "utf8")).toMatch(/\.package\(path: ".*native\/apple"\)/);
+});
+
+test("Android generates a Gradle project around the generated module", async () => {
+  const previous = process.env.WEFT_NATIVE;
+  process.env.WEFT_NATIVE = "0";
+  try {
+    await build("android", ["android"]);
+  } finally {
+    if (previous === undefined) delete process.env.WEFT_NATIVE;
+    else process.env.WEFT_NATIVE = previous;
+  }
+  const project = join(root, "apps/android");
+  expect((await readdir(project)).sort())
+    .toEqual([".gitignore", "app", "build.gradle.kts", "gradle", "gradle.properties", "gradlew", "gradlew.bat", "settings.gradle.kts", "weft"]);
+  expect((await stat(join(project, "gradlew"))).mode & 0o111).not.toBe(0);
+  expect((await readdir(join(project, "weft"))).sort())
+    .toEqual(["build.gradle.kts", "js", "layout.json", "settings.gradle.kts", "src"]);
+  expect(await readFile(join(project, "app/build.gradle.kts"), "utf8")).toContain('applicationId = "com.example.test"');
+  expect(await readFile(join(project, "app/src/main/res/values/strings.xml"), "utf8"))
+    .toContain('<string name="app_name">Test \\&quot;App\\&quot;</string>');
+  // The bytecode is an asset of the generated module, the views implement the layout it was compiled with.
+  const hbc = await readFile(join(project, "weft/src/main/assets/weft/bundle.hbc"));
+  expect(hbc.readBigUInt64LE(0)).toBe(0x1f1903c103bc1fc6n);
+  const { hash } = JSON.parse(await readFile(join(project, "weft/layout.json"), "utf8"));
+  expect(await readFile(join(project, "weft/src/main/kotlin/Generated.kt"), "utf8")).toContain(`layoutHash = 0x${hash}uL`);
+  // The shell is referenced relative to the project, so it builds wherever the workspace is.
+  const settings = await readFile(join(project, "weft/settings.gradle.kts"), "utf8");
+  const shell = relative(realpathSync(project), WEFT_ANDROID).replaceAll("\\", "/");
+  expect(settings).toContain(`project(":weft-android").projectDir = settingsDir.resolve("${shell}")`);
+  expect(existsSync(join(WEFT_ANDROID, "build.gradle.kts"))).toBe(true);
 });
 
 test("Windows generates a dotnet project around the generated views", async () => {

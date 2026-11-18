@@ -47,21 +47,15 @@ fn check(platform: Platform) {
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).expect("snapshot directory is writable");
         for (path, contents) in &generated {
-            fs::write(dir.join(path), contents).expect("snapshot is writable");
+            let path = dir.join(path);
+            let parent = path.parent().expect("snapshot has a parent directory");
+            fs::create_dir_all(parent).expect("snapshot directory is writable");
+            fs::write(path, contents).expect("snapshot is writable");
         }
         return;
     }
     let mut stored = BTreeMap::new();
-    for entry in fs::read_dir(&dir).unwrap_or_else(|err| panic!("{}: {err}", dir.display())) {
-        let path = entry.expect("snapshot directory is readable").path();
-        let name = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .expect("snapshot names are UTF-8")
-            .to_owned();
-        let contents = fs::read_to_string(&path).expect("snapshot is readable");
-        stored.insert(name, contents);
-    }
+    read_snapshots(&dir, "", &mut stored);
     assert_eq!(
         generated.keys().collect::<Vec<_>>(),
         stored.keys().collect::<Vec<_>>(),
@@ -69,6 +63,22 @@ fn check(platform: Platform) {
     );
     for (path, contents) in &generated {
         assert_eq!(contents, &stored[path], "{platform}/{path}");
+    }
+}
+
+fn read_snapshots(dir: &Path, prefix: &str, stored: &mut BTreeMap<String, String>) {
+    for entry in fs::read_dir(dir).unwrap_or_else(|err| panic!("{}: {err}", dir.display())) {
+        let entry = entry.expect("snapshot directory is readable");
+        let name = entry.file_name();
+        let name = name.to_str().expect("snapshot names are UTF-8");
+        let path = entry.path();
+        let file_type = entry.file_type().expect("snapshot type is readable");
+        if file_type.is_dir() {
+            read_snapshots(&path, &format!("{prefix}{name}/"), stored);
+        } else {
+            let contents = fs::read_to_string(&path).expect("snapshot is readable");
+            stored.insert(format!("{prefix}{name}"), contents);
+        }
     }
 }
 
@@ -183,6 +193,11 @@ fn macos() {
 }
 
 #[test]
+fn android() {
+    check(Platform::Android);
+}
+
+#[test]
 fn windows() {
     check(Platform::Windows);
 }
@@ -201,7 +216,7 @@ fn native_platforms_share_the_remote_logic() {
     for (platform, views) in [
         (Platform::Ios, &["Generated.swift"][..]),
         (Platform::Macos, &["Generated.swift"]),
-        (Platform::Android, &[]),
+        (Platform::Android, &["src/main/kotlin/Generated.kt"]),
         (Platform::Windows, &["Generated.cs"]),
         (Platform::Linux, &[]),
     ] {

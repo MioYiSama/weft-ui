@@ -1,0 +1,5 @@
+/weft/
+build/
+.gradle/
+.kotlin/
+local.properties

@@ -375,9 +375,21 @@ macOS 和 iOS 已按上文实现，`example` 在两端运行，XCUITest 点击�
 - **example**：扩充为覆盖全部内置元素：`Row`、带样式的 `Text`、网络 `Image`、受控 `Input`（超过 12 个字符的草稿被拒绝）、按草稿禁用的 `Button`、`for` 待办列表里的 `Checkbox` 和删除按钮。`apps/macos/` 和 `apps/ios/` 随仓库提交（模板归用户），`UITests` 改成这个点击流程，用 `pnpm --filter example test:macos` / `test:ios`（`WEFT_IOS_DEVICE` 选模拟器，默认 `iPhone 17`）运行。
 - **测试**：WeftKit 的 `swift test` 覆盖 ops 解码；`driver` 的快照包括 `macos/Generated.swift`，并断言 iOS 与 macOS 的产物相同；`@weft-ui/vite` 的测试在 `WEFT_NATIVE=0` 下检查 Apple 工程的生成。
 
+### P5 的实现
+
+Android 已按上文实现，`example` 在 Android 模拟器（API 37.2，arm64-v8a）上运行，Compose UI Test 点击流程通过。细节和出入：
+
+- **内核产物**：`native/android/build-core.sh` 用 NDK 的 CMake 工具链为每个 ABI（默认 `arm64-v8a`、`armeabi-v7a`、`x86_64`、`x86`，`WEFT_ANDROID_ABIS` 选子集）构建 `native/android/CMakeLists.txt`：内核、Hermes、fbjni 和 JNI 胶水静态链接成一个 `libweft.so`，C++ 运行库也静态链接（`c++_static`），剥离符号后写到 `native/android/build/jniLibs/<abi>/`。只导出 `JNI_OnLoad` 和 JNI 函数，按 16 KB 页对齐。交叉构建与 Apple 一样复用 `native/core/build` 宿主构建里的 `hermesc` 和 Hermes 检出。Hermes 的 `hermes.cpp` 在 Android 上一定依赖 fbjni（终结器线程用 `ThreadScope` 挂到 JVM），所以 fbjni（`v0.7.0`）也用 FetchContent 拉源码编成静态库，不带它自己的 `JNI_OnLoad`（由胶水初始化），再经 `cmake/fbjniConfig.cmake` 交给 Hermes 的 `find_package`。开启 `HERMES_IS_ANDROID` 后 Unicode 处理（`localeCompare`、`toLocaleUpperCase` 等）走 `java.text`，对应的 Java 类 `AndroidUnicodeUtils` 从 Hermes 原样复制进平台壳。每个 ABI 约 1 分钟，arm64 产物 2.3 MB。需要 NDK（`ANDROID_NDK_HOME`，否则取 SDK 下最新的）、CMake、Ninja 和 Python 3。
+- **平台壳**（`native/android`，Gradle Android 库模块，项目名 `:weft-android`，Kotlin 包 `dev.weft`）：结构与 WeftKit 对应。`Native` 是 JNI 外部函数，`NativeHost` 接收内核回调：`commit` 拿到直接指向这批字节的 `ByteBuffer`，不复制，`OpReader` 同步解码；字符串一律以 UTF-8 字节数组跨 JNI，因为 JNI 的 modified UTF-8 表示不了所有字符串。`WeftSession` 是进程级单例，Activity 因旋转等原因重建时 app 状态不丢；定时器 `postDelayed` 到主线程，平台调用在后台线程完成后 `post` 回主线程调用 `weft_runtime_resolve`。平台模块：`fetch` 用 `HttpURLConnection`（不引入 OkHttp），`storage` 用名为 `weft.storage` 的 `SharedPreferences`。`console` 和内核诊断写到 logcat（tag `weft`）；启动失败或 ops 异常时根视图显示原因。库清单声明 `INTERNET` 权限，`consumer-rules.pro` 保留 JNI 用到的类。
+- **视图后端**（`crates/codegen-compose`）：生成 `weft/src/main/kotlin/Generated.kt`（包 `dev.weft.generated`，入口 `WeftApp()`）。每个模板一个 `WeftScope` 子类 `S{n}` 和一个可组合函数 `V{n}`：值槽 `v{i}` 和挂载点 `p{i}` 都是 Compose 快照状态（`Int` 槽是 `Float`），`apply` / `mount` 是生成的 `when`；`branch` 挂载点按模板类型 `when`，`list` 是 `for` 加 `key(id)`，由 Compose 处理行的移动；`instance` 直接持有被调组件的 scope 类型，只有插槽内容和根组件经过 `Content()`。元素调用平台壳的可组合函数：`Column` / `Row` 是起点对齐的 `Column` / `Row`，`gap` 用 `Arrangement.spacedBy`，`padding` / `width` / `height` / `background` 按 content-box 叠加；`Text`、`Button`、`Checkbox` 是 Material 3 控件，`Text.size` 按 dp 换算成 sp，不随系统字号缩放，与 SwiftUI 的 `Font.system(size:)` 一致。`Input` 是宽 200dp 的 Material 3 `OutlinedTextField`，用 `TextFieldValue` 受控：编辑同步 `dispatch`，被拒绝时显示被控值槽的值并保留原光标；输入法组字（`composition` 非空）期间只改控件自己的状态，提交后才上报；app 改写值槽时替换文本，组字期间除外。`Checkbox` 直接按值槽渲染，被拒绝就保持原状。`Image` 没用 Coil 之类的库，也不经过 JS 的 `fetch`：平台壳用 `HttpURLConnection` 下载、`BitmapFactory` 解码，放进内存 LRU 缓存（上限为堆的 1/8）；宽高规则与 SwiftUI 相同，都不设时按 1 像素 1 dp 显示，与 iOS 的 pt、Web 的 CSS px 一致。根视图是纵向滚动的 `Column`，用 `safeDrawingPadding` 避开系统栏和输入法。
+- **工程**：模板在 `packages/vite-plugin/templates/android/`：Gradle 9.8 wrapper；根构建声明 AGP 9.3（内置 Kotlin）和 Compose 编译器插件 2.4 的版本；`app` 模块的 `applicationId` 来自 `app.id`，命名空间固定为 `dev.weft.app`，`compileSdk` / `targetSdk` 37、`minSdk` 24；`MainActivity` 开启 edge-to-edge，Material 3 主题跟随深色模式，内容是 `WeftApp()`；应用名来自 `app.name`，写在 `strings.xml`；另有 `androidTest/UITests.kt`。根项目名固定为 `App`，因为 Gradle 项目名不接受引号等字符。插件对 `.kt` / `.kts` 按 Kotlin 字符串（另外转义 `$`）、对 `strings.xml` 按 Android 字符串资源加 XML 转义替换占位符。模板的 `settings.gradle.kts` 应用生成区的 `weft/settings.gradle.kts`，它把生成区作为库模块 `:weft`（插件写的 `weft/build.gradle.kts`，标准目录布局，字节码是资源 `src/main/assets/weft/bundle.hbc`），把平台壳作为 `:weft-android`（路径相对工程目录，工作区在哪都能构建）。这两个模块的构建输出放在 `apps/android/build/` 下：生成区每次构建都会整体重写，`native/android/build/` 存放内核产物，且平台壳源码由多个应用共享。平台壳在 `preBuild` 前检查内核产物，缺少时报错并给出 `build-core.sh`。
+- **构建**：`writeBundle` 在 `apps/android/` 里用 Gradle wrapper 执行 `assembleDebug`；`--mode release` 用 `assembleRelease`，没配置签名时产物不签名。APK 在 `apps/android/app/build/outputs/apk/`。任何宿主都能构建：SDK 依次取 `ANDROID_HOME` / `ANDROID_SDK_ROOT`、`local.properties` 的 `sdk.dir` 和默认安装位置，都找不到时给出提示；`WEFT_NATIVE=0` 时只生成工程。
+- **UI 测试**：`apps/android/app/src/androidTest/kotlin/UITests.kt` 用 Compose UI Test（`createAndroidComposeRule<MainActivity>()`）按 macOS 的点击流程断言，`pnpm --filter example test:android`（`connectedDebugAndroidTest`）在已连接的设备或模拟器上运行。逐字输入用 `performTextInput` 在光标处插入一个字符，与键盘输入走同一条 `onValueChange` 路径。`ui-test-junit4` 依赖的 Espresso 3.5 在 API 37 上无法注入输入（`InputManager.getInstance` 已被移除），模板固定使用 `espresso-core` 3.7.0。
+- **测试**：平台壳的 JVM 单元测试覆盖 ops 解码，在包含平台壳的工程里用 `./gradlew :weft-android:testDebugUnitTest` 运行（例如 `example/apps/android`）；`driver` 的快照包括 `android/src/main/kotlin/Generated.kt`；`@weft-ui/vite` 的测试在 `WEFT_NATIVE=0` 下检查 Android 工程的生成。
+
 ### P6 的实现
 
-Windows 已按上文实现（P5 暂缓），`example` 在 Windows 11 ARM64 上运行，UI Automation 点击流程通过。细节和出入：
+Windows 已按上文实现，`example` 在 Windows 11 ARM64 上运行，UI Automation 点击流程通过。细节和出入：
 
 - **内核产物**：`native/windows/build-core.ps1 [-Arch arm64|x64] [-HermesSource <检出>]` 自己进入 VS 开发环境，用 VS 自带的 CMake + Ninja 构建 `native/windows/build/win-<arch>/weft_core.dll`。新增 CMake 选项 `WEFT_CORE_SHARED`：内核编成 DLL，Hermes 仍是静态库链接进去，只有 C ABI 跨 DLL 边界。全程用静态 MSVC 运行时（`CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded`，`CMP0091` 默认 NEW 让 Hermes 子项目也生效），DLL 只依赖系统 DLL（`KERNEL32`、`WINMM` 和 Windows 自带的 ICU `icuuc` / `icuin`，Hermes 在 Windows 上用它做 Unicode 处理），应用不需要 VC++ 运行库；Boost.Context 在 Windows 上用 `winfib` 实现，因为 Hermes 附带的 Boost 的 ARMASM 汇编模块不兼容新版 CMake。构建 Hermes 需要 PATH 上有 Python 3。约 7 分钟。默认架构是宿主架构，x64 可在 ARM64 宿主上交叉构建（x64 的 `hermesc` 在仿真下运行）。`hermes-compiler` 只带 x64 的 Windows `hermesc`，插件在 ARM64 Windows 上同样用它。
 - **Weft.WinUI**（`native/windows/Weft.WinUI`，C#，`net10.0-windows10.0.19041.0`，Windows App SDK 2.6）：结构与 WeftKit 对应。`WeftSession` 通过 `LibraryImport` 调用内核，回调是 `[UnmanagedCallersOnly]` 静态方法，`commit` 里同步解码 ops（`OpReader`）并应用到 scope 树；定时器是 UI 线程 `DispatcherQueue` 上的一个 `DispatcherQueueTimer`（按最早的请求合并），平台调用在 `DispatcherQueue.TryEnqueue` 里异步完成后回到 UI 线程调用 `weft_runtime_resolve`。平台模块：`fetch` 用 `HttpClient`，`storage` 是 `%LOCALAPPDATA%\<app id>\storage.json`（app id 来自应用程序集的 `WeftAppId` 元数据，模板按 `app.id` 填写）。`console` 和内核诊断写到 `OutputDebugString`；启动失败或 ops 异常时根视图显示原因。
@@ -395,7 +407,7 @@ Windows 已按上文实现（P5 暂缓），`example` 在 Windows 11 ARM64 上�
 1. **协议一致性**（JS，跑在 CI 主力机上）：`conformance/` 下的 `.weft` 夹具加脚本化交互，在无头渲染器上记录 ops 日志并和黄金文件比对。同一套夹具也在 web（happy-dom）和小程序（现有的 WXML 解释器）上跑，断言最终的树结构一致。实现上每一步之后都比较三端归一化后的树（元素类型和主要值）以及宿主处理器收到的事件；黄金文件在 `conformance/golden/`，用 `WEFT_UPDATE_SNAPSHOTS=1 pnpm --filter @weft-ui/conformance test` 重写。
 2. **平台渲染**：每个平台只验证“ops → 控件”这一层。
    - 内核：CTest 在 Hermes 里跑同一批夹具，ops 日志必须和 JS 无头渲染器逐字节一致。
-   - 各平台用 XCUITest / Compose UI Test / UI Automation（FlaUI，见[P6 的实现](#p6-的实现)）/ GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 在 P4 扩充为覆盖全部内置元素和 `for` 列表（见[P4 的实现](#p4-的实现)），点击流程包括受控输入的回滚、复选框和删除列表行。
+   - 各平台用 XCUITest / Compose UI Test（见[P5 的实现](#p5-的实现)）/ UI Automation（FlaUI，见[P6 的实现](#p6-的实现)）/ GTK 无头（`GDK_BACKEND=broadway` 或 Xvfb）跑 `example` 的点击流程。`example` 在 P4 扩充为覆盖全部内置元素和 `for` 列表（见[P4 的实现](#p4-的实现)），点击流程包括受控输入的回滚、复选框和删除列表行。
    - 后端 crate 对生成的源码做快照测试，只用来审查变更，不用来证明行为正确。
 
 ## 从现状迁移
@@ -424,7 +436,7 @@ Windows 已按上文实现（P5 暂缓），`example` 在 Windows 11 ARM64 上�
 
 ## 里程碑
 
-M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P4、P6 已完成）：
+M0–M4（语法、语义、Web、Rust 宿主、小程序）已完成，见 [PLAN.md](PLAN.md)。新阶段（P0–P6 已完成）：
 
 | 阶段 | 内容                                                         | 验收标准                                                     |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------------------ |

@@ -5,6 +5,7 @@ edition = { workspace = true }
 description = "Application-level compilation entry point dispatching Weft UI platforms to their backends"
 
 [dependencies]
+weft-ui-codegen-compose = { path = "../codegen-compose" }
 weft-ui-codegen-js = { path = "../codegen-js" }
 weft-ui-codegen-swiftui = { path = "../codegen-swiftui" }
 weft-ui-codegen-web = { path = "../codegen-web" }

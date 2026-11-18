@@ -6,8 +6,7 @@ import weft from "./src/weft.tmLanguage.json" with { type: "json" };
 const repo = "https://github.com/MioYiSama/weft-ui";
 
 export default defineConfig({
-  site: "https://mioyisama.github.io",
-  base: "/weft-ui",
+  site: "https://weftui.mioyi.net",
   integrations: [
     starlight({
       title: "Weft",

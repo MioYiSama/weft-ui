@@ -73,9 +73,9 @@ With `@weft-ui/vite`, `entry` selects the JS/TS entry for non-Web builds, relati
 
 ## Docs
 
-The documentation site lives in `docs/` (Astro + Starlight) and is published to <https://mioyisama.github.io/weft-ui/> by `.github/workflows/docs.yml` on every push to `master` that touches it. Grammar: [docs/src/content/docs/grammar.md](docs/src/content/docs/grammar.md), view protocol: [docs/src/content/docs/protocol.md](docs/src/content/docs/protocol.md).
+The documentation site lives in `docs/` (Astro + Starlight) and is published to <https://weftui.mioyi.net/> (GitHub Pages) by `.github/workflows/docs.yml` on every push to `master` that touches it. Grammar: [docs/src/content/docs/grammar.md](docs/src/content/docs/grammar.md), view protocol: [docs/src/content/docs/protocol.md](docs/src/content/docs/protocol.md).
 
 ```sh
-pnpm --filter docs dev     # http://localhost:4321/weft-ui/
+pnpm --filter docs dev     # http://localhost:4321/
 pnpm --filter docs build   # static site in docs/dist/
 ```

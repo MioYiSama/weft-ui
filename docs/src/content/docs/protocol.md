@@ -1,15 +1,15 @@
 ---
-title: 视图协议
-description: JS 逻辑层与各平台视图层之间的约定：布局、scope、ops、二进制编码、sink 与原生内核。
+title: View protocol
+description: The contract between the JS logic layer and platform view layers, covering layout, scopes, ops, binary encoding, sinks, and the native kernel.
 ---
 
-JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块）与视图层（小程序 WXML、原生平台、无头渲染器）之间的约定，实现以本文为准。
+This specification defines the contract between the JS logic layer (`@weft-ui/runtime/remote` and generated remote-mode logic modules) and the view layer (mini program WXML, native platforms, and the headless renderer).
 
-参考实现是 `@weft-ui/runtime/testing` 的无头渲染器：它把每批 ops 编码、解码、按布局校验后应用到内存树上。`tests/conformance/golden/` 的黄金文件就是它记录的 ops 文本。
+The headless renderer in `@weft-ui/runtime/testing` is the reference implementation. It encodes and decodes each batch of ops, validates it against the layout, and applies it to an in-memory tree. The golden files in `tests/conformance/golden/` contain the op text recorded by this renderer.
 
-## 布局
+## Layout
 
-`ViewLayout`（`crates/transformer/src/view.rs`）从整个应用的 Program 推导，JSON 形式由 WASM 的 `compileApp(...).layout` 给出，例子见 `crates/transformer/tests/snapshots/TodoList/layout.json`。
+`ViewLayout` (`crates/transformer/src/view.rs`) is derived from the entire application's Program. WASM exposes the JSON form through `compileApp(...).layout`; see `crates/transformer/tests/snapshots/TodoList/layout.json` for an example.
 
 ```json
 {
@@ -28,57 +28,57 @@ JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块�
 }
 ```
 
-- **模板编号**：先是每个组件体，按 Program 中组件的顺序，所以模板 `i` 就是组件 `i` 的组件体；之后按出现顺序是各组件内的 `if` 分支（每个分支一个）、`for` 行体和插槽内容。`label` 只用于调试：`TodoList`、`TodoList:if8.0`（节点 8 的第 0 个分支）、`TodoList:for7`、`Board:slot12`。
-- **节点**：`nodes` 是模板内的局部节点表，`roots` 是顶层节点。元素节点带静态属性 `props`（没有绑定的字面量，平台直接内联进模板，不占槽位）和子节点；`{"point": n}` 是挂载点 `n` 在树中的位置。
-- **值槽** `values[i]`：节点的一个动态属性，`type` 是元素属性声明的类型：`Int` / `Bool` / `String` / `Color`。`Color` 槽的值是字符串，由平台解析（规则见[语法的内置元素与布局](../grammar/#内置元素与布局)）；静态颜色已在编译期校验，`props` 里写成规范化的 `#rrggbb` 或 `#rrggbbaa`。受控属性（`Input.value`、`Checkbox.checked`）即使是常量也总是值槽。
-- **事件槽** `events[i]`：节点的一个事件属性，`payload` 是载荷类型（`null` 表示无载荷）。`Input` / `Checkbox` 总有 `onChange` 事件槽，`controls` 是它控制的值槽下标，其余事件为 `null`。生命周期属性（`onMount` / `onUnmount`）由 JS 处理，不进入布局。
-- **挂载点** `points[i]`：`branch`（`templates` 依次是各分支的模板）、`list`（`template` 是行体）、`instance`（`template` 是被实例化组件的组件体）或 `slot`（插槽内容由使用方提供，可以是任意 `slot` 种类的模板）。
-- **哈希**：去掉 `hash` 字段后的 JSON 的 FNV-1a 64 位哈希，16 位十六进制。它同时写进 JS 逻辑（`App` 构造参数）和平台视图，sink 在 `open` 时比对，不一致直接报错。
+- **Template numbering**: Component bodies come first, in Program order, so template `i` is the body of component `i`. Next come the `if` branches (one template per branch), `for` row bodies, and slot contents within each component, in order of appearance. `label` is for debugging only: `TodoList`, `TodoList:if8.0` (branch 0 of node 8), `TodoList:for7`, `Board:slot12`.
+- **Nodes**: `nodes` is the template-local node table, and `roots` lists the top-level nodes. Element nodes have static `props` (unbound literals that the platform inlines directly into the template without allocating slots) and children. `{"point": n}` marks the position of mount point `n` in the tree.
+- **Value slot** `values[i]`: A dynamic property of a node. `type` is the declared type of the element property: `Int` / `Bool` / `String` / `Color`. The value of a `Color` slot is a string parsed by the platform (see [Built-in elements and layout](../grammar/#built-in-elements-and-layout) for the rules). Static colors are validated at compile time and written in `props` as normalized `#rrggbb` or `#rrggbbaa` values. Controlled properties (`Input.value`, `Checkbox.checked`) always use value slots, even when constant.
+- **Event slot** `events[i]`: An event property of a node. `payload` specifies the payload type (`null` means no payload). `Input` / `Checkbox` always have an `onChange` event slot. Its `controls` field is the index of the value slot it controls; for all other events, `controls` is `null`. JS handles lifecycle properties (`onMount` / `onUnmount`), which do not appear in the layout.
+- **Mount point** `points[i]`: `branch` (`templates` lists branch templates in order), `list` (`template` is the row body), `instance` (`template` is the body of the instantiated component), or `slot` (the caller supplies the slot content, which may be any template of kind `slot`).
+- **Hash**: The 64-bit FNV-1a hash of the JSON with the `hash` field removed, represented as 16 hexadecimal digits. It is written into both the JS logic (as an `App` constructor argument) and the platform view. The sink compares the hashes at `open` and reports an error if they differ.
 
 ## Scope
 
-运行时每个模板实例是一个 scope。id 由 JS 按 app 分配，从 1 开始递增，不复用。scope 0 是虚拟的根，它只有挂载点 0：根组件实例用 `attach 0 0 <id>` 挂上去。
+At runtime, each template instance is a scope. JS allocates IDs per app, starting at 1 and increasing without reuse. Scope 0 is the virtual root and has only mount point 0. The root component instance is mounted with `attach 0 0 <id>`.
 
-scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、不再出现在 `rows` 里、或者祖先被销毁时隐式销毁，后代一起销毁。`unmount` 时 sink 收到 `close`，所有 scope 一起作废。
+A scope is created by `create` and is not yet mounted in the tree. It is implicitly destroyed if it is replaced by `branch`, no longer appears in `rows`, or an ancestor is destroyed. Its descendants are destroyed with it. On `unmount`, the sink receives `close`, which invalidates all scopes at once.
 
 ## Ops
 
-| op       | 参数                     | 含义                                                         |
-| -------- | ------------------------ | ------------------------------------------------------------ |
-| `create` | scope, template          | 创建实例                                                     |
-| `set`    | scope, slot, value       | 写值槽，值的类型与槽的类型一致                               |
-| `branch` | scope, point, child \| 0 | `branch` 挂载点切换到 child（0 表示没有分支），旧的子 scope 销毁 |
-| `rows`   | scope, point, [child…]   | `list` 挂载点的完整新顺序，不在新列表里的行销毁              |
-| `attach` | scope, point, child      | `instance` / `slot` 挂载点挂上 child，每个挂载点只发一次     |
+| op       | Parameters               | Meaning |
+| -------- | ------------------------ | ------- |
+| `create` | scope, template          | Create an instance. |
+| `set`    | scope, slot, value       | Write a value to a value slot. The value type matches the slot type. |
+| `branch` | scope, point, child \| 0 | Switch a `branch` mount point to child (0 means no branch). The previous child scope is destroyed. |
+| `rows`   | scope, point, [child…]   | Replace the full row order at a `list` mount point. Rows absent from the new list are destroyed. |
+| `attach` | scope, point, child      | Mount child at an `instance` / `slot` mount point. This op is sent only once per mount point. |
 
-保证：
+Guarantees:
 
-- 一批 ops 对应一次 flush，sink 在 `commit` 时整批应用。
-- 新 scope 的 `create` 和它所有值槽的 `set` 都在同一批里，且先于挂载它的 op。平台总是先建好子树再插入。
-- 新 scope 的 `branch` 挂载点为空、`list` 挂载点没有行；状态不变时不发 op（空列表不发 `rows`，顺序不变的列表不重发，值没变不发 `set`）。
-- 同一个挂载点上的 child 只能是该挂载点允许的模板的实例，一个 scope 最多挂载一次。
+- One batch of ops corresponds to one flush. The sink applies the entire batch at `commit`.
+- A new scope's `create` and the `set` ops for all of its value slots are in the same batch, before the op that mounts it. The platform always builds the subtree before inserting it.
+- A new scope's `branch` mount points are empty and its `list` mount points have no rows. No op is sent when state is unchanged: no `rows` for an initially empty list, no repeat `rows` for an unchanged order, and no `set` for an unchanged value.
+- A child at a mount point must be an instance of a template allowed by that mount point. A scope can be mounted at most once.
 
-## 事件
+## Events
 
-反方向只有一种消息：`Session.dispatch(scope, slot, payload) → boolean`，`slot` 是事件槽下标，`payload` 的类型由事件槽决定。JS 同步执行处理函数并 flush，所以返回前 sink 已经收到这次事件引起的 ops。返回值表示受控编辑是否被接受：事件槽没有 `controls`、scope 已销毁、或者被控值槽的当前值等于载荷时为 `true`。返回 `false` 时视图把控件恢复成被控值槽的当前值（宿主改写过的值已经通过 `set` 到达）。已销毁或未知 scope 的事件被忽略并返回 `true`。
+Only one message goes in the opposite direction: `Session.dispatch(scope, slot, payload) → boolean`. `slot` is the event slot index, and the event slot determines the type of `payload`. JS runs the handler and flushes synchronously, so the sink receives any ops caused by the event before the call returns. The return value indicates whether a controlled edit was accepted. It is `true` if the event slot has no `controls`, the scope has been destroyed, or the current value of the controlled value slot equals the payload. On `false`, the view restores the control to the current value of the controlled value slot (any value rewritten by the host has already arrived via `set`). Events for destroyed or unknown scopes are ignored and return `true`.
 
-## 二进制编码（版本 1）
+## Binary encoding (version 1)
 
-一批 ops 是一段字节：第一个字节是版本号 `1`，之后是连续的 op。整数都是 u32 小端。
+A batch of ops is a byte sequence: the first byte is the version number `1`, followed by consecutive ops. All integers are little-endian u32 values.
 
-| opcode | op       | 字段                                       |
-| ------ | -------- | ------------------------------------------ |
-| 1      | `create` | scope, template                            |
-| 2      | `set`    | scope, slot, value                         |
-| 3      | `branch` | scope, point, child                        |
-| 4      | `rows`   | scope, point, count, child × count         |
-| 5      | `attach` | scope, point, child                        |
+| opcode | op       | Fields                             |
+| ------ | -------- | ---------------------------------- |
+| 1      | `create` | scope, template                    |
+| 2      | `set`    | scope, slot, value                 |
+| 3      | `branch` | scope, point, child                |
+| 4      | `rows`   | scope, point, count, child × count |
+| 5      | `attach` | scope, point, child                |
 
-值以一个 u8 标签开头：`0` false、`1` true、`2` 数字（f64 小端，`Int` 槽的值也按 f64 传）、`3` 字符串（u32 字节长度 + UTF-8）。JS 侧的 `OpWriter`（`@weft-ui/runtime` 的 `src/ops.ts`）复用同一块缓冲，每批的字节只在下一次写入前有效。
+Each value starts with a u8 tag: `0` for false, `1` for true, `2` for a number (little-endian f64, including values in `Int` slots), or `3` for a string (u32 byte length followed by UTF-8). On the JS side, `OpWriter` (`src/ops.ts` in `@weft-ui/runtime`) reuses the same buffer. The bytes of a batch are valid only until the next write.
 
-## 文本形式
+## Text form
 
-调试 dump 和黄金文件使用的一行一个 op 的形式，字符串和布尔值按 JSON 书写：
+Debug dumps and golden files use one op per line, with strings and booleans written as JSON:
 
 ```
 create 3 2
@@ -88,78 +88,78 @@ branch 1 0 0
 attach 0 0 1
 ```
 
-无头渲染器在 `#` 后附上模板 label 或槽位说明，例如 `create 1 0  # TodoList`、`set 1 0 ""  # Input.value`。
+The headless renderer appends a template label or slot description after `#`, for example `create 1 0  # TodoList` or `set 1 0 ""  # Input.value`.
 
 ## Sink
 
-`Sink` 是平台一侧的接口（`src/remote.ts`）：
+`Sink` is the platform-side interface (`src/remote.ts`):
 
-- `open(session)`：mount 时调用一次，`session` 带 `hash`、`dispatch` 和 `detach`（平台视图先于 app 消失时调用）。
-- `create` / `set` / `branch` / `rows` / `attach`：记录本批 ops。
-- `commit()`：一次 flush 结束，应用整批。
-- `close()`：unmount，丢弃所有 scope。
+- `open(session)`: Called once at mount. `session` provides `hash`, `dispatch`, and `detach` (called when the platform view disappears before the app).
+- `create` / `set` / `branch` / `rows` / `attach`: Record ops in the current batch.
+- `commit()`: Apply the entire batch at the end of a flush.
+- `close()`: On unmount, discard all scopes.
 
-小程序 sink（`./wechat`）不编码，直接把 ops 翻译成 `setData` 路径，数据形状见下文；无头渲染器经过二进制编码；原生 sink（`./native`）把缓冲交给 `__weft.commit`，见下一节。
+The mini program sink (`./wechat`) does not encode ops. It translates them directly into `setData` paths, using the data layout below. The headless renderer uses binary encoding. The native sink (`./native`) passes the buffer to `__weft.commit`; see the next section.
 
-### 小程序数据布局
+### Mini program data layout
 
-WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`N` 是 IR 中的节点编号）：
+WXML renders only `{{key}}`. The `setData` paths are paths in the block data tree (`N` is the node number in the IR):
 
-| key             | 内容                                                                     |
-| --------------- | ------------------------------------------------------------------------ |
-| `n{N}_{i}`      | 属性值、文本                                                             |
-| `e{N}`          | 事件处理器 id（sink 分配），WXML 中写成 `data-h`，由视图组件的 `$e` 分发 |
-| `i{N}` / `b{N}` | `if` 当前分支下标 / 分支数据                                             |
-| `l{N}`          | `for` 的行数组，每行带 `k`（行的 scope id，用作 `wx:key`）               |
-| `c{N}`          | 组件实例数据                                                             |
-| `y{N}`          | 插槽数据，`t` 是插槽模板名（`{组件}-s{N}`）                              |
+| Key             | Contents |
+| --------------- | -------- |
+| `n{N}_{i}`      | Property value or text. |
+| `e{N}`          | Event handler ID (assigned by the sink), written as `data-h` in WXML and dispatched by the view component's `$e`. |
+| `i{N}` / `b{N}` | Current `if` branch index / branch data. |
+| `l{N}`          | Array of `for` rows. Each row carries `k` (the row's scope ID, used as `wx:key`). |
+| `c{N}`          | Component instance data. |
+| `y{N}`          | Slot data. `t` is the slot template name (`{Component}-s{N}`). |
 
-`setData` 规则：
+`setData` rules:
 
-- 每次 flush 每个视图只调用一次 `setData`。块的 `set` 用 `===` 比较新旧值，只发送变化的叶子，路径如 `r.b8.l7[2].n3_0`。
-- 列表只在末尾追加时发送新行的下标路径（`l7[3]`）；删除、移动、插入时整体发送行数组，复用的行保留原有处理器 id；顺序没变时不发送。
-- 同一次 flush 中被其他路径覆盖的路径（祖先已整体发送）会被丢弃。
+- Each view calls `setData` only once per flush. The block's `set` compares old and new values with `===` and sends only changed leaves, using paths such as `r.b8.l7[2].n3_0`.
+- For append-only list changes, send the new rows by index path (`l7[3]`). On deletion, movement, or insertion, send the full row array. Reused rows retain their handler IDs. Nothing is sent if the order is unchanged.
+- Within a flush, discard paths covered by other paths because an entire ancestor is already being sent.
 
-## 原生内核
+## Native kernel
 
-原生平台的 JS bundle 跑在 `native/core` 的内核里：内核嵌入 Hermes，执行 `bundle.hbc`，通过 C ABI（[`native/core/include/weft/runtime.h`](https://github.com/MioYiSama/weft-ui/blob/master/native/core/include/weft/runtime.h)）和平台壳通信。iOS / macOS 的平台壳是 `native/apple` 的 WeftKit，Android 的是 `native/android` 的 Kotlin 模块（通过 JNI 加载 `libweft.so`），Windows 的是 `native/windows` 的 Weft.WinUI（通过 P/Invoke 加载 `weft_core.dll`），Linux 的是 `native/linux` 的 C++ 库（链接 `libweft_core.so`）。内核不开线程，所有函数都在 UI 线程上调用，且不能在 `weft_host` 回调里重入。
+On native platforms, the JS bundle runs in the kernel in `native/core`. The kernel embeds Hermes, executes `bundle.hbc`, and communicates with the platform shell through the C ABI ([`native/core/include/weft/runtime.h`](https://github.com/MioYiSama/weft-ui/blob/master/native/core/include/weft/runtime.h)). The platform shell is WeftKit in `native/apple` for iOS / macOS, the Kotlin module in `native/android` for Android (loads `libweft.so` through JNI), Weft.WinUI in `native/windows` for Windows (loads `weft_core.dll` through P/Invoke), and the C++ library in `native/linux` for Linux (links against `libweft_core.so`). The kernel does not create threads. All functions are called on the UI thread and must not be called reentrantly from a `weft_host` callback.
 
-### `__weft` 全局
+### The `__weft` global
 
-内核在 bundle 运行前安装，`@weft-ui/runtime/native` 和 `@weft-ui/platform` 的原生实现通过它工作：
+The kernel installs this global before running the bundle. The native implementations of `@weft-ui/runtime/native` and `@weft-ui/platform` use it:
 
-| 成员                              | 含义                                                         |
-| --------------------------------- | ------------------------------------------------------------ |
-| `open(hash, dispatch)`            | sink 的 `open`。`hash` 与平台壳传给 `weft_runtime_new` 的布局哈希不同就抛错，已有 app 打开时也抛错 |
-| `commit(buffer, offset, length)`  | 一批 ops。内核把这段字节直接交给 `weft_host.commit`，不复制  |
-| `close()`                         | sink 的 `close`；之后的事件被忽略                            |
-| `supports(module)`                | 平台壳是否实现平台模块 `module`                              |
-| `call(module, method, args?)`     | 平台调用，返回 `Promise<ArrayBuffer>`。`args` 是字符串（按 UTF-8 发送）、`ArrayBuffer` 或其视图。模块不受支持时立即以 `Error` 拒绝 |
-| `version`                         | 平台壳报告的系统版本（`weft_host.version`）                  |
+| Member                            | Meaning |
+| --------------------------------- | ------- |
+| `open(hash, dispatch)`            | The sink's `open`. Throws if `hash` does not match the layout hash the platform shell passed to `weft_runtime_new`, or if an app is already open. |
+| `commit(buffer, offset, length)`  | A batch of ops. The kernel passes this byte range directly to `weft_host.commit` without copying it. |
+| `close()`                         | The sink's `close`. Subsequent events are ignored. |
+| `supports(module)`                | Whether the platform shell implements the platform module `module`. |
+| `call(module, method, args?)`     | A platform call returning `Promise<ArrayBuffer>`. `args` is a string (sent as UTF-8), an `ArrayBuffer`, or a view of one. If the module is unsupported, the promise immediately rejects with an `Error`. |
+| `version`                         | The system version reported by the platform shell (`weft_host.version`). |
 
-内核还注入 `setTimeout` / `setInterval` / `clearTimeout` / `clearInterval`、`queueMicrotask` 和 `console`（`debug` / `log` / `info` / `warn` / `error` 对应 `weft_host.log` 的 0–3 级；非字符串参数按 JSON 输出，错误对象输出 `stack`）。`TextEncoder` / `TextDecoder` 由 Hermes 自带。
+The kernel also injects `setTimeout` / `setInterval` / `clearTimeout` / `clearInterval`, `queueMicrotask`, and `console` (`debug` / `log` / `info` / `warn` / `error` map to levels 0–3 of `weft_host.log`; non-string arguments are output as JSON and error objects are output as their `stack`). Hermes provides `TextEncoder` / `TextDecoder`.
 
-### 事件循环
+### Event loop
 
-- `weft_runtime_new` 执行 bundle（bundle 在其中挂载 app），之后每个会执行 JS 的入口（`new`、`tick`、`dispatch`、`resolve`）返回前都清空微任务队列。所以 `weft_runtime_new` 返回时第一批 ops 已经提交。
-- 定时器按到期时间、同一时间按设置顺序执行，每个定时器之后清空一次微任务；在一次 `tick` 里新设的定时器留到下一次。内核用 `weft_host.schedule(delay)` 请求下一次 `tick`，平台壳可以合并请求，提前或多余的 `tick` 无害。
-- 未捕获的异常（bundle、定时器、微任务、事件处理函数里）以 `WEFT_LOG_ERROR` 报告，不终止运行时。bundle 本身抛错（包括布局哈希不一致）时 `weft_runtime_new` 返回 `NULL`。
+- `weft_runtime_new` executes the bundle, which mounts the app. Every entry point that executes JS (`new`, `tick`, `dispatch`, `resolve`) drains the microtask queue before returning. The first batch of ops has therefore been committed by the time `weft_runtime_new` returns.
+- Timers run in order of expiration, with ties broken by the order in which they were set. The microtask queue is drained after each timer. Timers set during a `tick` are deferred to the next one. The kernel requests the next `tick` with `weft_host.schedule(delay)`. The platform shell may coalesce requests; early or redundant calls to `tick` are harmless.
+- Uncaught exceptions in the bundle, timers, microtasks, or event handlers are reported as `WEFT_LOG_ERROR` without terminating the runtime. If the bundle itself throws (including on a layout hash mismatch), `weft_runtime_new` returns `NULL`.
 
-### 事件载荷
+### Event payloads
 
-`weft_runtime_dispatch(rt, scope, slot, payload, len)` 的 `payload` 是一个按[二进制编码](#二进制编码版本-1)的值（标签字节加数据），无载荷的事件传空。返回值即 `Session.dispatch` 的返回值。
+The `payload` in `weft_runtime_dispatch(rt, scope, slot, payload, len)` is a value in the [binary encoding](#binary-encoding-version-1) (tag byte followed by data). Pass an empty payload for an event with no payload. The return value is that of `Session.dispatch`.
 
-### 平台调用
+### Platform calls
 
-`__weft.call` 分配调用 id 并调用 `weft_host.call(id, module, method, args)`；平台壳异步完成后在 UI 线程调用 `weft_runtime_resolve(id, ok, result)`，每个 id 恰好一次。`ok` 时 Promise 以 `result` 的 `ArrayBuffer` 副本兑现，否则以消息为 `result`（UTF-8）的 `Error` 拒绝。字节的含义由各模块约定：
+`__weft.call` allocates a call ID and calls `weft_host.call(id, module, method, args)`. On asynchronous completion, the platform shell calls `weft_runtime_resolve(id, ok, result)` on the UI thread, exactly once per ID. If `ok` is true, the promise resolves with an `ArrayBuffer` copy of `result`. Otherwise, it rejects with an `Error` whose message is `result` (UTF-8). Each module defines how to interpret the bytes:
 
-| 模块      | 方法                         | 参数                                                         | 结果                                       |
-| --------- | ---------------------------- | ------------------------------------------------------------ | ------------------------------------------ |
-| `fetch`   | `request`                    | 帧：`u32 头长度（小端） \| 头（UTF-8 JSON）\| 请求体`，头是 `{"url", "method", "headers"}` | 同样的帧，头是 `{"status"}`，之后是响应体 |
-| `storage` | `get` / `set` / `remove`     | JSON 数组：`[key]` 或 `[key, value]`                         | `get`：JSON 字符串或 `null`；其余为空      |
+| Module    | Method                   | Arguments | Result |
+| --------- | ------------------------ | --------- | ------ |
+| `fetch`   | `request`                | Frame: `u32 header length (little-endian) \| header (UTF-8 JSON) \| body`. The header is `{"url", "method", "headers"}`. | Same frame format, with a `{"status"}` header followed by the response body. |
+| `storage` | `get` / `set` / `remove` | JSON array: `[key]` or `[key, value]`. | `get`: a JSON string or `null`; otherwise empty. |
 
-`@weft-ui/platform` 在 `supports(api)` 为假时直接抛 `PlatformError`，不发起调用。
+If `supports(api)` is false, `@weft-ui/platform` throws `PlatformError` without making the call.
 
-### 列表移动
+### Row moves
 
-自己移动原生行的平台壳（WinUI、GTK）可以用 `weft_stable_rows(old, new, stable)`：它标出新顺序里保持原位的行（旧位置的最长递增子序列），其余行需要移动或插入。C++ 平台壳可以用 `weft/ops.hpp` 解码 ops，解码不分配内存，字符串和行列表直接指向这批字节。
+Platform shells that move native rows themselves (WinUI, GTK) can use `weft_stable_rows(old, new, stable)`. It marks the rows that stay in place in the new order (the longest increasing subsequence of the old positions). Other rows must be moved or inserted. C++ platform shells can use `weft/ops.hpp` to decode ops without allocating memory. Strings and row lists point directly into the batch's bytes.

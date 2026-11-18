@@ -73,7 +73,7 @@ With `@weft-ui/vite`, `entry` selects the JS/TS entry for non-Web builds, relati
 
 ## Docs
 
-The documentation site lives in `docs/` (Astro + Starlight) and is published to <https://weftui.mioyi.net/> (GitHub Pages) by `.github/workflows/docs.yml` on every push to `master` that touches it. Grammar: [docs/src/content/docs/grammar.md](docs/src/content/docs/grammar.md), view protocol: [docs/src/content/docs/protocol.md](docs/src/content/docs/protocol.md).
+The documentation site lives in `docs/` (Astro + Starlight) and is published to <https://weftui.mioyi.net/> (GitHub Pages) by `.github/workflows/docs.yml` on every push to `master` that touches it. English is the root locale, Chinese lives under `/zh/`; a first visit follows the browser language. Grammar: [docs/src/content/docs/grammar.md](docs/src/content/docs/grammar.md) ([中文](docs/src/content/docs/zh/grammar.md)), view protocol: [docs/src/content/docs/protocol.md](docs/src/content/docs/protocol.md) ([中文](docs/src/content/docs/zh/protocol.md)). Landing page copy: `docs/src/i18n/landing.ts`.
 
 ```sh
 pnpm --filter docs dev     # http://localhost:4321/

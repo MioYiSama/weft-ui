@@ -19,6 +19,7 @@ pub mod ir;
 mod protocol;
 mod report;
 mod sema;
+mod style;
 pub mod swiftui;
 pub mod transform;
 pub mod view;

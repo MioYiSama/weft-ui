@@ -789,7 +789,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P2.6 平台 API 编译期契约 | ☑ | platform tsc 0；移除 WeChat `isSupported` 导出触发 TS2741，恢复后通过 |
 | P3.1 共用缩进 writer | ☑ | clippy 0；快照与 C-apps 无差异 |
 | P3.2 Template 共享查询 | ☑ | clippy 0；快照与 C-apps 无差异 |
-| P3.3 共用 CSS 元数据 | ☐ | |
+| P3.3 共用 CSS 元数据 | ☑ | `rg` 仅命中 `style.rs`；clippy 0；快照与 C-apps 无差异，C-ts 通过 |
 | P3.4 DOM 与 remote 共用控制流 | ☐ | |
 | P4.1 元素目录移出 sema | ☐ | |
 | P4.2 语义记录归属 sema | ☐ | |

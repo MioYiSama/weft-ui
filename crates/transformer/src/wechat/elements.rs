@@ -13,7 +13,7 @@
 //! | `y{N}`     | data of slot content; its template name is in `t`      |
 
 use crate::ir::{ComponentId, Element, NodeId, Prop, PropValue};
-use crate::protocol::wechat_unit;
+use crate::style::{CssUnit, css};
 use crate::view::{Constant, ViewLayout, ViewNodeKind};
 
 /// How a property value reaches the view.
@@ -25,26 +25,7 @@ pub(crate) enum Target {
     /// Boolean attribute; WXML treats every non-empty string as true, so
     /// values are always written as expressions.
     Flag(&'static str),
-    Style(&'static str, Unit),
-}
-
-/// Conversion of a style value to CSS, done by the sink.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Unit {
-    Color,
-    Px,
-    Bold,
-}
-
-impl Unit {
-    /// Code of the unit in the sink's table.
-    pub(crate) fn code(self) -> u8 {
-        match self {
-            Unit::Color => wechat_unit::COLOR,
-            Unit::Px => wechat_unit::PX,
-            Unit::Bold => wechat_unit::BOLD,
-        }
-    }
+    Style(&'static str, CssUnit),
 }
 
 pub(crate) fn target(element: Element, prop: &str) -> Target {
@@ -55,15 +36,10 @@ pub(crate) fn target(element: Element, prop: &str) -> Target {
         (_, "disabled") => Target::Flag("disabled"),
         (_, "placeholder") => Target::Attr("placeholder"),
         (_, "src") => Target::Attr("src"),
-        (_, "padding") => Target::Style("padding", Unit::Px),
-        (_, "gap") => Target::Style("gap", Unit::Px),
-        (_, "width") => Target::Style("width", Unit::Px),
-        (_, "height") => Target::Style("height", Unit::Px),
-        (_, "size") => Target::Style("font-size", Unit::Px),
-        (_, "background") => Target::Style("background", Unit::Color),
-        (_, "color") => Target::Style("color", Unit::Color),
-        (_, "bold") => Target::Style("font-weight", Unit::Bold),
-        (element, prop) => unreachable!("`{}` has no property `{prop}`", element.name()),
+        (element, prop) => match css(prop) {
+            Some((name, unit)) => Target::Style(name, unit),
+            None => unreachable!("`{}` has no property `{prop}`", element.name()),
+        },
     }
 }
 
@@ -104,10 +80,10 @@ fn markup_safe(s: &str) -> bool {
 pub(crate) fn inline(target: Target, constant: &Constant) -> Option<String> {
     match (target, constant) {
         (Target::Text | Target::Attr(_), Constant::String(s)) => markup_safe(s).then(|| s.clone()),
-        (Target::Style(_, Unit::Color), Constant::Color(color)) => Some(color.to_string()),
+        (Target::Style(_, CssUnit::Color), Constant::Color(color)) => Some(color.to_string()),
         (Target::Flag(_), Constant::Bool(b)) => Some(b.to_string()),
-        (Target::Style(_, Unit::Px), Constant::Int(v)) => Some(format!("{v}px")),
-        (Target::Style(_, Unit::Bold), Constant::Bool(b)) => {
+        (Target::Style(_, CssUnit::Px), Constant::Int(v)) => Some(format!("{v}px")),
+        (Target::Style(_, CssUnit::Bold), Constant::Bool(b)) => {
             Some(if *b { "bold" } else { "normal" }.to_owned())
         }
         (target, _) => unreachable!("constant of the wrong type for {target:?}"),

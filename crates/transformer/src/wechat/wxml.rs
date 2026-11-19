@@ -7,6 +7,7 @@
 //! through `t`, so all templates of the app live in one file.
 
 use crate::ir::{Component, ComponentId, Element, NodeId, NodeKind, Program};
+use crate::style::{COLUMN_STYLE, ROW_STYLE};
 use crate::view::ViewLayout;
 
 use super::elements::{Target, Value, event_attr, prop_value, target};
@@ -48,16 +49,8 @@ fn template(name: &str, body: &str, out: &mut String) {
 /// Tag, fixed attributes and base style of an element.
 fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
     match element {
-        Element::Column => (
-            "view",
-            "",
-            "display:flex;flex-direction:column;align-items:flex-start",
-        ),
-        Element::Row => (
-            "view",
-            "",
-            "display:flex;flex-direction:row;align-items:flex-start",
-        ),
+        Element::Column => ("view", "", COLUMN_STYLE),
+        Element::Row => ("view", "", ROW_STYLE),
         Element::Text => ("text", "", ""),
         // Mini buttons are centered with auto margins by default.
         Element::Button => ("button", " size=\"mini\"", "margin:0"),

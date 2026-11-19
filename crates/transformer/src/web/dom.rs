@@ -4,6 +4,8 @@
 //! update function that re-runs only the bindings whose dirty bits are set
 //! and walks into nested blocks only when bits they depend on are set.
 
+use std::fmt::Write;
+
 use crate::bridge::DomView;
 use crate::bridge::blocks::{
     Consts, Ctx, Literal, Parts, arg_updates, arg_values, binding_cond, branch_index, handler_body,
@@ -15,6 +17,7 @@ use crate::color::Color;
 use crate::ir::{
     Component, ComponentId, DepRoot, Element, NodeId, NodeKind, Program, Prop, PropValue,
 };
+use crate::style::{COLUMN_STYLE, CssUnit, ROW_STYLE, css};
 
 /// The DOM [`DomView`].
 #[derive(Debug, Clone, Copy)]
@@ -58,9 +61,7 @@ enum Target {
     Checked,
     Disabled,
     Attr(&'static str),
-    Px(&'static str),
-    Color(&'static str),
-    Bold,
+    Style(&'static str, CssUnit),
 }
 
 fn target(element: Element, prop: &str) -> Target {
@@ -71,31 +72,18 @@ fn target(element: Element, prop: &str) -> Target {
         (_, "disabled") => Target::Disabled,
         (_, "placeholder") => Target::Attr("placeholder"),
         (_, "src") => Target::Attr("src"),
-        (_, "padding") => Target::Px("padding"),
-        (_, "gap") => Target::Px("gap"),
-        (_, "width") => Target::Px("width"),
-        (_, "height") => Target::Px("height"),
-        (_, "size") => Target::Px("font-size"),
-        (_, "background") => Target::Color("background"),
-        (_, "color") => Target::Color("color"),
-        (_, "bold") => Target::Bold,
-        (element, prop) => unreachable!("`{}` has no property `{prop}`", element.name()),
+        (element, prop) => match css(prop) {
+            Some((name, unit)) => Target::Style(name, unit),
+            None => unreachable!("`{}` has no property `{prop}`", element.name()),
+        },
     }
 }
 
 /// Tag, fixed attributes and base style of an element.
 fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
     match element {
-        Element::Column => (
-            "div",
-            "",
-            "display:flex;flex-direction:column;align-items:flex-start",
-        ),
-        Element::Row => (
-            "div",
-            "",
-            "display:flex;flex-direction:row;align-items:flex-start",
-        ),
+        Element::Column => ("div", "", COLUMN_STYLE),
+        Element::Row => ("div", "", ROW_STYLE),
         Element::Text => ("span", "", ""),
         Element::Button => ("button", " type=\"button\"", ""),
         Element::Input => ("input", "", ""),
@@ -126,15 +114,17 @@ fn apply(target: Target, node: &str, value: &str) -> String {
         Target::Checked => format!("$.checked({node}, {value});"),
         Target::Disabled => format!("{node}.disabled = {value};"),
         Target::Attr(name) => format!("{node}.setAttribute({}, {value});", js::string(name)),
-        Target::Px(name) => format!(
+        Target::Style(name, CssUnit::Px) => format!(
             "{node}.style.setProperty({}, $.px({value}));",
             js::string(name)
         ),
-        Target::Color(name) => format!(
+        Target::Style(name, CssUnit::Color) => format!(
             "{node}.style.setProperty({}, $.color({value}));",
             js::string(name)
         ),
-        Target::Bold => format!("{node}.style.fontWeight = {value} ? \"bold\" : \"\";"),
+        Target::Style(_, CssUnit::Bold) => {
+            format!("{node}.style.fontWeight = {value} ? \"bold\" : \"\";")
+        }
     }
 }
 
@@ -211,24 +201,30 @@ impl<'a> Gen<'a> {
             let Some(value) = literal(value) else {
                 continue;
             };
-            let mut add_style = |decl: String| {
+            let mut add_style = |decl: std::fmt::Arguments<'_>| {
                 if !style.is_empty() {
                     style.push(';');
                 }
-                style.push_str(&decl);
+                style
+                    .write_fmt(decl)
+                    .expect("writing to String is infallible");
             };
             match (target(element, prop.name), value) {
                 (Target::Text, Literal::Str(s)) => text = Some(s),
                 (Target::Disabled, Literal::Bool(true)) => attrs.push_str(" disabled"),
-                (Target::Bold, Literal::Bool(true)) => add_style("font-weight:bold".to_owned()),
-                (Target::Disabled | Target::Bold, _) => {}
+                (Target::Style(name, CssUnit::Bold), Literal::Bool(true)) => {
+                    add_style(format_args!("{name}:bold"));
+                }
+                (Target::Disabled | Target::Style(_, CssUnit::Bold), _) => {}
                 (Target::Attr(name), Literal::Str(s)) => {
                     attrs.push_str(&format!(" {name}=\""));
                     html_attr(s, &mut attrs);
                     attrs.push('"');
                 }
-                (Target::Px(name), Literal::Int(v)) => add_style(format!("{name}:{v}px")),
-                (Target::Color(name), Literal::Str(s)) => add_style(format!(
+                (Target::Style(name, CssUnit::Px), Literal::Int(v)) => {
+                    add_style(format_args!("{name}:{v}px"));
+                }
+                (Target::Style(name, CssUnit::Color), Literal::Str(s)) => add_style(format_args!(
                     "{name}:{}",
                     Color::parse(s)
                         .expect("color literals were validated during semantic analysis")

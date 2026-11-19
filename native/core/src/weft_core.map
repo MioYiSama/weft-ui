@@ -1,0 +1,11 @@
+{
+  global:
+    weft_runtime_new;
+    weft_runtime_free;
+    weft_runtime_tick;
+    weft_runtime_dispatch;
+    weft_runtime_resolve;
+    weft_stable_rows;
+  local:
+    *;
+};

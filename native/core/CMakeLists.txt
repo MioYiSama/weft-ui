@@ -44,7 +44,40 @@ FetchContent_Declare(hermes
   GIT_PROGRESS TRUE
   EXCLUDE_FROM_ALL
 )
-FetchContent_MakeAvailable(hermes)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  block()
+    # Weft provides its own Unicode backend; Hermes must not find or link ICU.
+    set(ICU_FOUND TRUE)
+    set(ICU_LIBRARIES "")
+    FetchContent_MakeAvailable(hermes)
+  endblock()
+else()
+  FetchContent_MakeAvailable(hermes)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  # 6 selects Weft's ICU4X backend; Hermes' backends use values 1 through 5.
+  target_compile_definitions(hermesPlatformUnicode_obj PRIVATE HERMES_PLATFORM_UNICODE=6)
+  target_sources(hermesPlatformUnicode_obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/platform_unicode.cpp)
+
+  find_program(CARGO cargo HINTS "$ENV{HOME}/.cargo/bin" REQUIRED)
+  find_package(Threads REQUIRED)
+  get_filename_component(repo "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+  set(unicode_crate "${repo}/crates/unicode")
+  set(cargo_target_dir "${CMAKE_CURRENT_BINARY_DIR}/cargo")
+  set(unicode_archive "${cargo_target_dir}/kernel/libweft_ui_unicode.a")
+  file(GLOB_RECURSE unicode_sources CONFIGURE_DEPENDS "${unicode_crate}/src/*.rs")
+  add_custom_command(OUTPUT "${unicode_archive}"
+    COMMAND "${CARGO}" build --locked --profile kernel -p weft-ui-unicode --target-dir "${cargo_target_dir}"
+    DEPENDS "${repo}/Cargo.toml" "${repo}/Cargo.lock" "${unicode_crate}/Cargo.toml" ${unicode_sources}
+    WORKING_DIRECTORY "${repo}"
+    VERBATIM)
+  add_custom_target(weft_unicode_archive DEPENDS "${unicode_archive}")
+  add_library(weft_unicode STATIC IMPORTED)
+  set_target_properties(weft_unicode PROPERTIES IMPORTED_LOCATION "${unicode_archive}")
+  add_dependencies(weft_unicode weft_unicode_archive)
+  target_link_libraries(hermesPlatformUnicode_obj weft_unicode Threads::Threads ${CMAKE_DL_LIBS} m)
+endif()
 
 # The kernel only runs bytecode, so it links the VM without the compiler.
 if(WEFT_CORE_SHARED)
@@ -69,7 +102,10 @@ if(WEFT_CORE_SHARED)
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN ON)
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_options(weft_core PRIVATE "LINKER:--exclude-libs,ALL")
+    # Keep weak C++ instantiations as well as static archives out of the ABI.
+    set(exports "${CMAKE_CURRENT_SOURCE_DIR}/src/weft_core.map")
+    target_link_options(weft_core PRIVATE "LINKER:--exclude-libs,ALL" "LINKER:--version-script=${exports}")
+    set_property(TARGET weft_core APPEND PROPERTY LINK_DEPENDS "${exports}")
   endif()
 endif()
 if(MSVC)

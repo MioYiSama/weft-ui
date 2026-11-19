@@ -37,7 +37,7 @@ pnpm --filter example build:windows  # dotnet project in example/apps/windows/, 
 pnpm --filter example test:windows   # UI Automation (FlaUI) click flow; needs an interactive desktop
 dotnet test native/windows/Weft.WinUI.Tests
 
-# Linux (Linux host with a C++20 compiler, CMake, Ninja, Python 3, ICU and GTK 4 / libsoup 3 / json-glib dev packages): the kernel as libweft_core.so, once
+# Linux (Linux host with a C++20 compiler, CMake, Ninja, Python 3, stable Rust and GTK 4 / libsoup 3 / json-glib dev packages): the kernel as libweft_core.so, once
 native/linux/build-core.sh           # also builds hermesc, which hermes-compiler lacks for arm64
 pnpm --filter example build:linux    # CMake project in example/apps/linux/, built into apps/linux/build/
 pnpm --filter example test:linux     # in-process click flow; needs a display

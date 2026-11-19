@@ -9,7 +9,7 @@ The versions match the CI workflows in `.github/workflows/`.
 | For | Tools |
 | --- | --- |
 | Everything | Git, Node.js 26, pnpm 11 (`corepack enable` picks the version in `package.json`), Rust stable with the `wasm32-unknown-unknown` target, `wasm-bindgen-cli` 0.2.130 (`cargo install wasm-bindgen-cli --version 0.2.130 --locked`) |
-| Native kernel | CMake 3.28 or later, Ninja, Python 3; ICU development files on Linux (`libicu-dev`) |
+| Native kernel | CMake 3.28 or later, Ninja, Python 3; a stable Rust toolchain on Linux |
 | Apple | macOS 26 with Xcode 27 |
 | Android | Android SDK (platform 37) and NDK, JDK 21 |
 | Windows | Windows 11, Visual Studio Build Tools with the C++ workload (includes CMake and Ninja), .NET SDK 10, PowerShell 7 |

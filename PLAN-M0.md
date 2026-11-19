@@ -307,10 +307,10 @@ flowchart LR
 | T1 快照夹具 | ☑ | Gallery 覆盖 7 个元素、8 个字面量和绑定样式属性及插槽；TodoList 快照无改动；C-rust 通过（clippy 0） |
 | T2 conformance 夹具 | ☑ | `board.ops`、`todo.ops` 无改动；C-ts 通过（tests 56，与启用 mapper 的基线一致）；C-core 和 C-windows 均通过 `conformance.gallery` |
 | V1 版本规则 | ☑ | `changeset status` 正常运行；临时副本里只给 runtime 加 minor changeset，9 个发布包一起升到 0.2.0，私有包不变；发布包的 `files` 加入 `CHANGELOG.md`（pnpm pack 默认不带）；`pnpm version` 是 pnpm 内置命令，脚本名用 `version-packages` |
-| W1 PR 流水线 | ⏸ | C-ci 通过；首次运行（draft PR #1）rust、ts、apple、android、linux 通过，core、windows 的失败已修复（见执行中发现），等待重跑 |
-| W2 夜间流水线 | ⏸ | C-ci 通过；在 m0 分支临时加 push 触发，android-ui、ios-ui 首次运行通过；等待在 M0 全部提交上重跑 |
+| W1 PR 流水线 | ☑ | C-ci 通过；draft PR #1 首次运行 core、windows 失败，修复后（见执行中发现）在全部 M0 提交上 8 个作业全部通过（run 44506078689）。设为必过检查由维护者在仓库设置里完成 |
+| W2 夜间流水线 | ☑ | C-ci 通过；在 m0 分支临时加 push 触发（未进入 master），android-ui、ios-ui 在全部 M0 提交上通过（run 44506071160） |
 | H1 仓库卫生 | ☑ | C-ci 通过；issue 模板 YAML 可解析；CONTRIBUTING、SECURITY、README 的相对链接都指向存在的文件。GitHub 私有漏洞报告需要在仓库设置里开启 |
-| X1 收尾 | ☐ | |
+| X1 收尾 | ☑ | docs 构建、C-rust（clippy 0）、C-ts（tsc 不超基线）、C-apps 通过；ROADMAP 第 2 节已更新 |
 
 ## 执行中发现
 

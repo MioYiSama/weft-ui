@@ -41,7 +41,7 @@ C 端流量集中在手机和小程序上。7 个平台同步推进的成本是 
 
 ## 2. 现状评估
 
-依据：代码检查和 PLAN.md 的执行记录（2026-11）。
+依据：代码检查和 PLAN.md 的执行记录（2026-11）；分发、CI、编辑器、测试四行在 M0 完成后按 [PLAN-M0.md](PLAN-M0.md) 更新。
 
 | 领域 | 现状 | 对 C 端的差距 | 严重度 |
 | --- | --- | --- | --- |
@@ -55,22 +55,24 @@ C 端流量集中在手机和小程序上。7 个平台同步推进的成本是 
 | 无障碍 | 没有 label、role 等 API；Android `Image` 的 `contentDescription = null` | 上架合规和可用性要求 | 中 |
 | 国际化 | Hermes 构建时关闭了 Intl（`native/core/CMakeLists.txt`）；Android 区域设置有 TODO | 缺日期和数字格式、RTL、语言切换 | 中 |
 | 开发循环 | Web 有 Vite 开发服务器；原生和小程序只能整包构建；Hermes 调试器被关闭；生成的 JS 没有 source map | 改一行要重编原生工程；原生上无法断点调试 | 高 |
-| 分发 | npm 包 0.1.0 已发布，但 `@weft-ui/vite` 默认从 `../../../native/` 找原生壳（`packages/vite/src/shells.ts`），npm 安装后不存在；内核必须从源码构建 Hermes；没有脚手架 | 外部项目实际上只能用 Web 和小程序 | 高 |
-| CI | 只有文档部署（`.github/workflows/docs.yml`） | 7 个平台的回归全靠本地手动跑 | 高 |
-| 编辑器 | `weft lsp` 支持诊断、补全、悬停、跳转、格式化；Zed 扩展；TS content mapper | 缺 VS Code 扩展、重命名、查找引用、代码操作；格式化器遇到二元运算数之间的注释会出内部错误 | 中 |
-| 测试 | 协议共享样例全宿主覆盖；conformance 用 2 个夹具；快照只有 1 个夹具（不含 Checkbox、Image、自定义组件、插槽）；每个原生平台只有一条点击流程 | 缺跨平台截图回归、性能基准、真机或小程序自动化 | 中 |
+| 分发 | TS 包 0.1.0 已发布；原生壳与预编译内核拆成 `@weft-ui/native-<target>`，`@weft-ui/vite` 按包解析壳和 hermesc（M0.4），已在仓库外用 tarball 验证 Android、iOS；native 包尚未发布到 npm（[PLAN-M0](PLAN-M0.md) R1）；没有脚手架 | native 包发布前，外部项目仍只能用 Web 和小程序 | 高 |
+| CI | PR 流水线（`ci.yml`）跑 C-rust、C-ts、C-core、C-linux、C-apple、C-android、C-windows；夜间流水线（`nightly.yml`）跑 Android、iOS 点击流程 | Windows、Linux 的点击流程仍在本地跑；没有截图回归和性能基准 | 低 |
+| 编辑器 | `weft lsp` 支持诊断、补全、悬停、跳转、格式化；Zed 扩展；TS content mapper | 缺 VS Code 扩展、重命名、查找引用、代码操作 | 中 |
+| 测试 | 协议共享样例全宿主覆盖；conformance 用 3 个夹具、快照用 2 个夹具，其中 Gallery 覆盖全部元素、样式属性、自定义组件和插槽；每个原生平台只有一条点击流程 | 缺跨平台截图回归、性能基准、真机或小程序自动化 | 中 |
 
 ### 已确认的缺陷（M0 修）
 
-| 缺陷 | 位置 |
-| --- | --- |
-| `setInterval(fn, 0)` 只触发一次：delay 为 0 时 period 为 0，`tick` 把它当成一次性定时器 | `native/core/src/runtime.cpp` 的 `arm` 和 `weft_runtime_tick` |
-| Apple 和 Linux 宿主边解码边应用，批次后部出错时已应用前缀，违反 SPEC 的「整批不应用」（N2 只修了 Android 和 Windows） | `native/apple/Sources/WeftKit/Session.swift` 的 `commit`、`native/linux/src/session.cpp` 的 `Session::commit` |
-| npm 用户无法构建原生平台（见上表「分发」）；只做 Web 的用户也要下载 49 MB 的 `hermes-compiler` | `packages/vite/src/shells.ts`、`packages/vite/package.json` |
-| 格式化器遇到二元运算数之间的注释报内部错误 | `crates/formatter/tests/format.rs:388-406` |
-| Linux 图片纹理缓存没有淘汰策略 | `native/linux/src/elements.cpp` |
-| 中文文档侧边栏的语法和协议链接指向英文版 | `docs/astro.config.mjs` |
-| compiler 包注释仍说原生视图后端不存在 | `packages/compiler/src/index.ts:100-103` |
+全部已在 [PLAN-M0.md](PLAN-M0.md) 中修复，编号见最后一列。
+
+| 缺陷 | 位置 | 修复 |
+| --- | --- | --- |
+| `setInterval(fn, 0)` 只触发一次：delay 为 0 时 period 为 0，`tick` 把它当成一次性定时器 | `native/core/src/runtime.cpp` 的 `arm` 和 `weft_runtime_tick` | F1 |
+| Apple 和 Linux 宿主边解码边应用，批次后部出错时已应用前缀，违反 SPEC 的「整批不应用」（N2 只修了 Android 和 Windows） | `native/apple/Sources/WeftKit/Session.swift` 的 `commit`、`native/linux/src/session.cpp` 的 `Session::commit` | F2 |
+| npm 用户无法构建原生平台（见上表「分发」）；只做 Web 的用户也要下载 49 MB 的 `hermes-compiler` | `packages/vite/src/shells.ts`、`packages/vite/package.json` | N.1–N.6 |
+| 格式化器遇到二元运算数之间的注释报内部错误 | `crates/formatter/tests/format.rs:388-406` | F3 |
+| Linux 图片纹理缓存没有淘汰策略 | `native/linux/src/elements.cpp` | F4 |
+| 中文文档侧边栏的语法和协议链接指向英文版 | `docs/astro.config.mjs` | F5 |
+| compiler 包注释仍说原生视图后端不存在 | `packages/compiler/src/index.ts:100-103` | F6 |
 
 ## 3. 关键架构决策
 

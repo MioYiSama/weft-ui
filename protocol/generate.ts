@@ -189,7 +189,7 @@ function kotlinObject(name: string, values: Record<string, string | number>): st
 
 function kotlin(): string {
   return `
-package dev.weft
+package net.mioyi.weftui
 
 internal object WeftProtocol {
     const val VERSION = ${version}
@@ -239,7 +239,7 @@ const outputs = {
   "crates/transformer/src/protocol.rs": rust(),
   "native/core/include/weft/protocol.hpp": cpp(),
   "native/apple/Sources/WeftKit/Protocol.swift": swift(),
-  "native/android/src/main/kotlin/dev/weft/Protocol.kt": kotlin(),
+  "native/android/src/main/kotlin/net/mioyi/weftui/Protocol.kt": kotlin(),
   "native/windows/Weft.WinUI/Protocol.cs": csharp(),
 };
 

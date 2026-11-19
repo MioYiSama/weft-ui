@@ -269,7 +269,7 @@ flowchart LR
   - `native/android/build.gradle.kts`：
     - 在 `android.testOptions.unitTests.all` 里设置 `systemProperty("weft.corpus", file("../../protocol/corpus").absolutePath)`。
     - 新增 `testImplementation("org.json:json:<Maven Central 最新版>")`。原因是 `android.jar` 里的 `JSONObject` 是桩实现，在 JVM 单测里会抛异常。具体版本写进提交正文。
-  - 新增 `src/test/kotlin/dev/weft/CorpusTest.kt`，覆盖内容同 P1.5。**替换**：删除 `OpReaderTest.kt` 里已由样例覆盖的用例。
+  - 新增 `src/test/kotlin/net/mioyi/weftui/CorpusTest.kt`，覆盖内容同 P1.5。**替换**：删除 `OpReaderTest.kt` 里已由样例覆盖的用例。
 - **验收**：C-android 通过；C-ui 中 Android 一项通过。
 - **提交**：`fix(android): reject invalid UTF-8 in ops and test against the shared corpus`
 
@@ -336,7 +336,7 @@ flowchart LR
     | `crates/transformer/src/protocol.rs` | `pub enum Platform`，带现有 derive 和文档；`impl Platform { ALL, as_str, is_native, is_apple }`；`pub(crate) mod wechat_unit` |
     | `native/core/include/weft/protocol.hpp` | 命名空间 `weft::protocol`：`kVersion`、`enum class Code`、`enum class Tag`、模块名和方法名的 `constexpr std::string_view` |
     | `native/apple/Sources/WeftKit/Protocol.swift` | 版本、`OpCode`、`ValueTag`、`OpErrorKind`、模块名常量 |
-    | `native/android/src/main/kotlin/dev/weft/Protocol.kt` | 同上，`internal` |
+    | `native/android/src/main/kotlin/net/mioyi/weftui/Protocol.kt` | 同上，`internal` |
     | `native/windows/Weft.WinUI/Protocol.cs` | 同上，`internal` |
 
   - 根目录 `package.json` 新增脚本 `"gen:protocol": "node protocol/generate.ts"`。
@@ -398,7 +398,7 @@ flowchart LR
 - **验收**：
   - `rg -n 'case [0-5]:' native/apple/Sources/WeftKit/Ops.swift` 没有输出。
   - `rg -n 'bytes\.append\([0-3]\)' native/apple/Sources/WeftKit/Value.swift` 没有输出。
-  - `rg -n '^\s+[0-5] ->' native/android/src/main/kotlin/dev/weft/Ops.kt` 没有输出。
+  - `rg -n '^\s+[0-5] ->' native/android/src/main/kotlin/net/mioyi/weftui/Ops.kt` 没有输出。
   - `rg -n '\b[0-3] =>|enum OpCode' native/windows/Weft.WinUI/OpReader.cs` 没有输出。
   - `rg -n '"(fetch|storage|request|get|set|remove)"' native/apple/Sources native/android/src/main native/windows/Weft.WinUI` 只在生成文件中出现。
   - C-apple、C-android、C-windows 通过；C-ui 全部通过。
@@ -773,7 +773,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | --- | --- | --- |
 | N1 | Linux 容器适配 pnpm 11：`compose.yaml` 把 `npm_config_store_dir` 改为 `pnpm_config_store_dir`，并为容器里非交互的 `pnpm install` 设置 `CI=true`；同步更新 C-linux 命令 | [P0.1]、[P1.8] |
 | N2 | Android `Session.kt` 和 Windows `WeftSession.Commit` 改为先解码整批、成功后再应用，符合 P1.1「整批不应用」；用共享样例里批次后部出错的用例覆盖 | [P1.6]、[P1.7] |
-| N3 | 消除 `native/android/src/test/kotlin/dev/weft/CorpusTest.kt:15` 中 `System.getProperty` 返回 `String?` 引起的 Kotlin 类型警告 | [P2.5] |
+| N3 | 消除 `native/android/src/test/kotlin/net/mioyi/weftui/CorpusTest.kt:15` 中 `System.getProperty` 返回 `String?` 引起的 Kotlin 类型警告 | [P2.5] |
 
 ## 进度表
 

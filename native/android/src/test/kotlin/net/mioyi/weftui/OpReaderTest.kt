@@ -1,4 +1,4 @@
-package dev.weft
+package net.mioyi.weftui
 
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows

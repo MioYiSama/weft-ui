@@ -2,7 +2,7 @@ id = "weft"
 name = "Weft"
 version = "0.0.1"
 schema_version = 1
-authors = ["Weft UI contributors"]
+authors = ["MioYiSama"]
 description = "Weft UI (.weft) support: syntax highlighting, plus diagnostics, completion, hover, go to definition and formatting through `weft lsp`"
 
 [language_servers.weft]

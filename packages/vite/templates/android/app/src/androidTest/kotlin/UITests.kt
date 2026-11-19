@@ -1,4 +1,4 @@
-package dev.weft.app
+package net.mioyi.weftui.app
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot

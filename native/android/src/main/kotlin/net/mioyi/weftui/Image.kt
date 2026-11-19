@@ -1,4 +1,4 @@
-package dev.weft
+package net.mioyi.weftui
 
 import android.graphics.BitmapFactory
 import android.util.LruCache

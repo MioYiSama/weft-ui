@@ -15,7 +15,7 @@ plugins {
 layout.buildDirectory.set(rootProject.layout.buildDirectory.dir("weft-android"))
 
 android {
-    namespace = "dev.weft"
+    namespace = "net.mioyi.weftui"
     compileSdk = 37
     defaultConfig {
         // Keep in sync with build-core.sh.

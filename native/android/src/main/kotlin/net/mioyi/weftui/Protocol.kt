@@ -1,6 +1,6 @@
 // Generated from protocol/weft.protocol.json by protocol/generate.ts; do not edit.
 
-package dev.weft
+package net.mioyi.weftui
 
 internal object WeftProtocol {
     const val VERSION = 1

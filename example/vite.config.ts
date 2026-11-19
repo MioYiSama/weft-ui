@@ -5,7 +5,7 @@ import weft from "@weft-ui/vite";
 export default defineConfig({
   plugins: [
     weft({
-      app: { id: "com.example.exp", name: "Exp" },
+      app: { id: "net.mioyi.weftui", name: "Exp" },
     }),
   ],
 });

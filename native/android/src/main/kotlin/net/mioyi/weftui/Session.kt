@@ -1,4 +1,4 @@
-package dev.weft
+package net.mioyi.weftui
 
 import android.content.Context
 import android.content.pm.ApplicationInfo

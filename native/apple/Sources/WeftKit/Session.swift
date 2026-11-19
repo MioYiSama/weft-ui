@@ -3,7 +3,7 @@ import Observation
 import WeftCore
 import os
 
-let logger = Logger(subsystem: "dev.weft", category: "weft")
+let logger = Logger(subsystem: "net.mioyi.weftui", category: "weft")
 
 /// One Weft app running in the native kernel: owns the kernel runtime and
 /// the scope tree its ops build.

@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <!-- Names the app's data directory, e.g. for storage. -->
-    <AssemblyMetadata Include="WeftAppId" Value="com.example.exp" />
+    <AssemblyMetadata Include="WeftAppId" Value="net.mioyi.weftui" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
   </ItemGroup>
 

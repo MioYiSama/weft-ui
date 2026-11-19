@@ -1,7 +1,7 @@
 // JNI glue of the Android shell: the kernel's C ABI (weft/runtime.h) as the
-// external functions of dev.weft.Native, and the kernel's host callbacks as
-// calls to a dev.weft.NativeHost. Everything runs on the main thread, which
-// the JVM has attached; strings cross as UTF-8 byte arrays because JNI's
+// external functions of net.mioyi.weftui.Native, and the kernel's host callbacks
+// as calls to a net.mioyi.weftui.NativeHost. Everything runs on the main thread,
+// which the JVM has attached; strings cross as UTF-8 byte arrays because JNI's
 // modified UTF-8 cannot carry every string a bundle may produce.
 
 #include <jni.h>
@@ -130,9 +130,9 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
   return facebook::jni::initialize(vm, [] {});
 }
 
-JNIEXPORT jlong JNICALL Java_dev_weft_Native_create(JNIEnv *e, jobject, jobject host,
-                                                    jbyteArray bytecode, jlong layout_hash,
-                                                    jstring version) {
+JNIEXPORT jlong JNICALL Java_net_mioyi_weftui_Native_create(JNIEnv *e, jobject, jobject host,
+                                                            jbyteArray bytecode,
+                                                            jlong layout_hash, jstring version) {
   auto session = std::make_unique<Session>();
   jclass type = e->GetObjectClass(host);
   session->commit = e->GetMethodID(type, "commit", "(Ljava/nio/ByteBuffer;)V");
@@ -171,25 +171,27 @@ JNIEXPORT jlong JNICALL Java_dev_weft_Native_create(JNIEnv *e, jobject, jobject 
   return reinterpret_cast<jlong>(session.release());
 }
 
-JNIEXPORT void JNICALL Java_dev_weft_Native_tick(JNIEnv *, jobject, jlong handle) {
+JNIEXPORT void JNICALL Java_net_mioyi_weftui_Native_tick(JNIEnv *, jobject, jlong handle) {
   weft_runtime_tick(from(handle)->runtime);
 }
 
-JNIEXPORT jboolean JNICALL Java_dev_weft_Native_dispatch(JNIEnv *e, jobject, jlong handle,
-                                                         jint scope, jint slot, jbyteArray payload) {
+JNIEXPORT jboolean JNICALL Java_net_mioyi_weftui_Native_dispatch(JNIEnv *e, jobject, jlong handle,
+                                                                 jint scope, jint slot,
+                                                                 jbyteArray payload) {
   const std::vector<uint8_t> bytes = copy(e, payload);
   return weft_runtime_dispatch(from(handle)->runtime, static_cast<uint32_t>(scope),
                                static_cast<uint32_t>(slot), bytes.data(), bytes.size());
 }
 
-JNIEXPORT void JNICALL Java_dev_weft_Native_resolve(JNIEnv *e, jobject, jlong handle, jint id,
-                                                    jboolean ok, jbyteArray result) {
+JNIEXPORT void JNICALL Java_net_mioyi_weftui_Native_resolve(JNIEnv *e, jobject, jlong handle,
+                                                            jint id, jboolean ok,
+                                                            jbyteArray result) {
   const std::vector<uint8_t> bytes = copy(e, result);
   weft_runtime_resolve(from(handle)->runtime, static_cast<uint32_t>(id), ok, bytes.data(),
                        bytes.size());
 }
 
-JNIEXPORT void JNICALL Java_dev_weft_Native_free(JNIEnv *e, jobject, jlong handle) {
+JNIEXPORT void JNICALL Java_net_mioyi_weftui_Native_free(JNIEnv *e, jobject, jlong handle) {
   Session *session = from(handle);
   if (session == nullptr) return;
   weft_runtime_free(session->runtime);

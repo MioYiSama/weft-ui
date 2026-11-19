@@ -1,4 +1,4 @@
-package dev.weft
+package net.mioyi.weftui
 
 import org.json.JSONArray
 import org.json.JSONObject

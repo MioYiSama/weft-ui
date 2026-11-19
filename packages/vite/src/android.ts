@@ -37,7 +37,7 @@ plugins {
 layout.buildDirectory.set(rootProject.layout.buildDirectory.dir("weft"))
 
 android {
-    namespace = "dev.weft.generated"
+    namespace = "net.mioyi.weftui.generated"
     compileSdk = 37
     defaultConfig {
         minSdk = 24

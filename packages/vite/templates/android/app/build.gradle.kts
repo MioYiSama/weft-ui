@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.weft.app"
+    namespace = "net.mioyi.weftui.app"
     compileSdk = 37
     defaultConfig {
         applicationId = "__WEFT_APP_ID__"

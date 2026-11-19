@@ -1,4 +1,4 @@
-package dev.weft
+package net.mioyi.weftui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

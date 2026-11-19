@@ -6,7 +6,7 @@
 
 namespace {
 
-constexpr const char *kAppId = "com.example.exp";
+constexpr const char *kAppId = "net.mioyi.weftui";
 constexpr const char *kAppName = "Exp";
 
 void activate(GtkApplication *app) {

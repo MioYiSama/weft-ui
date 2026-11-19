@@ -1,14 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { NativeAdapter, RunTool } from "./native.ts";
-
-/**
- * The Windows shell (`native/windows`): Weft.WinUI and the kernel DLLs built
- * by build-core.ps1, taken from the workspace until they ship prebuilt with
- * the platform packages.
- */
-export const WEFT_WINUI = fileURLToPath(new URL("../../../native/windows", import.meta.url));
 
 /**
  * `weft/Weft.targets`: imported by the app project of the Windows template.
@@ -34,13 +26,13 @@ function targets(generated: string, shell: string): string {
 `;
 }
 
-export function windowsAdapter(runTool: RunTool): NativeAdapter {
+export function windowsAdapter(runTool: RunTool, shell: string): NativeAdapter {
   return {
     bytecode: "bundle.hbc",
     host: "win32",
     hostWarning: "the Windows build needs a Windows host",
     writeGlue(generated) {
-      writeFileSync(join(generated, "Weft.targets"), targets(generated, WEFT_WINUI));
+      writeFileSync(join(generated, "Weft.targets"), targets(generated, shell));
     },
     async build(project, _platform, release) {
       const args = ["build", "App.csproj", "-c", release ? "Release" : "Debug", "-nologo", "-v", "quiet"];

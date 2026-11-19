@@ -1,14 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { NativeAdapter, RunTool } from "./native.ts";
-
-/**
- * The Linux shell (`native/linux`): its CMake project and the kernel
- * library built by build-core.sh, taken from the workspace until they ship
- * prebuilt with the platform packages.
- */
-export const WEFT_LINUX = fileURLToPath(new URL("../../../native/linux", import.meta.url));
 
 /**
  * `weft/CMakeLists.txt`: added by the CMake project of the Linux template.
@@ -26,13 +18,13 @@ weft_views("\${CMAKE_CURRENT_LIST_DIR}/Generated.cpp" "\${CMAKE_CURRENT_LIST_DIR
 `;
 }
 
-export function linuxAdapter(runTool: RunTool): NativeAdapter {
+export function linuxAdapter(runTool: RunTool, shell: string): NativeAdapter {
   return {
     bytecode: "bundle.hbc",
     host: "linux",
     hostWarning: "the Linux build needs a Linux host",
     writeGlue(generated) {
-      writeFileSync(join(generated, "CMakeLists.txt"), cmakeLists(generated, WEFT_LINUX));
+      writeFileSync(join(generated, "CMakeLists.txt"), cmakeLists(generated, shell));
     },
     // Configure first, then build the executable at project/build/app.
     async build(project, _platform, release) {

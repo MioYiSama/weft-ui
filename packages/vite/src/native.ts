@@ -6,7 +6,8 @@ import { promisify } from "node:util";
 import type { NativePlatform } from "@weft-ui/runtime/protocol";
 import { androidAdapter } from "./android.ts";
 import { appleAdapter } from "./apple.ts";
-import { WEFT_LINUX, linuxAdapter } from "./linux.ts";
+import { linuxAdapter } from "./linux.ts";
+import { nativeShell } from "./shells.ts";
 import { windowsAdapter } from "./windows.ts";
 
 export interface NativeAdapter {
@@ -41,15 +42,18 @@ async function runTool(
 
 export type RunTool = typeof runTool;
 
-const apple = appleAdapter(runTool);
+export function nativeAdapters(root?: string): Record<NativePlatform, NativeAdapter> {
+  const apple = appleAdapter(runTool, nativeShell("apple", root));
+  return {
+    ios: apple,
+    macos: apple,
+    android: androidAdapter(runTool, nativeShell("android", root)),
+    windows: windowsAdapter(runTool, nativeShell("windows", root)),
+    linux: linuxAdapter(runTool, nativeShell("linux", root)),
+  };
+}
 
-export const ADAPTERS: Record<NativePlatform, NativeAdapter> = {
-  ios: apple,
-  macos: apple,
-  android: androidAdapter(runTool),
-  windows: windowsAdapter(runTool),
-  linux: linuxAdapter(runTool),
-};
+export const ADAPTERS: Record<NativePlatform, NativeAdapter> = nativeAdapters();
 
 /**
  * Syntax the bundle keeps for Hermes; newer syntax is lowered by Vite.
@@ -79,13 +83,13 @@ const BINARIES: Partial<Record<string, string>> = {
  * On Linux hosts without a packaged binary (arm64) it is the one that
  * native/linux/build-core.sh builds with the kernel.
  */
-export function hermesc(): string {
+function hermesc(nativeRoot?: string): string {
   const override = process.env.WEFT_HERMESC;
   if (override) return override;
   const binary = BINARIES[`${process.platform}-${process.arch}`];
   if (!binary) {
     if (process.platform === "linux") {
-      const built = join(WEFT_LINUX, `build/linux-${process.arch}/bin/hermesc`);
+      const built = join(nativeShell("linux", nativeRoot), `build/linux-${process.arch}/bin/hermesc`);
       if (existsSync(built)) return built;
     }
     throw new Error(
@@ -101,8 +105,8 @@ export function hermesc(): string {
 }
 
 /** Compiles the bundle at `input` to Hermes bytecode at `output`. */
-export async function compileBytecode(input: string, output: string): Promise<void> {
-  const compiler = hermesc();
+export async function compileBytecode(input: string, output: string, nativeRoot?: string): Promise<void> {
+  const compiler = hermesc(nativeRoot);
   try {
     await execute(compiler, [...HERMESC_FLAGS, `-out=${output}`, input]);
   } catch (cause) {

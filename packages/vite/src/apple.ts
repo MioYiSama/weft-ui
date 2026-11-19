@@ -1,13 +1,6 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { NativeAdapter, RunTool } from "./native.ts";
-
-/**
- * WeftKit, the Swift package of the Apple shell (`native/apple`), taken
- * from the workspace until it ships prebuilt with the platform packages.
- */
-export const WEFT_KIT = fileURLToPath(new URL("../../../native/apple", import.meta.url));
 
 /**
  * `weft/Package.swift`: the generated area as the local package `WeftApp`
@@ -44,17 +37,17 @@ let package = Package(
 `;
 }
 
-export function appleAdapter(runTool: RunTool): NativeAdapter {
+export function appleAdapter(runTool: RunTool, kit: string): NativeAdapter {
   return {
     bytecode: "bundle.hbc",
     host: "darwin",
     hostWarning: "xcodebuild needs macOS",
     writeGlue(generated) {
-      writeFileSync(join(generated, "Package.swift"), packageManifest(WEFT_KIT));
+      writeFileSync(join(generated, "Package.swift"), packageManifest(kit));
     },
     // Build for the iOS simulator in debug builds, or a device in release builds (which need signing).
     async build(project, platform, release) {
-      const core = join(WEFT_KIT, "build/WeftCore.xcframework");
+      const core = join(kit, "build/WeftCore.xcframework");
       if (!existsSync(core)) {
         throw new Error(`weft: the native kernel for Apple platforms is missing (${core}); build it with native/apple/build-core.sh`);
       }

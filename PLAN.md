@@ -797,7 +797,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P4.4 拆分 view.rs | ☐ | |
 | P4.5 收窄公开 API | ☐ | |
 | P5.1 原生平台适配器 | ☑ | C-ts 通过（vite 16），C-apps 无差异 |
-| P5.2 集中解析原生壳路径 | ☐ | |
+| P5.2 集中解析原生壳路径 | ☑ | C-ts 通过（vite 16），C-apps 无差异 |
 | P6.1 共享 hermesc 引导 | ☑ | 干净构建、C-apple 通过；Apple 全 SDK 和 Android 全 ABI 产物已重建 |
 | P6.2 两套语法共用 fixture 检查 | ☑ | Rust fixture、fmt、clippy 通过；未安装 tree-sitter CLI，按验收条件跳过 |
 | P6.3 文档收尾 | ☐ | |

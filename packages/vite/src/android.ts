@@ -1,15 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { NativeAdapter, RunTool } from "./native.ts";
-
-/**
- * The Android shell (`native/android`): the Gradle module of the shell and
- * the kernel libraries built by build-core.sh, taken from the workspace
- * until they ship prebuilt with the platform packages.
- */
-export const WEFT_ANDROID = fileURLToPath(new URL("../../../native/android", import.meta.url));
 
 /**
  * `weft/settings.gradle.kts`: applied by the settings of the Android
@@ -83,17 +75,17 @@ function androidSdk(project: string): string | undefined {
   return fallback && existsSync(fallback) ? fallback : undefined;
 }
 
-export function androidAdapter(runTool: RunTool): NativeAdapter {
+export function androidAdapter(runTool: RunTool, shell: string): NativeAdapter {
   return {
     // The Android module packages the bytecode as an asset.
     bytecode: "src/main/assets/weft/bundle.hbc",
     writeGlue(generated, project) {
-      writeFileSync(join(generated, "settings.gradle.kts"), settingsFragment(project, WEFT_ANDROID));
+      writeFileSync(join(generated, "settings.gradle.kts"), settingsFragment(project, shell));
       writeFileSync(join(generated, "build.gradle.kts"), moduleBuild());
     },
     // The APK is in project/app/build/outputs/apk/; release builds are unsigned unless the project configures signing.
     async build(project, _platform, release) {
-      const kernel = join(WEFT_ANDROID, "build/jniLibs");
+      const kernel = join(shell, "build/jniLibs");
       if (!existsSync(kernel)) {
         throw new Error(`weft: the native kernel for Android is missing (${kernel}); build it with native/android/build-core.sh`);
       }

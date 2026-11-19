@@ -13,6 +13,7 @@ mod code;
 pub mod color;
 pub mod compose;
 mod deps;
+mod elements;
 pub mod gtk;
 pub mod ide;
 pub mod ir;

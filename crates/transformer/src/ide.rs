@@ -13,9 +13,10 @@ use std::cell::RefCell;
 
 use weft_ui_ast::{Diagnostic, FileId, ParsedProgram, SourceMap, Span};
 
+use crate::elements::{self, ElementSpec, PropKind, PropSpec, PropType};
 use crate::ir::{ComponentId, EventId, ModelId, ParamKind, Program, Type};
 use crate::sema;
-use crate::sema::builtins::{self, ElementSpec, PropKind, PropSpec, PropType};
+use crate::sema::builtins;
 
 /// Outcome of [`analyze`].
 #[derive(Debug, Clone)]
@@ -322,7 +323,7 @@ pub(crate) fn element_symbol(spec: &ElementSpec) -> Symbol {
 }
 
 pub(crate) fn element_symbols() -> impl Iterator<Item = Symbol> {
-    builtins::ELEMENTS.iter().map(element_symbol)
+    elements::ELEMENTS.iter().map(element_symbol)
 }
 
 /// Built-in member `name` of a non-optional `recv`, displayed with `display`.

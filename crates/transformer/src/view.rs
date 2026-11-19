@@ -19,10 +19,10 @@
 use std::fmt::{self, Write as _};
 
 use crate::color::Color;
+use crate::elements::{self, PropType};
 use crate::ir::{
     Component, ComponentId, Element, Expr, ExprKind, NodeId, NodeKind, Program, PropValue,
 };
-use crate::sema::builtins::{self, PropType};
 
 /// Index into [`ViewLayout::templates`]; the same number the logic layer
 /// sends in `create` ops.
@@ -660,7 +660,7 @@ impl Builder<'_> {
                             None
                         }
                         PropValue::Expr(value) => {
-                            let ty = builtins::prop_type(*element, prop.name);
+                            let ty = elements::prop_type(*element, prop.name);
                             let fixed = (prop.binding.is_none() && controlled != Some(prop.name))
                                 .then(|| constant(value, ty))
                                 .flatten();

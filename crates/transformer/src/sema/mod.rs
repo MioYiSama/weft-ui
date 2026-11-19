@@ -12,6 +12,7 @@ use weft_ui_ast::span::offset;
 use weft_ui_ast::{Diagnostic, FileId, ParsedFile, ParsedProgram, SourceMap, Span};
 
 use crate::deps;
+use crate::elements::{self, LIFECYCLE as CALL_HOOKS};
 use crate::ide::{self, ProbeContext, RawCall, RawProbe, Recorder, Target};
 use crate::ir::{
     Component, ComponentId, Event, EventId, Field, Model, ModelId, Module, Param, ParamKind,
@@ -449,7 +450,7 @@ fn declare(
     diags: &mut Vec<Diagnostic>,
 ) -> Option<DeclKind> {
     let name = item.name();
-    let reserved = if builtins::element(&name.name).is_some() {
+    let reserved = if elements::element(&name.name).is_some() {
         Some("a built-in element")
     } else if PRIMITIVES.contains(&name.name.as_str()) || name.name == CHILDREN {
         Some("a built-in type")
@@ -573,7 +574,7 @@ fn signature(
             );
             continue;
         }
-        if builtins::LIFECYCLE.iter().any(|p| p.name == name.name) {
+        if CALL_HOOKS.iter().any(|p| p.name == name.name) {
             diags.push(Diagnostic::error(
                 name.span,
                 format!("`{}` is reserved for lifecycle events", name.name),

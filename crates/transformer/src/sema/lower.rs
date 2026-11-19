@@ -9,13 +9,14 @@ use weft_ui_ast::{AssignOp, BinaryOp, Diagnostic, FileId, Span, UnaryOp};
 
 use crate::color::Color;
 use crate::deps;
+use crate::elements::{self, ElementSpec, LIFECYCLE as CALL_HOOKS, PropKind, PropSpec, PropType};
 use crate::ide::{self, ProbeContext, RawCall, Symbol, SymbolKind, Target};
 use crate::ir::{
     Arg, Assign, Binding, BindingId, BindingKind, Branch, Coercion, ComponentId, Dep, EmitArg,
     EventId, Expr, ExprKind, FieldId, Handler, InterpPart, Loop, LoopId, Node, NodeId, NodeKind,
     Param, ParamId, ParamKind, Prop, PropValue, State, StateId, Type,
 };
-use crate::sema::builtins::{self, MemberKind, PropKind, PropSpec};
+use crate::sema::builtins::{self, MemberKind};
 use crate::sema::{Checker, DeclKind, article};
 
 /// A component instantiated inside another component's body.
@@ -354,7 +355,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             }
             return Some(self.push_node(NodeKind::Slot { param }, span, 0..0));
         }
-        if let Some(spec) = builtins::element(name) {
+        if let Some(spec) = elements::element(name) {
             self.cx
                 .record(first.span, || Target::Symbol(ide::element_symbol(spec)));
             return Some(self.builtin_element(spec, e, span));
@@ -375,18 +376,8 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         }
     }
 
-    fn builtin_element(
-        &mut self,
-        spec: &builtins::ElementSpec,
-        e: &ast::ElementNode,
-        span: Span,
-    ) -> NodeId {
-        let props_spec: Vec<PropSpec> = spec
-            .props
-            .iter()
-            .chain(&builtins::LIFECYCLE)
-            .copied()
-            .collect();
+    fn builtin_element(&mut self, spec: &ElementSpec, e: &ast::ElementNode, span: Span) -> NodeId {
+        let props_spec: Vec<PropSpec> = spec.props.iter().chain(&CALL_HOOKS).copied().collect();
         let slots: Vec<ArgSlot<'_>> = props_spec
             .iter()
             .map(|p| ArgSlot {
@@ -408,7 +399,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             let (value, binding) = match prop.kind {
                 PropKind::Value(ty) => {
                     let expr = self.expr_as(&arg.value, &ty.to_type());
-                    if ty == builtins::PropType::Color
+                    if ty == PropType::Color
                         && let ExprKind::Str(value) = &expr.kind
                         && Color::parse(value).is_none()
                     {
@@ -423,7 +414,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
                     (PropValue::Expr(expr), binding)
                 }
                 PropKind::Handler { payload } => {
-                    let payload = payload.map(builtins::PropType::to_type);
+                    let payload = payload.map(PropType::to_type);
                     let Some((handler, deps)) = self.handler(&arg.value, prop.name, payload, false)
                     else {
                         continue;
@@ -502,7 +493,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
                 required: p.default.is_none(),
             })
             .collect();
-        slots.extend(builtins::LIFECYCLE.iter().map(|p| ArgSlot {
+        slots.extend(CALL_HOOKS.iter().map(|p| ArgSlot {
             name: p.name,
             positional: false,
             required: false,
@@ -511,10 +502,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         self.record_args(args_span(e, span), &matched, |i| {
             match value_params.get(i) {
                 Some(&(param, _, _)) => Target::ComponentParam(id, param.index()),
-                None => Target::Symbol(ide::prop_symbol(
-                    None,
-                    &builtins::LIFECYCLE[i - value_params.len()],
-                )),
+                None => Target::Symbol(ide::prop_symbol(None, &CALL_HOOKS[i - value_params.len()])),
             }
         });
 
@@ -533,7 +521,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
                     span: arg.span,
                 });
             } else {
-                let name = builtins::LIFECYCLE[index - value_params.len()].name;
+                let name = CALL_HOOKS[index - value_params.len()].name;
                 if let Some((handler, deps)) = self.handler(&arg.value, name, None, true) {
                     let binding = self.bind(BindingKind::Handler(name), deps);
                     props.push(Prop {

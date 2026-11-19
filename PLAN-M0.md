@@ -329,4 +329,5 @@ flowchart LR
 - [W1] CI 首次在 Linux（GCC）上跑内核测试，`core.corpus` 段错误。原因是 P1.4 起就有的悬垂引用：`for (auto &c : read_corpus("ops.json")["cases"].array())` 中 `read_corpus` 返回的临时文档在循环开始前就析构了（C++23 之前范围 for 不延长中间临时对象的生命周期），Clang 和 MSVC 恰好没有崩。结论：已修复（文档存进局部变量，提交 `test(core): keep the corpus documents alive in the kernel test`；容器内 GCC 跑内核测试 14 项通过）。
 - [W1] Windows 运行器检出时 `core.autocrlf` 把黄金文件转成 CRLF，`conformance.board`、`conformance.todo` 在第 1 行就不一致；虚拟机用 robocopy 同步 Mac 的工作区，所以本地从未出现。结论：已修复（`.gitattributes` 固定 `*.ops` 为 LF，提交 `test(conformance): keep the goldens LF on Windows checkouts`）。
 - [W1] 容器的 `node_modules` 卷在 N.1 之后需要重新 `pnpm install` 才有 native 包的链接，否则内核 conformance 报「needs the native shell」。结论：不处理（C-linux 命令本身先跑 `pnpm install`；只影响手动在旧容器里跑内核测试）。
+- [W1] 缓存未命中时 windows 作业要 24 分钟：`build-core.ps1` 和内核测试各编译一次 Hermes（11 分钟、10.5 分钟），而 `Weft.WinUI.Tests` 并不加载 `weft_core.dll`。结论：已修复（去掉 `build-core.ps1`，内核测试按它的参数构建 DLL，提交 `ci: build Hermes once in the Windows job`；冷缓存 11 分钟，热缓存约 2 分钟）。
 - [X1] `pnpm pack --dry-run` 执行 `prepack` 但不执行 `postpack`，会在 native 包目录留下 `LICENSE-hermes`（Linux 还有 `core/`，已被忽略）。结论：已修复（4 个包的 `.gitignore` 忽略 `/LICENSE-hermes`）。

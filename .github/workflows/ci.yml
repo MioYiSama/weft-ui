@@ -21,7 +21,9 @@ env:
   CARGO_TERM_COLOR: always
   # Keep in sync with crates/wasm/Cargo.toml.
   WASM_BINDGEN: 0.2.130
-  # Keep in sync with WEFT_HERMES_TAG in native/core/CMakeLists.txt; part of the kernel cache keys.
+  # Keep in sync with WEFT_HERMES_TAG in native/core/CMakeLists.txt. The kernel
+  # caches are keyed on it and on the Hermes options in native/core/hermes.cmake,
+  # so changes to Weft's own CMake files reuse the compiled Hermes.
   HERMES_TAG: hermes-v260318099.0.8
 
 jobs:
@@ -160,7 +162,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: native/core/build
-          key: core-linux-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/core/tests/CMakeLists.txt') }}
+          key: core-linux-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake') }}
           restore-keys: core-linux-${{ env.HERMES_TAG }}-
       - run: cmake -S native/core -B native/core/build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build native/core/build
@@ -179,7 +181,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: native/linux/build/linux-x64
-          key: linux-x64-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt') }}
+          key: linux-x64-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake', 'native/linux/build-core.sh') }}
           restore-keys: linux-x64-${{ env.HERMES_TAG }}-
       # The container's user (ubuntu, uid 1000) writes to the mounted workspace.
       - run: sudo chown -R 1000:1000 "$GITHUB_WORKSPACE"
@@ -210,7 +212,7 @@ jobs:
           path: |
             native/core/build
             native/apple/build
-          key: apple-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/apple/build-core.sh') }}
+          key: apple-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake', 'native/apple/build-core.sh') }}
           restore-keys: apple-${{ env.HERMES_TAG }}-
       - run: native/apple/build-core.sh
         env:
@@ -234,7 +236,7 @@ jobs:
           path: |
             native/core/build
             native/android/build
-          key: android-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/android/CMakeLists.txt', 'native/android/build-core.sh') }}
+          key: android-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake', 'native/android/CMakeLists.txt', 'native/android/build-core.sh') }}
           restore-keys: android-${{ env.HERMES_TAG }}-
       - run: native/android/build-core.sh
         env:
@@ -260,7 +262,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: native/core/build-windows
-          key: windows-x64-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/core/tests/CMakeLists.txt') }}
+          key: windows-x64-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake') }}
           restore-keys: windows-x64-${{ env.HERMES_TAG }}-
       # One Hermes build: the kernel tests build weft_core.dll as build-core.ps1
       # does (shared, static MSVC runtime), so the tested DLL is the shipped

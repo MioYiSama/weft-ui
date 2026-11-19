@@ -1,6 +1,6 @@
 {
   "name": "@weft-ui/platform",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Cross-platform APIs for Weft UI apps on Web, WeChat, and native",
   "license": "Apache-2.0",
   "homepage": "https://github.com/weft-ui/weft-ui",

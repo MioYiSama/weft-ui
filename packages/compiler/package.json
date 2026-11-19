@@ -1,6 +1,6 @@
 {
   "name": "@weft-ui/compiler",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Weft UI compiler, built from Rust to WebAssembly",
   "license": "Apache-2.0",
   "homepage": "https://github.com/weft-ui/weft-ui",

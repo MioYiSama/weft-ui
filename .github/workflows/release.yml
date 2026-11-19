@@ -1,0 +1,191 @@
+# Release: builds every prebuilt kernel on its own platform, packs all
+# published @weft-ui/* packages with them, and stages the versions that are
+# not on npm yet (npm trusted publishing, `npm stage publish`). A maintainer
+# then approves the staged versions with 2FA on npmjs.com. Run it from master
+# after the `pnpm version-packages` commit has landed; without `stage` it is a
+# dry run that builds, checks and packs (CONTRIBUTING.md, Releasing).
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: Stage the unpublished versions on npm (otherwise a dry run)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  # Keep in sync with crates/wasm/Cargo.toml.
+  WASM_BINDGEN: 0.2.130
+
+# Release builds start clean: no caches, so nothing a cache could hold ends
+# up in a published package.
+jobs:
+  wasm:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen@${{ env.WASM_BINDGEN }}
+      - run: cargo build -p weft-ui-wasm --release --target wasm32-unknown-unknown --locked
+      - run: wasm-bindgen --target web --out-dir packages/compiler/wasm --out-name weft_ui_wasm target/wasm32-unknown-unknown/release/weft_ui_wasm.wasm
+      - uses: actions/upload-artifact@v7
+        with:
+          name: compiler-wasm
+          path: packages/compiler/wasm
+          retention-days: 7
+
+  apple:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - run: brew install ninja
+      - run: native/apple/build-core.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kernel-apple
+          path: native/apple/build/WeftCore.xcframework
+          retention-days: 7
+
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      # The host hermesc of the cross builds is a Linux kernel build, which needs cargo.
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
+      - run: native/android/build-core.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kernel-android
+          path: native/android/build/jniLibs
+          retention-days: 7
+
+  windows:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-2025
+          - arch: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: native/windows/build-core.ps1 -Arch ${{ matrix.arch }}
+        shell: pwsh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kernel-windows-${{ matrix.arch }}
+          path: native/windows/build/win-${{ matrix.arch }}/weft_core.dll
+          retention-days: 7
+
+  # Built on the runner rather than in the Docker image, so the kernel needs
+  # the glibc of Ubuntu 24.04 instead of the image's newer one.
+  linux:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
+      - run: native/linux/build-core.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kernel-linux-${{ matrix.arch }}
+          path: |
+            native/linux/build/linux-${{ matrix.arch }}/libweft_core.so
+            native/linux/build/linux-${{ matrix.arch }}/bin/hermesc
+          retention-days: 7
+
+  publish:
+    needs: [wasm, apple, android, windows, linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # npm trusted publishing (OIDC) and provenance.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      # No registry-url: without NODE_AUTH_TOKEN it would write a placeholder
+      # token, while npm authenticates the stage through OIDC by itself.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: compiler-wasm
+          path: packages/compiler/wasm
+      - uses: actions/download-artifact@v8
+        with:
+          name: kernel-apple
+          path: native/apple/build/WeftCore.xcframework
+      - uses: actions/download-artifact@v8
+        with:
+          name: kernel-android
+          path: native/android/build/jniLibs
+      - uses: actions/download-artifact@v8
+        with:
+          name: kernel-windows-x64
+          path: native/windows/build/win-x64
+      - uses: actions/download-artifact@v8
+        with:
+          name: kernel-windows-arm64
+          path: native/windows/build/win-arm64
+      - uses: actions/download-artifact@v8
+        with:
+          name: kernel-linux-x64
+          path: native/linux/build/linux-x64
+      - uses: actions/download-artifact@v8
+        with:
+          name: kernel-linux-arm64
+          path: native/linux/build/linux-arm64
+      # Artifacts do not keep the executable bit.
+      - run: chmod +x native/linux/build/linux-arm64/bin/hermesc
+      - run: pnpm -r --filter "./packages/*" build
+      # The prepublishOnly check of each native package: every prebuilt kernel is present.
+      - run: for target in apple android windows linux; do node native/pack.mjs prepublishOnly "$target"; done
+      # pnpm pack runs the prepack and postpack scripts and turns workspace: ranges into versions.
+      - run: pnpm -r --filter "./packages/*" --filter "./native/*" pack --pack-destination "$RUNNER_TEMP/packages"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: ${{ runner.temp }}/packages
+          retention-days: 30
+      - name: Stage the unpublished versions
+        env:
+          STAGE: ${{ inputs.stage && github.ref == 'refs/heads/master' }}
+        run: |
+          dry=--dry-run
+          if [ "$STAGE" = true ]; then dry=; fi
+          for tarball in "$RUNNER_TEMP"/packages/*.tgz; do
+            manifest=$(tar -xOzf "$tarball" package/package.json)
+            spec="$(jq -r .name <<< "$manifest")@$(jq -r .version <<< "$manifest")"
+            if npm view "$spec" version > /dev/null 2>&1; then
+              echo "$spec is already on npm"
+              continue
+            fi
+            echo "staging $spec ${dry:+(dry run)}"
+            # shellcheck disable=SC2086 # dry is empty or one flag
+            npm stage publish --access public $dry "$tarball"
+          done

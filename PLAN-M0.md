@@ -285,6 +285,34 @@ flowchart LR
 | R1 | 首次 `npm publish` native 包：汇总 Windows x64/arm64、Linux x64/arm64 的内核，由维护者确认后发布 | N.6 |
 | R2 | Release 工作流：按矩阵（macOS、Windows、`ubuntu-24.04`、`ubuntu-24.04-arm`）构建全部内核，汇总后一次发布 | N.6 |
 
+R1、R2 在 M0 收尾后接着做（下一节）。
+
+---
+
+## R 发布（R1、R2）
+
+维护者的决定：Linux 内核不再依赖系统 ICU，改用 ICU4X；npm 发布不用 token，走可信发布（OIDC）加暂存发布（`npm stage publish`），由维护者在 npmjs.com 用 2FA 批准；首个包含 native 包的版本是 0.2.0。
+
+### U1 Linux 内核的 Unicode 后端改用 ICU4X
+
+- **问题**：Linux 上 Hermes 动态链接系统 ICU，预编译的 `libweft_core.so` 依赖 `libicuuc.so.78`，只能在 ICU 版本完全相同的发行版上加载。
+- **改动**：新增 Rust staticlib `crates/unicode`（ICU4X 2.x，内置全部 locale 数据），用 C ABI 提供比较、大小写、规范化和日期格式化；`native/core/src` 的 C++ 胶水实现 Hermes 的 4 个 `hermes::platform_unicode` 函数。仅在 Linux 上，CMake 把 `HERMES_PLATFORM_UNICODE` 设为 Hermes 没有实现的值，并跳过 Hermes 的 ICU 查找。构建环境与文档去掉 `libicu-dev`，Linux 内核构建改为需要 Rust。
+- **验收**：新内核测试 `core.unicode`（大小写、规范化、孤立代理项、`localeCompare`、`toLocaleString`）在 macOS、Windows、Linux 都通过；crate 的单元测试通过；Linux 上 `libweft_core.so` 和 `hermesc` 的 `NEEDED` 里没有 libicu，导出的符号仍然只有内核的 C ABI；C-linux、C-core、C-windows、C-rust 通过。
+- **提交**：`feat(core): ICU4X Unicode backend for the Linux kernel`
+
+### R2 Release 工作流
+
+- **改动**：新增 `.github/workflows/release.yml`，手动触发，`stage` 默认关闭。分平台构建内核：macOS 构建 Apple 和 Android，`windows-2025` 构建 x64，`windows-11-arm` 构建 arm64，`ubuntu-24.04` 构建 Linux x64，`ubuntu-24.04-arm` 构建 Linux arm64；Linux 直接在运行器上构建，用的是 Ubuntu 24.04 的 glibc。汇总后跑每个 native 包的 `prepublishOnly` 检查，`pnpm -r pack` 打包全部发布包并上传为 artifact，对 npm 上还没有的版本执行 `npm stage publish`；不勾 `stage`，或者不在 master 上运行时，加 `--dry-run`。发布构建不用缓存。CONTRIBUTING 增加「Releasing」一节：发布步骤、可信发布配置，以及新包的首次暂存。
+- **验收**：C-ci 通过；在 GitHub 上以 dry run 方式跑完整个工作流（m0 分支临时加 push 触发，不进 master）：全部内核构建成功，4 个 `prepublishOnly` 检查通过，9 个 tarball 上传成功，`npm stage publish --dry-run` 对每个未发布的版本都成功。
+- **提交**：`ci: release workflow staging every package on npm`
+
+### R1 0.2.0
+
+- **改动**：为 M0 加一个 minor changeset，运行 `pnpm version-packages`，9 个发布包一起升到 0.2.0，CHANGELOG 随之更新。
+- **验收**：`changeset status` 显示没有待处理的 changeset；9 个发布包都是 0.2.0，私有包的版本不变；`pnpm -r pack` 得到的 `@weft-ui/vite` 的 peerDependencies 是 `^0.2.0`。
+- **提交**：`chore: version packages 0.2.0`
+- **之后由维护者完成**：merge 到 master，以 dry run 运行 Release，下载 `packages` artifact，在本机暂存 4 个 native 包并批准；然后给 9 个包配置可信发布，以后的版本都由工作流暂存。
+
 ## 进度表
 
 状态取值同 PLAN.md：`☐` 未开始，`◐` 进行中，`☑` 完成，`⏸` 已提交但等待验证（写明缺哪项）。
@@ -311,6 +339,9 @@ flowchart LR
 | W2 夜间流水线 | ☑ | C-ci 通过；在 m0 分支临时加 push 触发（未进入 master），android-ui、ios-ui 在全部 M0 提交上通过（run 44506071160） |
 | H1 仓库卫生 | ☑ | C-ci 通过；issue 模板 YAML 可解析；CONTRIBUTING、SECURITY、README 的相对链接都指向存在的文件。GitHub 私有漏洞报告需要在仓库设置里开启 |
 | X1 收尾 | ☑ | docs 构建、C-rust（clippy 0）、C-ts（tsc 不超基线）、C-apps 通过；ROADMAP 第 2 节已更新 |
+| U1 ICU4X Unicode 后端 | ◐ | |
+| R2 Release 工作流 | ◐ | |
+| R1 0.2.0 | ☐ | |
 
 ## 执行中发现
 

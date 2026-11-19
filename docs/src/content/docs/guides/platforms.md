@@ -9,7 +9,7 @@ Use the same `.weft` files and TypeScript logic to build for the browser, WeChat
 
 ## Configure Vite
 
-Register `@weft-ui/vite` in `vite.config.ts`, as in the [todo example](https://github.com/MioYiSama/weft-ui/blob/master/example/vite.config.ts):
+Register `@weft-ui/vite` in `vite.config.ts`, as in the [todo example](https://github.com/weft-ui/weft-ui/blob/master/example/vite.config.ts):
 
 ```ts
 import { defineConfig } from "vite";
@@ -56,13 +56,13 @@ Each shell ships a prebuilt kernel. Install the platform tools below to build th
 
 Web is ordinary Vite output in `apps/web/`. For other targets, Weft UI copies a project template into `apps/<platform>/` on the first build. The project files outside `weft/` are yours: edit signing, icons, or platform configuration there. Later builds regenerate `apps/<platform>/weft/`, not the template files. Changing `app.id` or `app.name` does not update an existing project; edit its files directly.
 
-For non-Web targets, `weft/js/index.js` contains the bundled logic. For native targets, Weft UI also writes generated views, `layout.json`, and Hermes bytecode (`weft/bundle.hbc`, except on Android). The [view protocol spec](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.md) describes the layout and the connection between the logic and view layers.
+For non-Web targets, `weft/js/index.js` contains the bundled logic. For native targets, Weft UI also writes generated views, `layout.json`, and Hermes bytecode (`weft/bundle.hbc`, except on Android). The [view protocol spec](https://github.com/weft-ui/weft-ui/blob/master/protocol/SPEC.md) describes the layout and the connection between the logic and view layers.
 
 Set `WEFT_NATIVE=0` to generate the native project without running its build tool. On a host that cannot run the target’s build tool, the plugin generates the project and warns instead. Either way, bytecode generation still needs `hermesc`. The plugin normally finds it for you; set `WEFT_HERMESC` to use a different binary from the same Hermes release as the kernel.
 
 ## Web
 
-In the [example’s `index.html`](https://github.com/MioYiSama/weft-ui/blob/master/example/index.html), the module script loads `/src/index.ts` and `run(app)` mounts into the element with `id="app"`. Use Vite’s dev server to try changes in a browser, then build the static site into `apps/web/`:
+In the [example’s `index.html`](https://github.com/weft-ui/weft-ui/blob/master/example/index.html), the module script loads `/src/index.ts` and `run(app)` mounts into the element with `id="app"`. Use Vite’s dev server to try changes in a browser, then build the static site into `apps/web/`:
 
 ```sh
 pnpm --filter example exec vite
@@ -77,9 +77,9 @@ To check the UI in the browser, add a todo, tick its checkbox, then remove it.
 pnpm --filter example build:wechat
 ```
 
-Open `example/apps/wechat/` in WeChat DevTools, not its `weft/` subdirectory. The generated WXML and logic bundle live in `weft/`. The [template](https://github.com/MioYiSama/weft-ui/blob/master/packages/vite/templates/wechat/project.config.json) starts with `touristappid`; to use your registered Mini Program, set `appid` in the project’s `project.config.json`.
+Open `example/apps/wechat/` in WeChat DevTools, not its `weft/` subdirectory. The generated WXML and logic bundle live in `weft/`. The [template](https://github.com/weft-ui/weft-ui/blob/master/packages/vite/templates/wechat/project.config.json) starts with `touristappid`; to use your registered Mini Program, set `appid` in the project’s `project.config.json`.
 
-In the simulator, try the same add, check, and remove flow. The workspace also has [automated Web and Mini Program tests](https://github.com/MioYiSama/weft-ui/blob/master/tests/vite/platforms.test.ts) that run without WeChat DevTools:
+In the simulator, try the same add, check, and remove flow. The workspace also has [automated Web and Mini Program tests](https://github.com/weft-ui/weft-ui/blob/master/tests/vite/platforms.test.ts) that run without WeChat DevTools:
 
 ```sh
 pnpm --filter @weft-ui/tests test
@@ -151,7 +151,7 @@ The plugin builds the CMake project in `apps/linux/`, which links the generated 
 
 ### Linux in Docker
 
-The [Docker Compose setup](https://github.com/MioYiSama/weft-ui/blob/master/native/linux/docker/compose.yaml) includes the Linux build tools and an XFCE desktop. From the workspace root on the host, build the compiler WASM, then start and enter the container:
+The [Docker Compose setup](https://github.com/weft-ui/weft-ui/blob/master/native/linux/docker/compose.yaml) includes the Linux build tools and an XFCE desktop. From the workspace root on the host, build the compiler WASM, then start and enter the container:
 
 ```sh
 pnpm build:wasm

@@ -5,13 +5,13 @@ sidebar:
   order: 4
 ---
 
-在应用入口和[逻辑层](/zh/guides/logic/)中，从 `@weft-ui/platform` 导入接口。Web、微信小程序和原生应用共用这套 API，具体可用的接口和类型见 [TypeScript 声明](https://github.com/MioYiSama/weft-ui/blob/master/packages/platform/src/index.d.ts)。
+在应用入口和[逻辑层](/zh/guides/logic/)中，从 `@weft-ui/platform` 导入接口。Web、微信小程序和原生应用共用这套 API，具体可用的接口和类型见 [TypeScript 声明](https://github.com/weft-ui/weft-ui/blob/master/packages/platform/src/index.d.ts)。
 
 ## 用 `run` 启动应用
 
 `run(app: App): void` 接收生成的根组件实例。包导出的 `App` 类型描述了实例的生命周期：`mount(target: never): void` 和 `unmount(): void`。宿主负责提供挂载目标，启动应用时无需自己调用 `mount`。
 
-[待办事项示例](https://github.com/MioYiSama/weft-ui/blob/master/example/src/index.ts)中的 `App` 由 `App.weft` 生成。先注册需要的事件处理器，再调用 `run`：
+[待办事项示例](https://github.com/weft-ui/weft-ui/blob/master/example/src/index.ts)中的 `App` 由 `App.weft` 生成。先注册需要的事件处理器，再调用 `run`：
 
 ```ts
 import { run } from "@weft-ui/platform";
@@ -127,7 +127,7 @@ app.onClick(async (model) => {
 | Windows | `HttpClient` | 应用本地数据目录中的 `storage.json` | `Environment.OSVersion.Version` 转成的字符串 |
 | Linux | libsoup | 应用的 XDG 用户数据目录中的 `storage.json` | 发行版版本标识，取不到时用内核版本 |
 
-Weft UI 自带的五个原生平台壳均实现了这两项能力。原生实现会向正在运行的平台壳查询支持情况。宿主配置见[平台指南](/zh/guides/platforms/)，原生调用格式见[视图协议规范](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.zh-CN.md#平台调用)。
+Weft UI 自带的五个原生平台壳均实现了这两项能力。原生实现会向正在运行的平台壳查询支持情况。宿主配置见[平台指南](/zh/guides/platforms/)，原生调用格式见[视图协议规范](https://github.com/weft-ui/weft-ui/blob/master/protocol/SPEC.zh-CN.md#平台调用)。
 
 ## 用 `PlatformError` 处理不可用的 API
 
@@ -137,6 +137,6 @@ Weft UI 自带的五个原生平台壳均实现了这两项能力。原生实现
 
 ## 构建时如何选择实现
 
-各目标都使用同一个 `@weft-ui/platform` 导入路径。[包的导出配置](https://github.com/MioYiSama/weft-ui/blob/master/packages/platform/package.json)提供共用的 `types` 入口和三个运行时导出条件：Web 使用 `weft-web`，微信小程序使用 `weft-wechat`，iOS、macOS、Android、Windows 和 Linux 使用 `weft-native`。运行时没有 `default` 导出条件。
+各目标都使用同一个 `@weft-ui/platform` 导入路径。[包的导出配置](https://github.com/weft-ui/weft-ui/blob/master/packages/platform/package.json)提供共用的 `types` 入口和三个运行时导出条件：Web 使用 `weft-web`，微信小程序使用 `weft-wechat`，iOS、macOS、Android、Windows 和 Linux 使用 `weft-native`。运行时没有 `default` 导出条件。
 
-[`@weft-ui/vite` 插件](https://github.com/MioYiSama/weft-ui/blob/master/packages/vite/src/index.ts)把 `weft-<platform>` 加入各 Vite 构建环境的解析条件；如果是原生目标，再加入 `weft-native`。插件还会把构建期常量 `__WEFT_PLATFORM__` 定义为该目标的名称。开发服务器使用 Web 实现。在构建时选择目标即可，例如 `WEFT_PLATFORM=android vite build`，无需在运行时按平台切换导入。构建配置见[工具指南](/zh/guides/tooling/)。
+[`@weft-ui/vite` 插件](https://github.com/weft-ui/weft-ui/blob/master/packages/vite/src/index.ts)把 `weft-<platform>` 加入各 Vite 构建环境的解析条件；如果是原生目标，再加入 `weft-native`。插件还会把构建期常量 `__WEFT_PLATFORM__` 定义为该目标的名称。开发服务器使用 Web 实现。在构建时选择目标即可，例如 `WEFT_PLATFORM=android vite build`，无需在运行时按平台切换导入。构建配置见[工具指南](/zh/guides/tooling/)。

@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/MioYiSama/weft-ui/security/advisories/new
+    url: https://github.com/weft-ui/weft-ui/security/advisories/new
     about: Report vulnerabilities privately, as SECURITY.md describes.
   - name: Documentation
     url: https://weftui.mioyi.net/

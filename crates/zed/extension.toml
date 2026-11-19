@@ -11,6 +11,6 @@ languages = ["Weft"]
 
 # Zed clones this commit and builds `path`; point `rev` at the latest commit that changed the grammar.
 [grammars.weft]
-repository = "https://github.com/MioYiSama/weft-ui"
+repository = "https://github.com/weft-ui/weft-ui"
 rev = "cbd7ab6d6c1d67ea2ce978ec76c7a718ba641011"
 path = "packages/tree-sitter"

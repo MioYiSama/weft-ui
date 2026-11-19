@@ -2,7 +2,7 @@
 version = "0.0.0"
 edition = "2024"
 license = "Apache-2.0"
-repository = "https://github.com/MioYiSama/weft-ui"
+repository = "https://github.com/weft-ui/weft-ui"
 
 [workspace]
 resolver = "3"

@@ -5,13 +5,13 @@ sidebar:
   order: 4
 ---
 
-Import from `@weft-ui/platform` in your entry point and [logic layer](/guides/logic/). The package gives you one API for Web, WeChat, and native apps. The [TypeScript declarations](https://github.com/MioYiSama/weft-ui/blob/master/packages/platform/src/index.d.ts) define what is portable.
+Import from `@weft-ui/platform` in your entry point and [logic layer](/guides/logic/). The package gives you one API for Web, WeChat, and native apps. The [TypeScript declarations](https://github.com/weft-ui/weft-ui/blob/master/packages/platform/src/index.d.ts) define what is portable.
 
 ## Start the app with `run`
 
 `run(app: App): void` takes an instance of your generated root component. The package's `App` type describes the lifecycle of that instance: `mount(target: never): void` and `unmount(): void`. The host supplies the target, so don't call `mount` yourself when starting the app.
 
-In the [todo example](https://github.com/MioYiSama/weft-ui/blob/master/example/src/index.ts), the generated `App` comes from `App.weft`. Register any event handlers before calling `run`:
+In the [todo example](https://github.com/weft-ui/weft-ui/blob/master/example/src/index.ts), the generated `App` comes from `App.weft`. Register any event handlers before calling `run`:
 
 ```ts
 import { run } from "@weft-ui/platform";
@@ -127,7 +127,7 @@ To forget the saved flag, use `await storage.remove("clicked")`. That removes th
 | Windows | `HttpClient` | `storage.json` in the app's local application data directory | `Environment.OSVersion.Version` as a string |
 | Linux | libsoup | `storage.json` in the app's XDG user data directory | Distribution version ID, or kernel release if unavailable |
 
-All five native shells supplied by Weft UI implement both capabilities. The native implementation asks the running shell what it supports. See [Platforms](/guides/platforms/) for host setup or the [view protocol spec](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.md#platform-calls) for the native call format.
+All five native shells supplied by Weft UI implement both capabilities. The native implementation asks the running shell what it supports. See [Platforms](/guides/platforms/) for host setup or the [view protocol spec](https://github.com/weft-ui/weft-ui/blob/master/protocol/SPEC.md#platform-calls) for the native call format.
 
 ## Handle unavailable APIs with `PlatformError`
 
@@ -137,6 +137,6 @@ Network, storage, and JSON parsing failures can still reject with other errors. 
 
 ## How the implementation is selected
 
-Keep the same `@weft-ui/platform` import on every target. The [package exports](https://github.com/MioYiSama/weft-ui/blob/master/packages/platform/package.json) provide a shared `types` entry and three runtime conditions: `weft-web` for Web, `weft-wechat` for WeChat, and `weft-native` for iOS, macOS, Android, Windows, and Linux. There is no `default` runtime export condition.
+Keep the same `@weft-ui/platform` import on every target. The [package exports](https://github.com/weft-ui/weft-ui/blob/master/packages/platform/package.json) provide a shared `types` entry and three runtime conditions: `weft-web` for Web, `weft-wechat` for WeChat, and `weft-native` for iOS, macOS, Android, Windows, and Linux. There is no `default` runtime export condition.
 
-The [`@weft-ui/vite` plugin](https://github.com/MioYiSama/weft-ui/blob/master/packages/vite/src/index.ts) adds `weft-<platform>` to each Vite build environment's resolution conditions, plus `weft-native` for native targets. It also defines the build-time constant `__WEFT_PLATFORM__` with that target name. The dev server uses the Web implementation. Select a target at build time (for example, `WEFT_PLATFORM=android vite build`) instead of branching imports at runtime. See [Tooling](/guides/tooling/) for build configuration.
+The [`@weft-ui/vite` plugin](https://github.com/weft-ui/weft-ui/blob/master/packages/vite/src/index.ts) adds `weft-<platform>` to each Vite build environment's resolution conditions, plus `weft-native` for native targets. It also defines the build-time constant `__WEFT_PLATFORM__` with that target name. The dev server uses the Web implementation. Select a target at build time (for example, `WEFT_PLATFORM=android vite build`) instead of branching imports at runtime. See [Tooling](/guides/tooling/) for build configuration.

@@ -9,7 +9,7 @@ The `.weft` view reads the app model to render. Its inline event handlers can ch
 
 ## Create the app
 
-This version of the [todo example](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft) binds a text input to `model.draft` and a checkbox to each todo's `done` field. Save the view as `App.weft`:
+This version of the [todo example](https://github.com/weft-ui/weft-ui/blob/master/example/src/App.weft) binds a text input to `model.draft` and a checkbox to each todo's `done` field. Save the view as `App.weft`:
 
 ```weft
 model Todo {
@@ -103,7 +103,7 @@ app.onDraft((model, { value }) => {
 
 If the draft is too long, the handler leaves `model.draft` unchanged and the input goes back to the last bound value. The same rule applies to a checkbox. A handler can also write a different value, for example to normalize text; the control displays that value instead of the proposed edit. Make the decision before any `await` so the edit can be applied or rejected in the current update. Returning `true` or `false` from your handler does not control acceptance.
 
-On the web, the runtime restores the bound value after the flush if the DOM value differs. In protocol-based views, the runtime compares the proposed value with the bound value after the synchronous flush and tells the view whether to restore it. For details, see the [grammar's event arguments](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.md#event-arguments) and the [view protocol's event rules](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.md#events).
+On the web, the runtime restores the bound value after the flush if the DOM value differs. In protocol-based views, the runtime compares the proposed value with the bound value after the synchronous flush and tells the view whether to restore it. For details, see the [grammar's event arguments](https://github.com/weft-ui/weft-ui/blob/master/crates/parser/GRAMMAR.md#event-arguments) and the [view protocol's event rules](https://github.com/weft-ui/weft-ui/blob/master/protocol/SPEC.md#events).
 
 ## Respond to mount and unmount
 

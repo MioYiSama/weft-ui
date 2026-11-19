@@ -5,7 +5,7 @@ sidebar:
   order: 6
 ---
 
-编辑 `.weft` 文件时，可以用 Weft UI 语言服务器查看错误、补全代码。[待办示例](https://github.com/MioYiSama/weft-ui/blob/master/example/src/index.ts)中的 `import { App } from "./App.weft"` 则由 TypeScript 内容映射器提供类型信息。同一个项目可以同时使用这两种工具。
+编辑 `.weft` 文件时，可以用 Weft UI 语言服务器查看错误、补全代码。[待办示例](https://github.com/weft-ui/weft-ui/blob/master/example/src/index.ts)中的 `import { App } from "./App.weft"` 则由 TypeScript 内容映射器提供类型信息。同一个项目可以同时使用这两种工具。
 
 ## 安装 CLI
 
@@ -35,7 +35,7 @@ weft fmt --stdin --path example/src/App.weft < example/src/App.weft
 
 ## 使用 Weft UI 语言服务器
 
-`weft lsp` 通过标准输入和输出与编辑器通信，使用语言服务器协议（LSP）。在已接入的编辑器里打开 [`App.weft`](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft)，就可以试用以下功能：
+`weft lsp` 通过标准输入和输出与编辑器通信，使用语言服务器协议（LSP）。在已接入的编辑器里打开 [`App.weft`](https://github.com/weft-ui/weft-ui/blob/master/example/src/App.weft)，就可以试用以下功能：
 
 - **诊断：** 编辑时会报告语法或语义错误。比如把 `todo.name` 改成 `Todo` 中没有声明的字段，就会看到错误提示。
 - **补全：** 在循环体内输入 `todo.`，可以看到模型的字段。服务器还会根据当前位置提示可用的名称和关键字，包括尚未填写的具名参数。
@@ -46,7 +46,7 @@ Weft UI 语言服务器不提供查找引用或重命名。下文介绍的 TypeS
 
 ### Zed
 
-通过 [rustup](https://rustup.rs/) 安装 Rust 后，在 Zed 的命令面板运行 `zed: install dev extension`，选择源码仓库里的 [`crates/zed/`](https://github.com/MioYiSama/weft-ui/blob/master/crates/zed/)。扩展会从当前工作树的 `PATH` 查找 `weft`，并运行 `weft lsp`。如果 Zed 找不到它，在设置中将 `lsp.weft.binary.path` 指向该可执行文件的绝对路径：
+通过 [rustup](https://rustup.rs/) 安装 Rust 后，在 Zed 的命令面板运行 `zed: install dev extension`，选择源码仓库里的 [`crates/zed/`](https://github.com/weft-ui/weft-ui/blob/master/crates/zed/)。扩展会从当前工作树的 `PATH` 查找 `weft`，并运行 `weft lsp`。如果 Zed 找不到它，在设置中将 `lsp.weft.binary.path` 指向该可执行文件的绝对路径：
 
 ```jsonc
 {
@@ -58,7 +58,7 @@ Weft UI 语言服务器不提供查找引用或重命名。下文介绍的 TypeS
 }
 ```
 
-扩展还会从固定的提交加载 [Weft UI 的 Tree-sitter 语法](https://github.com/MioYiSama/weft-ui/blob/master/packages/tree-sitter/)，用于语法高亮、括号匹配、缩进和文档大纲。
+扩展还会从固定的提交加载 [Weft UI 的 Tree-sitter 语法](https://github.com/weft-ui/weft-ui/blob/master/packages/tree-sitter/)，用于语法高亮、括号匹配、缩进和文档大纲。
 
 ### 其他编辑器
 
@@ -66,9 +66,9 @@ Weft UI 语言服务器不提供查找引用或重命名。下文介绍的 TypeS
 
 ## 用 TypeScript 检查 Weft UI 导入
 
-使用支持[内容映射器](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers)的 TypeScript 版本。这个功能从 7.1 开始提供。将 `@weft-ui/content-mapper` 加到开发依赖里。[示例项目](https://github.com/MioYiSama/weft-ui/blob/master/example/package.json)已经将它列为工作区依赖；按[快速开始](/zh/guides/getting-started/)安装依赖，再运行 `pnpm build` 构建编译器的 WASM 和各个包。
+使用支持[内容映射器](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers)的 TypeScript 版本。这个功能从 7.1 开始提供。将 `@weft-ui/content-mapper` 加到开发依赖里。[示例项目](https://github.com/weft-ui/weft-ui/blob/master/example/package.json)已经将它列为工作区依赖；按[快速开始](/zh/guides/getting-started/)安装依赖，再运行 `pnpm build` 构建编译器的 WASM 和各个包。
 
-参照[示例配置](https://github.com/MioYiSama/weft-ui/blob/master/example/tsconfig.json)，将 `contentMappers` 加到 `tsconfig.json` 的顶层，不要放进 `compilerOptions`：
+参照[示例配置](https://github.com/weft-ui/weft-ui/blob/master/example/tsconfig.json)，将 `contentMappers` 加到 `tsconfig.json` 的顶层，不要放进 `compilerOptions`：
 
 ```jsonc
 {

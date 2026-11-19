@@ -2,6 +2,8 @@
 name = "weft-ui-cli"
 version = { workspace = true }
 edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 description = "Command-line tools for Weft UI: formatter and language server"
 
 [[bin]]

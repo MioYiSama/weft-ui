@@ -1,8 +1,18 @@
 {
   "name": "@weft-ui/platform",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Cross-platform APIs for Weft UI apps on Web, WeChat, and native",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/MioYiSama/weft-ui",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MioYiSama/weft-ui.git",
+    "directory": "packages/platform"
+  },
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
@@ -11,7 +21,20 @@
       "weft-native": "./src/native.ts"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "weft-web": "./dist/web.js",
+        "weft-wechat": "./dist/wechat.js",
+        "weft-native": "./dist/native.js"
+      }
+    }
+  },
   "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp src/index.d.ts dist/",
+    "prepublishOnly": "pnpm build",
     "test": "vitest run"
   },
   "dependencies": {

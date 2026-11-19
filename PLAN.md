@@ -45,7 +45,7 @@
 
 ```sh
 pnpm install
-pnpm build:wasm
+pnpm build
 native/apple/build-core.sh       # WeftCore.xcframework，供 swift test 和 Apple UI 测试使用
 native/android/build-core.sh     # libweft.so，Android 单元测试的 preBuild 需要
 ```
@@ -57,7 +57,7 @@ native/android/build-core.sh     # libweft.so，Android 单元测试的 preBuild
 | 代号 | 命令 | 通过条件 |
 | --- | --- | --- |
 | C-rust | `cargo fmt --all --check && cargo test --workspace && cargo clippy --workspace --all-targets 2>&1 \| grep -c '^warning'` | 前两条通过；clippy 警告数不超过基线 |
-| C-ts | `pnpm build:wasm && pnpm test`，再在 `packages/runtime`、`packages/platform`、`packages/vite`、`packages/content-mapper`、`tests` 下各运行 `pnpm exec tsc -p .` | 测试全部通过；tsc 错误数不超过基线 |
+| C-ts | `pnpm build && pnpm test`，再在 `packages/runtime`、`packages/platform`、`packages/vite`、`packages/content-mapper`、`tests` 下各运行 `pnpm exec tsc -p .` | 测试全部通过；tsc 错误数不超过基线 |
 | C-apps | 运行 `/tmp/weft-check-apps.sh`，脚本见下 | 无差异输出，退出码 0 |
 | C-core | `cmake -S native/core -B native/core/build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build native/core/build && ctest --test-dir native/core/build --output-on-failure` | 全部通过 |
 | C-apple | `swift test --package-path native/apple` | 全部通过 |

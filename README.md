@@ -6,7 +6,7 @@ A cross-platform UI library.
 
 ```sh
 pnpm install
-pnpm build:wasm
+pnpm build                      # compiler WASM and package builds
 pnpm --filter example build:web      # Vite app in example/apps/web/
 pnpm --filter example build:wechat   # mini program project in example/apps/wechat/
 pnpm gen:protocol               # regenerate protocol constants from protocol/weft.protocol.json
@@ -56,7 +56,7 @@ Zed: run `zed: install dev extension` and pick `crates/zed/` (needs Rust install
 
 ## TypeScript
 
-Types of `.weft` imports come from the [TypeScript 7.1 content mapper](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers) `@weft-ui/content-mapper` (after `pnpm build:wasm`). Add it as a dev dependency and register it in `tsconfig.json`, as `example/tsconfig.json` does:
+Types of `.weft` imports come from the [TypeScript 7.1 content mapper](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers) `@weft-ui/content-mapper` (after `pnpm build`). Add it as a dev dependency and register it in `tsconfig.json`, as `example/tsconfig.json` does:
 
 ```jsonc
 "contentMappers": [{ "package": "@weft-ui/content-mapper", "extensions": [".weft"] }]

@@ -2,6 +2,8 @@
 name = "weft-ui-transformer"
 version = { workspace = true }
 edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 description = "Semantic analysis and platform backends for Weft UI"
 
 [dependencies]

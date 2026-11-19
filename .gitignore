@@ -1,6 +1,7 @@
 /target
 node_modules/
 /packages/compiler/wasm/
+/packages/*/dist/
 *.d.weft.ts
 /native/core/build
 /docs/dist

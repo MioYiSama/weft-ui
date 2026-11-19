@@ -22,7 +22,7 @@ cargo install wasm-bindgen-cli --version 0.2.130 --locked
 git clone https://github.com/MioYiSama/weft-ui.git
 cd weft-ui
 pnpm install
-pnpm build:wasm
+pnpm build
 ```
 
 ## 运行 Web 示例

@@ -2,6 +2,8 @@
 name = "weft-ui-formatter"
 version = { workspace = true }
 edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 description = "Source formatter for the Weft UI language"
 
 [dependencies]

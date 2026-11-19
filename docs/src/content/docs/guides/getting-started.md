@@ -22,7 +22,7 @@ Clone the repository, install dependencies, and build the compiler:
 git clone https://github.com/MioYiSama/weft-ui.git
 cd weft-ui
 pnpm install
-pnpm build:wasm
+pnpm build
 ```
 
 ## Run the Web example

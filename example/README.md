@@ -16,7 +16,7 @@ From the repository root:
 
 ```sh
 pnpm install
-pnpm build:wasm                                         # the compiler, once
+pnpm build                                              # the compiler and packages, once
 pnpm --filter example exec vite                         # dev server
 pnpm --filter example build:web                         # or a production build into apps/web/
 pnpm --filter example exec vite preview --outDir apps/web

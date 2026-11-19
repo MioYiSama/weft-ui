@@ -66,7 +66,7 @@ If your editor's LSP client lets you register a custom server, associate it with
 
 ## Type-check Weft UI imports with TypeScript
 
-Use a TypeScript version that supports [content mappers](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers), introduced in 7.1. Add `@weft-ui/content-mapper` as a dev dependency. The [example project](https://github.com/MioYiSama/weft-ui/blob/master/example/package.json) already declares it as a workspace dependency; follow [Getting started](/guides/getting-started/) to install dependencies and build the compiler WASM with `pnpm build:wasm`.
+Use a TypeScript version that supports [content mappers](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers), introduced in 7.1. Add `@weft-ui/content-mapper` as a dev dependency. The [example project](https://github.com/MioYiSama/weft-ui/blob/master/example/package.json) already declares it as a workspace dependency; follow [Getting started](/guides/getting-started/) to install dependencies and build the compiler WASM and packages with `pnpm build`.
 
 Add `contentMappers` at the top level of `tsconfig.json`, outside `compilerOptions`, as in the [example config](https://github.com/MioYiSama/weft-ui/blob/master/example/tsconfig.json):
 

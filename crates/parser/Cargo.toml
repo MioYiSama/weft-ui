@@ -2,6 +2,8 @@
 name = "weft-ui-parser"
 version = { workspace = true }
 edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 description = "Parser and module loader for Weft UI"
 
 [dependencies]

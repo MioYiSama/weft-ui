@@ -66,7 +66,7 @@ Weft UI 语言服务器不提供查找引用或重命名。下文介绍的 TypeS
 
 ## 用 TypeScript 检查 Weft UI 导入
 
-使用支持[内容映射器](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers)的 TypeScript 版本。这个功能从 7.1 开始提供。将 `@weft-ui/content-mapper` 加到开发依赖里。[示例项目](https://github.com/MioYiSama/weft-ui/blob/master/example/package.json)已经将它列为工作区依赖；按[快速开始](/zh/guides/getting-started/)安装依赖，再运行 `pnpm build:wasm` 构建编译器的 WASM。
+使用支持[内容映射器](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers)的 TypeScript 版本。这个功能从 7.1 开始提供。将 `@weft-ui/content-mapper` 加到开发依赖里。[示例项目](https://github.com/MioYiSama/weft-ui/blob/master/example/package.json)已经将它列为工作区依赖；按[快速开始](/zh/guides/getting-started/)安装依赖，再运行 `pnpm build` 构建编译器的 WASM 和各个包。
 
 参照[示例配置](https://github.com/MioYiSama/weft-ui/blob/master/example/tsconfig.json)，将 `contentMappers` 加到 `tsconfig.json` 的顶层，不要放进 `compilerOptions`：
 

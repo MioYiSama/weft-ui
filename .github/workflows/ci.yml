@@ -1,0 +1,210 @@
+# Checks of every pull request, on every platform. The commands follow the
+# check codes of PLAN.md (C-rust, C-ts, C-core, C-linux, C-apple, C-android,
+# C-windows); CONTRIBUTING.md describes them. The UI flows run nightly
+# (nightly.yml).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  # Keep in sync with crates/wasm/Cargo.toml.
+  WASM_BINDGEN: 0.2.130
+  # Keep in sync with WEFT_HERMES_TAG in native/core/CMakeLists.txt; part of the kernel cache keys.
+  HERMES_TAG: hermes-v260318099.0.8
+
+jobs:
+  rust:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo test --workspace
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  # The compiler WASM of @weft-ui/compiler, shared by every job that compiles
+  # .weft files.
+  wasm:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen@${{ env.WASM_BINDGEN }}
+      # The build:wasm script of packages/compiler, without installing the workspace.
+      - run: cargo build -p weft-ui-wasm --release --target wasm32-unknown-unknown
+      - run: wasm-bindgen --target web --out-dir packages/compiler/wasm --out-name weft_ui_wasm target/wasm32-unknown-unknown/release/weft_ui_wasm.wasm
+      - uses: actions/upload-artifact@v7
+        with:
+          name: compiler-wasm
+          path: packages/compiler/wasm
+          retention-days: 3
+
+  ts:
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - run: pnpm -r --filter "./packages/*" build
+      - run: pnpm test
+      # TypeScript errors may not grow beyond the counts recorded when the
+      # check was introduced (PLAN-M0.md B0). `tests` imports .weft files,
+      # typed by the content mapper, which runs only with --runExternalCode.
+      - name: tsc error budget
+        run: |
+          status=0
+          for entry in "packages/runtime 0" "packages/platform 0" "packages/vite 16" "packages/content-mapper 0" "tests 56 --runExternalCode"; do
+            read -r dir budget flags <<< "$entry"
+            # shellcheck disable=SC2086 # flags is empty or one word
+            count=$( (cd "$dir" && pnpm exec tsc -p . $flags || true) | grep -c 'error TS' || true)
+            echo "$dir: $count errors (budget $budget)"
+            if [ "$count" -gt "$budget" ]; then status=1; fi
+          done
+          exit $status
+      - run: pnpm --filter docs build
+
+  core:
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build libicu-dev
+      - uses: actions/cache@v6
+        with:
+          path: native/core/build
+          key: core-linux-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/core/tests/CMakeLists.txt') }}
+          restore-keys: core-linux-${{ env.HERMES_TAG }}-
+      - run: cmake -S native/core -B native/core/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build native/core/build
+      - run: ctest --test-dir native/core/build --output-on-failure
+
+  linux:
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: compiler-wasm
+          path: packages/compiler/wasm
+      - uses: actions/cache@v6
+        with:
+          path: native/linux/build/linux-x64
+          key: linux-x64-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt') }}
+          restore-keys: linux-x64-${{ env.HERMES_TAG }}-
+      # The container's user (ubuntu, uid 1000) writes to the mounted workspace.
+      - run: sudo chown -R 1000:1000 "$GITHUB_WORKSPACE"
+      - run: docker compose -f native/linux/docker/compose.yaml up -d --build
+      - name: C-linux
+        run: |
+          docker compose -f native/linux/docker/compose.yaml exec -T linux bash -lc '
+            set -euo pipefail
+            pnpm install --frozen-lockfile
+            native/linux/build-core.sh
+            cmake -S native/linux -B /tmp/weft-linux-tests -G Ninja -DWEFT_LINUX_TESTS=ON
+            cmake --build /tmp/weft-linux-tests
+            ctest --test-dir /tmp/weft-linux-tests --output-on-failure'
+      # Let the cache step read and save what the container wrote.
+      - if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
+
+  apple:
+    needs: wasm
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - run: brew install ninja
+      - uses: actions/cache@v6
+        with:
+          path: |
+            native/core/build
+            native/apple/build
+          key: apple-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/apple/build-core.sh') }}
+          restore-keys: apple-${{ env.HERMES_TAG }}-
+      - run: native/apple/build-core.sh
+        env:
+          WEFT_APPLE_SDKS: macosx
+      - run: swift test --package-path native/apple
+
+  android:
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build libicu-dev
+      - uses: actions/cache@v6
+        with:
+          path: |
+            native/core/build
+            native/android/build
+          key: android-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/android/CMakeLists.txt', 'native/android/build-core.sh') }}
+          restore-keys: android-${{ env.HERMES_TAG }}-
+      - run: native/android/build-core.sh
+        env:
+          WEFT_ANDROID_ABIS: x86_64
+      - run: pnpm --filter example build:android
+        env:
+          WEFT_NATIVE: "0"
+      - run: example/apps/android/gradlew -p example/apps/android :weft-android:testDebugUnitTest
+
+  windows:
+    needs: wasm
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/cache@v6
+        with:
+          path: |
+            native/windows/build/win-x64
+            native/core/build-windows
+          key: windows-x64-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/core/tests/CMakeLists.txt', 'native/windows/build-core.ps1') }}
+          restore-keys: windows-x64-${{ env.HERMES_TAG }}-
+      - run: native/windows/build-core.ps1 -Arch x64
+      - name: Kernel tests and conformance (shared library)
+        run: |
+          # The C++ toolchain and the CMake and Ninja that come with Visual Studio, as build-core.ps1 sets them up.
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          Import-Module "$vs\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+          Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64' | Out-Null
+          $tools = "$vs\Common7\IDE\CommonExtensions\Microsoft\CMake"
+          $env:PATH = "$tools\CMake\bin;$tools\Ninja;$env:PATH"
+          cmake -S native/core -B native/core/build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DWEFT_CORE_SHARED=ON
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --build native/core/build-windows
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ctest --test-dir native/core/build-windows --output-on-failure
+      - run: dotnet test native/windows/Weft.WinUI.Tests -nologo

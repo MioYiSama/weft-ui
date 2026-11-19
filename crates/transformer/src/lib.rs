@@ -9,6 +9,7 @@
 //! their view files and the JS logic modules emitted by [`bridge`].
 
 pub mod bridge;
+mod code;
 pub mod color;
 pub mod compose;
 mod deps;

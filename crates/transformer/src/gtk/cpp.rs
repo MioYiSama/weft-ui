@@ -1,52 +1,39 @@
 //! Indented C++ source and string literals.
 
-use std::fmt::Write as _;
+use std::fmt::{Display, Write as _};
+
+use crate::code::Indented;
 
 /// C++ source written line by line, with braces on the opening line.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct Code {
-    text: String,
-    depth: usize,
+    pub(crate) writer: Indented,
 }
 
 impl Code {
-    pub(crate) fn line(&mut self, line: impl AsRef<str>) {
-        for _ in 0..self.depth {
-            self.text.push_str("  ");
+    pub(crate) fn new() -> Self {
+        Self {
+            writer: Indented::new("  "),
         }
-        self.text.push_str(line.as_ref());
-        self.text.push('\n');
     }
 
     /// Writes a line ending with an opening brace, then indents the block.
-    pub(crate) fn open(&mut self, line: impl AsRef<str>) {
-        self.line(format!("{} {{", line.as_ref()));
-        self.depth += 1;
+    pub(crate) fn open(&mut self, line: impl Display) {
+        self.writer.line(format_args!("{line} {{"));
+        self.writer.indent();
     }
 
     /// Ends the matching block and writes its closing brace and suffix.
-    pub(crate) fn close(&mut self, suffix: &str) {
-        self.depth = self
-            .depth
-            .checked_sub(1)
-            .expect("every close has a matching open");
-        self.line(format!("}}{suffix}"));
+    pub(crate) fn close(&mut self, suffix: impl Display) {
+        self.writer.dedent();
+        self.writer.line(format_args!("}}{suffix}"));
     }
 
     /// Writes an access specifier one level out, as clang-format does.
-    pub(crate) fn access(&mut self, specifier: &str) {
-        self.depth -= 1;
-        self.line(format!(" {specifier}:"));
-        self.depth += 1;
-    }
-
-    pub(crate) fn blank(&mut self) {
-        self.text.push('\n');
-    }
-
-    pub(crate) fn finish(self) -> String {
-        assert_eq!(self.depth, 0, "every open has a matching close");
-        self.text
+    pub(crate) fn access(&mut self, specifier: impl Display) {
+        self.writer.dedent();
+        self.writer.line(format_args!(" {specifier}:"));
+        self.writer.indent();
     }
 }
 

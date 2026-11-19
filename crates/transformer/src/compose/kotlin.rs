@@ -2,59 +2,37 @@
 
 use std::fmt::{self, Display, Write as _};
 
+use crate::code::Indented;
+
 /// Kotlin source written line by line, indented by nesting depth.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct Code {
-    text: String,
-    depth: usize,
+    pub(crate) writer: Indented,
 }
 
 impl Code {
-    pub(crate) fn line(&mut self, line: impl Display) {
-        self.start_line();
-        self.end_line(line);
+    pub(crate) fn new() -> Self {
+        Self {
+            writer: Indented::new("    "),
+        }
     }
 
     /// Writes `line` and indents the lines after it.
     pub(crate) fn open(&mut self, line: impl Display) {
-        self.start_line();
+        self.writer.start_line();
         self.open_after(line);
     }
 
     /// Ends the indentation of the matching [`Code::open`] and writes `line`.
     pub(crate) fn close(&mut self, line: impl Display) {
-        self.depth = self
-            .depth
-            .checked_sub(1)
-            .expect("every close has a matching open");
-        self.line(line);
-    }
-
-    /// Starts a line whose fragments are written directly into the buffer.
-    pub(crate) fn start_line(&mut self) -> &mut String {
-        for _ in 0..self.depth {
-            self.text.push_str("    ");
-        }
-        &mut self.text
-    }
-
-    pub(crate) fn end_line(&mut self, tail: impl Display) {
-        writeln!(self.text, "{tail}").expect("writing to a String cannot fail");
+        self.writer.dedent();
+        self.writer.line(line);
     }
 
     /// Finishes a line and indents the lines after it.
     pub(crate) fn open_after(&mut self, tail: impl Display) {
-        self.end_line(tail);
-        self.depth += 1;
-    }
-
-    pub(crate) fn blank(&mut self) {
-        self.text.push('\n');
-    }
-
-    pub(crate) fn finish(self) -> String {
-        assert_eq!(self.depth, 0, "every open has a matching close");
-        self.text
+        self.writer.end_line(tail);
+        self.writer.indent();
     }
 }
 

@@ -42,23 +42,26 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                 }
                 Element::Text | Element::Image => String::new(),
             };
-            out.line(format!(
+            out.writer.line(format_args!(
                 "{declaration}n{index} = new {}({args});",
                 wrapper(*element)
             ));
             for prop in props {
-                out.line(format!(
+                out.writer.line(format_args!(
                     "n{index}.{} = {};",
                     property(prop.name),
                     literal(&prop.value)
                 ));
             }
-            out.line(format!("{region}.Add(n{index}.Element);"));
+            out.writer
+                .line(format_args!("{region}.Add(n{index}.Element);"));
             for &child in children {
                 node(out, template, child, Some(index));
             }
         }
-        ViewNodeKind::Point(point) => out.line(format!("{region}.Point(this, {point});")),
+        ViewNodeKind::Point(point) => out
+            .writer
+            .line(format_args!("{region}.Point(this, {point});")),
     }
 }
 

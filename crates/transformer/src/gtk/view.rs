@@ -43,23 +43,28 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             let made = format!("make<weft::{}>({args})", wrapper(*element));
             let member = member(template, index);
             if is_field(template, index) {
-                out.line(format!("n{index}_ = &{made};"));
+                out.writer.line(format_args!("n{index}_ = &{made};"));
             } else {
-                out.line(format!("auto &n{index} = {made};"));
+                out.writer.line(format_args!("auto &n{index} = {made};"));
             }
             for prop in props {
-                out.line(format!(
+                out.writer.line(format_args!(
                     "{member}{}({});",
                     setter(prop.name),
                     literal(&prop.value)
                 ));
             }
-            out.line(format!("{region}.add({});", reference(template, index)));
+            out.writer.line(format_args!(
+                "{region}.add({});",
+                reference(template, index)
+            ));
             for &child in children {
                 node(out, template, child, Some(index));
             }
         }
-        ViewNodeKind::Point(point) => out.line(format!("{region}.point(*this, {point});")),
+        ViewNodeKind::Point(point) => out
+            .writer
+            .line(format_args!("{region}.point(*this, {point});")),
     }
 }
 

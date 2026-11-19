@@ -1,51 +1,38 @@
 //! Indented Swift source and Swift literals.
 
-use std::fmt::Write as _;
+use std::fmt::{Display, Write as _};
+
+use crate::code::Indented;
 
 /// Swift source written line by line, indented by nesting depth.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct Code {
-    text: String,
-    depth: usize,
+    pub(crate) writer: Indented,
 }
 
 impl Code {
-    pub(crate) fn line(&mut self, line: impl AsRef<str>) {
-        for _ in 0..self.depth {
-            self.text.push_str("    ");
+    pub(crate) fn new() -> Self {
+        Self {
+            writer: Indented::new("    "),
         }
-        self.text.push_str(line.as_ref());
-        self.text.push('\n');
     }
 
     /// Writes `line` and indents the lines after it.
-    pub(crate) fn open(&mut self, line: impl AsRef<str>) {
-        self.line(line);
-        self.depth += 1;
+    pub(crate) fn open(&mut self, line: impl Display) {
+        self.writer.line(line);
+        self.writer.indent();
     }
 
     /// Ends the indentation of the matching [`Code::open`] and writes `line`.
-    pub(crate) fn close(&mut self, line: impl AsRef<str>) {
-        self.depth = self
-            .depth
-            .checked_sub(1)
-            .expect("every close has a matching open");
-        self.line(line);
+    pub(crate) fn close(&mut self, line: impl Display) {
+        self.writer.dedent();
+        self.writer.line(line);
     }
 
     /// Writes `line` one level out, between two indented blocks.
-    pub(crate) fn reopen(&mut self, line: impl AsRef<str>) {
+    pub(crate) fn reopen(&mut self, line: impl Display) {
         self.close(line);
-        self.depth += 1;
-    }
-
-    pub(crate) fn blank(&mut self) {
-        self.text.push('\n');
-    }
-
-    pub(crate) fn finish(self) -> String {
-        assert_eq!(self.depth, 0, "every open has a matching close");
-        self.text
+        self.writer.indent();
     }
 }
 

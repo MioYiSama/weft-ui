@@ -22,9 +22,9 @@ use super::swift::{self, Code};
 
 /// Writes the view struct `V{index}` of `template`.
 pub(crate) fn view(out: &mut Code, index: usize, template: &Template) {
-    out.open(format!("private struct V{index}: View {{"));
-    out.line(format!("let s: S{index}"));
-    out.blank();
+    out.open(format_args!("private struct V{index}: View {{"));
+    out.writer.line(format_args!("let s: S{index}"));
+    out.writer.blank();
     out.open("var body: some View {");
     let body = Body { template };
     for &root in &template.roots {
@@ -90,10 +90,13 @@ impl Body<'_> {
         match element {
             Element::Column | Element::Row => {
                 let gap = prop("gap").unwrap_or_else(|| "0".to_owned());
-                out.open(match element {
-                    Element::Column => format!("VStack(alignment: .leading, spacing: {gap}) {{"),
-                    _ => format!("HStack(alignment: .top, spacing: {gap}) {{"),
-                });
+                let (stack, alignment) = match element {
+                    Element::Column => ("VStack", "leading"),
+                    _ => ("HStack", "top"),
+                };
+                out.open(format_args!(
+                    "{stack}(alignment: .{alignment}, spacing: {gap}) {{"
+                ));
                 for &child in children {
                     self.node(out, child);
                 }
@@ -102,7 +105,7 @@ impl Body<'_> {
                     .into_iter()
                     .any(|name| prop(name).is_some())
                 {
-                    out.line(format!(
+                    out.writer.line(format_args!(
                         ".weftBox(padding: {}, width: {}, height: {}, background: {})",
                         optional("padding"),
                         optional("width"),
@@ -113,12 +116,12 @@ impl Body<'_> {
             }
             Element::Text => {
                 let value = prop("value").expect("`Text` has a value");
-                out.line(format!("Text(verbatim: {value})"));
+                out.writer.line(format_args!("Text(verbatim: {value})"));
                 if ["color", "size", "bold"]
                     .into_iter()
                     .any(|name| prop(name).is_some())
                 {
-                    out.line(format!(
+                    out.writer.line(format_args!(
                         ".weftText(color: {}, size: {}, bold: {})",
                         optional("color"),
                         optional("size"),
@@ -130,7 +133,7 @@ impl Body<'_> {
                 match self.event(node) {
                     Some((slot, _)) => {
                         out.open("Button {");
-                        out.line(format!("_ = s.dispatch({slot})"));
+                        out.writer.line(format_args!("_ = s.dispatch({slot})"));
                         out.reopen("} label: {");
                     }
                     None => out.open("Button {} label: {"),
@@ -144,20 +147,20 @@ impl Body<'_> {
             }
             Element::Input => {
                 let (event, slot) = self.controlled(node);
-                out.line(format!(
+                out.writer.line(format_args!(
                     "WeftInput(text: s.v{slot}, placeholder: {}) {{ s.dispatch({event}, .string($0)) ? nil : s.v{slot} }}",
                     optional("placeholder"),
                 ));
             }
             Element::Checkbox => {
                 let (event, slot) = self.controlled(node);
-                out.line(format!(
+                out.writer.line(format_args!(
                     "WeftCheckbox(checked: s.v{slot}) {{ s.dispatch({event}, .bool($0)) ? nil : s.v{slot} }}"
                 ));
             }
             Element::Image => {
                 let src = prop("src").expect("`Image` has a source");
-                out.line(format!(
+                out.writer.line(format_args!(
                     "WeftImage(src: {src}, width: {}, height: {})",
                     optional("width"),
                     optional("height"),
@@ -165,7 +168,7 @@ impl Body<'_> {
             }
         }
         if let Some(disabled) = prop("disabled").filter(|d| d != "false") {
-            out.line(format!(".disabled({disabled})"));
+            out.writer.line(format_args!(".disabled({disabled})"));
         }
     }
 
@@ -181,25 +184,30 @@ impl Body<'_> {
         let property = format!("s.p{point}");
         match &self.template.points[point as usize].kind {
             PointKind::Branch { templates } => {
-                out.line(format!("switch {property} {{"));
+                out.writer.line(format_args!("switch {property} {{"));
                 for template in templates {
                     let t = template.0;
-                    out.line(format!("case let c as S{t}: V{t}(s: c).id(c.id)"));
+                    out.writer
+                        .line(format_args!("case let c as S{t}: V{t}(s: c).id(c.id)"));
                 }
-                out.line("default: EmptyView()");
-                out.line("}");
+                out.writer.line("default: EmptyView()");
+                out.writer.line("}");
             }
             PointKind::List { template } => {
-                out.line(format!(
+                out.writer.line(format_args!(
                     "ForEach({property}) {{ c in V{}(s: c) }}",
                     template.0
                 ));
             }
             PointKind::Instance { template } => {
-                out.line(format!("if let c = {property} {{ V{}(s: c) }}", template.0));
+                out.writer.line(format_args!(
+                    "if let c = {property} {{ V{}(s: c) }}",
+                    template.0
+                ));
             }
             PointKind::Slot => {
-                out.line(format!("if let c = {property} {{ c.view.id(c.id) }}"));
+                out.writer
+                    .line(format_args!("if let c = {property} {{ c.view.id(c.id) }}"));
             }
         }
     }

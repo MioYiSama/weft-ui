@@ -23,7 +23,7 @@ use super::kotlin::{self, Code};
 
 /// Writes the composable `V{index}` of `template`.
 pub(crate) fn view(out: &mut Code, index: usize, template: &Template) {
-    out.line("@Composable");
+    out.writer.line("@Composable");
     out.open(format_args!("private fun V{index}(s: S{index}) {{"));
     let body = Body { template };
     for &root in &template.roots {
@@ -95,7 +95,7 @@ impl Body<'_> {
             }
             args.finish();
         };
-        let line = out.start_line();
+        let line = out.writer.start_line();
         line.push_str("Weft");
         line.push_str(element.name());
         let mut args = CallArgs::new(line);
@@ -115,14 +115,14 @@ impl Body<'_> {
             Element::Text => {
                 args.push(prop("value").expect("`Text` has a value"));
                 optional(args, &["color", "size", "bold"]);
-                out.end_line("");
+                out.writer.end_line("");
                 return;
             }
             Element::Input => {
                 let (event, slot) = self.controlled(node);
                 args.push(format_args!("s.v{slot}"));
                 optional(args, &["placeholder", "disabled"]);
-                out.end_line(format_args!(
+                out.writer.end_line(format_args!(
                     " {{ if (s.dispatch({event}, WeftValue.Text(it))) null else s.v{slot} }}"
                 ));
                 return;
@@ -131,7 +131,7 @@ impl Body<'_> {
                 let (event, slot) = self.controlled(node);
                 args.push(format_args!("s.v{slot}"));
                 optional(args, &["disabled"]);
-                out.end_line(format_args!(
+                out.writer.end_line(format_args!(
                     " {{ s.dispatch({event}, WeftValue.Bool(it)) }}"
                 ));
                 return;
@@ -139,7 +139,7 @@ impl Body<'_> {
             Element::Image => {
                 args.push(prop("src").expect("`Image` has a source"));
                 optional(args, &["width", "height"]);
-                out.end_line("");
+                out.writer.end_line("");
                 return;
             }
         }
@@ -164,18 +164,19 @@ impl Body<'_> {
                 out.open(format_args!("when (val c = s.p{point}) {{"));
                 for template in templates {
                     let t = template.0;
-                    out.line(format_args!("is S{t} -> key(c.id) {{ V{t}(c) }}"));
+                    out.writer
+                        .line(format_args!("is S{t} -> key(c.id) {{ V{t}(c) }}"));
                 }
                 out.close("}");
             }
-            PointKind::List { template } => out.line(format_args!(
+            PointKind::List { template } => out.writer.line(format_args!(
                 "for (c in s.p{point}) key(c.id) {{ V{}(c) }}",
                 template.0
             )),
-            PointKind::Instance { template } => {
-                out.line(format_args!("s.p{point}?.let {{ V{}(it) }}", template.0))
-            }
-            PointKind::Slot => out.line(format_args!(
+            PointKind::Instance { template } => out
+                .writer
+                .line(format_args!("s.p{point}?.let {{ V{}(it) }}", template.0)),
+            PointKind::Slot => out.writer.line(format_args!(
                 "s.p{point}?.let {{ key(it.id) {{ it.Content() }} }}"
             )),
         }

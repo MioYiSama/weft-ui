@@ -4,7 +4,7 @@ import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-/** One view protocol op (docs/PROTOCOL.md, "Ops"). */
+/** One view protocol op (docs/src/content/docs/protocol.md, "Ops"). */
 internal sealed interface Op {
     data class Create(val scope: Int, val template: Int) : Op
 

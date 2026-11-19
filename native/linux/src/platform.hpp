@@ -1,4 +1,5 @@
-// Platform modules of the shell; byte formats in docs/PROTOCOL.md ("平台调用").
+// Platform modules of the shell; byte formats in
+// docs/src/content/docs/protocol.md ("Platform calls").
 
 #pragma once
 

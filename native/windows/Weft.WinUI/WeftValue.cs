@@ -7,7 +7,7 @@ using Windows.UI;
 
 namespace Weft.WinUI;
 
-/// <summary>A value of a value slot or an event payload (docs/PROTOCOL.md, "二进制编码").</summary>
+/// <summary>A value of a value slot or an event payload (docs/src/content/docs/protocol.md, "Binary encoding").</summary>
 public readonly struct WeftValue : IEquatable<WeftValue>
 {
     private enum Kind : byte { Bool, Number, String }

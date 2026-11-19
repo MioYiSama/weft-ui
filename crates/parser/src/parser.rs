@@ -1,4 +1,4 @@
-//! Error-recovering recursive-descent parser. See `docs/GRAMMAR.md`.
+//! Error-recovering recursive-descent parser. See `docs/src/content/docs/grammar.md`.
 
 use weft_ui_ast::span::offset;
 use weft_ui_ast::{

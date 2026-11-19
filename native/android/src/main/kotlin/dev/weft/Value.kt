@@ -3,7 +3,7 @@ package dev.weft
 import androidx.compose.ui.graphics.Color
 import java.io.ByteArrayOutputStream
 
-/** A value of a value slot or an event payload (docs/PROTOCOL.md, "二进制编码"). */
+/** A value of a value slot or an event payload (docs/src/content/docs/protocol.md, "Binary encoding"). */
 sealed class WeftValue {
     data class Bool(val value: Boolean) : WeftValue()
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A value of a value slot or an event payload (docs/PROTOCOL.md, "二进制编码").
+/// A value of a value slot or an event payload (docs/src/content/docs/protocol.md, "Binary encoding").
 public enum WeftValue: Equatable, Sendable {
     case bool(Bool)
     case number(Double)

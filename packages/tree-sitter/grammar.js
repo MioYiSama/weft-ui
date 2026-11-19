@@ -1,5 +1,5 @@
 /**
- * @file Tree-sitter grammar for Weft UI (`.weft`), following docs/GRAMMAR.md.
+ * @file Tree-sitter grammar for Weft UI (`.weft`), following docs/src/content/docs/grammar.md.
  *
  * Used for syntax highlighting and structure in editors; the compiler has its
  * own parser. `import`, `model`, `event`, `component`, `state` and `key` are

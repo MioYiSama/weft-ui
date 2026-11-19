@@ -1,7 +1,7 @@
 // Linux shell of Weft: GTK 4 widgets driven by the native kernel's ops
-// (docs/PROTOCOL.md). The generated views (weft/Generated.cpp) subclass
-// `Scope` per template and build their widgets from the element wrappers;
-// the app calls `start_app()` for its root widget.
+// (docs/src/content/docs/protocol.md). The generated views
+// (weft/Generated.cpp) subclass `Scope` per template and build their widgets
+// from the element wrappers; the app calls `start_app()` for its root widget.
 //
 // Everything runs on the GTK main thread: the kernel's callbacks, timers
 // and completed platform calls all arrive on the default main context.

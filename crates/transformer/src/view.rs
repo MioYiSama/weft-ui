@@ -14,7 +14,7 @@
 //!
 //! Template `i` for `i < components.len()` is the body of component `i`;
 //! nested templates follow in discovery order. The encoding of ops is
-//! specified in `docs/PROTOCOL.md`.
+//! specified in `docs/src/content/docs/protocol.md`.
 
 use std::fmt::{self, Write as _};
 

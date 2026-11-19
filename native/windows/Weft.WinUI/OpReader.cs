@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Weft.WinUI;
 
-/// <summary>Opcodes of the view protocol (docs/PROTOCOL.md, "Ops").</summary>
+/// <summary>Opcodes of the view protocol (docs/src/content/docs/protocol.md, "Ops").</summary>
 internal enum OpCode : byte
 {
     Create = 1,

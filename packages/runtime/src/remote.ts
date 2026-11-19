@@ -1,7 +1,7 @@
 /**
- * Block runtime of the view protocol (docs/PROTOCOL.md), shared by every
- * platform whose view layer is separate from the logic layer: the WeChat
- * mini program and the native platforms.
+ * Block runtime of the view protocol (docs/src/content/docs/protocol.md),
+ * shared by every platform whose view layer is separate from the logic
+ * layer: the WeChat mini program and the native platforms.
  *
  * Every block (component instance, `if` branch, `for` row, slot content) is
  * a scope of a layout template. Generated create code writes the scope's

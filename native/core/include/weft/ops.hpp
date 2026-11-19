@@ -1,7 +1,7 @@
-// Decoder and text form of view protocol ops (docs/PROTOCOL.md, binary
-// encoding version 1), for C++ shells and the kernel's tests. Decoding does
-// not allocate: strings and row lists point into the batch, which is only
-// valid during `weft_host.commit`.
+// Decoder and text form of view protocol ops
+// (docs/src/content/docs/protocol.md, "Binary encoding"), for C++ shells and
+// the kernel's tests. Decoding does not allocate: strings and row lists point
+// into the batch, which is only valid during `weft_host.commit`.
 
 #pragma once
 

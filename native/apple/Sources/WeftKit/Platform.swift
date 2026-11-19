@@ -1,7 +1,7 @@
 import Foundation
 
-/// The platform modules of the shell; byte formats in docs/PROTOCOL.md
-/// ("平台调用").
+/// The platform modules of the shell; byte formats in
+/// docs/src/content/docs/protocol.md ("Platform calls").
 enum PlatformModules {
     static let supported: Set<String> = ["fetch", "storage"]
 

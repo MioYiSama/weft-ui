@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Weft.WinUI;
 
-/// <summary>The platform modules of the shell; byte formats in docs/PROTOCOL.md ("平台调用").</summary>
+/// <summary>The platform modules of the shell; byte formats in docs/src/content/docs/protocol.md ("Platform calls").</summary>
 internal static class PlatformModules
 {
     public static readonly HashSet<string> Supported = ["fetch", "storage"];

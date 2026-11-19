@@ -11,8 +11,9 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * The platform modules of the shell; byte formats in docs/PROTOCOL.md
- * ("平台调用"). Calls run on a background thread.
+ * The platform modules of the shell; byte formats in
+ * docs/src/content/docs/protocol.md ("Platform calls"). Calls run on a
+ * background thread.
  */
 internal class PlatformModules(context: Context) {
     private val preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE)

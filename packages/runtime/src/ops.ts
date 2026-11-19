@@ -1,6 +1,7 @@
 /**
- * Binary encoding of view protocol ops (docs/PROTOCOL.md), its decoder, and
- * the one-line text form of an op used by dumps and golden files.
+ * Binary encoding of view protocol ops (docs/src/content/docs/protocol.md),
+ * its decoder, and the one-line text form of an op used by dumps and golden
+ * files.
  */
 
 import type { Ops, Value } from "./remote.ts";

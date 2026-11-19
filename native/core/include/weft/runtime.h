@@ -1,6 +1,6 @@
 /*
  * Weft native kernel: runs the Hermes bytecode of a Weft app and connects it
- * to a platform shell (docs/PROTOCOL.md, "原生内核").
+ * to a platform shell (docs/src/content/docs/protocol.md, "Native kernel").
  *
  * The kernel owns no thread. Every function must be called on the thread
  * that created the runtime (the UI thread), and never from inside one of the

@@ -188,12 +188,12 @@ jobs:
           dotnet-version: 10.0.x
       - uses: actions/cache@v6
         with:
-          path: |
-            native/windows/build/win-x64
-            native/core/build-windows
-          key: windows-x64-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/core/tests/CMakeLists.txt', 'native/windows/build-core.ps1') }}
+          path: native/core/build-windows
+          key: windows-x64-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/core/tests/CMakeLists.txt') }}
           restore-keys: windows-x64-${{ env.HERMES_TAG }}-
-      - run: native/windows/build-core.ps1 -Arch x64
+      # One Hermes build: the kernel tests build weft_core.dll as build-core.ps1
+      # does (shared, static MSVC runtime), so the tested DLL is the shipped
+      # configuration. Weft.WinUI.Tests does not load the DLL.
       - name: Kernel tests and conformance (shared library)
         run: |
           # The C++ toolchain and the CMake and Ninja that come with Visual Studio, as build-core.ps1 sets them up.
@@ -202,7 +202,8 @@ jobs:
           Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64' | Out-Null
           $tools = "$vs\Common7\IDE\CommonExtensions\Microsoft\CMake"
           $env:PATH = "$tools\CMake\bin;$tools\Ninja;$env:PATH"
-          cmake -S native/core -B native/core/build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DWEFT_CORE_SHARED=ON
+          cmake -S native/core -B native/core/build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DWEFT_CORE_SHARED=ON `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           cmake --build native/core/build-windows
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

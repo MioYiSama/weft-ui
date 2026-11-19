@@ -31,7 +31,7 @@ The first kernel build fetches and compiles Hermes, which takes a while; later b
 
 ## Checks
 
-Run the checks of the code you touched before opening a pull request. CI runs all of them except the UI flows, which run nightly.
+Run the checks of the code you touched before opening a pull request. CI runs every check the changed files can affect, so a change to docs alone skips the kernel builds; a manual run checks everything. The UI flows run nightly, when master has changed since the last successful nightly run.
 
 | Code | Command |
 | --- | --- |

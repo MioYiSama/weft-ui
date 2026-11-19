@@ -6,7 +6,7 @@ use std::fmt::Write;
 use weft_ui_ast::Span;
 use weft_ui_ast::span::offset;
 
-use super::{Mapping, MappingKind};
+use crate::transform::{Mapping, MappingKind};
 
 /// Lines of generated code with relative indentation.
 #[derive(Debug, Default)]

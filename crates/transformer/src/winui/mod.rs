@@ -1,7 +1,7 @@
 //! WinUI 3 view backend for Windows, driven by the native kernel's ops.
 //!
 //! The logic layer uses
-//! [`weft_ui_transformer::bridge::remote_module`](crate::bridge::remote_module).
+//! [`crate::bridge::remote_module`].
 //! This backend generates one `Generated.cs` for the whole app, compiled against
 //! `Weft.WinUI` (`native/windows/Weft.WinUI`) in `apps/windows/weft/`.
 //! Each template becomes a scope class `S{n}` that constructs its static tree,

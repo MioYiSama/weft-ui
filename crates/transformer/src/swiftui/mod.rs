@@ -1,7 +1,7 @@
 //! SwiftUI backend for iOS and macOS.
 //!
 //! The native kernel runs the logic from
-//! [`weft_ui_transformer::bridge::remote_module`](crate::bridge::remote_module).
+//! [`crate::bridge::remote_module`].
 //! Its ops drive the view layer: `Generated.swift`, one Swift file for the
 //! whole app, compiled into the `WeftApp` package of `apps/<platform>/weft/`
 //! against `WeftKit` (`native/apple`). Both platforms get the same code; the

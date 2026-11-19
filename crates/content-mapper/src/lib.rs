@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 use weft_ui_parser::SourceLoader;
 use weft_ui_parser::loader::normalize;
-use weft_ui_transformer::bridge::{self, MappingKind};
+use weft_ui_transformer::transform::MappingKind;
 
 /// Unit of the positions and lengths in a [`Transform`]; the protocol's
 /// `PositionEncoding`.
@@ -200,12 +200,15 @@ pub fn transform(
 
     let Some(program) = &compilation.program else {
         return Transform {
-            text: bridge::import_declarations(&path, imports.iter().map(String::as_str)),
+            text: weft_ui_transformer::import_declarations(
+                &path,
+                imports.iter().map(String::as_str),
+            ),
             mappings: Vec::new(),
             diagnostics,
         };
     };
-    let declarations = weft_ui_transformer::web::declarations(program, entry);
+    let declarations = weft_ui_transformer::declarations(program, entry);
     let mut generated = Positions::new(&declarations.text, encoding);
     let mappings = declarations
         .mappings

@@ -6,33 +6,36 @@
 //! binding. [`compile_app`] dispatches this
 //! IR to the backend modules for the selected [`transform::Platform`].
 //! Platforms with a separate view layer share a [`view::ViewLayout`] between
-//! their view files and the JS logic modules emitted by [`bridge`].
+//! their view files and their generated JS logic modules. Use [`declarations`]
+//! to obtain TypeScript declarations with source mappings without emitting JS.
 
-pub mod bridge;
+mod bridge;
 mod code;
 pub mod color;
-pub mod compose;
+mod compose;
 mod deps;
 mod elements;
-pub mod gtk;
+mod gtk;
 pub mod ide;
 pub mod ir;
 mod protocol;
 mod report;
 mod sema;
 mod style;
-pub mod swiftui;
+mod swiftui;
 pub mod transform;
 pub mod view;
-pub mod web;
-pub mod wechat;
-pub mod winui;
+mod web;
+mod wechat;
+mod winui;
 
-use weft_ui_ast::{Diagnostic, ParsedProgram, SourceMap, diagnostic};
+use std::fmt::Write as _;
 
-use crate::bridge::JsModule;
+use weft_ui_ast::{Diagnostic, FileId, ParsedProgram, SourceMap, diagnostic};
+
+use crate::bridge::js;
 use crate::ir::Program;
-use crate::transform::{Context, OutputFile, Platform};
+use crate::transform::{Context, Declarations, JsModule, OutputFile, Platform};
 use crate::view::ViewLayout;
 
 pub use report::dependency_report;
@@ -111,6 +114,30 @@ pub fn compile_app(parsed: ParsedProgram, platform: Platform) -> AppOutput {
         (output.logic, output.views, output.layout) = transform_program(program, platform);
     }
     output
+}
+
+/// Generates the TypeScript declarations and source mappings of the Web logic module of `file`.
+///
+/// # Panics
+///
+/// Panics if `file` is not part of the program.
+#[must_use]
+pub fn declarations(program: &Program, file: FileId) -> Declarations {
+    bridge::declarations(program, file, bridge::Mode::Dom(&web::dom::Dom))
+}
+
+/// Declarations of a module at `path` whose program has errors: re-exports
+/// of its direct `imports`, so TypeScript still loads and reports them.
+#[must_use]
+pub fn import_declarations<'a>(path: &str, imports: impl IntoIterator<Item = &'a str>) -> String {
+    let mut text = String::new();
+    for import in imports {
+        let specifier = js::string(&js::relative_specifier(path, import));
+        // Infallible: writing to a `String`.
+        let _ = writeln!(text, "export * from {specifier};");
+    }
+    text.push_str("export {};\n");
+    text
 }
 
 fn transform_program(

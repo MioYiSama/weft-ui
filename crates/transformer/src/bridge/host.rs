@@ -6,10 +6,11 @@ use std::collections::HashMap;
 use weft_ui_ast::Span;
 
 use crate::ir::{ComponentId, EventId, ModelId, Param, ParamKind, Program, Type};
+use crate::transform::MappingKind;
 
+use super::Mode;
 use super::expr::{Env, expr};
 use super::js::{self, Code, MappedLine};
-use super::{MappingKind, Mode};
 
 /// Converter constants (`$c{n}`) turning host values into runtime values.
 #[derive(Debug, Default)]

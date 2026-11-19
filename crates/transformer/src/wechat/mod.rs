@@ -1,7 +1,7 @@
 //! WeChat mini program backend.
 //!
 //! The logic layer comes from
-//! [`weft_ui_transformer::bridge::remote_module`](crate::bridge::remote_module),
+//! [`crate::bridge::remote_module`],
 //! with bare `@weft-ui/runtime/remote` imports for Vite to resolve and bundle.
 //!
 //! The view layer ([`transform`]) generates files relative to the app's

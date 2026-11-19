@@ -1,7 +1,7 @@
 //! GTK 4 view backend for Linux, driven by the native kernel's ops.
 //!
 //! The logic layer uses
-//! [`weft_ui_transformer::bridge::remote_module`](crate::bridge::remote_module).
+//! [`crate::bridge::remote_module`].
 //! This backend generates one `Generated.cpp` for the whole app, compiled
 //! against the Linux shell (`native/linux`) in `apps/linux/weft/`. Each
 //! template becomes a scope class `S{n}` whose constructor creates its static

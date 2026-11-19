@@ -795,7 +795,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P4.2 语义记录归属 sema | ☑ | sema 不引用 ide；clippy 0；测试目录无改动 |
 | P4.3 拆分 lower.rs | ☑ | 5 个文件，最长 542 行；clippy 0；快照不变 |
 | P4.4 拆分 view.rs | ☑ | layout 快照、hash 与 C-apps 无差异；clippy 0 |
-| P4.5 收窄公开 API | ☐ | |
+| P4.5 收窄公开 API | ☑ | 仅 5 个公开模块；C-rust（clippy 0）与 C-ts 通过，含 content-mapper 测试 |
 | P5.1 原生平台适配器 | ☑ | C-ts 通过（vite 16），C-apps 无差异 |
 | P5.2 集中解析原生壳路径 | ☑ | C-ts 通过（vite 16），C-apps 无差异 |
 | P6.1 共享 hermesc 引导 | ☑ | 干净构建、C-apple 通过；Apple 全 SDK 和 Android 全 ABI 产物已重建 |
@@ -816,3 +816,4 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 - [P2.5] macOS 的拼音输入法会拦截 XCUITest 模拟的英文输入，导致文本框断言失败；临时切到 ABC 输入源后通过，测试结束后已恢复原输入源。结论：不处理（运行 macOS 点击测试时使用 ABC 输入源）
 - [P2.2] C-apps 仅 `js/index.js` 有差异：wechat 增加 23 字节，ios、macos、android、windows、linux 各增加 94 字节。Rolldown 保留了生成的 `WechatUnit`、`Opcode` 和 `ValueTag` 对象；对比语法树，在替换等值常量引用并忽略压缩后的标识符重命名后，其余结构、字面量和属性不变。已更新这六个文件的 W 工作树基线；结论：接受（运行时行为不变）
 - [P3.4] 对整个 transformer 按函数名搜索时，`sema/lower.rs` 中负责 AST 到 IR 转换的 `if_node`、`for_node` 也会命中；限定 `bridge` 和 `web` 后，JS 控制流生成函数只在 `bridge/flow.rs` 命中。结论：不处理（验收 rg 的范围过宽，sema 的同名函数与 JS 生成无关）
+- [P4.3] P4.3 和 P4.4 都将一个文件拆成多个文件，默认 `git diff -M --stat` 未识别重命名。`-M30%` 分别识别了 `lower.rs → lower/nodes.rs` 和 `view.rs → view/mod.rs`，函数体对比也确认无改动。结论：不处理（默认相似度阈值不适合一拆多）

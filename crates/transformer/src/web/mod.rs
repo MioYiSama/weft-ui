@@ -5,12 +5,13 @@
 //! function that re-runs only the bindings whose dirty bits are set. See
 //! `@weft-ui/runtime` for the runtime half of this contract.
 
-mod dom;
+pub(super) mod dom;
 
 use weft_ui_ast::FileId;
 
-use crate::bridge::{self, Declarations, JsModule, Mode};
+use crate::bridge::{self, Mode};
 use crate::ir::Program;
+use crate::transform::JsModule;
 
 /// Import specifier of the JS runtime used by the generated modules.
 const RUNTIME: &str = "@weft-ui/runtime";
@@ -23,15 +24,4 @@ const RUNTIME: &str = "@weft-ui/runtime";
 #[must_use]
 pub fn module(program: &Program, file: FileId) -> JsModule {
     bridge::generate(program, file, RUNTIME, Mode::Dom(&dom::Dom))
-}
-
-/// Generates the declarations of the Web logic module of `file`, as
-/// [`module`] does, with their mappings.
-///
-/// # Panics
-///
-/// Panics if `file` is not part of the program.
-#[must_use]
-pub fn declarations(program: &Program, file: FileId) -> Declarations {
-    bridge::declarations(program, file, Mode::Dom(&dom::Dom))
 }

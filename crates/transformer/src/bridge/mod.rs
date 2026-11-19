@@ -1,5 +1,4 @@
-//! `weft_ui_transformer::bridge` emits JavaScript logic modules: host bindings
-//! and component block code.
+//! Emits JavaScript logic modules: host bindings and component block code.
 //!
 //! Each `.weft` file becomes one ES module with TypeScript declarations for
 //! model classes, events, and root component classes. A module imports what
@@ -18,26 +17,16 @@ pub(crate) mod js;
 pub(crate) mod remote;
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::{self, Write};
+use std::fmt;
 
-use weft_ui_ast::{FileId, Span};
+use weft_ui_ast::FileId;
 
 use crate::ir::{ComponentId, EventId, ModelId, Module, NodeKind, ParamKind, Program, Type};
+use crate::transform::{Declarations, JsModule};
 use crate::view::ViewLayout;
 
 use blocks::{Consts, offset};
 use js::Code;
-
-/// Generated logic module of one `.weft` file.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct JsModule {
-    /// Normalized path of the `.weft` file.
-    pub source: String,
-    /// ES module source.
-    pub code: String,
-    /// TypeScript declarations for `code`.
-    pub dts: String,
-}
 
 /// How the components of a module render.
 #[derive(Debug, Clone, Copy)]
@@ -75,39 +64,6 @@ pub fn generate(program: &Program, file: FileId, runtime: &str, mode: Mode<'_>) 
     }
 }
 
-/// TypeScript declarations of one logic module ([`JsModule::dts`]), with
-/// the fragments that name declarations of its `.weft` file.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Declarations {
-    pub text: String,
-    /// Ordered by [`Mapping::start`]; fragments do not overlap.
-    pub mappings: Vec<Mapping>,
-}
-
-/// A fragment of generated text that stands for a span of the `.weft` file.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Mapping {
-    /// Byte offset in the generated text.
-    pub start: u32,
-    /// Byte length in the generated text.
-    pub len: u32,
-    /// Always in the module's own file.
-    pub original: Span,
-    pub kind: MappingKind,
-}
-
-/// How a generated fragment relates to its original span.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum MappingKind {
-    /// Same text: a declaration's name.
-    Verbatim,
-    /// Same declaration under another name, e.g. `delete$` for `delete`.
-    Alias,
-    /// A different entity derived from the original, e.g. the `onClick`
-    /// handler method of the event `Click`.
-    Atom,
-}
-
 /// Generates the declarations of `file`; [`generate`] returns the same text.
 ///
 /// # Panics
@@ -119,20 +75,6 @@ pub fn declarations(program: &Program, file: FileId, mode: Mode<'_>) -> Declarat
     let mut text = String::new();
     let mappings = dts(program, &links).write_mapped(&mut text);
     Declarations { text, mappings }
-}
-
-/// Declarations of a module at `path` whose program has errors: re-exports
-/// of its direct `imports`, so TypeScript still loads and reports them.
-#[must_use]
-pub fn import_declarations<'a>(path: &str, imports: impl IntoIterator<Item = &'a str>) -> String {
-    let mut text = String::new();
-    for import in imports {
-        let specifier = js::string(&js::relative_specifier(path, import));
-        // Infallible: writing to a `String`.
-        let _ = writeln!(text, "export * from {specifier};");
-    }
-    text.push_str("export {};\n");
-    text
 }
 
 /// Generates the remote mode logic module of `file`, importing

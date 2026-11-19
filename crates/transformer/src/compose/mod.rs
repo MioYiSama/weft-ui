@@ -1,7 +1,7 @@
 //! Jetpack Compose view backend for Android.
 //!
 //! The native kernel runs the logic from
-//! [`weft_ui_transformer::bridge::remote_module`](crate::bridge::remote_module)
+//! [`crate::bridge::remote_module`]
 //! and drives the views in `Generated.kt`, compiled into the `weft` Android
 //! library module against the `dev.weft` shell.
 //!

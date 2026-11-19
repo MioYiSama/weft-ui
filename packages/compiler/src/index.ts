@@ -102,7 +102,8 @@ export async function mapContent(
 
 /**
  * Compiles `entries` and their imports as one app-level program, so names must be unique across the app.
- * Native platforms get the remote mode logic and `layout.json` as their only view file until their view backends exist.
+ * Native platforms get the remote mode logic, `layout.json` and the generated view source of their backend
+ * (SwiftUI for `ios` and `macos`, Jetpack Compose for `android`, WinUI for `windows`, GTK for `linux`).
  * Copies the result before releasing its WASM allocation.
  */
 export async function compileApp(

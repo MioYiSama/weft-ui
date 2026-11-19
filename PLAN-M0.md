@@ -309,7 +309,7 @@ flowchart LR
 | V1 版本规则 | ☑ | `changeset status` 正常运行；临时副本里只给 runtime 加 minor changeset，9 个发布包一起升到 0.2.0，私有包不变；发布包的 `files` 加入 `CHANGELOG.md`（pnpm pack 默认不带）；`pnpm version` 是 pnpm 内置命令，脚本名用 `version-packages` |
 | W1 PR 流水线 | ⏸ | C-ci 通过；首次运行（draft PR #1）rust、ts、apple、android、linux 通过，core、windows 的失败已修复（见执行中发现），等待重跑 |
 | W2 夜间流水线 | ⏸ | C-ci 通过；在 m0 分支临时加 push 触发，android-ui、ios-ui 首次运行通过；等待在 M0 全部提交上重跑 |
-| H1 仓库卫生 | ☐ | |
+| H1 仓库卫生 | ☑ | C-ci 通过；issue 模板 YAML 可解析；CONTRIBUTING、SECURITY、README 的相对链接都指向存在的文件。GitHub 私有漏洞报告需要在仓库设置里开启 |
 | X1 收尾 | ☐ | |
 
 ## 执行中发现

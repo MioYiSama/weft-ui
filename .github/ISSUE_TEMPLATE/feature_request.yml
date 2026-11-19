@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an element, style, platform API or tool.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you are trying to build, and what stops you today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How you would like to write it in `.weft` or TypeScript. ROADMAP.md may already plan it; link the milestone if so.
+    validations:
+      required: true
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Platforms
+      multiple: true
+      options:
+        - All
+        - Web
+        - WeChat mini program
+        - iOS
+        - Android
+        - macOS
+        - Windows
+        - Linux
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Workarounds you use now, or how other frameworks solve it.

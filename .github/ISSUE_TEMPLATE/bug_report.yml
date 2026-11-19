@@ -1,0 +1,53 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The smallest `.weft` and TypeScript code, or the steps, that show the problem.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Platforms
+      multiple: true
+      options:
+        - Web
+        - WeChat mini program
+        - iOS
+        - Android
+        - macOS
+        - Windows
+        - Linux
+        - Compiler / CLI / editor
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Version of the `@weft-ui/*` packages, or the commit when building from the repository.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Host OS, Node.js and pnpm versions, and the device, simulator or browser it runs on.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Build output, console logs or crash reports.
+      render: text

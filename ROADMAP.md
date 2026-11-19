@@ -53,7 +53,7 @@ C 端流量集中在手机和小程序上。7 个平台同步推进的成本是 
 | 平台 API | `run`、`fetch`（无响应头、超时、取消、上传）、字符串 `storage`、`platform` | 缺扩展机制（自定义原生模块 / 原生视图），以及相册、相机、权限、推送、分享、剪贴板、安全存储、文件、WebSocket、登录、支付 | 高 |
 | 语言 | 类型化 model、event、component、state、if/for、单个 Children 插槽 | 缺枚举/字面量联合、组件回调参数（可复用组件无法向父组件上报）、具名多插槽、局部 `let` | 中 |
 | 无障碍 | 没有 label、role 等 API；Android `Image` 的 `contentDescription = null` | 上架合规和可用性要求 | 中 |
-| 国际化 | Hermes 构建时关闭了 Intl（`native/core/CMakeLists.txt`）；Android 区域设置有 TODO | 缺日期和数字格式、RTL、语言切换 | 中 |
+| 国际化 | Hermes 构建时关闭了 Intl（`native/core/hermes.cmake`）；Android 区域设置有 TODO | 缺日期和数字格式、RTL、语言切换 | 中 |
 | 开发循环 | Web 有 Vite 开发服务器；原生和小程序只能整包构建；Hermes 调试器被关闭；生成的 JS 没有 source map | 改一行要重编原生工程；原生上无法断点调试 | 高 |
 | 分发 | TS 包 0.1.0 已发布；原生壳与预编译内核拆成 `@weft-ui/native-<target>`，`@weft-ui/vite` 按包解析壳和 hermesc（M0.4），已在仓库外用 tarball 验证 Android、iOS；Release 工作流在各平台构建全部内核，打包后通过可信发布暂存到 npm，维护者批准后上线；0.2.0 等待首次暂存（[PLAN-M0](PLAN-M0.md) R1）；没有脚手架 | native 包发布前，外部项目仍只能用 Web 和小程序 | 高 |
 | CI | PR 流水线（`ci.yml`）跑 C-rust、C-ts、C-core、C-linux、C-apple、C-android、C-windows；夜间流水线（`nightly.yml`）跑 Android、iOS 点击流程 | Windows、Linux 的点击流程仍在本地跑；没有截图回归和性能基准 | 低 |

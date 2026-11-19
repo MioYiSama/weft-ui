@@ -363,4 +363,5 @@ R1、R2 在 M0 收尾后接着做（下一节）。
 - [W1] 缓存未命中时 windows 作业要 24 分钟：`build-core.ps1` 和内核测试各编译一次 Hermes（11 分钟、10.5 分钟），而 `Weft.WinUI.Tests` 并不加载 `weft_core.dll`。结论：已修复（去掉 `build-core.ps1`，内核测试按它的参数构建 DLL，提交 `ci: build Hermes once in the Windows job`；冷缓存 11 分钟，热缓存约 2 分钟）。
 - [R2] Linux 上 Hermes 动态链接系统 ICU，预编译内核只能在 ICU 版本完全一致（`libicuuc.so.78`）的发行版上加载。Unicode Lite 会让非 ASCII 字符的大小写转换失效，`toLocaleString` 也只返回固定文本；静态链接 ICU 每个架构要多约 30 MB。结论：已修复（维护者选用 ICU4X，任务 U1）。
 - [R1] npm 的 2FA-bypass token 将在 2027 年 1 月失去直接发布的权限。结论：发布改用可信发布（OIDC）加暂存发布，不配置 token（任务 R2）。
+- [R2] PR #2 的每个内核作业都从头编译 Hermes：缓存按分支隔离，PR 只能读到自己的和 master 的缓存，而合并后 master 上的 CI 被取消，没有留下任何内核缓存；缓存键还包含 Weft 自己的 CMake 文件。结论：已修复（Hermes 选项移到 `native/core/hermes.cmake`，缓存键只取 Hermes 标签、这个文件和平台构建脚本，提交 `ci: key the kernel caches on the Hermes options only`）。master 上的 CI 需要跑完才能为后续 PR 预热缓存。评估过 Hermes 的 C ABI（`API/hermes_abi`）：README 标注为实验性，`queueMicrotask` 未实现，`make_hermes_runtime` 会忽略配置，不能承载内核；独立仓库发布预编译 Hermes 暂不做。
 - [X1] `pnpm pack --dry-run` 执行 `prepack` 但不执行 `postpack`，会在 native 包目录留下 `LICENSE-hermes`（Linux 还有 `core/`，已被忽略）。结论：已修复（4 个包的 `.gitignore` 忽略 `/LICENSE-hermes`）。

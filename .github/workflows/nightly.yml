@@ -16,7 +16,8 @@ env:
   CARGO_TERM_COLOR: always
   # Keep in sync with crates/wasm/Cargo.toml.
   WASM_BINDGEN: 0.2.130
-  # Keep in sync with WEFT_HERMES_TAG in native/core/CMakeLists.txt; part of the kernel cache keys.
+  # Keep in sync with WEFT_HERMES_TAG in native/core/CMakeLists.txt. The kernel
+  # caches are keyed on it and on the Hermes options in native/core/hermes.cmake.
   HERMES_TAG: hermes-v260318099.0.8
 
 jobs:
@@ -83,7 +84,7 @@ jobs:
           path: |
             native/core/build
             native/android/build
-          key: android-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/android/CMakeLists.txt', 'native/android/build-core.sh') }}
+          key: android-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake', 'native/android/CMakeLists.txt', 'native/android/build-core.sh') }}
           restore-keys: android-${{ env.HERMES_TAG }}-
       - run: native/android/build-core.sh
         env:
@@ -111,7 +112,7 @@ jobs:
           path: |
             native/core/build
             native/apple/build
-          key: apple-ios-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/CMakeLists.txt', 'native/apple/build-core.sh') }}
+          key: apple-ios-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake', 'native/apple/build-core.sh') }}
           restore-keys: apple-ios-${{ env.HERMES_TAG }}-
       - run: native/apple/build-core.sh
         env:

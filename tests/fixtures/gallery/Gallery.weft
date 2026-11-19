@@ -1,0 +1,58 @@
+model GalleryStyle {
+  padding: Int,
+  gap: Int,
+  width: Int,
+  height: Int,
+  background: String,
+  color: String,
+  size: Int,
+  bold: Bool,
+}
+
+model GalleryModel {
+  style: GalleryStyle,
+  checked: Bool,
+  imageUrl: String,
+  labels: String[],
+}
+
+event Checked(value: Bool)
+
+component Panel(body: Children) {
+  state clicks = 0
+
+  Column {
+    body
+    Button(onClick = { clicks += 1 }) {
+      Text("Panel clicks: ${clicks}")
+    }
+  }
+}
+
+component Gallery(model: GalleryModel) {
+  state caption = "Weft"
+
+  Column(padding = 12, gap = 8, width = 320, height = 280, background = "#eef") {
+    Text("Gallery", color = "#224466", size = 20, bold = true)
+    Row(
+      padding = model.style.padding,
+      gap = model.style.gap,
+      width = model.style.width,
+      height = model.style.height,
+      background = model.style.background,
+    ) {
+      Checkbox(model.checked, onChange = Checked)
+      Image(model.imageUrl, width = 32, height = 32)
+      Text("Preview", color = model.style.color, size = model.style.size, bold = model.style.bold)
+    }
+    Input(caption, placeholder = "Caption", onChange = { value -> caption = value })
+    Panel {
+      Text("Caption: ${caption}")
+      if (model.checked) {
+        for (label in model.labels; key = label) {
+          Text(label)
+        }
+      }
+    }
+  }
+}

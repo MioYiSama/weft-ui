@@ -39,17 +39,8 @@ if [[ -z "$ndk" || ! -f "$ndk/build/cmake/android.toolchain.cmake" ]]; then
 fi
 strip=$(echo "$ndk"/toolchains/llvm/prebuilt/*/bin/llvm-strip)
 
-if [[ ! -x "$host/bin/hermesc" ]]; then
-  echo "weft: building the host Hermes compiler in $host"
-  cmake -S "$core" -B "$host" -G Ninja -DCMAKE_BUILD_TYPE=Release
-  cmake --build "$host" --target hermesc
-fi
-
-fetch=()
-source_dir=$(sed -n 's/^Hermes_SOURCE_DIR:STATIC=//p' "$host/CMakeCache.txt")
-if [[ -n "$source_dir" && -d "$source_dir" ]]; then
-  fetch=(-DFETCHCONTENT_SOURCE_DIR_HERMES="$source_dir")
-fi
+source "$core/host-hermesc.sh"
+weft_host_hermesc "$core" "$host"
 
 for abi in $abis; do
   build="$out/$abi"

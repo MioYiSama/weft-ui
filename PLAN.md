@@ -799,7 +799,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P5.1 原生平台适配器 | ☐ | |
 | P5.2 集中解析原生壳路径 | ☐ | |
 | P6.1 共享 hermesc 引导 | ☑ | 干净构建、C-apple 通过；Apple 全 SDK 和 Android 全 ABI 产物已重建 |
-| P6.2 两套语法共用 fixture 检查 | ☐ | |
+| P6.2 两套语法共用 fixture 检查 | ☑ | Rust fixture、fmt、clippy 通过；未安装 tree-sitter CLI，按验收条件跳过 |
 | P6.3 文档收尾 | ☐ | |
 
 ## 执行中发现

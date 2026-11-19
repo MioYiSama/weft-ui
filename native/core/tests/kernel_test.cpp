@@ -443,7 +443,10 @@ void check_op(const std::string &name, const weft::ops::Op &op, const json::Valu
 }
 
 void corpus() {
-  for (auto &c : read_corpus("ops.json")["cases"].array()) {
+  // Keep the documents alive: a range-for does not extend the lifetime of the
+  // temporary that `["cases"]` is called on (before C++23).
+  auto ops_corpus = read_corpus("ops.json");
+  for (auto &c : ops_corpus["cases"].array()) {
     const std::string &name = c["name"].string();
     auto bytes = hex_bytes(c["hex"].string());
     if (c.has("ops")) {
@@ -462,7 +465,8 @@ void corpus() {
     }
   }
 
-  for (auto &c : read_corpus("values.json")["cases"].array()) {
+  auto values_corpus = read_corpus("values.json");
+  for (auto &c : values_corpus["cases"].array()) {
     const std::string &name = c["name"].string();
     auto bytes = hex_bytes(c["hex"].string());
     auto want = corpus_value(c["value"]);

@@ -326,3 +326,7 @@ flowchart LR
 - [N.2] 重建 Linux 容器后，内核 CMake 缓存指向的 `/hermes-src` 不再存在；重新指向工作区中已有的 Hermes 源码后 C-linux 通过；结论：不处理（同 PLAN.md P0.1，仅限本地缓存）。
 - [T2] B0 的 `tests` tsc 基线为 59，但未传 `--runExternalCode`，TypeScript 不会加载 `.weft` content mapper；C-ts 仅对 `tests` 启用该参数后，既有错误 56 个、Gallery 新增 0 个。剩余错误来自既有 fixture 和 native driver 的类型导入路径；结论：不处理这些既有错误，C-ts 与 W1 按启用 mapper 后的 56 个错误作基线。
 - [N.6] 仓库外的 pnpm 项目若只间接依赖 `@weft-ui/runtime`，Vite 无法从应用生成的模块解析 `@weft-ui/runtime/remote`；结论：不处理（应用直接依赖运行时，C-pack 与使用文档均明确声明）。
+- [W1] CI 首次在 Linux（GCC）上跑内核测试，`core.corpus` 段错误。原因是 P1.4 起就有的悬垂引用：`for (auto &c : read_corpus("ops.json")["cases"].array())` 中 `read_corpus` 返回的临时文档在循环开始前就析构了（C++23 之前范围 for 不延长中间临时对象的生命周期），Clang 和 MSVC 恰好没有崩。结论：已修复（文档存进局部变量，提交 `test(core): keep the corpus documents alive in the kernel test`；容器内 GCC 跑内核测试 14 项通过）。
+- [W1] Windows 运行器检出时 `core.autocrlf` 把黄金文件转成 CRLF，`conformance.board`、`conformance.todo` 在第 1 行就不一致；虚拟机用 robocopy 同步 Mac 的工作区，所以本地从未出现。结论：已修复（`.gitattributes` 固定 `*.ops` 为 LF，提交 `test(conformance): keep the goldens LF on Windows checkouts`）。
+- [W1] 容器的 `node_modules` 卷在 N.1 之后需要重新 `pnpm install` 才有 native 包的链接，否则内核 conformance 报「needs the native shell」。结论：不处理（C-linux 命令本身先跑 `pnpm install`；只影响手动在旧容器里跑内核测试）。
+- [X1] `pnpm pack --dry-run` 执行 `prepack` 但不执行 `postpack`，会在 native 包目录留下 `LICENSE-hermes`（Linux 还有 `core/`，已被忽略）。结论：已修复（4 个包的 `.gitignore` 忽略 `/LICENSE-hermes`）。

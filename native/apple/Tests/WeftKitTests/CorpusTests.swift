@@ -48,12 +48,7 @@ private func expectedOp(_ json: JSONObject) throws -> Op {
 }
 
 private func decode(_ bytes: [UInt8]) throws -> [Op] {
-    try bytes.withUnsafeBytes { raw in
-        var reader = try OpReader(raw)
-        var ops: [Op] = []
-        while let op = try reader.next() { ops.append(op) }
-        return ops
-    }
+    try bytes.withUnsafeBytes(OpReader.readAll)
 }
 
 @Test func decodesOpsCorpus() throws {
@@ -73,6 +68,22 @@ private func decode(_ bytes: [UInt8]) throws -> [Op] {
             #expect(try decode(bytes) == expected, "\(name)")
         }
     }
+}
+
+@Test @MainActor func malformedOpsDoNotCreateScopes() throws {
+    let cases = try #require(corpus("ops")["cases"] as? [JSONObject])
+    let test = try #require(cases.first { $0["name"] as? String == "unknown-opcode-after-create" })
+    let bytes = try hexBytes(test)
+    var createdScopes: [UInt32] = []
+    let session = WeftSession(bytecode: nil, layoutHash: 0) { _, id, session in
+        createdScopes.append(id)
+        return WeftScope(id: id, session: session)
+    }
+
+    bytes.withUnsafeBytes { session.commit($0) }
+
+    #expect(session.failure?.hasPrefix("weft: malformed ops") == true)
+    #expect(createdScopes.isEmpty)
 }
 
 @Test func encodesValuesCorpus() throws {

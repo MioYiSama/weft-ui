@@ -1,7 +1,7 @@
 // Decoder and text form of view protocol ops
 // (protocol/SPEC.md, "Binary encoding"), for C++ shells and
-// the kernel's tests. Decoding does not allocate: strings and row lists point
-// into the batch, which is only valid during `weft_host.commit`.
+// the kernel's tests. Strings and row lists point into the batch, which is
+// only valid during `weft_host.commit`.
 
 #pragma once
 
@@ -11,6 +11,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 #include "weft/protocol.hpp"
 
@@ -66,6 +67,11 @@ class Reader {
   const uint8_t *at_;
   const uint8_t *end_;
 };
+
+/// Decodes the whole batch, throwing `Error` if any op is malformed.
+/// The result borrows the input buffer for strings and `rows` children and
+/// is valid only while the buffer remains alive.
+std::vector<Op> read_all(const uint8_t *data, size_t len);
 
 /// Reads one encoded value (a tag byte and its data), advancing `at`.
 Value read_value(const uint8_t *&at, const uint8_t *end);

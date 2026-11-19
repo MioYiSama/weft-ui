@@ -130,8 +130,7 @@ void Session::commit(const uint8_t *ops, size_t len) {
   if (failed_) return;
   committing_ = true;
   try {
-    ops::Reader reader(ops, len);
-    for (ops::Op op; reader.next(op);) apply(op);
+    for (const auto &op : ops::read_all(ops, len)) apply(op);
   } catch (const std::exception &error) {
     committing_ = false;
     fail(std::string("weft: cannot apply ops (") + error.what() + ")");

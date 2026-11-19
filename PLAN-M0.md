@@ -293,7 +293,7 @@ flowchart LR
 | --- | --- | --- |
 | B0 基线 | ☑ | clippy 0；tsc：vite 16、tests 59，其余 0；C-apps 基线已存；C-core、C-apple、C-android、C-windows（`net10.0`）、C-linux 通过 |
 | F1 `setInterval(fn, 0)` | ☑ | 修复前 `count("zero") == 3` 失败（只执行 1 次）；C-core、C-windows 通过 |
-| F2 Apple、Linux 整批解码 | ☐ | |
+| F2 Apple、Linux 整批解码 | ☑ | 回归测试修复前创建了 scope 3、修复后未创建；C-core、C-apple、C-linux、C-windows 及 macOS、iOS、Linux 点击流程通过 |
 | F3 格式化器注释 | ☑ | 5 个黄金用例在修复前均报内部错误；修复后通过并验证幂等，C-rust 通过（clippy 0） |
 | F4 Linux 纹理缓存 | ☑ | 淘汰测试修复前失败；C-linux（含 `linux.textures`）、C-ui Linux 通过 |
 | F5 中文侧边栏链接 | ☑ | 文档构建通过；6 个中文侧边栏均链接中文版，英文页面无中文版链接 |
@@ -315,6 +315,9 @@ flowchart LR
 ## 执行中发现
 
 （执行时追加。格式：`- [任务号] 发现内容；结论：转为新计划项 / 不处理（原因）`）
+
+- [F2] Linux 增量构建时 Ninja 在 C++ 模块依赖扫描（`RefreshDyndepDependents`）触发断言，仅在容器的本地内核构建缓存关闭 `CMAKE_CXX_SCAN_FOR_MODULES` 后 C-linux 通过；结论：不处理（本地构建工具问题，未修改仓库配置）
+- [F2] Windows 虚拟机的 `prlctl exec --current-user` 一度报 `PrlJob_GetRetCode: Invalid argument`，随后原样重跑 C-windows 通过；结论：不处理（Parallels 瞬时故障）
 
 - [F4] Linux 内核增量构建再次触发 PLAN.md P0.1 记录的 Ninja dyndep 断言，删除内核构建目录中的 `CMakeFiles/weft_core.dir` 后 C-linux 通过；结论：不处理（本地构建目录状态问题）
 

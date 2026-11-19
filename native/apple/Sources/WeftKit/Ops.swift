@@ -31,14 +31,22 @@ struct OpReader {
     private let bytes: UnsafeRawBufferPointer
     private var offset = 1
 
-    init(_ bytes: UnsafeRawBufferPointer) throws(OpError) {
+    /// Decodes the whole batch before returning any ops to the caller.
+    static func readAll(_ bytes: UnsafeRawBufferPointer) throws(OpError) -> [Op] {
+        var reader = try OpReader(bytes)
+        var ops: [Op] = []
+        while let op = try reader.next() { ops.append(op) }
+        return ops
+    }
+
+    private init(_ bytes: UnsafeRawBufferPointer) throws(OpError) {
         guard let version = bytes.first else { throw .truncated }
         guard version == WeftProtocol.version else { throw .version(version) }
         self.bytes = bytes
     }
 
     /// The next op, or `nil` at the end of the batch.
-    mutating func next() throws(OpError) -> Op? {
+    private mutating func next() throws(OpError) -> Op? {
         guard offset < bytes.count else { return nil }
         let rawOpcode = try byte()
         guard let opcode = OpCode(rawValue: rawOpcode) else { throw .opcode(rawOpcode) }

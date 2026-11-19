@@ -180,6 +180,13 @@ bool Reader::next(Op &op) {
   throw Error(Error::Kind::Opcode, "weft ops: unknown opcode " + std::to_string(code));
 }
 
+std::vector<Op> read_all(const uint8_t *data, size_t len) {
+  Reader reader(data, len);
+  std::vector<Op> ops;
+  for (Op op; reader.next(op);) ops.push_back(op);
+  return ops;
+}
+
 Value read_value(const uint8_t *&at, const uint8_t *end) {
   need(at, end, 1);
   uint8_t tag = *at++;

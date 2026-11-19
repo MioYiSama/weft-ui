@@ -78,12 +78,11 @@ public final class WeftSession {
         }
     }
 
-    fileprivate func commit(_ bytes: UnsafeRawBufferPointer) {
+    func commit(_ bytes: UnsafeRawBufferPointer) {
         committing = true
         defer { committing = false }
         do {
-            var reader = try OpReader(bytes)
-            while let op = try reader.next() {
+            for op in try OpReader.readAll(bytes) {
                 apply(op)
             }
         } catch {

@@ -101,3 +101,7 @@ The specs live next to the code that implements them: the grammar in [crates/par
 pnpm --filter docs dev     # http://localhost:4321/
 pnpm --filter docs build   # static site in docs/dist/
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the tools of each platform, the checks CI runs on every pull request (`.github/workflows/ci.yml`; the Android and iOS UI flows run nightly in `nightly.yml`) and the conventions. Every user-visible change to a published package comes with a changeset (`pnpm changeset`). Report vulnerabilities as described in [SECURITY.md](SECURITY.md).

@@ -1,0 +1,68 @@
+# Contributing to Weft UI
+
+Thanks for helping. This guide covers the tools each platform needs, the checks a change must pass, and the conventions of the repository. The roadmap is [ROADMAP.md](ROADMAP.md); work happens in milestone plans such as [PLAN-M0.md](PLAN-M0.md).
+
+## Tools
+
+The versions match the CI workflows in `.github/workflows/`.
+
+| For | Tools |
+| --- | --- |
+| Everything | Git, Node.js 26, pnpm 11 (`corepack enable` picks the version in `package.json`), Rust stable with the `wasm32-unknown-unknown` target, `wasm-bindgen-cli` 0.2.130 (`cargo install wasm-bindgen-cli --version 0.2.130 --locked`) |
+| Native kernel | CMake 3.28 or later, Ninja, Python 3; ICU development files on Linux (`libicu-dev`) |
+| Apple | macOS 26 with Xcode 27 |
+| Android | Android SDK (platform 37) and NDK, JDK 21 |
+| Windows | Windows 11, Visual Studio Build Tools with the C++ workload (includes CMake and Ninja), .NET SDK 10, PowerShell 7 |
+| Linux | Docker (the `native/linux/docker` image has everything), or a Linux host with a C++20 compiler and the GTK 4, libsoup 3 and json-glib development packages |
+| Docs | Nothing beyond the workspace |
+
+You only need the rows of the platforms you change. A change to the compiler or the runtime is checked on every platform by CI.
+
+## First build
+
+```sh
+pnpm install
+pnpm build                       # compiler WASM and package builds
+native/apple/build-core.sh       # macOS: WeftCore.xcframework, for swift test and the Apple apps
+native/android/build-core.sh     # libweft.so for every ABI; WEFT_ANDROID_ABIS="x86_64" for a subset
+```
+
+The first kernel build fetches and compiles Hermes, which takes a while; later builds reuse it. The README lists the commands of every platform.
+
+## Checks
+
+Run the checks of the code you touched before opening a pull request. CI runs all of them except the UI flows, which run nightly.
+
+| Code | Command |
+| --- | --- |
+| C-rust | `cargo fmt --all --check && cargo test --workspace && cargo clippy --workspace --all-targets -- -D warnings` |
+| C-ts | `pnpm build && pnpm test`; TypeScript errors (`pnpm exec tsc -p .` in `packages/runtime`, `packages/platform`, `packages/vite`, `packages/content-mapper`, and `tests` with `--runExternalCode` for its `.weft` imports) may not grow |
+| C-core | `cmake -S native/core -B native/core/build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build native/core/build && ctest --test-dir native/core/build --output-on-failure` |
+| C-apple | `swift test --package-path native/apple` |
+| C-android | `WEFT_NATIVE=0 pnpm --filter example build:android && example/apps/android/gradlew -p example/apps/android :weft-android:testDebugUnitTest` |
+| C-windows | On Windows: `native/windows/build-core.ps1`, the kernel tests with `-DWEFT_CORE_SHARED=ON` (as C-core), then `dotnet test native/windows/Weft.WinUI.Tests` |
+| C-linux | In the container (below): `native/linux/build-core.sh`, then `cmake -S native/linux -B /tmp/weft-linux-tests -G Ninja -DWEFT_LINUX_TESTS=ON && cmake --build /tmp/weft-linux-tests && ctest --test-dir /tmp/weft-linux-tests --output-on-failure` |
+| C-ui | `pnpm --filter example test:<platform>` after `pnpm --filter example build:<platform>` |
+
+`WEFT_UPDATE_SNAPSHOTS=1` rewrites the Rust snapshots and the conformance goldens. Only do so when the change is meant to alter generated code, and review the diff.
+
+### UI flows
+
+CI runs the Android and iOS flows nightly (`nightly.yml`). The other platforms run locally:
+
+- **macOS**: `pnpm --filter example test:macos`. Switch to an English input source (ABC) first; other input methods intercept XCUITest's typing.
+- **Windows**: `pnpm --filter example build:windows`, then `pnpm --filter example test:windows` from an interactive desktop session (FlaUI drives the real window).
+- **Linux**: start the container (`docker compose -f native/linux/docker/compose.yaml up -d --build`), then in `docker compose -f native/linux/docker/compose.yaml exec linux bash`: `pnpm install`, `native/linux/build-core.sh`, `pnpm --filter example build:linux` and `pnpm --filter example test:linux`. The desktop is on `vnc://localhost:5901` (password `weft`).
+
+## Conventions
+
+- **Commits** follow [Conventional Commits](https://www.conventionalcommits.org/) (`fix(core): …`, `docs: …`). One commit does one thing; its body lists the changes.
+- **Changesets**: every user-visible change to a published package comes with a changeset (`pnpm changeset`). All `@weft-ui/*` packages share one version. Before 1.0, a minor version may break compatibility.
+- **Generated files** start with a "Generated from protocol/weft.protocol.json" header. Never edit them; change the schema and run `pnpm gen:protocol`.
+- **Protocol changes** start in `protocol/SPEC.md` and `protocol/weft.protocol.json`, with cases in `protocol/corpus/`, before any implementation.
+- **Docs** are written in English and Chinese; change both. The specs (`crates/parser/GRAMMAR.md`, `protocol/SPEC.md`) have `.zh-CN.md` counterparts.
+- **Rust** follows the formatting and Clippy settings of the workspace; Clippy warnings fail CI.
+
+## Reporting bugs and security issues
+
+Open an issue with the bug report template. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).

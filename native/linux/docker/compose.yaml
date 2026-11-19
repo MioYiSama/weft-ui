@@ -21,7 +21,12 @@ services:
     environment:
       # Keep pnpm's store in its volume: by default pnpm puts it next to the
       # project when the store and node_modules are on different file systems.
-      npm_config_store_dir: /home/ubuntu/.local/share/pnpm/store
+      # pnpm 11 reads only `pnpm_config_*` variables.
+      pnpm_config_store_dir: /home/ubuntu/.local/share/pnpm/store
+      # Let a non-interactive `pnpm install` (`exec` without a TTY) recreate
+      # node_modules when it was installed with another store or layout; pnpm
+      # 11 ignores `confirmModulesPurge` from the environment.
+      CI: "true"
     ports:
       - "127.0.0.1:5901:5901"
     volumes:

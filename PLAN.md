@@ -811,6 +811,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P6.1 共享 hermesc 引导 | ☑ | 干净构建、C-apple 通过；Apple 全 SDK 和 Android 全 ABI 产物已重建 |
 | P6.2 两套语法共用 fixture 检查 | ☑ | Rust fixture、fmt、clippy 通过；提交时未装 tree-sitter CLI，之后用 tree-sitter 0.27.2 补跑 `fixtures.sh` 通过 |
 | P6.3 文档收尾 | ☑ | docs 构建、C-rust、C-ts、C-apps 通过 |
+| N1 Linux 容器适配 pnpm 11 | ☑ | 重建容器后按原命令跑 C-linux 通过（含 `linux.frames`），工作区没有生成 `.pnpm-store/`；无 TTY 的 `pnpm install` 在换 store 后可重建 node_modules |
 
 ## 执行中发现
 

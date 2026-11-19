@@ -22,8 +22,12 @@ internal enum OpCode : byte
 /// </summary>
 internal readonly record struct Op(OpCode Code, uint Scope, uint Arg, uint Child, WeftValue Value, int RowsOffset, int RowsCount);
 
-/// <summary>Why a batch of ops could not be decoded.</summary>
-internal sealed class OpException(string message) : Exception(message);
+/// <summary>Why a batch of ops could not be decoded or applied.</summary>
+internal sealed class OpException(string message, string? kind = null) : Exception(message)
+{
+    /// <summary>The protocol error kind for decoding failures; null for application failures.</summary>
+    public string? Kind { get; } = kind;
+}
 
 /// <summary>Decodes one batch of ops in the binary encoding (version 1).</summary>
 internal ref struct OpReader
@@ -31,13 +35,15 @@ internal ref struct OpReader
     /// <summary>The encoding version this reader accepts.</summary>
     public const byte Version = 1;
 
+    private static readonly UTF8Encoding StrictUtf8 = new(false, true);
+
     private readonly ReadOnlySpan<byte> bytes;
     private int offset;
 
     public OpReader(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.IsEmpty) throw new OpException("truncated batch");
-        if (bytes[0] != Version) throw new OpException($"unknown encoding version {bytes[0]}");
+        if (bytes.IsEmpty) throw new OpException("truncated batch", "truncated");
+        if (bytes[0] != Version) throw new OpException($"unknown encoding version {bytes[0]}", "version");
         this.bytes = bytes;
         offset = 1;
     }
@@ -48,29 +54,27 @@ internal ref struct OpReader
         op = default;
         if (offset >= bytes.Length) return false;
         var code = (OpCode)Byte();
-        var scope = U32();
         switch (code)
         {
             case OpCode.Create:
-                op = new Op(code, scope, U32(), 0, default, 0, 0);
+                op = new Op(code, U32(), U32(), 0, default, 0, 0);
                 break;
             case OpCode.Set:
-                var slot = U32();
-                op = new Op(code, scope, slot, 0, Value(), 0, 0);
+                op = new Op(code, U32(), U32(), 0, Value(), 0, 0);
                 break;
             case OpCode.Branch or OpCode.Attach:
-                var point = U32();
-                op = new Op(code, scope, point, U32(), default, 0, 0);
+                op = new Op(code, U32(), U32(), U32(), default, 0, 0);
                 break;
             case OpCode.Rows:
+                var scope = U32();
                 var list = U32();
                 var count = U32();
-                if (count > (uint)(bytes.Length - offset) / 4) throw new OpException("truncated rows");
+                if (count > (uint)(bytes.Length - offset) / 4) throw new OpException("truncated rows", "truncated");
                 op = new Op(code, scope, list, 0, default, offset, (int)count);
                 offset += (int)count * 4;
                 break;
             default:
-                throw new OpException($"unknown opcode {(byte)code}");
+                throw new OpException($"unknown opcode {(byte)code}", "opcode");
         }
         return true;
     }
@@ -79,11 +83,11 @@ internal ref struct OpReader
     public readonly uint Row(in Op op, int index) =>
         BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(op.RowsOffset + index * 4, 4));
 
-    private ReadOnlySpan<byte> Take(int count)
+    private ReadOnlySpan<byte> Take(uint count)
     {
-        if (count > bytes.Length - offset) throw new OpException("truncated batch");
-        var span = bytes.Slice(offset, count);
-        offset += count;
+        if (count > (uint)(bytes.Length - offset)) throw new OpException("truncated batch", "truncated");
+        var span = bytes.Slice(offset, (int)count);
+        offset += (int)count;
         return span;
     }
 
@@ -99,8 +103,22 @@ internal ref struct OpReader
             0 => WeftValue.Of(false),
             1 => WeftValue.Of(true),
             2 => WeftValue.Of(BinaryPrimitives.ReadDoubleLittleEndian(Take(8))),
-            3 => WeftValue.Of(Encoding.UTF8.GetString(Take(checked((int)U32())))),
-            _ => throw new OpException($"unknown value tag {tag}"),
+            3 => ReadString(),
+            _ => throw new OpException($"unknown value tag {tag}", "tag"),
         };
+    }
+
+    private WeftValue ReadString()
+    {
+        var length = U32();
+        var utf8 = Take(length);
+        try
+        {
+            return WeftValue.Of(StrictUtf8.GetString(utf8));
+        }
+        catch (DecoderFallbackException error)
+        {
+            throw new OpException(error.Message, "utf8");
+        }
     }
 }

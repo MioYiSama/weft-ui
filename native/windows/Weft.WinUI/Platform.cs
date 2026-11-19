@@ -46,7 +46,7 @@ internal static class PlatformModules
     }
 
     /// <summary>Splits <c>u32 head length (LE) | head (UTF-8 JSON) | body</c>.</summary>
-    private static (JsonObject Head, byte[] Body) Unframe(byte[] data)
+    internal static (JsonObject Head, byte[] Body) Unframe(byte[] data)
     {
         if (data.Length < 4) throw new InvalidOperationException("weft: truncated frame");
         var length = BinaryPrimitives.ReadUInt32LittleEndian(data);
@@ -57,7 +57,7 @@ internal static class PlatformModules
         return (head, data[(4 + (int)length)..]);
     }
 
-    private static byte[] Frame(JsonObject head, byte[] body)
+    internal static byte[] Frame(JsonObject head, byte[] body)
     {
         var json = Encoding.UTF8.GetBytes(head.ToJsonString());
         var data = new byte[4 + json.Length + body.Length];

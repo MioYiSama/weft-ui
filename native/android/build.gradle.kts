@@ -29,8 +29,10 @@ android {
     buildFeatures {
         compose = true
     }
-    testOptions.unitTests.all {
-        it.systemProperty("weft.corpus", file("../../protocol/corpus").absolutePath)
+    if (file("src/test").isDirectory) {
+        testOptions.unitTests.all {
+            it.systemProperty("weft.corpus", file("../../protocol/corpus").absolutePath)
+        }
     }
     sourceSets {
         named("main") {

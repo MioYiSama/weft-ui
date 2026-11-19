@@ -48,6 +48,14 @@ importers:
         specifier: ^8.3.8
         version: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)
 
+  native/android: {}
+
+  native/apple: {}
+
+  native/linux: {}
+
+  native/windows: {}
+
   packages/compiler:
     dependencies:
       '@weft-ui/runtime':

@@ -1,6 +1,10 @@
 packages:
   - docs
   - packages/*
+  - native/apple
+  - native/android
+  - native/windows
+  - native/linux
   - example
   - tests
 

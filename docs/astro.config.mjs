@@ -25,6 +25,7 @@ export default defineConfig({
       },
       social: [{ icon: "github", label: "GitHub", href: repo }],
       editLink: { baseUrl: `${repo}/edit/master/docs/` },
+      routeMiddleware: "./src/routeData.ts",
       sidebar: [
         {
           label: "Guides",

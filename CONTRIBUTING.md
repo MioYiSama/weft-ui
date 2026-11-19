@@ -63,6 +63,16 @@ CI runs the Android and iOS flows nightly (`nightly.yml`). The other platforms r
 - **Docs** are written in English and Chinese; change both. The specs (`crates/parser/GRAMMAR.md`, `protocol/SPEC.md`) have `.zh-CN.md` counterparts.
 - **Rust** follows the formatting and Clippy settings of the workspace; Clippy warnings fail CI.
 
+## Releasing
+
+Maintainers publish every `@weft-ui/*` package together, from master, through the Release workflow (`.github/workflows/release.yml`). It builds each prebuilt kernel on its own platform (macOS for Apple and Android, Windows x64 and arm64, Ubuntu 24.04 x64 and arm64), packs the packages with them, and stages the versions that are not on npm yet. Nothing goes live until a maintainer approves it.
+
+1. Run `pnpm version-packages`, review the versions and changelogs, and merge the commit to master.
+2. Run the Release workflow on master with **stage** checked. Leave it unchecked for a dry run: it builds, checks and packs, uploads the tarballs as the `packages` artifact, and runs `npm stage publish --dry-run`.
+3. On npmjs.com, open **Staged Packages**, review the staged versions, and approve them with 2FA.
+
+The workflow stages through [trusted publishing](https://docs.npmjs.com/trusted-publishers), with no npm token. Each package needs a trusted publisher for the `weft-ui` organization, the `weft-ui` repository and the `release.yml` workflow. A package that is not on npm yet has no settings page to add one: run the workflow as a dry run, download the `packages` artifact, stage that package's tarball locally with `npm stage publish --access public <tarball>` while logged in, approve it, and then add the trusted publisher.
+
 ## Reporting bugs and security issues
 
 Open an issue with the bug report template. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).

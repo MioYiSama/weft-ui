@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.28)
 project(weft_linux LANGUAGES C CXX)
 
+option(WEFT_LINUX_TESTS "Build the shell's unit tests" OFF)
+
 # The Linux shell, built from source by every app: the weft/CMakeLists.txt
 # that @weft-ui/vite generates adds this directory and calls weft_views(),
 # and the app's CMakeLists.txt calls weft_app() for each executable.
@@ -32,6 +34,7 @@ set_target_properties(weft_core_shared PROPERTIES
 # the C++ ops decoder itself.
 add_library(weft_linux STATIC
   src/elements.cpp
+  src/frame.cpp
   src/platform.cpp
   src/scope.cpp
   src/session.cpp
@@ -42,6 +45,11 @@ add_library(weft::linux ALIAS weft_linux)
 target_include_directories(weft_linux PUBLIC include)
 target_compile_features(weft_linux PUBLIC cxx_std_20)
 target_link_libraries(weft_linux PUBLIC PkgConfig::WEFT_DEPS weft_core_shared)
+
+if(WEFT_LINUX_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
 
 # The app's generated views and bytecode (called by the generated weft/CMakeLists.txt).
 function(weft_views views bundle)

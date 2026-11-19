@@ -780,7 +780,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P1.5 Swift 严格 UTF-8 与样例 | ☑ | |
 | P1.6 Kotlin 严格 UTF-8 与样例 | ☑ | |
 | P1.7 C# 严格 UTF-8、opcode 优先与样例 | ☑ | |
-| P1.8 Linux 帧测试 | ☐ | |
+| P1.8 Linux 帧测试 | ☑ | |
 | P2.1 Schema、生成器与漂移检查 | ☐ | |
 | P2.2 TS 消费方 | ☐ | |
 | P2.3 Rust 消费方 | ☐ | |
@@ -811,3 +811,4 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 - [P1.3] 把 `frame`/`unframe` 移到 `frame.ts` 后，5 个原生平台的 `js/index.js` 只有一处差异：基线里 `native.ts` 已不再使用的模块级 `new TextEncoder` 原本排在 `X="<platform>"` 之后，现在 `frame.ts` 的模块级 `new TextEncoder,new TextDecoder` 排在它之前（`}},X=…;new TextEncoder;var ie=new TextDecoder;` → `}};new TextEncoder,new TextDecoder;var X=…,ie=new TextDecoder;`）。example 没有用 `fetch`，两个函数被摇掉，只剩下构造表达式。web、wechat 不变。要逐字节一致，只能在 `native.ts` 里保留一个无用的 encoder，所以没有这样做。另外 TS 7 的 `types` 默认为空，`packages/platform/tsconfig.json` 补上了 `"types": ["node"]`（与 `packages/vite` 一致），否则 `frame.test.ts` 找不到 `node:fs`。结论：接受（运行时行为不变）
 - [P1.6] Android `Session.kt` 逐个应用 `OpReader.next()` 的结果，批次后部出现非法 op 时，前面合法的 op 已经应用，不符合 P1.1「整批不应用」。结论：待定（不在 P1.6 范围内）
 - [P1.7] Windows `WeftSession.Commit` 同样边解码边应用，批次后部的非法 op 会留下已应用的前缀，不符合 P1.1「整批不应用」。结论：待定（不在 P1.7 范围内）
+- [P1.8] 换用 `pnpm_config_store_dir` 后，容器里非交互的 `pnpm install` 需要重建已有的 node_modules，必须设 `CI=true` 才不会中止。C-linux 的命令需要同时传这两个环境变量。结论：待定（与 P0.1 的 pnpm 11 问题一起处理）

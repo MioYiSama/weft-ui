@@ -1,5 +1,7 @@
 #include "platform.hpp"
 
+#include "frame.hpp"
+
 #include <json-glib/json-glib.h>
 #include <libsoup/soup.h>
 
@@ -46,21 +48,6 @@ void finish_later(std::unique_ptr<Pending> pending, bool ok, std::vector<uint8_t
       new Later{std::move(pending), ok, std::move(result)}, [](gpointer data) { delete static_cast<Later *>(data); });
 }
 
-/// Parses `json`, throwing with `what` when it is not valid JSON.
-JsonNode *parse(std::string_view json, const char *what) {
-  JsonParser *parser = json_parser_new();
-  GError *error = nullptr;
-  bool ok = json_parser_load_from_data(parser, json.data(), gssize(json.size()), &error);
-  JsonNode *root = ok ? json_node_copy(json_parser_get_root(parser)) : nullptr;
-  g_object_unref(parser);
-  if (!ok) {
-    std::string message = std::string("weft: invalid ") + what + " (" + error->message + ")";
-    g_error_free(error);
-    throw std::runtime_error(message);
-  }
-  return root;
-}
-
 std::string to_json(JsonNode *node) {
   char *text = json_to_string(node, false);
   std::string json(text);
@@ -75,31 +62,9 @@ SoupSession *http() {
   return session;
 }
 
-/// Splits `u32 head length (LE) | head (UTF-8 JSON) | body`.
-std::pair<JsonNode *, std::vector<uint8_t>> unframe(const std::vector<uint8_t> &data) {
-  if (data.size() < 4) throw std::runtime_error("weft: truncated frame");
-  size_t length = size_t(data[0]) | size_t(data[1]) << 8 | size_t(data[2]) << 16 | size_t(data[3]) << 24;
-  if (length > data.size() - 4) throw std::runtime_error("weft: invalid frame head");
-  JsonNode *head = parse({reinterpret_cast<const char *>(data.data() + 4), length}, "frame head");
-  if (!JSON_NODE_HOLDS_OBJECT(head)) {
-    json_node_unref(head);
-    throw std::runtime_error("weft: invalid frame head");
-  }
-  return {head, {data.begin() + 4 + std::ptrdiff_t(length), data.end()}};
-}
-
-std::vector<uint8_t> frame(const std::string &head, const uint8_t *body, size_t len) {
-  std::vector<uint8_t> data;
-  data.reserve(4 + head.size() + len);
-  for (int shift = 0; shift < 32; shift += 8) data.push_back(uint8_t(head.size() >> shift & 0xff));
-  data.insert(data.end(), head.begin(), head.end());
-  data.insert(data.end(), body, body + len);
-  return data;
-}
-
 /// Sends the request; `pending` is released once the request is sent.
 void fetch(const std::vector<uint8_t> &args, std::unique_ptr<Pending> &pending) {
-  auto [head, body] = unframe(args);
+  auto [head, body] = frame::unframe(args);
   JsonObject *object = json_node_get_object(head);
   std::string url = json_object_get_string_member_with_default(object, "url", "");
   std::string method = json_object_get_string_member_with_default(object, "method", "GET");
@@ -142,7 +107,7 @@ void fetch(const std::vector<uint8_t> &args, std::unique_ptr<Pending> &pending) 
         std::string head = "{\"status\":" + std::to_string(soup_message_get_status(message)) + "}";
         gsize len = 0;
         auto *body = static_cast<const uint8_t *>(g_bytes_get_data(bytes, &len));
-        pending->finish(true, frame(head, body, len));
+        pending->finish(true, frame::frame(head, body, len));
         g_bytes_unref(bytes);
       },
       pending.release());
@@ -172,7 +137,7 @@ std::map<std::string, std::string> &stored() {
   gsize length = 0;
   if (!g_file_get_contents(storage_path().c_str(), &contents, &length, nullptr)) return *values;
   try {
-    JsonNode *root = parse({contents, length}, "storage file");
+    JsonNode *root = parse_json({contents, length}, "storage file");
     if (JSON_NODE_HOLDS_OBJECT(root)) {
       json_object_foreach_member(
           json_node_get_object(root),
@@ -212,7 +177,7 @@ void save(const std::map<std::string, std::string> &values) {
 }
 
 std::vector<uint8_t> storage(const std::string &method, const std::vector<uint8_t> &args) {
-  JsonNode *root = parse({reinterpret_cast<const char *>(args.data()), args.size()}, "storage arguments");
+  JsonNode *root = parse_json({reinterpret_cast<const char *>(args.data()), args.size()}, "storage arguments");
   std::vector<std::string> list;
   if (JSON_NODE_HOLDS_ARRAY(root)) {
     JsonArray *array = json_node_get_array(root);

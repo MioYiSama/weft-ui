@@ -1,0 +1,6 @@
+get_filename_component(corpus ${PROJECT_SOURCE_DIR}/../../protocol/corpus ABSOLUTE)
+add_executable(weft_linux_tests frame_test.cpp)
+target_link_libraries(weft_linux_tests PRIVATE weft_linux)
+target_include_directories(weft_linux_tests PRIVATE ../src)
+target_compile_definitions(weft_linux_tests PRIVATE WEFT_CORPUS_DIR="${corpus}")
+add_test(NAME linux.frames COMMAND weft_linux_tests)

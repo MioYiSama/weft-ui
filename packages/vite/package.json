@@ -34,11 +34,25 @@
     "hermes-compiler": "260318099.0.8"
   },
   "peerDependencies": {
+    "@weft-ui/native-android": "workspace:^",
+    "@weft-ui/native-apple": "workspace:^",
+    "@weft-ui/native-linux": "workspace:^",
+    "@weft-ui/native-windows": "workspace:^",
     "vite": "^8.3.8"
+  },
+  "peerDependenciesMeta": {
+    "@weft-ui/native-android": { "optional": true },
+    "@weft-ui/native-apple": { "optional": true },
+    "@weft-ui/native-linux": { "optional": true },
+    "@weft-ui/native-windows": { "optional": true }
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@weft-ui/content-mapper": "workspace:*",
+    "@weft-ui/native-android": "workspace:*",
+    "@weft-ui/native-apple": "workspace:*",
+    "@weft-ui/native-linux": "workspace:*",
+    "@weft-ui/native-windows": "workspace:*",
     "@weft-ui/platform": "workspace:*",
     "happy-dom": "^21.0.4",
     "typescript": "7.1.0-beta",

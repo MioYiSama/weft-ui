@@ -17,7 +17,7 @@
 use std::fmt::{self, Display, Write as _};
 
 use crate::ir::Element;
-use crate::view::{Constant, PointKind, StaticProp, Template, ViewNodeKind};
+use crate::view::{Constant, PointKind, PropSource, StaticProp, Template, ViewNodeKind};
 
 use super::kotlin::{self, Code};
 
@@ -48,32 +48,6 @@ impl Body<'_> {
         }
     }
 
-    /// A property is either read from its value slot or inlined as a constant.
-    fn prop<'a>(&self, node: u32, props: &'a [StaticProp], name: &str) -> Option<Prop<'a>> {
-        if let Some(slot) = self
-            .template
-            .values
-            .iter()
-            .position(|v| v.node == node && v.prop == name)
-        {
-            return Some(Prop::Slot(slot));
-        }
-        props
-            .iter()
-            .find(|p| p.name == name)
-            .map(|p| Prop::Constant(&p.value))
-    }
-
-    /// The event slot of element `node` and the value slot it controls.
-    fn event(&self, node: u32) -> Option<(usize, Option<u32>)> {
-        self.template
-            .events
-            .iter()
-            .enumerate()
-            .find(|(_, e)| e.node == node)
-            .map(|(slot, e)| (slot, e.controls))
-    }
-
     fn element(
         &self,
         out: &mut Code,
@@ -82,15 +56,18 @@ impl Body<'_> {
         props: &[StaticProp],
         children: &[u32],
     ) {
-        let prop = |name: &str| self.prop(node, props, name);
+        let prop = |name: &str| self.template.prop(node, props, name);
         let optional = |mut args: CallArgs<'_>, names: &[&str]| {
             for &name in names {
                 let Some(value) = prop(name) else {
                     continue;
                 };
-                if name == "disabled" && matches!(value, Prop::Constant(Constant::Bool(false))) {
+                if name == "disabled"
+                    && matches!(value, PropSource::Constant(Constant::Bool(false)))
+                {
                     continue;
                 }
+                let value = KotlinProp(value);
                 args.push(format_args!("{name} = {value}"));
             }
             args.finish();
@@ -104,7 +81,7 @@ impl Body<'_> {
                 optional(args, &["gap", "padding", "width", "height", "background"]);
             }
             Element::Button => {
-                match self.event(node) {
+                match self.template.event(node) {
                     Some((slot, _)) => {
                         args.push(format_args!("onClick = {{ s.dispatch({slot}) }}"));
                     }
@@ -113,13 +90,13 @@ impl Body<'_> {
                 optional(args, &["disabled"]);
             }
             Element::Text => {
-                args.push(prop("value").expect("`Text` has a value"));
+                args.push(KotlinProp(prop("value").expect("`Text` has a value")));
                 optional(args, &["color", "size", "bold"]);
                 out.writer.end_line("");
                 return;
             }
             Element::Input => {
-                let (event, slot) = self.controlled(node);
+                let (event, slot) = self.template.controlled(node);
                 args.push(format_args!("s.v{slot}"));
                 optional(args, &["placeholder", "disabled"]);
                 out.writer.end_line(format_args!(
@@ -128,7 +105,7 @@ impl Body<'_> {
                 return;
             }
             Element::Checkbox => {
-                let (event, slot) = self.controlled(node);
+                let (event, slot) = self.template.controlled(node);
                 args.push(format_args!("s.v{slot}"));
                 optional(args, &["disabled"]);
                 out.writer.end_line(format_args!(
@@ -137,7 +114,7 @@ impl Body<'_> {
                 return;
             }
             Element::Image => {
-                args.push(prop("src").expect("`Image` has a source"));
+                args.push(KotlinProp(prop("src").expect("`Image` has a source")));
                 optional(args, &["width", "height"]);
                 out.writer.end_line("");
                 return;
@@ -148,14 +125,6 @@ impl Body<'_> {
             self.node(out, child);
         }
         out.close("}");
-    }
-
-    /// Event slot and controlled value slot of an `Input` or `Checkbox`.
-    fn controlled(&self, node: u32) -> (usize, u32) {
-        match self.event(node) {
-            Some((event, Some(slot))) => (event, slot),
-            _ => unreachable!("controlled elements have an edit event with a value slot"),
-        }
     }
 
     fn point(&self, out: &mut Code, point: u32) {
@@ -214,16 +183,13 @@ impl<'a> CallArgs<'a> {
     }
 }
 
-enum Prop<'a> {
-    Slot(usize),
-    Constant(&'a Constant),
-}
+struct KotlinProp<'t>(PropSource<'t>);
 
-impl Display for Prop<'_> {
+impl Display for KotlinProp<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Prop::Slot(slot) => write!(f, "s.v{slot}"),
-            Prop::Constant(value) => match value {
+        match self.0 {
+            PropSource::Slot(slot) => write!(f, "s.v{slot}"),
+            PropSource::Constant(value) => match value {
                 Constant::Int(v) => write!(f, "{v}f"),
                 Constant::Bool(v) => v.fmt(f),
                 Constant::String(s) => kotlin::string(f, s),

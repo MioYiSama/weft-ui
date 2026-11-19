@@ -15,8 +15,10 @@
 //! Stack spacing defaults to 0 and children align to the start of the cross
 //! axis, as the layout rules of GRAMMAR.md require.
 
+use std::fmt::{self, Display};
+
 use crate::ir::Element;
-use crate::view::{Constant, PointKind, StaticProp, Template, ViewNodeKind};
+use crate::view::{Constant, PointKind, PropSource, StaticProp, Template, ViewNodeKind};
 
 use super::swift::{self, Code};
 
@@ -50,33 +52,6 @@ impl Body<'_> {
         }
     }
 
-    /// Code of property `name` of element `node`: its value slot, its
-    /// constant, or `None` when it is not set.
-    fn prop(&self, node: u32, props: &[StaticProp], name: &str) -> Option<String> {
-        if let Some(slot) = self
-            .template
-            .values
-            .iter()
-            .position(|v| v.node == node && v.prop == name)
-        {
-            return Some(format!("s.v{slot}"));
-        }
-        props
-            .iter()
-            .find(|p| p.name == name)
-            .map(|p| literal(&p.value))
-    }
-
-    /// The event slot of element `node` and the value slot it controls.
-    fn event(&self, node: u32) -> Option<(usize, Option<u32>)> {
-        self.template
-            .events
-            .iter()
-            .enumerate()
-            .find(|(_, e)| e.node == node)
-            .map(|(slot, e)| (slot, e.controls))
-    }
-
     fn element(
         &self,
         out: &mut Code,
@@ -85,11 +60,14 @@ impl Body<'_> {
         props: &[StaticProp],
         children: &[u32],
     ) {
-        let prop = |name| self.prop(node, props, name);
-        let optional = |name| prop(name).unwrap_or_else(|| "nil".to_owned());
+        let prop = |name| self.template.prop(node, props, name);
+        let optional = |source| match source {
+            Some(source) => Argument::Property(source),
+            None => Argument::Default("nil"),
+        };
         match element {
             Element::Column | Element::Row => {
-                let gap = prop("gap").unwrap_or_else(|| "0".to_owned());
+                let gap = prop("gap").map_or(Argument::Default("0"), Argument::Property);
                 let (stack, alignment) = match element {
                     Element::Column => ("VStack", "leading"),
                     _ => ("HStack", "top"),
@@ -101,36 +79,27 @@ impl Body<'_> {
                     self.node(out, child);
                 }
                 out.close("}");
-                if ["padding", "width", "height", "background"]
-                    .into_iter()
-                    .any(|name| prop(name).is_some())
-                {
+                let properties = ["padding", "width", "height", "background"].map(prop);
+                if properties.iter().any(Option::is_some) {
+                    let [padding, width, height, background] = properties.map(optional);
                     out.writer.line(format_args!(
-                        ".weftBox(padding: {}, width: {}, height: {}, background: {})",
-                        optional("padding"),
-                        optional("width"),
-                        optional("height"),
-                        optional("background"),
+                        ".weftBox(padding: {padding}, width: {width}, height: {height}, background: {background})"
                     ));
                 }
             }
             Element::Text => {
-                let value = prop("value").expect("`Text` has a value");
+                let value = Argument::Property(prop("value").expect("`Text` has a value"));
                 out.writer.line(format_args!("Text(verbatim: {value})"));
-                if ["color", "size", "bold"]
-                    .into_iter()
-                    .any(|name| prop(name).is_some())
-                {
+                let properties = ["color", "size", "bold"].map(prop);
+                if properties.iter().any(Option::is_some) {
+                    let [color, size, bold] = properties.map(optional);
                     out.writer.line(format_args!(
-                        ".weftText(color: {}, size: {}, bold: {})",
-                        optional("color"),
-                        optional("size"),
-                        optional("bold"),
+                        ".weftText(color: {color}, size: {size}, bold: {bold})"
                     ));
                 }
             }
             Element::Button => {
-                match self.event(node) {
+                match self.template.event(node) {
                     Some((slot, _)) => {
                         out.open("Button {");
                         out.writer.line(format_args!("_ = s.dispatch({slot})"));
@@ -146,37 +115,32 @@ impl Body<'_> {
                 out.close("}");
             }
             Element::Input => {
-                let (event, slot) = self.controlled(node);
+                let (event, slot) = self.template.controlled(node);
                 out.writer.line(format_args!(
                     "WeftInput(text: s.v{slot}, placeholder: {}) {{ s.dispatch({event}, .string($0)) ? nil : s.v{slot} }}",
-                    optional("placeholder"),
+                    optional(prop("placeholder")),
                 ));
             }
             Element::Checkbox => {
-                let (event, slot) = self.controlled(node);
+                let (event, slot) = self.template.controlled(node);
                 out.writer.line(format_args!(
                     "WeftCheckbox(checked: s.v{slot}) {{ s.dispatch({event}, .bool($0)) ? nil : s.v{slot} }}"
                 ));
             }
             Element::Image => {
-                let src = prop("src").expect("`Image` has a source");
+                let src = Argument::Property(prop("src").expect("`Image` has a source"));
                 out.writer.line(format_args!(
                     "WeftImage(src: {src}, width: {}, height: {})",
-                    optional("width"),
-                    optional("height"),
+                    optional(prop("width")),
+                    optional(prop("height")),
                 ));
             }
         }
-        if let Some(disabled) = prop("disabled").filter(|d| d != "false") {
+        if let Some(disabled) = prop("disabled")
+            && !matches!(disabled, PropSource::Constant(Constant::Bool(false)))
+        {
+            let disabled = Argument::Property(disabled);
             out.writer.line(format_args!(".disabled({disabled})"));
-        }
-    }
-
-    /// Event slot and controlled value slot of an `Input` or `Checkbox`.
-    fn controlled(&self, node: u32) -> (usize, u32) {
-        match self.event(node) {
-            Some((event, Some(slot))) => (event, slot),
-            _ => unreachable!("controlled elements have an edit event with a value slot"),
         }
     }
 
@@ -213,15 +177,26 @@ impl Body<'_> {
     }
 }
 
-/// Swift code of a constant property value.
-fn literal(value: &Constant) -> String {
-    match value {
-        Constant::Int(v) => v.to_string(),
-        Constant::Bool(v) => v.to_string(),
-        Constant::String(s) => swift::string(s),
-        Constant::Color(c) => format!(
-            "Color(weftRGBA: 0x{:02x}{:02x}{:02x}{:02x})",
-            c.r, c.g, c.b, c.a
-        ),
+enum Argument<'t> {
+    Property(PropSource<'t>),
+    Default(&'static str),
+}
+
+impl Display for Argument<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Default(value) => f.write_str(value),
+            Self::Property(PropSource::Slot(slot)) => write!(f, "s.v{slot}"),
+            Self::Property(PropSource::Constant(value)) => match value {
+                Constant::Int(v) => v.fmt(f),
+                Constant::Bool(v) => v.fmt(f),
+                Constant::String(s) => swift::string(f, s),
+                Constant::Color(c) => write!(
+                    f,
+                    "Color(weftRGBA: 0x{:02x}{:02x}{:02x}{:02x})",
+                    c.r, c.g, c.b, c.a
+                ),
+            },
+        }
     }
 }

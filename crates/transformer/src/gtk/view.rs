@@ -26,16 +26,16 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             let args = match element {
                 Element::Column => "weft::Axis::Vertical".to_owned(),
                 Element::Row => "weft::Axis::Horizontal".to_owned(),
-                Element::Button => match event(template, index) {
-                    Some(slot) => format!("[this] {{ dispatch({slot}); }}"),
+                Element::Button => match template.event(index) {
+                    Some((slot, _)) => format!("[this] {{ dispatch({slot}); }}"),
                     None => "nullptr".to_owned(),
                 },
                 Element::Input => {
-                    let slot = controlled(template, index);
+                    let (slot, _) = template.controlled(index);
                     format!("[this](std::string_view v) {{ return dispatch({slot}, v); }}")
                 }
                 Element::Checkbox => {
-                    let slot = controlled(template, index);
+                    let (slot, _) = template.controlled(index);
                     format!("[this](bool v) {{ return dispatch({slot}, v); }}")
                 }
                 Element::Text | Element::Image => String::new(),
@@ -89,15 +89,6 @@ fn member(template: &Template, index: u32) -> String {
     } else {
         format!("n{index}.")
     }
-}
-
-/// Event slot of an element, excluding lifecycle events handled by JS.
-fn event(template: &Template, node: u32) -> Option<usize> {
-    template.events.iter().position(|e| e.node == node)
-}
-
-fn controlled(template: &Template, node: u32) -> usize {
-    event(template, node).expect("controlled elements have an onChange event with a value slot")
 }
 
 pub(crate) fn wrapper(element: Element) -> &'static str {

@@ -1,6 +1,6 @@
 //! Indented Swift source and Swift literals.
 
-use std::fmt::{Display, Write as _};
+use std::fmt::{self, Display, Write as _};
 
 use crate::code::Indented;
 
@@ -38,23 +38,19 @@ impl Code {
 
 /// A Swift string literal of `s`. Backslashes are escaped, so `\(` never
 /// starts an interpolation.
-pub(crate) fn string(s: &str) -> String {
-    let mut out = String::with_capacity(s.len() + 2);
-    out.push('"');
+pub(crate) fn string(f: &mut fmt::Formatter<'_>, s: &str) -> fmt::Result {
+    f.write_char('"')?;
     for c in s.chars() {
         match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            '\0' => out.push_str("\\0"),
-            c if c.is_control() => {
-                write!(out, "\\u{{{:x}}}", u32::from(c)).expect("writing to a String cannot fail");
-            }
-            c => out.push(c),
+            '"' => f.write_str("\\\"")?,
+            '\\' => f.write_str("\\\\")?,
+            '\n' => f.write_str("\\n")?,
+            '\r' => f.write_str("\\r")?,
+            '\t' => f.write_str("\\t")?,
+            '\0' => f.write_str("\\0")?,
+            c if c.is_control() => write!(f, "\\u{{{:x}}}", u32::from(c))?,
+            c => f.write_char(c)?,
         }
     }
-    out.push('"');
-    out
+    f.write_char('"')
 }

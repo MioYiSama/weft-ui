@@ -31,13 +31,12 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             let args = match element {
                 Element::Column => "vertical: true".to_owned(),
                 Element::Row => "vertical: false".to_owned(),
-                Element::Button => match event(template, index) {
-                    Some(slot) => format!("() => Dispatch({slot})"),
+                Element::Button => match template.event(index) {
+                    Some((slot, _)) => format!("() => Dispatch({slot})"),
                     None => "null".to_owned(),
                 },
                 Element::Input | Element::Checkbox => {
-                    let slot = event(template, index)
-                        .expect("controlled elements have an onChange event with a value slot");
+                    let (slot, _) = template.controlled(index);
                     format!("v => Dispatch({slot}, WeftValue.Of(v))")
                 }
                 Element::Text | Element::Image => String::new(),
@@ -63,11 +62,6 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             .writer
             .line(format_args!("{region}.Point(this, {point});")),
     }
-}
-
-/// Event slot of an element, excluding lifecycle events handled by JS.
-fn event(template: &Template, node: u32) -> Option<usize> {
-    template.events.iter().position(|e| e.node == node)
 }
 
 pub(crate) fn wrapper(element: Element) -> &'static str {

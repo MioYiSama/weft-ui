@@ -112,6 +112,15 @@ pub enum Constant {
     Color(Color),
 }
 
+/// A native view property is read from a value slot or inlined as a constant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PropSource<'t> {
+    /// Index into [`Template::values`].
+    Slot(usize),
+    /// Value borrowed from a node's static properties.
+    Constant(&'t Constant),
+}
+
 /// Type of the values a slot receives or an event carries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ValueType {
@@ -376,6 +385,52 @@ impl ViewLayout {
 }
 
 impl Template {
+    /// Finds a property of `node`, preferring a value slot to an inlined constant.
+    ///
+    /// Pass the static properties of `node` as `props`.
+    #[must_use]
+    pub fn prop<'t>(
+        &self,
+        node: u32,
+        props: &'t [StaticProp],
+        name: &str,
+    ) -> Option<PropSource<'t>> {
+        if let Some(slot) = self
+            .values
+            .iter()
+            .position(|value| value.node == node && value.prop == name)
+        {
+            return Some(PropSource::Slot(slot));
+        }
+        props
+            .iter()
+            .find(|prop| prop.name == name)
+            .map(|prop| PropSource::Constant(&prop.value))
+    }
+
+    /// Returns an element's event slot and the value slot it controls, if any.
+    #[must_use]
+    pub fn event(&self, node: u32) -> Option<(usize, Option<u32>)> {
+        self.events
+            .iter()
+            .enumerate()
+            .find(|(_, event)| event.node == node)
+            .map(|(slot, event)| (slot, event.controls))
+    }
+
+    /// Returns the edit event and value slots of a controlled element.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `node` does not have an event that controls a value slot.
+    #[must_use]
+    pub fn controlled(&self, node: u32) -> (usize, u32) {
+        match self.event(node) {
+            Some((event, Some(slot))) => (event, slot),
+            _ => unreachable!("controlled elements have an edit event with a value slot"),
+        }
+    }
+
     fn write_json(&self, out: &mut Json) {
         out.open('{');
         out.key("label");
@@ -850,4 +905,66 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     bytes
         .iter()
         .fold(OFFSET, |hash, &b| (hash ^ u64::from(b)).wrapping_mul(PRIME))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use weft_ui_parser::MemoryLoader;
+
+    fn layout() -> ViewLayout {
+        let mut loader = MemoryLoader::new();
+        loader.insert(
+            "App.weft",
+            r#"
+            event Clicked
+            component App(text: String) {
+                Text(text, bold = true)
+                Button(onClick = Clicked) { Text("click") }
+                Input("")
+            }
+            "#,
+        );
+        let compilation = crate::check(weft_ui_parser::load(&["App.weft"], &mut loader));
+        let Some(program) = &compilation.program else {
+            panic!("{}", compilation.render_diagnostics());
+        };
+        ViewLayout::new(program)
+    }
+
+    #[test]
+    fn finds_dynamic_and_static_properties() {
+        let layout = layout();
+        let template = &layout.templates()[0];
+        let text = template.roots[0];
+        let ViewNodeKind::Element { props, .. } = &template.nodes[text as usize].kind else {
+            panic!("the first root is a Text element");
+        };
+        assert_eq!(
+            template.prop(text, props, "value"),
+            Some(PropSource::Slot(0))
+        );
+        assert_eq!(
+            template.prop(text, props, "bold"),
+            Some(PropSource::Constant(&Constant::Bool(true)))
+        );
+        assert_eq!(template.prop(text, props, "color"), None);
+    }
+
+    #[test]
+    fn finds_click_and_controlled_events_in_slot_order() {
+        let layout = layout();
+        let template = &layout.templates()[0];
+        assert_eq!(template.event(template.roots[0]), None);
+        assert_eq!(template.event(template.roots[1]), Some((0, None)));
+        assert_eq!(template.controlled(template.roots[2]), (1, 1));
+    }
+
+    #[test]
+    #[should_panic(expected = "controlled elements have an edit event with a value slot")]
+    fn rejects_an_event_without_a_controlled_slot() {
+        let layout = layout();
+        let template = &layout.templates()[0];
+        let _ = template.controlled(template.roots[1]);
+    }
 }

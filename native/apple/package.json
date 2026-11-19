@@ -14,9 +14,11 @@
   },
   "scripts": {
     "prepack": "node ../pack.mjs prepack apple",
-    "postpack": "node ../pack.mjs postpack apple"
+    "postpack": "node ../pack.mjs postpack apple",
+    "prepublishOnly": "node ../pack.mjs prepublishOnly apple"
   },
   "files": [
+    "LICENSE-hermes",
     "Package.swift",
     "Sources",
     "build/WeftCore.xcframework"

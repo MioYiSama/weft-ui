@@ -14,9 +14,11 @@
   },
   "scripts": {
     "prepack": "node ../pack.mjs prepack windows",
-    "postpack": "node ../pack.mjs postpack windows"
+    "postpack": "node ../pack.mjs postpack windows",
+    "prepublishOnly": "node ../pack.mjs prepublishOnly windows"
   },
   "files": [
+    "LICENSE-hermes",
     "Weft.WinUI.targets",
     "Weft.WinUI",
     "!Weft.WinUI/**/bin/**",

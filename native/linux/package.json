@@ -14,9 +14,11 @@
   },
   "scripts": {
     "prepack": "node ../pack.mjs prepack linux",
-    "postpack": "node ../pack.mjs postpack linux"
+    "postpack": "node ../pack.mjs postpack linux",
+    "prepublishOnly": "node ../pack.mjs prepublishOnly linux"
   },
   "files": [
+    "LICENSE-hermes",
     "CMakeLists.txt",
     "core",
     "include",

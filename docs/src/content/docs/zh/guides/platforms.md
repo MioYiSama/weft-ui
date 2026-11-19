@@ -24,7 +24,7 @@ export default defineConfig({
 | --- | --- | --- |
 | `platforms` | `web`、`wechat`、`ios`、`macos`、`android`、`windows`、`linux` | `vite build --app` 构建的平台，也是 `WEFT_PLATFORM` 可显式指定的平台。 |
 | `apps` | `./apps` | 各平台工程的输出目录，可用绝对路径或相对于 Vite 根目录的路径。 |
-| `native` | Weft UI 工作区中的 `native/` 目录 | 原生平台壳所在的目录，包含 `apple/`、`android/`、`windows/` 和 `linux/`。可用绝对路径或相对于 Vite 根目录的路径。 |
+| `native` | 按目标平台解析已安装的原生壳包 | 指定包含 `apple/`、`android/`、`windows/` 和 `linux/` 原生壳包的目录，覆盖已安装的包。可用绝对路径或相对于 Vite 根目录的路径。 |
 | `app.id` | `""` | 填入需要应用 ID 的模板，例如 Apple 的 Bundle ID 或 Android 的应用 ID。请在首次构建前设置；它不是微信小程序的 AppID。 |
 | `app.name` | Vite 根目录的目录名 | 首次构建时填入平台工程模板的显示名称。 |
 | `include` | `src/**/*.weft` | 相对于 Vite 根目录的 glob。Web 以外的平台会将匹配的 `.weft` 文件一起编译。 |
@@ -39,7 +39,18 @@ export default defineConfig({
 WEFT_PLATFORM=web,wechat pnpm exec vite build
 ```
 
-未设置 `WEFT_PLATFORM` 时，`vite build` 构建 Web，`vite build --app` 则构建 `platforms` 中的所有平台。原生平台默认构建 Debug 版本，传入 `--mode release` 可构建 Release 版本。
+未设置 `WEFT_PLATFORM` 时，`vite build` 构建 Web，`vite build --app` 则构建 `platforms` 中的所有目标。原生平台默认构建 Debug 版本，传入 `--mode release` 可构建 Release 版本。
+
+如果项目通过 npm 使用 Weft UI，请安装 Vite 插件、`@weft-ui/runtime` 和 `@weft-ui/platform`，再按需安装原生壳包：
+
+| 目标平台 | 在应用项目中运行 |
+| --- | --- |
+| macOS 和 iOS | `pnpm add -D @weft-ui/native-apple` |
+| Android | `pnpm add -D @weft-ui/native-android` |
+| Windows | `pnpm add -D @weft-ui/native-windows` |
+| Linux | `pnpm add -D @weft-ui/native-linux` |
+
+原生壳包自带预编译内核。构建应用仍需安装下文列出的平台工具；只有在 Weft UI 工作区内开发时，才需要运行内核构建脚本。工作区里的示例已经声明了对各原生壳包的依赖。
 
 ## 工程目录
 
@@ -76,9 +87,9 @@ pnpm --filter @weft-ui/tests test
 
 ## macOS 和 iOS
 
-在 macOS 主机上准备 Xcode（Swift 6）、CMake 3.28 或更高版本、Ninja 和 Python 3。如果要构建 iOS 模拟器版本，还需安装对应的模拟器运行时。模板最低支持 macOS 14 和 iOS 17。
+在 macOS 主机上安装 Xcode（Swift 6）。如果要构建 iOS 模拟器版本，还需安装对应的模拟器运行时。模板最低支持 macOS 14 和 iOS 17。
 
-运行一次 `native/apple/build-core.sh`，生成 `native/apple/build/WeftCore.xcframework`。默认包含 macOS、iOS 模拟器和 iOS 真机的产物。如果只需要其中一部分，可将 `WEFT_APPLE_SDKS` 设为由空格分隔的 SDK 列表，从 `macosx`、`iphonesimulator` 和 `iphoneos` 中选择。
+在 Weft UI 工作区中，运行一次 `native/apple/build-core.sh`，生成 `native/apple/build/WeftCore.xcframework`。脚本需要 CMake 3.28 或更高版本、Ninja 和 Python 3。内核默认包含 macOS、iOS 模拟器和 iOS 真机的产物。如果只需要其中一部分，可将 `WEFT_APPLE_SDKS` 设为由空格分隔的 SDK 列表，从 `macosx`、`iphonesimulator` 和 `iphoneos` 中选择。
 
 ```sh
 native/apple/build-core.sh
@@ -94,9 +105,9 @@ pnpm --filter example test:ios
 
 ## Android
 
-准备 Android SDK（模板使用 API 37 编译）、NDK 和 JDK 17 或更高版本。编译内核还需要 Bash、主机 C++ 工具链、CMake 3.28 或更高版本、Ninja 和 Python 3。如果 SDK 不在默认位置，请设置 `ANDROID_HOME`（或 `ANDROID_SDK_ROOT`）。内核脚本优先使用 `ANDROID_NDK_HOME` 指定的 NDK；未设置时会在 SDK 的 `ndk/` 目录中查找最新版本。
+准备 Android SDK（模板使用 API 37 编译）和 JDK 17 或更高版本。如果 SDK 不在默认位置，请设置 `ANDROID_HOME`（或 `ANDROID_SDK_ROOT`）。
 
-内核只需先构建一次。脚本会在 `native/android/build/jniLibs/<abi>/libweft.so` 生成对应架构的库，默认覆盖 `arm64-v8a`、`armeabi-v7a`、`x86_64` 和 `x86`。如果只需要部分 ABI，可把 `WEFT_ANDROID_ABIS` 设为空格分隔的列表，例如 `arm64-v8a x86_64`。
+在 Weft UI 工作区构建内核还需要 Android NDK、Bash、主机 C++ 工具链、CMake 3.28 或更高版本、Ninja 和 Python 3。脚本优先使用 `ANDROID_NDK_HOME` 指定的 NDK；未设置时会在 SDK 的 `ndk/` 目录中查找最新版本。脚本会在 `native/android/build/jniLibs/<abi>/libweft.so` 生成对应架构的库，默认覆盖 `arm64-v8a`、`armeabi-v7a`、`x86_64` 和 `x86`。如果只需要部分 ABI，可把 `WEFT_ANDROID_ABIS` 设为空格分隔的列表，例如 `arm64-v8a x86_64`。
 
 ```sh
 native/android/build-core.sh
@@ -110,7 +121,9 @@ pnpm --filter example test:android
 
 ## Windows
 
-在 Windows 主机上准备 PowerShell 7、带 C++ 工具链和 CMake 工具的 Visual Studio Build Tools、可通过 `PATH` 找到的 Python 3，以及 .NET 10 SDK 或更高版本。运行一次内核脚本，生成 `native/windows/build/win-<arch>/weft_core.dll`。默认按主机架构构建；如果应用面向其他架构，请传入 `-Arch arm64` 或 `-Arch x64`，与工程的 `RuntimeIdentifier` 对应。
+在 Windows 主机上安装 .NET 10 SDK 或更高版本。
+
+在 Weft UI 工作区构建内核还需要 PowerShell 7、带 C++ 工具链和 CMake 工具的 Visual Studio Build Tools，以及可通过 `PATH` 找到的 Python 3。脚本会按主机架构生成 `native/windows/build/win-<arch>/weft_core.dll`。如果应用面向其他架构，请传入 `-Arch arm64` 或 `-Arch x64`，与工程的 `RuntimeIdentifier` 对应。
 
 ```powershell
 ./native/windows/build-core.ps1
@@ -122,9 +135,11 @@ pnpm --filter example test:windows
 
 ## Linux
 
-在 Linux 主机上准备 C++20 工具链、CMake 3.28 或更高版本、Ninja、Python 3、`pkg-config`，以及 ICU、GTK 4.10 或更高版本、libsoup 3 和 json-glib 的开发包。在 Debian 或 Ubuntu 上，这些库的开发包分别是 `libicu-dev`、`libgtk-4-dev`、`libsoup-3.0-dev` 和 `libjson-glib-dev`。
+在 Linux 主机上准备 C++20 工具链、CMake 3.28 或更高版本、`pkg-config`，以及 ICU、GTK 4.10 或更高版本、libsoup 3 和 json-glib 的开发包。在 Debian 或 Ubuntu 上，这些库的开发包分别是 `libicu-dev`、`libgtk-4-dev`、`libsoup-3.0-dev` 和 `libjson-glib-dev`。
 
-内核脚本会在 `native/linux/build/linux-<arch>/` 生成 `libweft_core.so` 和 `bin/hermesc`。`hermes-compiler` 不提供 Linux arm64 版本，因此插件在 Linux arm64 主机上会自动使用脚本生成的 `hermesc`。
+`hermes-compiler` 不提供 Linux arm64 版本，所以 Vite 在这类主机上使用 `@weft-ui/native-linux` 提供的 `hermesc`。即使目标是其他原生平台，也要安装这个包，或设置 `WEFT_HERMESC`。
+
+在 Weft UI 工作区构建内核还需要 Ninja 和 Python 3。内核脚本会在 `native/linux/build/linux-<arch>/` 下生成 `libweft_core.so` 和 `bin/hermesc`。
 
 ```sh
 native/linux/build-core.sh

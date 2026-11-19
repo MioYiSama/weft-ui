@@ -813,6 +813,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P6.3 文档收尾 | ☑ | docs 构建、C-rust、C-ts、C-apps 通过 |
 | N1 Linux 容器适配 pnpm 11 | ☑ | 重建容器后按原命令跑 C-linux 通过（含 `linux.frames`），工作区没有生成 `.pnpm-store/`；无 TTY 的 `pnpm install` 在换 store 后可重建 node_modules |
 | N2 Android、Windows 整批解码后再应用 | ☑ | 共享样例新增 `unknown-opcode-after-create`；C-ts、C-core、C-apple、C-android、C-windows 通过，Android、Windows 点击流程通过 |
+| N3 Kotlin 测试的类型警告 | ☑ | C-android 通过，`compileDebugUnitTestKotlin` 无警告 |
 
 ## 执行中发现
 

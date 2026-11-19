@@ -12,7 +12,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class CorpusTest {
-    private val corpus = File(System.getProperty("weft.corpus"))
+    private val corpus = File(checkNotNull(System.getProperty("weft.corpus")) { "build.gradle.kts sets weft.corpus" })
 
     @Test
     fun decodesOpsAndErrors() {

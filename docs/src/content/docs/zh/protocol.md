@@ -76,6 +76,24 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 
 值以一个 u8 标签开头：`0` false、`1` true、`2` 数字（f64 小端，`Int` 槽的值也按 f64 传）、`3` 字符串（u32 字节长度 + UTF-8）。JS 侧的 `OpWriter`（`@weft-ui/runtime` 的 `src/ops.ts`）复用同一块缓冲，每批的字节只在下一次写入前有效。
 
+## 解码错误
+
+一批 ops 解码失败时只会报下面 5 种错误之一，所有读取器使用相同的种类名：
+
+| 种类        | 原因 |
+| ----------- | ---- |
+| `truncated` | 批次为空，或者某个长度、数量超出剩余字节。 |
+| `version`   | 第一个字节不是支持的版本号。 |
+| `opcode`    | op 以未知的 opcode 开头。 |
+| `tag`       | 值以未知的标签开头。 |
+| `utf8`      | 字符串值不是格式良好的 UTF-8：overlong 编码、代理项、超过 U+10FFFF 的码点、截断的多字节序列和孤立的续字节都会被拒绝。 |
+
+- 解码失败的批次按各宿主现有的方式处理，整批都不应用。
+- 读取器先判断 opcode，再读取该 op 的字段，所以未知 opcode 后面即使没有字节，也报 `opcode`。
+- 事件载荷解码失败时，内核记录错误，`weft_runtime_dispatch` 返回 `true`。
+
+共享样例在 [`protocol/corpus/`](https://github.com/MioYiSama/weft-ui/tree/master/protocol/corpus)，列出编码后的批次及其解码结果或错误种类、编码后的值，以及平台调用的帧。各宿主的读取器、值编码器和帧编解码都用它测试。
+
 ## 文本形式
 
 调试 dump 和黄金文件使用的一行一个 op 的形式，字符串和布尔值按 JSON 书写：

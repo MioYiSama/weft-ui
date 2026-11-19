@@ -76,6 +76,24 @@ A batch of ops is a byte sequence: the first byte is the version number `1`, fol
 
 Each value starts with a u8 tag: `0` for false, `1` for true, `2` for a number (little-endian f64, including values in `Int` slots), or `3` for a string (u32 byte length followed by UTF-8). On the JS side, `OpWriter` (`src/ops.ts` in `@weft-ui/runtime`) reuses the same buffer. The bytes of a batch are valid only until the next write.
 
+## Decoding errors
+
+Decoding a batch fails with exactly one of five errors. Every reader uses the same kind names:
+
+| Kind        | Cause |
+| ----------- | ----- |
+| `truncated` | The batch is empty, or a length or count runs past the remaining bytes. |
+| `version`   | The first byte is not a supported version. |
+| `opcode`    | An op starts with an unknown opcode. |
+| `tag`       | A value starts with an unknown tag. |
+| `utf8`      | A string value is not well-formed UTF-8: overlong encodings, surrogates, code points above U+10FFFF, truncated multi-byte sequences, and lone continuation bytes are all rejected. |
+
+- A batch that fails to decode is handled the way each platform shell already handles it, and none of its ops are applied.
+- A reader checks the opcode before it reads any field of the op, so an unknown opcode is reported as `opcode` even when no bytes follow it.
+- If the payload of an event fails to decode, the kernel logs the error and `weft_runtime_dispatch` returns `true`.
+
+The shared corpus in [`protocol/corpus/`](https://github.com/MioYiSama/weft-ui/tree/master/protocol/corpus) lists encoded batches with their decoded ops or error kinds, encoded values, and platform call frames. The readers, value encoders and frame codecs of every platform shell are tested against it.
+
 ## Text form
 
 Debug dumps and golden files use one op per line, with strings and booleans written as JSON:

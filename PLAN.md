@@ -773,7 +773,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | --- | --- | --- |
 | P0.1 记录基线 | ☑ | clippy 0；tsc：vite 16、tests 59，其余 0 |
 | P0.2 修正失效文档引用 | ☑ | |
-| P1.1 规范：解码错误 | ☐ | |
+| P1.1 规范：解码错误 | ☑ | |
 | P1.2 共享样例 | ☐ | |
 | P1.3 TS 错误种类与样例测试 | ☐ | |
 | P1.4 C++ 内核样例与值编码 | ☐ | |

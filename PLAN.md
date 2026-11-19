@@ -775,7 +775,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P0.2 修正失效文档引用 | ☑ | |
 | P1.1 规范：解码错误 | ☑ | |
 | P1.2 共享样例 | ☑ | |
-| P1.3 TS 错误种类与样例测试 | ☐ | |
+| P1.3 TS 错误种类与样例测试 | ☑ | C-apps 有一处预期外差异，见执行中发现 |
 | P1.4 C++ 内核样例与值编码 | ☐ | |
 | P1.5 Swift 严格 UTF-8 与样例 | ☐ | |
 | P1.6 Kotlin 严格 UTF-8 与样例 | ☐ | |
@@ -808,3 +808,5 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 
 - [P0.1] `native/linux/build/linux-arm64` 的 CMake 缓存指向容器内的 `/hermes-src`，新建的容器里没有这个目录，`build-core.sh` 配置失败；把 Mac 的 Hermes 源码 `docker compose cp` 到 `/hermes-src` 后可用。随后 ninja 1.13.2 在 `weft_core` 的 dyndep 上触发断言 `edge && !edge->outputs_ready()`，删除 `CMakeFiles/weft_core.dir` 后恢复。结论：待定（本地构建目录状态问题，与代码无关）
 - [P0.1] 容器里的 `pnpm install`（pnpm 11）没有采用 compose 里的 `npm_config_store_dir`，在挂载的工作区根目录建了未被忽略的 `.pnpm-store/`。已删除；之后的 C-linux 额外传 `pnpm_config_store_dir`。结论：待定（compose 的环境变量名需要随 pnpm 11 调整）
+- [P1.3] 把 `frame`/`unframe` 移到 `frame.ts` 后，5 个原生平台的 `js/index.js` 只有一处差异：基线里 `native.ts` 已不再使用的模块级 `new TextEncoder` 原本排在 `X="<platform>"` 之后，现在 `frame.ts` 的模块级 `new TextEncoder,new TextDecoder` 排在它之前（`}},X=…;new TextEncoder;var ie=new TextDecoder;` → `}};new TextEncoder,new TextDecoder;var X=…,ie=new TextDecoder;`）。example 没有用 `fetch`，两个函数被摇掉，只剩下构造表达式。web、wechat 不变。要逐字节一致，只能在 `native.ts` 里保留一个无用的 encoder，所以没有这样做。另外 TS 7 的 `types` 默认为空，`packages/platform/tsconfig.json` 补上了 `"types": ["node"]`（与 `packages/vite` 一致），否则 `frame.test.ts` 找不到 `node:fs`。结论：接受（运行时行为不变）
+- [P1.6] Android `Session.kt` 逐个应用 `OpReader.next()` 的结果，批次后部出现非法 op 时，前面合法的 op 已经应用，不符合 P1.1「整批不应用」。结论：待定（不在 P1.6 范围内）

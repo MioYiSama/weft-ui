@@ -20,6 +20,20 @@ const TRUE = 1;
 const NUMBER = 2;
 const STRING = 3;
 
+/**
+ * A batch that failed to decode; `kind` is one of the error kinds of
+ * docs/src/content/docs/protocol.md ("Decoding errors").
+ */
+export class OpsError extends Error {
+  readonly kind: "truncated" | "version" | "opcode" | "tag" | "utf8";
+
+  constructor(kind: OpsError["kind"], message: string) {
+    super(message);
+    this.name = "OpsError";
+    this.kind = kind;
+  }
+}
+
 /** A decoded op. */
 export type Op =
   | { op: "create"; scope: number; template: number }
@@ -129,13 +143,16 @@ export class OpWriter implements Ops {
   }
 }
 
-/** Decodes one batch; throws on an unknown version, opcode or value tag, or truncated input. */
+/**
+ * Decodes one batch; throws an `OpsError` on truncated input, an unknown
+ * version, opcode or value tag, or a string that is not well-formed UTF-8.
+ */
 export function decode(batch: Uint8Array): Op[] {
   const view = new DataView(batch.buffer, batch.byteOffset, batch.byteLength);
   const decoder = new TextDecoder("utf-8", { fatal: true });
   let at = 0;
   const need = (size: number) => {
-    if (at + size > batch.length) throw new Error(`weft ops: truncated batch at byte ${at}`);
+    if (at + size > batch.length) throw new OpsError("truncated", `weft ops: truncated batch at byte ${at}`);
   };
   const u8 = () => {
     need(1);
@@ -148,7 +165,7 @@ export function decode(batch: Uint8Array): Op[] {
     return value;
   };
   const version = u8();
-  if (version !== VERSION) throw new Error(`weft ops: unsupported version ${version}`);
+  if (version !== VERSION) throw new OpsError("version", `weft ops: unsupported version ${version}`);
   const ops: Op[] = [];
   while (at < batch.length) {
     const code = u8();
@@ -170,10 +187,14 @@ export function decode(batch: Uint8Array): Op[] {
         } else if (tag === STRING) {
           const length = u32();
           need(length);
-          value = decoder.decode(batch.subarray(at, at + length));
+          try {
+            value = decoder.decode(batch.subarray(at, at + length));
+          } catch {
+            throw new OpsError("utf8", `weft ops: invalid UTF-8 string at byte ${at}`);
+          }
           at += length;
         } else {
-          throw new Error(`weft ops: unknown value tag ${tag} at byte ${at - 1}`);
+          throw new OpsError("tag", `weft ops: unknown value tag ${tag} at byte ${at - 1}`);
         }
         ops.push({ op: "set", scope, slot, value });
         break;
@@ -194,7 +215,7 @@ export function decode(batch: Uint8Array): Op[] {
         ops.push({ op: "attach", scope: u32(), point: u32(), child: u32() });
         break;
       default:
-        throw new Error(`weft ops: unknown opcode ${code} at byte ${at - 1}`);
+        throw new OpsError("opcode", `weft ops: unknown opcode ${code} at byte ${at - 1}`);
     }
   }
   return ops;

@@ -9,6 +9,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "fixtures", "conformance", "content-mapper/*.ts", "miniprogram", "vite", "vitest.config.ts"],
+  "include": ["src", "fixtures", "conformance", "content-mapper/*.ts", "miniprogram", "protocol", "vite", "vitest.config.ts"],
   "contentMappers": [{ "package": "@weft-ui/content-mapper", "extensions": [".weft"] }]
 }

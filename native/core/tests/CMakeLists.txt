@@ -56,7 +56,10 @@ if(WEFT_CONFORMANCE)
   add_executable(weft_conformance conformance.cpp)
   weft_test_host(weft_conformance)
   add_test(NAME conformance.build COMMAND ${WEFT_NODE} ${repo}/tests/conformance/native/build.ts ${out})
-  set_tests_properties(conformance.build PROPERTIES FIXTURES_SETUP conformance_bundles)
+  # Use this kernel's compiler, even if the host needs a separately packaged hermesc.
+  set_tests_properties(conformance.build PROPERTIES
+    FIXTURES_SETUP conformance_bundles
+    ENVIRONMENT "WEFT_HERMESC=$<TARGET_FILE:hermesc>")
   file(GLOB goldens CONFIGURE_DEPENDS ${repo}/tests/conformance/golden/*.ops)
   foreach(golden IN LISTS goldens)
     get_filename_component(name ${golden} NAME_WE)

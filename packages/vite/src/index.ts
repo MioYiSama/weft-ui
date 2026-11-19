@@ -310,12 +310,13 @@ export default function weft(options: WeftOptions = {}): Plugin {
       });
       writeGenerated(generated, app);
       if (!isNativePlatform(platform)) return;
-      const adapter = nativeAdapter(platform, shells.get(platform)!);
+      const shell = shells.get(platform)!;
+      const adapter = nativeAdapter(platform, shell);
       const projectPath = relative(root, project).replaceAll("\\", "/") || ".";
       const bytecode = join(generated, adapter.bytecode);
       try {
         mkdirSync(dirname(bytecode), { recursive: true });
-        await compileBytecode(join(generated, "js/index.js"), bytecode, nativeRoot);
+        await compileBytecode(join(generated, "js/index.js"), bytecode, platform, shell, nativeRoot);
       } catch (error) {
         this.error(error as Error);
       }

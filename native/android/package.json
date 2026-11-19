@@ -21,5 +21,8 @@
     "consumer-rules.pro",
     "src/main",
     "build/jniLibs"
-  ]
+  ],
+  "dependencies": {
+    "hermes-compiler": "260318099.0.8"
+  }
 }

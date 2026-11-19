@@ -30,8 +30,7 @@
   },
   "dependencies": {
     "@weft-ui/compiler": "workspace:*",
-    "@weft-ui/runtime": "workspace:*",
-    "hermes-compiler": "260318099.0.8"
+    "@weft-ui/runtime": "workspace:*"
   },
   "peerDependencies": {
     "@weft-ui/native-android": "workspace:^",

@@ -23,5 +23,8 @@
     "!Weft.WinUI/**/obj/**",
     "build/win-x64/weft_core.dll",
     "build/win-arm64/weft_core.dll"
-  ]
+  ],
+  "dependencies": {
+    "hermes-compiler": "260318099.0.8"
+  }
 }

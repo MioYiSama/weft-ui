@@ -3,12 +3,8 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultServerConditions } from "vite";
 import { type AppResult, compileApp } from "@weft-ui/compiler";
-import { APPLE_PLATFORMS, NATIVE_PLATFORMS, PLATFORMS, type Platform } from "@weft-ui/runtime/protocol";
-import { BUNDLE_ASSET, WEFT_ANDROID, gradleBuild, moduleBuild, settingsFragment } from "./android.ts";
-import { WEFT_KIT, packageManifest, xcodebuild } from "./apple.ts";
-import { HERMES_TARGET, compileBytecode } from "./native.ts";
-import { WEFT_LINUX, cmakeBuild, cmakeLists } from "./linux.ts";
-import { WEFT_WINUI, dotnetBuild, targets } from "./windows.ts";
+import { NATIVE_PLATFORMS, PLATFORMS, type NativePlatform, type Platform } from "@weft-ui/runtime/protocol";
+import { ADAPTERS, HERMES_TARGET, compileBytecode } from "./native.ts";
 
 /** Options of the Weft Vite plugin. */
 export interface WeftOptions {
@@ -56,6 +52,10 @@ function* weftFiles(directory: string, appsDir: string): Generator<string> {
 
 function isPlatform(name: string): name is Platform {
   return (PLATFORMS as readonly string[]).includes(name);
+}
+
+function isNativePlatform(platform: Platform): platform is NativePlatform {
+  return (NATIVE_PLATFORMS as readonly Platform[]).includes(platform);
 }
 
 /**
@@ -221,7 +221,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
         };
       }
       // Platform apps run in a browser, a mini program logic layer or Hermes: never a server.
-      const native = (NATIVE_PLATFORMS as readonly Platform[]).includes(platform);
+      const native = isNativePlatform(platform);
       const environment: EnvironmentOptions = {
         consumer: "client",
         resolve: {
@@ -299,10 +299,10 @@ export default function weft(options: WeftOptions = {}): Plugin {
         name: options.app?.name ?? basename(root),
       });
       writeGenerated(generated, app);
-      if (!(NATIVE_PLATFORMS as readonly Platform[]).includes(platform)) return;
+      if (!isNativePlatform(platform)) return;
+      const adapter = ADAPTERS[platform];
       const projectPath = relative(root, project).replaceAll("\\", "/") || ".";
-      // The Android module packages the bytecode as an asset.
-      const bytecode = join(generated, platform === "android" ? BUNDLE_ASSET : "bundle.hbc");
+      const bytecode = join(generated, adapter.bytecode);
       try {
         mkdirSync(dirname(bytecode), { recursive: true });
         await compileBytecode(join(generated, "js/index.js"), bytecode);
@@ -313,52 +313,16 @@ export default function weft(options: WeftOptions = {}): Plugin {
         this.warn(`there is no ${platform} project template yet; generated ${projectPath}/weft/ only`);
         return;
       }
-      const release = this.environment.config.mode === "release";
-      if ((APPLE_PLATFORMS as readonly Platform[]).includes(platform)) {
-        writeFileSync(join(generated, "Package.swift"), packageManifest(WEFT_KIT));
-        if (process.env.WEFT_NATIVE === "0") return;
-        if (process.platform !== "darwin") {
-          this.warn(`xcodebuild needs macOS; generated ${projectPath}/ without building it`);
-          return;
-        }
-        try {
-          await xcodebuild(project, platform, release);
-        } catch (error) {
-          this.error(error as Error);
-        }
-      } else if (platform === "android") {
-        writeFileSync(join(generated, "settings.gradle.kts"), settingsFragment(project, WEFT_ANDROID));
-        writeFileSync(join(generated, "build.gradle.kts"), moduleBuild());
-        if (process.env.WEFT_NATIVE === "0") return;
-        try {
-          await gradleBuild(project, release);
-        } catch (error) {
-          this.error(error as Error);
-        }
-      } else if (platform === "windows") {
-        writeFileSync(join(generated, "Weft.targets"), targets(generated, WEFT_WINUI));
-        if (process.env.WEFT_NATIVE === "0") return;
-        if (process.platform !== "win32") {
-          this.warn(`the Windows build needs a Windows host; generated ${projectPath}/ without building it`);
-          return;
-        }
-        try {
-          await dotnetBuild(project, release);
-        } catch (error) {
-          this.error(error as Error);
-        }
-      } else if (platform === "linux") {
-        writeFileSync(join(generated, "CMakeLists.txt"), cmakeLists(generated, WEFT_LINUX));
-        if (process.env.WEFT_NATIVE === "0") return;
-        if (process.platform !== "linux") {
-          this.warn(`the Linux build needs a Linux host; generated ${projectPath}/ without building it`);
-          return;
-        }
-        try {
-          await cmakeBuild(project, release);
-        } catch (error) {
-          this.error(error as Error);
-        }
+      adapter.writeGlue(generated, project);
+      if (process.env.WEFT_NATIVE === "0") return;
+      if (adapter.host !== undefined && process.platform !== adapter.host) {
+        this.warn(`${adapter.hostWarning}; generated ${projectPath}/ without building it`);
+        return;
+      }
+      try {
+        await adapter.build(project, platform, this.environment.config.mode === "release");
+      } catch (error) {
+        this.error(error as Error);
       }
     },
   };

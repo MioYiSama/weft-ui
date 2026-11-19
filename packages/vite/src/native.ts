@@ -1,9 +1,55 @@
-import { execFile } from "node:child_process";
+import { type ExecFileOptions, execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
-import { WEFT_LINUX } from "./linux.ts";
+import type { NativePlatform } from "@weft-ui/runtime/protocol";
+import { androidAdapter } from "./android.ts";
+import { appleAdapter } from "./apple.ts";
+import { WEFT_LINUX, linuxAdapter } from "./linux.ts";
+import { windowsAdapter } from "./windows.ts";
+
+export interface NativeAdapter {
+  /** Bytecode path relative to the generated directory. */
+  readonly bytecode: string;
+  /** Host able to run the native build; undefined for any host. */
+  readonly host?: NodeJS.Platform;
+  /** Warning when the host cannot build, e.g. "xcodebuild needs macOS". */
+  readonly hostWarning?: string;
+  /** Writes the shell glue (Package.swift, settings.gradle.kts, Weft.targets, CMakeLists.txt). */
+  writeGlue(generated: string, project: string): void;
+  build(project: string, platform: NativePlatform, release: boolean): Promise<void>;
+}
+
+const execute = promisify(execFile);
+
+async function runTool(
+  command: string,
+  args: string[],
+  { lineSeparator = /\r?\n/, ...options }: ExecFileOptions & { lineSeparator?: string | RegExp },
+  messages: { missing: string; failed: string },
+): Promise<void> {
+  try {
+    await execute(command, args, { maxBuffer: 256 * 1024 * 1024, ...options });
+  } catch (cause) {
+    const { stdout, stderr, code } = cause as { stdout?: string; stderr?: string; code?: string | number };
+    if (code === "ENOENT") throw new Error(messages.missing);
+    const output = `${stdout ?? ""}${stderr ?? ""}`.trim().split(lineSeparator).slice(-60).join("\n");
+    throw new Error(`${messages.failed}\n${output || String(cause)}`);
+  }
+}
+
+export type RunTool = typeof runTool;
+
+const apple = appleAdapter(runTool);
+
+export const ADAPTERS: Record<NativePlatform, NativeAdapter> = {
+  ios: apple,
+  macos: apple,
+  android: androidAdapter(runTool),
+  windows: windowsAdapter(runTool),
+  linux: linuxAdapter(runTool),
+};
 
 /**
  * Syntax the bundle keeps for Hermes; newer syntax is lowered by Vite.
@@ -58,7 +104,7 @@ export function hermesc(): string {
 export async function compileBytecode(input: string, output: string): Promise<void> {
   const compiler = hermesc();
   try {
-    await promisify(execFile)(compiler, [...HERMESC_FLAGS, `-out=${output}`, input]);
+    await execute(compiler, [...HERMESC_FLAGS, `-out=${output}`, input]);
   } catch (cause) {
     const { stderr, code } = cause as { stderr?: string; code?: string };
     if (code === "ENOENT") throw new Error(`weft: hermesc not found at ${compiler}; reinstall dependencies or set WEFT_HERMESC`);

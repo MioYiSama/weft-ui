@@ -1,7 +1,7 @@
-import { execFile } from "node:child_process";
-import { isAbsolute, relative } from "node:path";
+import { writeFileSync } from "node:fs";
+import { isAbsolute, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
+import type { NativeAdapter, RunTool } from "./native.ts";
 
 /**
  * The Windows shell (`native/windows`): Weft.WinUI and the kernel DLLs built
@@ -17,7 +17,7 @@ export const WEFT_WINUI = fileURLToPath(new URL("../../../native/windows", impor
  * (`weft/Generated.cs`) are compiled as part of the project. The shell is
  * referenced relative to the generated directory `generated`.
  */
-export function targets(generated: string, shell: string): string {
+function targets(generated: string, shell: string): string {
   // On another drive the relative path is absolute.
   const path = relative(generated, shell);
   const location = (isAbsolute(path) ? path : `$(MSBuildThisFileDirectory)${path}`).replaceAll("/", "\\");
@@ -34,20 +34,20 @@ export function targets(generated: string, shell: string): string {
 `;
 }
 
-/**
- * Builds the app project in `project` with `dotnet build`
- * for the host's architecture, into `project/bin/`.
- */
-export async function dotnetBuild(project: string, release: boolean): Promise<void> {
-  const args = ["build", "App.csproj", "-c", release ? "Release" : "Debug", "-nologo", "-v", "quiet"];
-  try {
-    await promisify(execFile)("dotnet", args, { cwd: project, maxBuffer: 256 * 1024 * 1024 });
-  } catch (cause) {
-    const { stdout, stderr, code } = cause as { stdout?: string; stderr?: string; code?: string | number };
-    if (code === "ENOENT") {
-      throw new Error("weft: dotnet not found; install the .NET 10 SDK (`winget install Microsoft.DotNet.SDK.10`)");
-    }
-    const output = `${stdout ?? ""}${stderr ?? ""}`.trim().split(/\r?\n/).slice(-60).join("\n");
-    throw new Error(`weft: dotnet build failed in ${project}\n${output || String(cause)}`);
-  }
+export function windowsAdapter(runTool: RunTool): NativeAdapter {
+  return {
+    bytecode: "bundle.hbc",
+    host: "win32",
+    hostWarning: "the Windows build needs a Windows host",
+    writeGlue(generated) {
+      writeFileSync(join(generated, "Weft.targets"), targets(generated, WEFT_WINUI));
+    },
+    async build(project, _platform, release) {
+      const args = ["build", "App.csproj", "-c", release ? "Release" : "Debug", "-nologo", "-v", "quiet"];
+      await runTool("dotnet", args, { cwd: project }, {
+        missing: "weft: dotnet not found; install the .NET 10 SDK (`winget install Microsoft.DotNet.SDK.10`)",
+        failed: `weft: dotnet build failed in ${project}`,
+      });
+    },
+  };
 }

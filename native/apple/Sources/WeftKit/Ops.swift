@@ -13,6 +13,17 @@ enum OpError: Error, Equatable {
     case truncated
     case opcode(UInt8)
     case tag(UInt8)
+    case utf8
+
+    var kind: String {
+        switch self {
+        case .version: "version"
+        case .truncated: "truncated"
+        case .opcode: "opcode"
+        case .tag: "tag"
+        case .utf8: "utf8"
+        }
+    }
 }
 
 /// Decodes one batch of ops in the binary encoding (version 1).
@@ -74,7 +85,11 @@ struct OpReader {
         case 0: return .bool(false)
         case 1: return .bool(true)
         case 2: return .number(Double(bitPattern: UInt64(littleEndian: try take(8).loadUnaligned(as: UInt64.self))))
-        case 3: return .string(String(decoding: try take(Int(try u32())), as: UTF8.self))
+        case 3:
+            let payload = try take(Int(try u32()))
+            let invalid = transcode(payload.makeIterator(), from: UTF8.self, to: UTF8.self, stoppingOnError: true) { _ in }
+            guard !invalid else { throw .utf8 }
+            return .string(String(decoding: payload, as: UTF8.self))
         default: throw .tag(tag)
         }
     }

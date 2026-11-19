@@ -57,7 +57,7 @@ enum PlatformModules {
     }
 
     /// Splits `u32 head length (LE) | head (UTF-8 JSON) | body`.
-    private static func unframe(_ data: Data) throws -> (head: [String: Any], body: Data) {
+    static func unframe(_ data: Data) throws -> (head: [String: Any], body: Data) {
         let bytes = [UInt8](data)
         guard bytes.count >= 4 else { throw PlatformFailure("weft: truncated frame") }
         let length = Int(UInt32(bytes[0]) | UInt32(bytes[1]) << 8 | UInt32(bytes[2]) << 16 | UInt32(bytes[3]) << 24)
@@ -67,7 +67,7 @@ enum PlatformModules {
         return (head, Data(bytes[(4 + length)...]))
     }
 
-    private static func frame(_ head: [String: Any], _ body: Data) throws -> Data {
+    static func frame(_ head: [String: Any], _ body: Data) throws -> Data {
         let json = try JSONSerialization.data(withJSONObject: head)
         var data = Data()
         withUnsafeBytes(of: UInt32(json.count).littleEndian) { data.append(contentsOf: $0) }

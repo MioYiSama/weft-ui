@@ -39,6 +39,7 @@ add_library(weft_linux STATIC
   src/scope.cpp
   src/session.cpp
   src/stack.cpp
+  src/texture_cache.cpp
   ${CMAKE_CURRENT_LIST_DIR}/../core/src/ops.cpp
 )
 add_library(weft::linux ALIAS weft_linux)

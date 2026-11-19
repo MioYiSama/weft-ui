@@ -27,9 +27,25 @@ export default defineConfig({
       editLink: { baseUrl: `${repo}/edit/master/docs/` },
       sidebar: [
         {
+          label: "Guides",
+          translations: { "zh-CN": "指南" },
+          items: [{ autogenerate: { directory: "guides" } }],
+        },
+        {
           label: "Specification",
           translations: { "zh-CN": "规范" },
-          items: ["grammar", "protocol"],
+          items: [
+            {
+              label: "Grammar",
+              translations: { "zh-CN": "语法" },
+              link: `${repo}/blob/master/crates/parser/GRAMMAR.md`,
+            },
+            {
+              label: "View protocol",
+              translations: { "zh-CN": "视图协议" },
+              link: `${repo}/blob/master/protocol/SPEC.md`,
+            },
+          ],
         },
       ],
       customCss: [

@@ -12,7 +12,7 @@ import java.util.concurrent.Executors
 
 /**
  * The platform modules of the shell; byte formats in
- * docs/src/content/docs/protocol.md ("Platform calls"). Calls run on a
+ * protocol/SPEC.md ("Platform calls"). Calls run on a
  * background thread.
  */
 internal class PlatformModules(context: Context) {

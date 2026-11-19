@@ -13,7 +13,7 @@ using Weft.WinUI.Protocol;
 
 namespace Weft.WinUI;
 
-/// <summary>The platform modules of the shell; byte formats in docs/src/content/docs/protocol.md ("Platform calls").</summary>
+/// <summary>The platform modules of the shell; byte formats in protocol/SPEC.md ("Platform calls").</summary>
 internal static class PlatformModules
 {
     public static readonly HashSet<string> Supported = [WeftProtocol.FetchModule, WeftProtocol.StorageModule];

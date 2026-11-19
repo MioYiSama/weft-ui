@@ -1,5 +1,5 @@
 /**
- * Block runtime of the view protocol (docs/src/content/docs/protocol.md),
+ * Block runtime of the view protocol (protocol/SPEC.md),
  * shared by every platform whose view layer is separate from the logic
  * layer: the WeChat mini program and the native platforms.
  *

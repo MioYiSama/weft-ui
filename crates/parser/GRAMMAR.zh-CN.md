@@ -1,7 +1,6 @@
----
-title: Weft 语法
-description: .weft 语言的规范语法：词法、EBNF 文法、错误恢复与语义约束。
----
+# Weft 语法
+
+[English](GRAMMAR.md)
 
 本文是 `.weft` 语言的规范语法，解析器（`weft_ui_parser::parse`）按此实现。语义规则（作用域、类型、依赖）见文末[语义约束](#语义约束)。
 

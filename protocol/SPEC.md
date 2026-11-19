@@ -1,7 +1,6 @@
----
-title: View protocol
-description: The contract between the JS logic layer and platform view layers, covering layout, scopes, ops, binary encoding, sinks, and the native kernel.
----
+# View protocol
+
+[中文](SPEC.zh-CN.md)
 
 This specification defines the contract between the JS logic layer (`@weft-ui/runtime/remote` and generated remote-mode logic modules) and the view layer (mini program WXML, native platforms, and the headless renderer).
 
@@ -30,7 +29,7 @@ The headless renderer in `@weft-ui/runtime/testing` is the reference implementat
 
 - **Template numbering**: Component bodies come first, in Program order, so template `i` is the body of component `i`. Next come the `if` branches (one template per branch), `for` row bodies, and slot contents within each component, in order of appearance. `label` is for debugging only: `TodoList`, `TodoList:if8.0` (branch 0 of node 8), `TodoList:for7`, `Board:slot12`.
 - **Nodes**: `nodes` is the template-local node table, and `roots` lists the top-level nodes. Element nodes have static `props` (unbound literals that the platform inlines directly into the template without allocating slots) and children. `{"point": n}` marks the position of mount point `n` in the tree.
-- **Value slot** `values[i]`: A dynamic property of a node. `type` is the declared type of the element property: `Int` / `Bool` / `String` / `Color`. The value of a `Color` slot is a string parsed by the platform (see [Built-in elements and layout](../grammar/#built-in-elements-and-layout) for the rules). Static colors are validated at compile time and written in `props` as normalized `#rrggbb` or `#rrggbbaa` values. Controlled properties (`Input.value`, `Checkbox.checked`) always use value slots, even when constant.
+- **Value slot** `values[i]`: A dynamic property of a node. `type` is the declared type of the element property: `Int` / `Bool` / `String` / `Color`. The value of a `Color` slot is a string parsed by the platform (see [Built-in elements and layout](../crates/parser/GRAMMAR.md#built-in-elements-and-layout) for the rules). Static colors are validated at compile time and written in `props` as normalized `#rrggbb` or `#rrggbbaa` values. Controlled properties (`Input.value`, `Checkbox.checked`) always use value slots, even when constant.
 - **Event slot** `events[i]`: An event property of a node. `payload` specifies the payload type (`null` means no payload). `Input` / `Checkbox` always have an `onChange` event slot. Its `controls` field is the index of the value slot it controls; for all other events, `controls` is `null`. JS handles lifecycle properties (`onMount` / `onUnmount`), which do not appear in the layout.
 - **Mount point** `points[i]`: `branch` (`templates` lists branch templates in order), `list` (`template` is the row body), `instance` (`template` is the body of the instantiated component), or `slot` (the caller supplies the slot content, which may be any template of kind `slot`).
 - **Hash**: The 64-bit FNV-1a hash of the JSON with the `hash` field removed, represented as 16 hexadecimal digits. It is written into both the JS logic (as an `App` constructor argument) and the platform view. The sink compares the hashes at `open` and reports an error if they differ.
@@ -76,7 +75,7 @@ A batch of ops is a byte sequence: the first byte is the version number `1`, fol
 
 Each value starts with a u8 tag: `0` for false, `1` for true, `2` for a number (little-endian f64, including values in `Int` slots), or `3` for a string (u32 byte length followed by UTF-8). On the JS side, `OpWriter` (`src/ops.ts` in `@weft-ui/runtime`) reuses the same buffer. The bytes of a batch are valid only until the next write.
 
-The version, opcodes, value tags and decoding error kinds, together with the WeChat style units, the platform names and the platform call modules, are defined once in [`protocol/weft.protocol.json`](https://github.com/MioYiSama/weft-ui/blob/master/protocol/weft.protocol.json). `pnpm gen:protocol` (`protocol/generate.ts`) generates the constants for TypeScript, Rust, C++, Swift, Kotlin and C# from it, and `pnpm test` fails when a generated file is out of date.
+The version, opcodes, value tags and decoding error kinds, together with the WeChat style units, the platform names and the platform call modules, are defined once in [`protocol/weft.protocol.json`](weft.protocol.json). `pnpm gen:protocol` (`protocol/generate.ts`) generates the constants for TypeScript, Rust, C++, Swift, Kotlin and C# from it, and `pnpm test` fails when a generated file is out of date.
 
 ## Decoding errors
 
@@ -94,7 +93,7 @@ Decoding a batch fails with exactly one of five errors. Every reader uses the sa
 - A reader checks the opcode before it reads any field of the op, so an unknown opcode is reported as `opcode` even when no bytes follow it.
 - If the payload of an event fails to decode, the kernel logs the error and `weft_runtime_dispatch` returns `true`.
 
-The shared corpus in [`protocol/corpus/`](https://github.com/MioYiSama/weft-ui/tree/master/protocol/corpus) lists encoded batches with their decoded ops or error kinds, encoded values, and platform call frames. The readers, value encoders and frame codecs of every platform shell are tested against it.
+The shared corpus in [`protocol/corpus/`](corpus/) lists encoded batches with their decoded ops or error kinds, encoded values, and platform call frames. The readers, value encoders and frame codecs of every platform shell are tested against it.
 
 ## Text form
 
@@ -142,7 +141,7 @@ WXML renders only `{{key}}`. The `setData` paths are paths in the block data tre
 
 ## Native kernel
 
-On native platforms, the JS bundle runs in the kernel in `native/core`. The kernel embeds Hermes, executes `bundle.hbc`, and communicates with the platform shell through the C ABI ([`native/core/include/weft/runtime.h`](https://github.com/MioYiSama/weft-ui/blob/master/native/core/include/weft/runtime.h)). The platform shell is WeftKit in `native/apple` for iOS / macOS, the Kotlin module in `native/android` for Android (loads `libweft.so` through JNI), Weft.WinUI in `native/windows` for Windows (loads `weft_core.dll` through P/Invoke), and the C++ library in `native/linux` for Linux (links against `libweft_core.so`). The kernel does not create threads. All functions are called on the UI thread and must not be called reentrantly from a `weft_host` callback.
+On native platforms, the JS bundle runs in the kernel in `native/core`. The kernel embeds Hermes, executes `bundle.hbc`, and communicates with the platform shell through the C ABI ([`native/core/include/weft/runtime.h`](../native/core/include/weft/runtime.h)). The platform shell is WeftKit in `native/apple` for iOS / macOS, the Kotlin module in `native/android` for Android (loads `libweft.so` through JNI), Weft.WinUI in `native/windows` for Windows (loads `weft_core.dll` through P/Invoke), and the C++ library in `native/linux` for Linux (links against `libweft_core.so`). The kernel does not create threads. All functions are called on the UI thread and must not be called reentrantly from a `weft_host` callback.
 
 ### The `__weft` global
 

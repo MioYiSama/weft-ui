@@ -3,7 +3,7 @@ package net.mioyi.weftui
 import androidx.compose.ui.graphics.Color
 import java.io.ByteArrayOutputStream
 
-/** A value of a value slot or an event payload (docs/src/content/docs/protocol.md, "Binary encoding"). */
+/** A value of a value slot or an event payload (protocol/SPEC.md, "Binary encoding"). */
 sealed class WeftValue {
     data class Bool(val value: Boolean) : WeftValue()
 

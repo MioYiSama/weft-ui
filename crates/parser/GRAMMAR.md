@@ -1,7 +1,6 @@
----
-title: Weft grammar
-description: The normative grammar of the .weft language, covering lexical rules, EBNF, error recovery, and semantic constraints.
----
+# Weft grammar
+
+[中文](GRAMMAR.zh-CN.md)
 
 This document defines the normative grammar of the `.weft` language. The parser (`weft_ui_parser::parse`) implements this grammar. For semantic rules (scope, types, and dependencies), see [Semantic constraints](#semantic-constraints).
 

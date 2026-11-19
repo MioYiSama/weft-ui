@@ -1,5 +1,5 @@
 // Decoder and text form of view protocol ops
-// (docs/src/content/docs/protocol.md, "Binary encoding"), for C++ shells and
+// (protocol/SPEC.md, "Binary encoding"), for C++ shells and
 // the kernel's tests. Decoding does not allocate: strings and row lists point
 // into the batch, which is only valid during `weft_host.commit`.
 
@@ -22,7 +22,7 @@ using Value = std::variant<bool, double, std::string_view>;
 /// A malformed batch or value.
 class Error : public std::runtime_error {
  public:
-  /// The decoding error kinds of docs/src/content/docs/protocol.md
+  /// The decoding error kinds of protocol/SPEC.md
   /// ("Decoding errors").
   enum class Kind { Truncated, Version, Opcode, Tag, Utf8 };
 

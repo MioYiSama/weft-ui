@@ -2,7 +2,7 @@
  * Native platforms (iOS, macOS, Android, Windows, Linux): every API is a
  * platform module of the shell, reached through the kernel's `__weft.call`.
  * The wire format of each module is specified in
- * docs/src/content/docs/protocol.md ("Platform calls").
+ * protocol/SPEC.md ("Platform calls").
  */
 
 import { NativeSink, kernel } from "@weft-ui/runtime/native";

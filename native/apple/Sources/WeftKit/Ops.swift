@@ -1,4 +1,4 @@
-/// One view protocol op (docs/src/content/docs/protocol.md, "Ops").
+/// One view protocol op (protocol/SPEC.md, "Ops").
 enum Op: Equatable {
     case create(scope: UInt32, template: UInt32)
     case set(scope: UInt32, slot: UInt32, value: WeftValue)

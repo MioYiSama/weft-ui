@@ -14,7 +14,7 @@
 //!
 //! Template `i` for `i < components.len()` is the body of component `i`;
 //! nested templates follow in discovery order. The encoding of ops is
-//! specified in `docs/src/content/docs/protocol.md`.
+//! specified in `protocol/SPEC.md`.
 
 mod build;
 mod json;

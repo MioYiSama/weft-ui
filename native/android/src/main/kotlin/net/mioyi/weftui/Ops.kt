@@ -9,7 +9,7 @@ import java.nio.charset.CharsetDecoder
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 
-/** One view protocol op (docs/src/content/docs/protocol.md, "Ops"). */
+/** One view protocol op (protocol/SPEC.md, "Ops"). */
 internal sealed interface Op {
     data class Create(val scope: Int, val template: Int) : Op
 

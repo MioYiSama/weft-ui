@@ -1,6 +1,6 @@
 # tree-sitter-weft
 
-Tree-sitter grammar for Weft UI `.weft` files, used by the Zed extension (`crates/zed`) for highlighting, brackets, indentation and the outline. The language is specified in `docs/src/content/docs/grammar.md`; the compiler uses a separate parser in `crates/parser`.
+Tree-sitter grammar for Weft UI `.weft` files, used by the Zed extension (`crates/zed`) for highlighting, brackets, indentation and the outline. The language is specified in [`crates/parser/GRAMMAR.md`](../../crates/parser/GRAMMAR.md); the compiler uses a separate parser in `crates/parser`.
 
 ```sh
 tree-sitter generate   # after editing grammar.js; commit src/ too, editors compile src/parser.c

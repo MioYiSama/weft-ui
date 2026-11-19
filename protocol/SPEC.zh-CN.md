@@ -1,7 +1,6 @@
----
-title: 视图协议
-description: JS 逻辑层与各平台视图层之间的约定：布局、scope、ops、二进制编码、sink 与原生内核。
----
+# 视图协议
+
+[English](SPEC.md)
 
 JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块）与视图层（小程序 WXML、原生平台、无头渲染器）之间的约定，实现以本文为准。
 
@@ -30,7 +29,7 @@ JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块�
 
 - **模板编号**：先是每个组件体，按 Program 中组件的顺序，所以模板 `i` 就是组件 `i` 的组件体；之后按出现顺序是各组件内的 `if` 分支（每个分支一个）、`for` 行体和插槽内容。`label` 只用于调试：`TodoList`、`TodoList:if8.0`（节点 8 的第 0 个分支）、`TodoList:for7`、`Board:slot12`。
 - **节点**：`nodes` 是模板内的局部节点表，`roots` 是顶层节点。元素节点带静态属性 `props`（没有绑定的字面量，平台直接内联进模板，不占槽位）和子节点；`{"point": n}` 是挂载点 `n` 在树中的位置。
-- **值槽** `values[i]`：节点的一个动态属性，`type` 是元素属性声明的类型：`Int` / `Bool` / `String` / `Color`。`Color` 槽的值是字符串，由平台解析（规则见[语法的内置元素与布局](../grammar/#内置元素与布局)）；静态颜色已在编译期校验，`props` 里写成规范化的 `#rrggbb` 或 `#rrggbbaa`。受控属性（`Input.value`、`Checkbox.checked`）即使是常量也总是值槽。
+- **值槽** `values[i]`：节点的一个动态属性，`type` 是元素属性声明的类型：`Int` / `Bool` / `String` / `Color`。`Color` 槽的值是字符串，由平台解析（规则见[语法的内置元素与布局](../crates/parser/GRAMMAR.zh-CN.md#内置元素与布局)）；静态颜色已在编译期校验，`props` 里写成规范化的 `#rrggbb` 或 `#rrggbbaa`。受控属性（`Input.value`、`Checkbox.checked`）即使是常量也总是值槽。
 - **事件槽** `events[i]`：节点的一个事件属性，`payload` 是载荷类型（`null` 表示无载荷）。`Input` / `Checkbox` 总有 `onChange` 事件槽，`controls` 是它控制的值槽下标，其余事件为 `null`。生命周期属性（`onMount` / `onUnmount`）由 JS 处理，不进入布局。
 - **挂载点** `points[i]`：`branch`（`templates` 依次是各分支的模板）、`list`（`template` 是行体）、`instance`（`template` 是被实例化组件的组件体）或 `slot`（插槽内容由使用方提供，可以是任意 `slot` 种类的模板）。
 - **哈希**：去掉 `hash` 字段后的 JSON 的 FNV-1a 64 位哈希，16 位十六进制。它同时写进 JS 逻辑（`App` 构造参数）和平台视图，sink 在 `open` 时比对，不一致直接报错。
@@ -76,7 +75,7 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 
 值以一个 u8 标签开头：`0` false、`1` true、`2` 数字（f64 小端，`Int` 槽的值也按 f64 传）、`3` 字符串（u32 字节长度 + UTF-8）。JS 侧的 `OpWriter`（`@weft-ui/runtime` 的 `src/ops.ts`）复用同一块缓冲，每批的字节只在下一次写入前有效。
 
-版本号、opcode、值标签和解码错误种类，以及 WeChat 样式单位、平台名和平台调用模块，都只在 [`protocol/weft.protocol.json`](https://github.com/MioYiSama/weft-ui/blob/master/protocol/weft.protocol.json) 中定义一次。`pnpm gen:protocol`（`protocol/generate.ts`）据此生成 TypeScript、Rust、C++、Swift、Kotlin 和 C# 的常量；生成文件过期时 `pnpm test` 会失败。
+版本号、opcode、值标签和解码错误种类，以及 WeChat 样式单位、平台名和平台调用模块，都只在 [`protocol/weft.protocol.json`](weft.protocol.json) 中定义一次。`pnpm gen:protocol`（`protocol/generate.ts`）据此生成 TypeScript、Rust、C++、Swift、Kotlin 和 C# 的常量；生成文件过期时 `pnpm test` 会失败。
 
 ## 解码错误
 
@@ -94,7 +93,7 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 - 读取器先判断 opcode，再读取该 op 的字段，所以未知 opcode 后面即使没有字节，也报 `opcode`。
 - 事件载荷解码失败时，内核记录错误，`weft_runtime_dispatch` 返回 `true`。
 
-共享样例在 [`protocol/corpus/`](https://github.com/MioYiSama/weft-ui/tree/master/protocol/corpus)，列出编码后的批次及其解码结果或错误种类、编码后的值，以及平台调用的帧。各宿主的读取器、值编码器和帧编解码都用它测试。
+共享样例在 [`protocol/corpus/`](corpus/)，列出编码后的批次及其解码结果或错误种类、编码后的值，以及平台调用的帧。各宿主的读取器、值编码器和帧编解码都用它测试。
 
 ## 文本形式
 
@@ -142,7 +141,7 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 
 ## 原生内核
 
-原生平台的 JS bundle 跑在 `native/core` 的内核里：内核嵌入 Hermes，执行 `bundle.hbc`，通过 C ABI（[`native/core/include/weft/runtime.h`](https://github.com/MioYiSama/weft-ui/blob/master/native/core/include/weft/runtime.h)）和平台壳通信。iOS / macOS 的平台壳是 `native/apple` 的 WeftKit，Android 的是 `native/android` 的 Kotlin 模块（通过 JNI 加载 `libweft.so`），Windows 的是 `native/windows` 的 Weft.WinUI（通过 P/Invoke 加载 `weft_core.dll`），Linux 的是 `native/linux` 的 C++ 库（链接 `libweft_core.so`）。内核不开线程，所有函数都在 UI 线程上调用，且不能在 `weft_host` 回调里重入。
+原生平台的 JS bundle 跑在 `native/core` 的内核里：内核嵌入 Hermes，执行 `bundle.hbc`，通过 C ABI（[`native/core/include/weft/runtime.h`](../native/core/include/weft/runtime.h)）和平台壳通信。iOS / macOS 的平台壳是 `native/apple` 的 WeftKit，Android 的是 `native/android` 的 Kotlin 模块（通过 JNI 加载 `libweft.so`），Windows 的是 `native/windows` 的 Weft.WinUI（通过 P/Invoke 加载 `weft_core.dll`），Linux 的是 `native/linux` 的 C++ 库（链接 `libweft_core.so`）。内核不开线程，所有函数都在 UI 线程上调用，且不能在 `weft_host` 回调里重入。
 
 ### `__weft` 全局
 

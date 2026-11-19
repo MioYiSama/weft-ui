@@ -1,5 +1,5 @@
 /**
- * Binary encoding of view protocol ops (docs/src/content/docs/protocol.md),
+ * Binary encoding of view protocol ops (protocol/SPEC.md),
  * its decoder, and the one-line text form of an op used by dumps and golden
  * files.
  */
@@ -9,7 +9,7 @@ import type { Ops, Value } from "./remote.ts";
 
 /**
  * A batch that failed to decode; `kind` is one of the error kinds of
- * docs/src/content/docs/protocol.md ("Decoding errors").
+ * protocol/SPEC.md ("Decoding errors").
  */
 export class OpsError extends Error {
   readonly kind: OpErrorKind;

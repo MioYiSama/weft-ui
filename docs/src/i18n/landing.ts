@@ -13,7 +13,7 @@ export interface LandingStrings {
   other: { lang: Lang; label: string; href: string };
   title: string;
   description: string;
-  nav: { grammar: string; protocol: string; docs: string };
+  nav: { guides: string; grammar: string; protocol: string; docs: string };
   pill: string;
   headline: [string, string];
   lead: [string, string];
@@ -55,14 +55,14 @@ export const landing: Record<Lang, LandingStrings> = {
     title: "Weft — 一份视图，七个平台原生运行",
     description:
       "Weft 是一门编译型 UI 语言：用 .weft 描述视图，用 JS/TS 写逻辑，编译成 DOM、微信小程序、SwiftUI、Jetpack Compose、WinUI 3 和 GTK 4 的原生代码。",
-    nav: { grammar: "语法", protocol: "视图协议", docs: "文档" },
+    nav: { guides: "指南", grammar: "语法", protocol: "视图协议", docs: "文档" },
     pill: "7 个平台 · 原生视图 · 一份逻辑",
     headline: ["一份视图", "七个平台原生运行"],
     lead: [
       "Weft 是一门编译型 UI 语言。用",
       "描述视图，用 JS/TS 写逻辑，编译成 DOM、微信小程序、SwiftUI、Jetpack Compose、WinUI 3 和 GTK 4 的原生代码。",
     ],
-    start: "开始阅读",
+    start: "快速上手",
     copy: "复制命令",
     caption: ["视图声明在", "里，状态和业务逻辑留在 TypeScript。视图想改 model，只能发出事件。"],
     showcase: {
@@ -126,7 +126,7 @@ export const landing: Record<Lang, LandingStrings> = {
         { title: "出包", body: "生成 apps/<platform>/ 原生工程，再调用宿主构建工具。", code: "apps/<platform>/" },
       ],
     },
-    final: { heading: "开始用 Weft 编织界面", sub: "从语法规范读起，或者直接看示例工程。", primary: "阅读语法", secondary: "查看示例" },
+    final: { heading: "开始用 Weft 编织界面", sub: "从指南读起，或者直接看示例工程。", primary: "阅读指南", secondary: "查看示例" },
     theme: { label: "主题", light: "浅色", auto: "跟随系统", dark: "深色" },
   },
   en: {
@@ -135,7 +135,7 @@ export const landing: Record<Lang, LandingStrings> = {
     title: "Weft — One view, native on seven platforms",
     description:
       "Weft is a compiled UI language: describe views in .weft, write logic in JS/TS, and compile to native code for the DOM, WeChat mini programs, SwiftUI, Jetpack Compose, WinUI 3 and GTK 4.",
-    nav: { grammar: "Grammar", protocol: "View protocol", docs: "Docs" },
+    nav: { guides: "Guides", grammar: "Grammar", protocol: "View protocol", docs: "Docs" },
     pill: "7 platforms · Native views · One codebase",
     headline: ["One view.", "Native on seven platforms."],
     lead: [
@@ -219,8 +219,8 @@ export const landing: Record<Lang, LandingStrings> = {
     },
     final: {
       heading: "Start weaving interfaces with Weft",
-      sub: "Read the grammar first, or jump straight into the example project.",
-      primary: "Read the grammar",
+      sub: "Start with the guides, or jump straight into the example project.",
+      primary: "Read the guides",
       secondary: "See the example",
     },
     theme: { label: "Theme", light: "Light", auto: "System", dark: "Dark" },

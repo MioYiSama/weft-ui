@@ -41,7 +41,7 @@ export interface AppResult {
   logic: LogicModule[];
   /** Empty on errors and for `web`, whose DOM code lives in the logic modules. */
   views: OutputFile[];
-  /** View protocol layout as JSON (see docs/src/content/docs/protocol.md); empty on errors and for `web`. */
+  /** View protocol layout as JSON (see protocol/SPEC.md); empty on errors and for `web`. */
   layout: string;
   /** Hexadecimal hash of the layout; empty when there is no layout. */
   layoutHash: string;

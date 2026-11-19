@@ -136,8 +136,8 @@ flowchart LR
 
 - **改动**：
   - 有 26 处注释仍在引用已删除的 `docs/PROTOCOL.md`、`docs/GRAMMAR.md`，或中文小节名「平台调用」。把它们统一改成：
-    - `docs/src/content/docs/protocol.md` 加英文小节名，例如 `("Binary encoding")`、`("Platform calls")`；
-    - 语法相关的改成 `docs/src/content/docs/grammar.md`。
+    - `protocol/SPEC.md` 加英文小节名，例如 `("Binary encoding")`、`("Platform calls")`；
+    - 语法相关的改成 `crates/parser/GRAMMAR.md`。
   - 涉及的文件：`crates/parser/src/parser.rs`、`crates/transformer/src/view.rs`、`native/**`、`packages/**`。用下面验收里的 `rg` 命令可以列全。
 - **验收**：
   - `rg -n 'docs/(PROTOCOL|GRAMMAR)\.md|平台调用|PLAN(-v2)?\.md' --glob '!node_modules' --glob '!target' --glob '!docs/**' --glob '!PLAN.md' .` 没有输出。
@@ -157,7 +157,7 @@ flowchart LR
 
 ### P1.1 规范：解码错误
 
-- **改动**：在 `docs/src/content/docs/protocol.md` 的「Binary encoding」之后新增小节「Decoding errors」，中文版 `docs/src/content/docs/zh/protocol.md` 同步。内容如下：
+- **改动**：在 `protocol/SPEC.md` 的「Binary encoding」之后新增小节「Decoding errors」，中文版 `protocol/SPEC.zh-CN.md` 同步。内容如下：
   - 批次解码失败只有 5 种错误，种类名必须一致：
     - `truncated`：空批次，或任何长度、数量超出剩余字节；
     - `version`；
@@ -652,7 +652,7 @@ flowchart LR
 
 - **改动**：
   - `README.md`：在命令块里加上 `pnpm gen:protocol`；说明 `protocol/` 存放 schema、生成器和共享样例。
-  - `docs/src/content/docs/protocol.md` 和中文版：说明常量由 `protocol/weft.protocol.json` 生成。
+  - `protocol/SPEC.md` 和中文版：说明常量由 `protocol/weft.protocol.json` 生成。
   - 本文件：进度表全部标为完成；[执行中发现](#执行中发现)里每一项都有结论，要么已转成新的计划项，要么注明不处理。
 - **验收**：`pnpm --filter docs build` 成功；C-rust、C-ts、C-apps 全部通过。
 - **提交**：`docs: protocol schema, generator and corpus`

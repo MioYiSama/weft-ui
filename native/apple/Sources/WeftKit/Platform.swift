@@ -1,7 +1,7 @@
 import Foundation
 
 /// The platform modules of the shell; byte formats in
-/// docs/src/content/docs/protocol.md ("Platform calls").
+/// protocol/SPEC.md ("Platform calls").
 enum PlatformModules {
     static let supported: Set<String> = [WeftProtocol.fetchModule, WeftProtocol.storageModule]
 

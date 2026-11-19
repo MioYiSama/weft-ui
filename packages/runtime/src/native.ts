@@ -4,7 +4,7 @@
  * copying, and routes the shell's events back to the app.
  *
  * The kernel installs `globalThis.__weft` before the bundle runs; see
- * docs/src/content/docs/protocol.md ("Native kernel") for the contract.
+ * protocol/SPEC.md ("Native kernel") for the contract.
  */
 
 import { OpWriter } from "./ops.ts";

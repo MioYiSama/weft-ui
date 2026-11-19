@@ -1,6 +1,6 @@
 /**
  * Frames of the `fetch` platform module: `u32 head length (LE) | head (UTF-8
- * JSON) | body`, see docs/src/content/docs/protocol.md ("Platform calls").
+ * JSON) | body`, see protocol/SPEC.md ("Platform calls").
  */
 
 const encoder = new TextEncoder();

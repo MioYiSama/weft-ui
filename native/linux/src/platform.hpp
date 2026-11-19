@@ -1,5 +1,5 @@
 // Platform modules of the shell; byte formats in
-// docs/src/content/docs/protocol.md ("Platform calls").
+// protocol/SPEC.md ("Platform calls").
 
 #pragma once
 

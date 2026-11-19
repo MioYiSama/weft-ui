@@ -1,0 +1,156 @@
+---
+title: Build for each platform
+description: Configure the Weft Vite plugin, build a platform project, and run the example’s UI tests.
+sidebar:
+  order: 5
+---
+
+Use the same `.weft` files and TypeScript logic to build for the browser, WeChat, or a native platform. If you’re following the todo example, complete the [workspace setup](/guides/getting-started/) first. Run `pnpm --filter example` commands from the workspace root. The `apps/` paths below are relative to the Vite project root (`example/` for the todo app).
+
+## Configure Vite
+
+Register `@weft-ui/vite` in `vite.config.ts`, as in the [todo example](https://github.com/MioYiSama/weft-ui/blob/master/example/vite.config.ts):
+
+```ts
+import { defineConfig } from "vite";
+import weft from "@weft-ui/vite";
+
+export default defineConfig({
+  plugins: [weft({ app: { id: "net.mioyi.weftui", name: "Exp" } })],
+});
+```
+
+| Option | Default | What it controls |
+| --- | --- | --- |
+| `platforms` | `web`, `wechat`, `ios`, `macos`, `android`, `windows`, `linux` | The targets for `vite build --app` and the targets you can explicitly request with `WEFT_PLATFORM`. |
+| `apps` | `./apps` | The output directory for platform projects. Use an absolute path or a path relative to the Vite root. |
+| `native` | The Weft workspace’s `native/` directory | The directory containing `apple/`, `android/`, `windows/`, and `linux/`. Use an absolute path or a path relative to the Vite root. |
+| `app.id` | `""` | The ID filled into templates that use it, such as the Apple bundle identifier or Android application ID. Set it before the first build; it does not set the WeChat AppID. |
+| `app.name` | The name of the Vite root directory | The display name filled into platform templates on the first build. |
+| `include` | `src/**/*.weft` | A glob relative to the Vite root. Non-Web builds compile the matched `.weft` files together. |
+| `entry` | The first existing `src/index.js`, `src/index.ts`, `src/index.mjs`, `src/index.mts`, `src/index.cjs`, or `src/index.cts`, in that order | The JS or TS logic entry for non-Web builds, resolved from the Vite root. Web starts from `index.html`. |
+| `dts` | `false` | Set to `true` to write `X.d.weft.ts` next to `X.weft` when not using `@weft-ui/content-mapper`. Enable `allowArbitraryExtensions` in TypeScript. |
+
+## Choose a target
+
+In a Vite project, use `WEFT_PLATFORM=<platform> vite build` to choose a target. Separate names with commas to build more than one. For example, from `example/`:
+
+```sh
+WEFT_PLATFORM=web,wechat pnpm exec vite build
+```
+
+Without `WEFT_PLATFORM`, `vite build` builds Web, while `vite build --app` builds every target in `platforms`. For native targets, the plugin uses Debug by default; pass `--mode release` to select Release.
+
+## Project layout
+
+Web is ordinary Vite output in `apps/web/`. For other targets, Weft copies a project template into `apps/<platform>/` on the first build. The project files outside `weft/` are yours: edit signing, icons, or platform configuration there. Later builds regenerate `apps/<platform>/weft/`, not the template files. Changing `app.id` or `app.name` does not update an existing project; edit its files directly.
+
+For non-Web targets, `weft/js/index.js` contains the bundled logic. For native targets, Weft also writes generated views, `layout.json`, and Hermes bytecode (`weft/bundle.hbc`, except on Android). The [view protocol spec](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.md) describes the layout and the connection between the logic and view layers.
+
+Set `WEFT_NATIVE=0` to generate the native project without running its build tool. On a host that cannot run the target’s build tool, the plugin generates the project and warns instead. Either way, bytecode generation still needs `hermesc`. The plugin normally finds it for you; set `WEFT_HERMESC` to use a different binary from the same Hermes release as the kernel.
+
+## Web
+
+In the [example’s `index.html`](https://github.com/MioYiSama/weft-ui/blob/master/example/index.html), the module script loads `/src/index.ts` and `run(app)` mounts into the element with `id="app"`. Use Vite’s dev server to try changes in a browser, then build the static site into `apps/web/`:
+
+```sh
+pnpm --filter example exec vite
+pnpm --filter example build:web
+```
+
+To check the UI in the browser, add a todo, tick its checkbox, then remove it.
+
+## WeChat Mini Program
+
+```sh
+pnpm --filter example build:wechat
+```
+
+Open `example/apps/wechat/` in WeChat DevTools, not its `weft/` subdirectory. The generated WXML and logic bundle live in `weft/`. The [template](https://github.com/MioYiSama/weft-ui/blob/master/packages/vite/templates/wechat/project.config.json) starts with `touristappid`; to use your registered Mini Program, set `appid` in the project’s `project.config.json`.
+
+In the simulator, try the same add, check, and remove flow. The workspace also has [automated Web and Mini Program tests](https://github.com/MioYiSama/weft-ui/blob/master/tests/vite/platforms.test.ts) that run without WeChat DevTools:
+
+```sh
+pnpm --filter @weft-ui/tests test
+```
+
+## macOS and iOS
+
+Use a macOS host with Xcode (Swift 6), CMake 3.28 or later, Ninja, and Python 3. Install the iOS Simulator runtime if you’re building for the simulator. The templates target macOS 14 and iOS 17 or later.
+
+Run `native/apple/build-core.sh` once to build `native/apple/build/WeftCore.xcframework`. By default it includes macOS, iOS Simulator, and iOS device builds; set `WEFT_APPLE_SDKS` to a space-separated subset of `macosx`, `iphonesimulator`, and `iphoneos` if you only need some of them.
+
+```sh
+native/apple/build-core.sh
+pnpm --filter example build:macos
+pnpm --filter example build:ios
+pnpm --filter example test:macos
+pnpm --filter example test:ios
+```
+
+Open `apps/macos/App.xcodeproj` or `apps/ios/App.xcodeproj` in Xcode. Each links the generated `WeftApp` Swift package in `weft/`, which contains the SwiftUI views and bytecode. The plugin runs `xcodebuild` with scheme `App`. For iOS it builds for the simulator in Debug and for a device in Release; configure signing in the Xcode project for the device build.
+
+The test scripts run XCUITest. `test:ios` defaults to the `iPhone 17` simulator; set `WEFT_IOS_DEVICE` to the name of an installed simulator to change it.
+
+## Android
+
+Install the Android SDK (the template compiles against API 37), an NDK, a JDK 17 or later, and Bash, a host C++ toolchain, CMake 3.28 or later, Ninja, and Python 3 for the kernel build. Define `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) if the SDK is not in the default location. The kernel script uses `ANDROID_NDK_HOME` if set; otherwise it looks for the newest NDK under the SDK’s `ndk/` directory.
+
+Build the kernel once. It writes `native/android/build/jniLibs/<abi>/libweft.so` for `arm64-v8a`, `armeabi-v7a`, `x86_64`, and `x86` by default. Set `WEFT_ANDROID_ABIS` to a space-separated list to build only the ABIs you need, such as `arm64-v8a x86_64`.
+
+```sh
+native/android/build-core.sh
+pnpm --filter example build:android
+pnpm --filter example test:android
+```
+
+Open `apps/android/` in Android Studio. The generated `weft/` Gradle module contains the Compose views and the bytecode asset `src/main/assets/weft/bundle.hbc`. The plugin can find the SDK from the environment, `sdk.dir` in the project’s `local.properties`, or the default install location. It uses the project’s Gradle wrapper (`gradlew.bat` on Windows) to run `assembleDebug` or `assembleRelease`. APKs land in `apps/android/app/build/outputs/apk/`; release APKs are unsigned unless you configure signing.
+
+Start an emulator or connect a device before running `test:android`. The script runs the Compose UI tests via `connectedDebugAndroidTest`.
+
+## Windows
+
+Use a Windows host with PowerShell 7, Visual Studio Build Tools with the C++ toolchain and CMake tools, Python 3 on `PATH`, and the .NET 10 SDK or later. Run the kernel script once; it writes `native/windows/build/win-<arch>/weft_core.dll`. It defaults to the host architecture. If your app targets a different architecture, pass `-Arch arm64` or `-Arch x64` to match the app project’s `RuntimeIdentifier`.
+
+```powershell
+./native/windows/build-core.ps1
+pnpm --filter example build:windows
+pnpm --filter example test:windows
+```
+
+The plugin builds `apps/windows/App.csproj` with `dotnet build`. The project imports `weft/Weft.targets` and compiles `weft/Generated.cs` for WinUI 3. After building, run `test:windows` in an interactive desktop session; the tests launch the built app and use UI Automation through FlaUI.
+
+## Linux
+
+Use a Linux host with a C++20 toolchain, CMake 3.28 or later, Ninja, Python 3, `pkg-config`, and development packages for ICU, GTK 4.10 or later, libsoup 3, and json-glib. On Debian or Ubuntu the library packages are `libicu-dev`, `libgtk-4-dev`, `libsoup-3.0-dev`, and `libjson-glib-dev`.
+
+The kernel script writes `native/linux/build/linux-<arch>/libweft_core.so` and `bin/hermesc` under the same build directory. On Linux arm64, the plugin uses this `hermesc` automatically because `hermes-compiler` does not ship one for that host.
+
+```sh
+native/linux/build-core.sh
+pnpm --filter example build:linux
+pnpm --filter example test:linux
+```
+
+The plugin builds the CMake project in `apps/linux/`, which links the generated GTK views in `weft/Generated.cpp`. The executable is `apps/linux/build/app`. Use a desktop session or another available display for the CTest UI test.
+
+### Linux in Docker
+
+The [Docker Compose setup](https://github.com/MioYiSama/weft-ui/blob/master/native/linux/docker/compose.yaml) includes the Linux build tools and an XFCE desktop. From the workspace root on the host, build the compiler WASM, then start and enter the container:
+
+```sh
+pnpm build:wasm
+docker compose -f native/linux/docker/compose.yaml up -d --build
+docker compose -f native/linux/docker/compose.yaml exec linux bash
+```
+
+Inside the container, the workspace is mounted at `/workspace`. Install its Node dependencies there because it uses separate `node_modules` volumes:
+
+```sh
+pnpm install
+native/linux/build-core.sh
+pnpm --filter example build:linux
+pnpm --filter example test:linux
+```
+
+Connect your VNC client to `vnc://localhost:5901` (password `weft`) to see the app and UI tests on the container’s desktop.

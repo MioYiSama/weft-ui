@@ -24,9 +24,13 @@ interface Props {
 const { lang } = Astro.props;
 const t = landing[lang];
 const home = `${t.prefix}/`;
-const grammar = `${t.prefix}/grammar/`;
-const protocol = `${t.prefix}/protocol/`;
+const guides = `${t.prefix}/guides/getting-started/`;
+const platformsGuide = `${t.prefix}/guides/platforms/`;
 const repo = "https://github.com/MioYiSama/weft-ui";
+// The specs live in the repository, next to the code that implements them.
+const specSuffix = lang === "en" ? "" : ".zh-CN";
+const grammar = `${repo}/blob/master/crates/parser/GRAMMAR${specSuffix}.md`;
+const protocol = `${repo}/blob/master/protocol/SPEC${specSuffix}.md`;
 const command = "WEFT_PLATFORM=ios,android,linux vite build";
 
 const view = `model Todo {
@@ -166,6 +170,7 @@ const github =
           <span>Weft</span>
         </a>
         <nav class="links">
+          <a href={guides}>{t.nav.guides}</a>
           <a href={grammar}>{t.nav.grammar}</a>
           <a href={protocol}>{t.nav.protocol}</a>
         </nav>
@@ -174,7 +179,7 @@ const github =
           <a class="icon-link" href={repo} aria-label="GitHub">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d={github} /></svg>
           </a>
-          <a class="btn btn-primary btn-sm" href={grammar}>{t.nav.docs}</a>
+          <a class="btn btn-primary btn-sm" href={guides}>{t.nav.docs}</a>
         </div>
       </div>
     </header>
@@ -184,7 +189,7 @@ const github =
         <div class="hero-grid" aria-hidden="true"></div>
         <div class="hero-glow" aria-hidden="true"></div>
         <div class="container hero-content">
-          <a class="pill" href={protocol}>
+          <a class="pill" href={platformsGuide}>
             <span class="pill-dot"></span>
             {t.pill}
             <span class="pill-arrow">→</span>
@@ -192,7 +197,7 @@ const github =
           <h1>{t.headline[0]}<br />{t.headline[1]}</h1>
           <p class="lead">{t.lead[0]} <code>.weft</code>{lang === "en" ? "" : " "}{t.lead[1]}</p>
           <div class="cta">
-            <a class="btn btn-primary" href={grammar}>{t.start} <span aria-hidden="true">→</span></a>
+            <a class="btn btn-primary" href={guides}>{t.start} <span aria-hidden="true">→</span></a>
             <a class="btn btn-secondary" href={repo}>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d={github} /></svg>
               GitHub
@@ -364,7 +369,7 @@ const github =
           <h2>{t.final.heading}</h2>
           <p class="sub">{t.final.sub}</p>
           <div class="cta">
-            <a class="btn btn-primary" href={grammar}>{t.final.primary}</a>
+            <a class="btn btn-primary" href={guides}>{t.final.primary}</a>
             <a class="btn btn-secondary" href={`${repo}/tree/master/example`}>{t.final.secondary}</a>
           </div>
         </div>
@@ -378,6 +383,7 @@ const github =
           <span>Weft UI</span>
         </a>
         <nav class="footer-links">
+          <a href={guides}>{t.nav.guides}</a>
           <a href={grammar}>{t.nav.grammar}</a>
           <a href={protocol}>{t.nav.protocol}</a>
           <a href={repo}>GitHub</a>

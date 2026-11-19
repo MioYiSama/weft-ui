@@ -1,7 +1,6 @@
 /**
  * Headless renderer: the reference implementation of the view protocol
- * (docs/src/content/docs/protocol.md), for tests that run without a platform
- * view.
+ * (protocol/SPEC.md), for tests that run without a platform view.
  *
  * The renderer is a sink built on the binary writer: every batch is encoded,
  * decoded again, checked against the layout, and applied to a tree in

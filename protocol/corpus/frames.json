@@ -1,0 +1,27 @@
+{
+  "requests": [
+    {
+      "name": "post-json",
+      "head": {"url":"https://example.com/items","method":"POST","headers":{"content-type":"application/json"}},
+      "body": "{\"a\":1}",
+      "hex": "61 00 00 00  7b 22 75 72 6c 22 3a 22 68 74 74 70 73 3a 2f 2f 65 78 61 6d 70 6c 65 2e 63 6f 6d 2f 69 74 65 6d 73 22 2c 22 6d 65 74 68 6f 64 22 3a 22 50 4f 53 54 22 2c 22 68 65 61 64 65 72 73 22 3a 7b 22 63 6f 6e 74 65 6e 74 2d 74 79 70 65 22 3a 22 61 70 70 6c 69 63 61 74 69 6f 6e 2f 6a 73 6f 6e 22 7d 7d  7b 22 61 22 3a 31 7d"
+    },
+    {
+      "name": "get-empty-body",
+      "head": {"url":"https://example.com/items","method":"GET","headers":{}},
+      "body": "",
+      "hex": "3f 00 00 00  7b 22 75 72 6c 22 3a 22 68 74 74 70 73 3a 2f 2f 65 78 61 6d 70 6c 65 2e 63 6f 6d 2f 69 74 65 6d 73 22 2c 22 6d 65 74 68 6f 64 22 3a 22 47 45 54 22 2c 22 68 65 61 64 65 72 73 22 3a 7b 7d 7d"
+    }
+  ],
+  "responses": [
+    {
+      "name": "created",
+      "head": {"status":201},
+      "body": "ok",
+      "hex": "0e 00 00 00  7b 22 73 74 61 74 75 73 22 3a 32 30 31 7d  6f 6b"
+    }
+  ],
+  "malformed": [
+    { "name": "short-head-length", "hex": "01 00" }
+  ]
+}

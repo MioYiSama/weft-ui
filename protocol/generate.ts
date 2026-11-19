@@ -251,6 +251,18 @@ for (const [path, content] of Object.entries(outputs)) {
   if (check) stale.push(path);
   else writeFileSync(file, generated);
 }
+// Keep the rest of each hand-maintained package manifest intact.
+for (const target of ["apple", "android", "windows", "linux"]) {
+  const path = `native/${target}/package.json`;
+  const file = new URL(path, root);
+  const manifest = JSON.parse(readFileSync(file, "utf8"));
+  if (manifest.weft?.protocol === version) continue;
+  if (check) stale.push(path);
+  else {
+    manifest.weft = { ...manifest.weft, protocol: version };
+    writeFileSync(file, JSON.stringify(manifest, null, 2) + "\n");
+  }
+}
 if (stale.length > 0) {
   console.error(`Generated protocol files differ:\n${stale.join("\n")}\nRun pnpm gen:protocol.`);
   process.exitCode = 1;

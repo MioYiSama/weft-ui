@@ -14,9 +14,11 @@
   },
   "scripts": {
     "prepack": "node ../pack.mjs prepack android",
-    "postpack": "node ../pack.mjs postpack android"
+    "postpack": "node ../pack.mjs postpack android",
+    "prepublishOnly": "node ../pack.mjs prepublishOnly android"
   },
   "files": [
+    "LICENSE-hermes",
     "build.gradle.kts",
     "consumer-rules.pro",
     "src/main",

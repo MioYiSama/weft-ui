@@ -24,7 +24,7 @@ export default defineConfig({
 | --- | --- | --- |
 | `platforms` | `web`, `wechat`, `ios`, `macos`, `android`, `windows`, `linux` | The targets for `vite build --app` and the targets you can explicitly request with `WEFT_PLATFORM`. |
 | `apps` | `./apps` | The output directory for platform projects. Use an absolute path or a path relative to the Vite root. |
-| `native` | The Weft UI workspace’s `native/` directory | The directory containing `apple/`, `android/`, `windows/`, and `linux/`. Use an absolute path or a path relative to the Vite root. |
+| `native` | Resolve the installed native shell package for the target | Override the packages with a directory containing the `apple/`, `android/`, `windows/`, and `linux/` shell packages. Use an absolute path or a path relative to the Vite root. |
 | `app.id` | `""` | The ID filled into templates that use it, such as the Apple bundle identifier or Android application ID. Set it before the first build; it does not set the WeChat AppID. |
 | `app.name` | The name of the Vite root directory | The display name filled into platform templates on the first build. |
 | `include` | `src/**/*.weft` | A glob relative to the Vite root. Non-Web builds compile the matched `.weft` files together. |
@@ -40,6 +40,17 @@ WEFT_PLATFORM=web,wechat pnpm exec vite build
 ```
 
 Without `WEFT_PLATFORM`, `vite build` builds Web, while `vite build --app` builds every target in `platforms`. For native targets, the plugin uses Debug by default; pass `--mode release` to select Release.
+
+In an app using the npm packages, install `@weft-ui/runtime` and `@weft-ui/platform` alongside the Vite plugin. Add a shell package only for the native platforms you build:
+
+| Target | Install in the app project |
+| --- | --- |
+| macOS and iOS | `pnpm add -D @weft-ui/native-apple` |
+| Android | `pnpm add -D @weft-ui/native-android` |
+| Windows | `pnpm add -D @weft-ui/native-windows` |
+| Linux | `pnpm add -D @weft-ui/native-linux` |
+
+Each shell ships a prebuilt kernel. Install the platform tools below to build the app; the kernel build scripts are only for development in the Weft UI workspace. The workspace example already depends on the shell packages.
 
 ## Project layout
 
@@ -76,9 +87,9 @@ pnpm --filter @weft-ui/tests test
 
 ## macOS and iOS
 
-Use a macOS host with Xcode (Swift 6), CMake 3.28 or later, Ninja, and Python 3. Install the iOS Simulator runtime if you’re building for the simulator. The templates target macOS 14 and iOS 17 or later.
+Use a macOS host with Xcode (Swift 6). Install the iOS Simulator runtime if you’re building for the simulator. The templates target macOS 14 and iOS 17 or later.
 
-Run `native/apple/build-core.sh` once to build `native/apple/build/WeftCore.xcframework`. By default it includes macOS, iOS Simulator, and iOS device builds; set `WEFT_APPLE_SDKS` to a space-separated subset of `macosx`, `iphonesimulator`, and `iphoneos` if you only need some of them.
+In the Weft UI workspace, run `native/apple/build-core.sh` once to build `native/apple/build/WeftCore.xcframework`. The script requires CMake 3.28 or later, Ninja, and Python 3. By default the kernel includes macOS, iOS Simulator, and iOS device builds; set `WEFT_APPLE_SDKS` to a space-separated subset of `macosx`, `iphonesimulator`, and `iphoneos` if you only need some of them.
 
 ```sh
 native/apple/build-core.sh
@@ -94,9 +105,9 @@ The test scripts run XCUITest. `test:ios` defaults to the `iPhone 17` simulator;
 
 ## Android
 
-Install the Android SDK (the template compiles against API 37), an NDK, a JDK 17 or later, and Bash, a host C++ toolchain, CMake 3.28 or later, Ninja, and Python 3 for the kernel build. Define `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) if the SDK is not in the default location. The kernel script uses `ANDROID_NDK_HOME` if set; otherwise it looks for the newest NDK under the SDK’s `ndk/` directory.
+Install the Android SDK (the template compiles against API 37) and a JDK 17 or later. Define `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) if the SDK is not in the default location.
 
-Build the kernel once. It writes `native/android/build/jniLibs/<abi>/libweft.so` for `arm64-v8a`, `armeabi-v7a`, `x86_64`, and `x86` by default. Set `WEFT_ANDROID_ABIS` to a space-separated list to build only the ABIs you need, such as `arm64-v8a x86_64`.
+In the Weft UI workspace, building the kernel also requires an Android NDK, Bash, a host C++ toolchain, CMake 3.28 or later, Ninja, and Python 3. The script uses `ANDROID_NDK_HOME` if set; otherwise it looks for the newest NDK under the SDK’s `ndk/` directory. It writes `native/android/build/jniLibs/<abi>/libweft.so` for `arm64-v8a`, `armeabi-v7a`, `x86_64`, and `x86` by default. Set `WEFT_ANDROID_ABIS` to a space-separated list to build only the ABIs you need, such as `arm64-v8a x86_64`.
 
 ```sh
 native/android/build-core.sh
@@ -110,7 +121,9 @@ Start an emulator or connect a device before running `test:android`. The script 
 
 ## Windows
 
-Use a Windows host with PowerShell 7, Visual Studio Build Tools with the C++ toolchain and CMake tools, Python 3 on `PATH`, and the .NET 10 SDK or later. Run the kernel script once; it writes `native/windows/build/win-<arch>/weft_core.dll`. It defaults to the host architecture. If your app targets a different architecture, pass `-Arch arm64` or `-Arch x64` to match the app project’s `RuntimeIdentifier`.
+Use a Windows host with the .NET 10 SDK or later.
+
+In the Weft UI workspace, building the kernel also requires PowerShell 7, Visual Studio Build Tools with the C++ toolchain and CMake tools, and Python 3 on `PATH`. The script writes `native/windows/build/win-<arch>/weft_core.dll` for the host architecture by default. If your app targets a different architecture, pass `-Arch arm64` or `-Arch x64` to match the app project’s `RuntimeIdentifier`.
 
 ```powershell
 ./native/windows/build-core.ps1
@@ -122,9 +135,11 @@ The plugin builds `apps/windows/App.csproj` with `dotnet build`. The project imp
 
 ## Linux
 
-Use a Linux host with a C++20 toolchain, CMake 3.28 or later, Ninja, Python 3, `pkg-config`, and development packages for ICU, GTK 4.10 or later, libsoup 3, and json-glib. On Debian or Ubuntu the library packages are `libicu-dev`, `libgtk-4-dev`, `libsoup-3.0-dev`, and `libjson-glib-dev`.
+Use a Linux host with a C++20 toolchain, CMake 3.28 or later, `pkg-config`, and development packages for ICU, GTK 4.10 or later, libsoup 3, and json-glib. On Debian or Ubuntu the library packages are `libicu-dev`, `libgtk-4-dev`, `libsoup-3.0-dev`, and `libjson-glib-dev`.
 
-The kernel script writes `native/linux/build/linux-<arch>/libweft_core.so` and `bin/hermesc` under the same build directory. On Linux arm64, the plugin uses this `hermesc` automatically because `hermes-compiler` does not ship one for that host.
+On Linux arm64, Vite uses the `hermesc` shipped in `@weft-ui/native-linux`, because `hermes-compiler` does not provide one. Install that package on a Linux arm64 host even when targeting a different native platform, or set `WEFT_HERMESC`.
+
+In the Weft UI workspace, building the kernel also requires Ninja and Python 3. The kernel script writes `native/linux/build/linux-<arch>/libweft_core.so` and `bin/hermesc` under the same build directory.
 
 ```sh
 native/linux/build-core.sh

@@ -4,6 +4,8 @@ A cross-platform UI library.
 
 ## Example
 
+The commands below are for development in this repository, where the native kernels are built from source. For an app using the npm packages, see [Vite plugin](#vite-plugin).
+
 ```sh
 pnpm install
 pnpm build                      # compiler WASM and package builds
@@ -68,9 +70,20 @@ Then run `tsc --runExternalCode` (`pnpm --filter example typecheck`); VS Code st
 
 With `@weft-ui/vite`, `entry` selects the JS/TS entry for non-Web builds, relative to the Vite root. It defaults to the first existing file in `src/index.{js,ts,mjs,mts,cjs,cts}`, in that order. Web builds start from `index.html`. Set `apps` to change the output directory for platform projects (an absolute path or a path relative to the Vite root; default `./apps`). The paths below assume the default.
 
-Set `native` to override the directory containing the native shells (`apple/`, `android/`, `windows/`, `linux/`). It accepts an absolute path or a path relative to the Vite root. By default, the plugin uses the Weft workspace's `native/` directory.
+In an app using the npm packages, install `@weft-ui/runtime` and `@weft-ui/platform` alongside the Vite plugin. Add the native shell for each target you build, for example:
 
-`WEFT_PLATFORM=<platform> vite build` (comma-separated for several) builds into `apps/<platform>/`. The project template there is copied on the first build and then belongs to you; `apps/<platform>/weft/` is regenerated on every build. Open `apps/wechat/` in WeChat DevTools. Platform APIs come from `@weft-ui/platform` (`run`, `fetch`, `storage`, `platform`, `isSupported`); unsupported ones reject with `PlatformError`. Native platforms (`ios`, `macos`, `android`, `windows`, `linux`) build `apps/<platform>/weft/bundle.hbc` (Hermes bytecode for the kernel in `native/core`) and `layout.json`. `macos` and `ios` also generate SwiftUI views into the `WeftApp` package in `apps/<platform>/weft/`, linked by the Xcode project `apps/<platform>/App.xcodeproj` and its WeftKit shell (`native/apple`), and run `xcodebuild` (`WEFT_NATIVE=0` only generates the project). `windows` generates WinUI 3 views (`weft/Generated.cs`) for the dotnet project `apps/windows/App.csproj`, linked against the Weft.WinUI shell (`native/windows`), and runs `dotnet build` on Windows hosts. `android` generates Jetpack Compose views into the Gradle module `apps/android/weft/` (with the bytecode as an asset), used by the Gradle project `apps/android/` together with its Android shell (`native/android`), and runs `./gradlew assembleDebug` on any host. `linux` generates GTK 4 views (`weft/Generated.cpp`) for the CMake project `apps/linux/`, linked against the C++ shell (`native/linux`), and builds it with CMake on Linux hosts (the executable is `apps/linux/build/app`).
+```sh
+pnpm add -D @weft-ui/native-android
+WEFT_PLATFORM=android pnpm exec vite build
+```
+
+Use `@weft-ui/native-apple` for iOS or macOS, `@weft-ui/native-windows` for Windows, and `@weft-ui/native-linux` for Linux. Web and WeChat do not need a native package. Native packages include prebuilt kernels: you need the target's app build tools, but you only build the kernel from source when developing in this repository. On Linux arm64, install `@weft-ui/native-linux` for the bundled `hermesc` even when targeting another native platform, or set `WEFT_HERMESC` to a compiler from the same Hermes release.
+
+The plugin resolves the installed shell package by target. Set `native` to override it with a directory containing the shell packages (`apple/`, `android/`, `windows/`, `linux/`). It accepts an absolute path or a path relative to the Vite root.
+
+`WEFT_PLATFORM=<platform> vite build` (comma-separated for several) builds into `apps/<platform>/`. The project template there is copied on the first build and then belongs to you; `apps/<platform>/weft/` is regenerated on every build. Open `apps/wechat/` in WeChat DevTools. Platform APIs come from `@weft-ui/platform` (`run`, `fetch`, `storage`, `platform`, `isSupported`); unsupported ones reject with `PlatformError`.
+
+Native builds generate `layout.json`, Hermes bytecode (`weft/bundle.hbc`, or an Android asset), and platform views. On macOS and iOS, the `WeftApp` Swift package in `weft/` links the WeftKit shell and builds with `xcodebuild`. Windows links the Weft.WinUI shell and builds `App.csproj` with `dotnet build`. Android links its shell through the generated `weft/` Gradle module and builds with `./gradlew assembleDebug` by default. Linux links its C++ shell and builds `apps/linux/build/app` with CMake. Set `WEFT_NATIVE=0` to generate the project without running the native build tool.
 
 ## Protocol
 

@@ -294,7 +294,7 @@ flowchart LR
 | B0 基线 | ☑ | clippy 0；tsc：vite 16、tests 59，其余 0；C-apps 基线已存；C-core、C-apple、C-android、C-windows（`net10.0`）、C-linux 通过 |
 | F1 `setInterval(fn, 0)` | ☑ | 修复前 `count("zero") == 3` 失败（只执行 1 次）；C-core、C-windows 通过 |
 | F2 Apple、Linux 整批解码 | ☐ | |
-| F3 格式化器注释 | ☐ | |
+| F3 格式化器注释 | ☑ | 5 个黄金用例在修复前均报内部错误；修复后通过并验证幂等，C-rust 通过（clippy 0） |
 | F4 Linux 纹理缓存 | ☐ | |
 | F5 中文侧边栏链接 | ☑ | 文档构建通过；6 个中文侧边栏均链接中文版，英文页面无中文版链接 |
 | F6 compiler 注释 | ☑ | 只改注释；compiler 包构建与 tsc 通过 |

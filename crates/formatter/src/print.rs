@@ -48,7 +48,7 @@ struct Printer<'src, 'tokens> {
     elided: Vec<usize>,
 }
 
-impl Printer<'_, '_> {
+impl<'src> Printer<'src, '_> {
     fn current(&self) -> Token {
         self.tokens[self.pos]
     }
@@ -124,10 +124,42 @@ impl Printer<'_, '_> {
         lines.any(|line| line.trim().is_empty())
     }
 
-    fn comment(&mut self, span: Span) {
-        self.doc.comment(text_at(self.source, span));
+    fn take_comment(&mut self, span: Span) -> &'src str {
         self.comments = &self.comments[1..];
         self.anchor = span.end;
+        text_at(self.source, span)
+    }
+
+    fn comment(&mut self, span: Span) {
+        let text = self.take_comment(span);
+        self.doc.comment(text);
+    }
+
+    fn binary_gap(&mut self) {
+        let token_start = self.current().span.start;
+        let mut comment = self.comment_before(token_start);
+        if comment.is_none() {
+            self.doc.text(" ");
+            return;
+        }
+        loop {
+            let next = comment.map_or(token_start, |span| span.start);
+            let gap = &self.source[self.anchor as usize..next as usize];
+            if gap.contains('\n') {
+                self.doc.line(Line::Hard, self.blank_before(next));
+            } else {
+                self.doc.text(" ");
+            }
+            let Some(span) = comment else { break };
+            let text = self.take_comment(span);
+            // Only a single-line block comment can be part of a flat group.
+            if text.starts_with("/*") && !text.contains('\n') {
+                self.doc.text(text);
+            } else {
+                self.doc.comment(text);
+            }
+            comment = self.comment_before(token_start);
+        }
     }
 
     fn boundary(&mut self, mut line: Line, mut gap: Gap) {
@@ -540,7 +572,7 @@ impl Printer<'_, '_> {
             }
             ExprKind::Binary { op, lhs, rhs } => {
                 self.expr(lhs)?;
-                self.doc.text(" ");
+                self.binary_gap();
                 let token = self.current();
                 if text_at(self.source, token.span) != op.symbol() {
                     return Err(FormatError::Internal(format!(
@@ -550,7 +582,7 @@ impl Printer<'_, '_> {
                     )));
                 }
                 self.token(token.kind)?;
-                self.doc.text(" ");
+                self.binary_gap();
                 self.expr(rhs)?;
             }
             ExprKind::If { cond, then, else_ } => {

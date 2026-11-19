@@ -385,7 +385,67 @@ fn preserves_disambiguating_empty_element_parentheses() {
 }
 
 #[test]
-fn reports_syntax_and_unsupported_comment_positions() {
+fn block_comment_before_binary_operator() {
+    golden(
+        "component C() { Text(x /* between operands */ + y) }",
+        "component C() {\n    Text(x /* between operands */ + y)\n}\n",
+        Options::default(),
+    );
+}
+
+#[test]
+fn block_comment_after_binary_operator() {
+    golden(
+        "component C() { Text(x + /* before right operand */ y) }",
+        "component C() {\n    Text(x + /* before right operand */ y)\n}\n",
+        Options::default(),
+    );
+}
+
+#[test]
+fn line_comment_before_binary_operator() {
+    golden(
+        "component C() { Text(x // before operator\n + y) }",
+        "component C() {\n    Text(\n        x // before operator\n        + y,\n    )\n}\n",
+        Options::default(),
+    );
+}
+
+#[test]
+fn line_comment_after_binary_operator() {
+    golden(
+        "component C() { Text(x + // before right operand\n y) }",
+        "component C() {\n    Text(\n        x + // before right operand\n        y,\n    )\n}\n",
+        Options::default(),
+    );
+}
+
+#[test]
+fn comments_in_nested_binary_expressions() {
+    golden(
+        r#"component C() {
+    Text(x /* before plus */ /* also before plus */ + // after plus
+     (y /* multi
+line */
+
+        * /* after times */ z))
+}"#,
+        r#"component C() {
+    Text(
+        x /* before plus */ /* also before plus */ + // after plus
+        (y /* multi
+line */
+
+        * /* after times */ z),
+    )
+}
+"#,
+        Options::default(),
+    );
+}
+
+#[test]
+fn reports_syntax_errors() {
     for source in [
         "event E(",
         "@",
@@ -398,13 +458,6 @@ fn reports_syntax_and_unsupported_comment_positions() {
         assert!(!diagnostics.is_empty());
         assert!(diagnostics.iter().all(|d| d.span.file == FileId(0)));
     }
-    let Err(FormatError::Internal(message)) = format(
-        "component C() { Text(x /* between operands */ + y) }",
-        &Options::default(),
-    ) else {
-        panic!("expected an internal error for an unsupported comment position");
-    };
-    assert!(message.contains("comment"), "{message}");
 }
 
 #[test]

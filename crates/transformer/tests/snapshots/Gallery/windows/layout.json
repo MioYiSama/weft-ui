@@ -1,0 +1,102 @@
+{
+  "hash": "1e5786a8ee33fbbd",
+  "templates": [
+    {
+      "label": "Panel",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {}, "children": [1, 2]},
+        {"point": 0},
+        {"element": "Button", "props": {}, "children": [3]},
+        {"element": "Text", "props": {}, "children": []}
+      ],
+      "values": [
+        {"node": 3, "prop": "value", "type": "String"}
+      ],
+      "events": [
+        {"node": 2, "event": "onClick", "payload": null, "controls": null}
+      ],
+      "points": [
+        {"node": 1, "kind": "slot"}
+      ]
+    },
+    {
+      "label": "Gallery",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {"padding": 12, "gap": 8, "width": 320, "height": 280, "background": "#eeeeff"}, "children": [1, 2, 6, 7]},
+        {"element": "Text", "props": {"value": "Gallery", "color": "#224466", "size": 20, "bold": true}, "children": []},
+        {"element": "Row", "props": {}, "children": [3, 4, 5]},
+        {"element": "Checkbox", "props": {}, "children": []},
+        {"element": "Image", "props": {"width": 32, "height": 32}, "children": []},
+        {"element": "Text", "props": {"value": "Preview"}, "children": []},
+        {"element": "Input", "props": {"placeholder": "Caption"}, "children": []},
+        {"point": 0}
+      ],
+      "values": [
+        {"node": 2, "prop": "padding", "type": "Int"},
+        {"node": 2, "prop": "gap", "type": "Int"},
+        {"node": 2, "prop": "width", "type": "Int"},
+        {"node": 2, "prop": "height", "type": "Int"},
+        {"node": 2, "prop": "background", "type": "Color"},
+        {"node": 3, "prop": "checked", "type": "Bool"},
+        {"node": 4, "prop": "src", "type": "String"},
+        {"node": 5, "prop": "color", "type": "Color"},
+        {"node": 5, "prop": "size", "type": "Int"},
+        {"node": 5, "prop": "bold", "type": "Bool"},
+        {"node": 6, "prop": "value", "type": "String"}
+      ],
+      "events": [
+        {"node": 3, "event": "onChange", "payload": "Bool", "controls": 5},
+        {"node": 6, "event": "onChange", "payload": "String", "controls": 10}
+      ],
+      "points": [
+        {"node": 7, "kind": "instance", "template": 0}
+      ]
+    },
+    {
+      "label": "Gallery:slot10",
+      "kind": "slot",
+      "roots": [0, 1],
+      "nodes": [
+        {"element": "Text", "props": {}, "children": []},
+        {"point": 0}
+      ],
+      "values": [
+        {"node": 0, "prop": "value", "type": "String"}
+      ],
+      "events": [],
+      "points": [
+        {"node": 1, "kind": "branch", "templates": [3]}
+      ]
+    },
+    {
+      "label": "Gallery:if9.0",
+      "kind": "branch",
+      "roots": [0],
+      "nodes": [
+        {"point": 0}
+      ],
+      "values": [],
+      "events": [],
+      "points": [
+        {"node": 0, "kind": "list", "template": 4}
+      ]
+    },
+    {
+      "label": "Gallery:for8",
+      "kind": "row",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {}, "children": []}
+      ],
+      "values": [
+        {"node": 0, "prop": "value", "type": "String"}
+      ],
+      "events": [],
+      "points": []
+    }
+  ]
+}

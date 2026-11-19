@@ -304,7 +304,7 @@ flowchart LR
 | N.4 hermesc 随 native 包 | ☐ | |
 | N.5 协议版本检查 | ☐ | |
 | N.6 发布检查与仓库外验证 | ☐ | |
-| T1 快照夹具 | ☐ | |
+| T1 快照夹具 | ☑ | Gallery 覆盖 7 个元素、8 个字面量和绑定样式属性及插槽；TodoList 快照无改动；C-rust 通过（clippy 0） |
 | T2 conformance 夹具 | ☐ | |
 | V1 版本规则 | ☐ | |
 | W1 PR 流水线 | ☐ | |

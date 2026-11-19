@@ -1,30 +1,55 @@
-//! Generated sources of the TodoList fixture, per platform.
+//! Generated sources of each fixture, per platform.
 //!
 //! The snapshots exist to review changes to generated code; behavior is
-//! tested end to end in the JS packages. Run with `WEFT_UPDATE_SNAPSHOTS=1`
-//! to rewrite them.
+//! tested end to end in the JS packages. Run the corresponding fixture test
+//! with `WEFT_UPDATE_SNAPSHOTS=1` to rewrite its snapshots.
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use weft_ui_parser::{MemoryLoader, load};
-use weft_ui_transformer::compile_app;
 use weft_ui_transformer::transform::Platform;
+use weft_ui_transformer::{AppOutput, compile_app};
 
-const TODO_LIST: &str = include_str!("fixtures/TodoList.weft");
+struct Fixture {
+    name: &'static str,
+    source: &'static str,
+}
+
+impl Fixture {
+    fn compile(&self, platform: Platform) -> AppOutput {
+        let file = format!("{}.weft", self.name);
+        let mut loader = MemoryLoader::new();
+        loader.insert(&file, self.source);
+        let output = compile_app(load(&[&file], &mut loader), platform);
+        assert!(
+            output.compilation.diagnostics.is_empty(),
+            "{}",
+            output.compilation.render_diagnostics()
+        );
+        output
+    }
+
+    fn snapshot_dir(&self) -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/snapshots")
+            .join(self.name)
+    }
+}
+
+const TODO_LIST: Fixture = Fixture {
+    name: "TodoList",
+    source: include_str!("fixtures/TodoList.weft"),
+};
+const GALLERY: Fixture = Fixture {
+    name: "Gallery",
+    source: include_str!("fixtures/Gallery.weft"),
+};
 
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
-fn generate(platform: Platform) -> BTreeMap<String, String> {
-    let mut loader = MemoryLoader::new();
-    loader.insert("TodoList.weft", TODO_LIST);
-    let output = compile_app(load(&["TodoList.weft"], &mut loader), platform);
-    assert!(
-        output.compilation.diagnostics.is_empty(),
-        "{}",
-        output.compilation.render_diagnostics()
-    );
+fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
     let mut files = BTreeMap::new();
     for module in output.logic {
         let stem = module
@@ -38,15 +63,12 @@ fn generate(platform: Platform) -> BTreeMap<String, String> {
     files
 }
 
-fn check(platform: Platform) {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/snapshots/TodoList")
-        .join(platform.as_str());
-    let generated = generate(platform);
+fn check(fixture: &Fixture, platform: Platform, generated: &BTreeMap<String, String>) {
+    let dir = fixture.snapshot_dir().join(platform.as_str());
     if std::env::var_os("WEFT_UPDATE_SNAPSHOTS").is_some() {
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).expect("snapshot directory is writable");
-        for (path, contents) in &generated {
+        for (path, contents) in generated {
             let path = dir.join(path);
             let parent = path.parent().expect("snapshot has a parent directory");
             fs::create_dir_all(parent).expect("snapshot directory is writable");
@@ -59,10 +81,15 @@ fn check(platform: Platform) {
     assert_eq!(
         generated.keys().collect::<Vec<_>>(),
         stored.keys().collect::<Vec<_>>(),
-        "generated files of {platform}"
+        "generated files of {}/{platform}",
+        fixture.name
     );
-    for (path, contents) in &generated {
-        assert_eq!(contents, &stored[path], "{platform}/{path}");
+    for (path, contents) in generated {
+        assert_eq!(
+            contents, &stored[path],
+            "{}/{platform}/{path}",
+            fixture.name
+        );
     }
 }
 
@@ -83,13 +110,30 @@ fn read_snapshots(dir: &Path, prefix: &str, stored: &mut BTreeMap<String, String
 }
 
 #[test]
-fn web() {
-    check(Platform::Web);
+fn todo_list() {
+    check_fixture(&TODO_LIST);
 }
 
 #[test]
-fn wechat() {
-    check(Platform::Wechat);
+fn gallery() {
+    check_fixture(&GALLERY);
+}
+
+fn check_fixture(fixture: &Fixture) {
+    let web = generated_files(fixture.compile(Platform::Web));
+    check(fixture, Platform::Web, &web);
+
+    let wechat = fixture.compile(Platform::Wechat);
+    let layout = wechat
+        .layout
+        .as_ref()
+        .expect("wechat has a layout")
+        .to_json();
+    check_layout(fixture, &layout);
+    let wechat = generated_files(wechat);
+    check(fixture, Platform::Wechat, &wechat);
+
+    check_native(fixture, &wechat, &layout);
 }
 
 #[test]
@@ -171,71 +215,48 @@ fn remote_imports_preserve_weft_extensions() {
 }
 
 /// The view protocol layout is the same for every non-Web platform.
-#[test]
-fn layout() {
-    let mut loader = MemoryLoader::new();
-    loader.insert("TodoList.weft", TODO_LIST);
-    let output = compile_app(load(&["TodoList.weft"], &mut loader), Platform::Wechat);
-    let json = output.layout.expect("wechat has a layout").to_json();
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/snapshots/TodoList/layout.json");
+fn check_layout(fixture: &Fixture, json: &str) {
+    let path = fixture.snapshot_dir().join("layout.json");
     if std::env::var_os("WEFT_UPDATE_SNAPSHOTS").is_some() {
-        fs::write(&path, &json).expect("snapshot is writable");
+        fs::write(&path, json).expect("snapshot is writable");
         return;
     }
     let stored =
         fs::read_to_string(&path).unwrap_or_else(|err| panic!("{}: {err}", path.display()));
-    assert_eq!(json, stored, "TodoList/layout.json");
-}
-
-#[test]
-fn macos() {
-    check(Platform::Macos);
-}
-
-#[test]
-fn android() {
-    check(Platform::Android);
-}
-
-#[test]
-fn windows() {
-    check(Platform::Windows);
-}
-
-#[test]
-fn linux() {
-    check(Platform::Linux);
-}
-
-/// iOS and macOS share one SwiftUI backend; platform differences live in WeftKit.
-#[test]
-fn ios_views_equal_macos_views() {
-    assert_eq!(generate(Platform::Ios), generate(Platform::Macos));
+    assert_eq!(json, stored, "{}/layout.json", fixture.name);
 }
 
 /// Native platforms run the mini program's logic modules with another sink,
 /// next to the layout and the views of their backend.
-#[test]
-fn native_platforms_share_the_remote_logic() {
-    let wechat = generate(Platform::Wechat);
-    for (platform, views) in [
-        (Platform::Ios, &["Generated.swift"][..]),
-        (Platform::Macos, &["Generated.swift"]),
-        (Platform::Android, &["src/main/kotlin/Generated.kt"]),
-        (Platform::Windows, &["Generated.cs"]),
-        (Platform::Linux, &["Generated.cpp"]),
+fn check_native(fixture: &Fixture, wechat: &BTreeMap<String, String>, layout: &str) {
+    let name = fixture.name;
+    let js = format!("{name}.js");
+    let dts = format!("{name}.d.ts");
+    for (platform, view) in [
+        (Platform::Macos, "Generated.swift"),
+        (Platform::Android, "src/main/kotlin/Generated.kt"),
+        (Platform::Windows, "Generated.cs"),
+        (Platform::Linux, "Generated.cpp"),
     ] {
-        let native = generate(platform);
-        let mut expected = vec!["TodoList.d.ts", "TodoList.js", "layout.json"];
-        expected.extend(views);
+        let native = generated_files(fixture.compile(platform));
+        let mut expected = [js.as_str(), dts.as_str(), "layout.json", view];
         expected.sort_unstable();
-        assert_eq!(native.keys().collect::<Vec<_>>(), expected, "{platform}");
-        assert_eq!(native["TodoList.js"], wechat["TodoList.js"], "{platform}");
         assert_eq!(
-            native["TodoList.d.ts"], wechat["TodoList.d.ts"],
-            "{platform}"
+            native.keys().collect::<Vec<_>>(),
+            expected,
+            "{name}/{platform}"
         );
-        let stored = include_str!("snapshots/TodoList/layout.json");
-        assert_eq!(native["layout.json"], stored, "{platform}");
+        assert_eq!(native[&js], wechat[&js], "{name}/{platform}/{js}");
+        assert_eq!(native[&dts], wechat[&dts], "{name}/{platform}/{dts}");
+        assert_eq!(
+            native["layout.json"], layout,
+            "{name}/{platform}/layout.json"
+        );
+        // iOS and macOS share one SwiftUI backend; differences live in WeftKit.
+        if platform == Platform::Macos {
+            let ios = generated_files(fixture.compile(Platform::Ios));
+            assert_eq!(ios, native, "{name}/ios differs from macos");
+        }
+        check(fixture, platform, &native);
     }
 }

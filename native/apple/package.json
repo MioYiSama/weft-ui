@@ -20,5 +20,8 @@
     "Package.swift",
     "Sources",
     "build/WeftCore.xcframework"
-  ]
+  ],
+  "dependencies": {
+    "hermes-compiler": "260318099.0.8"
+  }
 }

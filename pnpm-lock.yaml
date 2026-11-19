@@ -60,13 +60,29 @@ importers:
         specifier: ^8.3.8
         version: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)
 
-  native/android: {}
+  native/android:
+    dependencies:
+      hermes-compiler:
+        specifier: 260318099.0.8
+        version: 260318099.0.8
 
-  native/apple: {}
+  native/apple:
+    dependencies:
+      hermes-compiler:
+        specifier: 260318099.0.8
+        version: 260318099.0.8
 
-  native/linux: {}
+  native/linux:
+    dependencies:
+      hermes-compiler:
+        specifier: 260318099.0.8
+        version: 260318099.0.8
 
-  native/windows: {}
+  native/windows:
+    dependencies:
+      hermes-compiler:
+        specifier: 260318099.0.8
+        version: 260318099.0.8
 
   packages/compiler:
     dependencies:
@@ -127,9 +143,6 @@ importers:
       '@weft-ui/runtime':
         specifier: workspace:*
         version: link:../runtime
-      hermes-compiler:
-        specifier: 260318099.0.8
-        version: 260318099.0.8
     devDependencies:
       '@types/node':
         specifier: ^26.6.6

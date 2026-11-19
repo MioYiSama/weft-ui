@@ -24,5 +24,8 @@
     "build/linux-x64/libweft_core.so",
     "build/linux-arm64/libweft_core.so",
     "build/linux-arm64/bin/hermesc"
-  ]
+  ],
+  "dependencies": {
+    "hermes-compiler": "260318099.0.8"
+  }
 }

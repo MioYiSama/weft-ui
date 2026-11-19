@@ -6,8 +6,8 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 project(weft_core LANGUAGES C CXX)
 
 # Hermes release embedded by the kernel. Bytecode is only accepted by the
-# VM it was compiled for, so this tag and the `hermes-compiler` version used
-# by `@weft-ui/vite` must name the same release.
+# VM it was compiled for, so this tag and the `hermes-compiler` version in
+# each native shell package must name the same release.
 set(WEFT_HERMES_TAG "hermes-v260318099.0.8")
 
 option(WEFT_CORE_SHARED "Build the kernel as a shared library" ${BUILD_SHARED_LIBS})

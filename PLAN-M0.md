@@ -301,7 +301,7 @@ flowchart LR
 | N.1 native 包 | ☑ | 4 个 pack 清单符合白名单；SwiftPM 可解析无测试的包；C-apple、C-android、C-apps 通过 |
 | N.2 Linux 壳内置 core | ☑ | Linux tarball 解压到容器 `/tmp` 后独立配置、构建成功；打包后无 `core/` 残留；C-linux 通过 |
 | N.3 模块解析定位壳 | ☑ | 无源码相对路径；工作区解析为原 `native/<target>` 路径，缺包提示含安装命令；C-ts、C-apps 通过 |
-| N.4 hermesc 随 native 包 | ☐ | |
+| N.4 hermesc 随 native 包 | ☑ | 仓库外仅安装 Vite tarball 不含 `hermes-compiler`；C-ts、C-apps、C-core（含 3 个 conformance 夹具）通过 |
 | N.5 协议版本检查 | ☐ | |
 | N.6 发布检查与仓库外验证 | ☐ | |
 | T1 快照夹具 | ☑ | Gallery 覆盖 7 个元素、8 个字面量和绑定样式属性及插槽；TodoList 快照无改动；C-rust 通过（clippy 0） |

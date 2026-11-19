@@ -7,7 +7,7 @@ import type { NativePlatform } from "@weft-ui/runtime/protocol";
 import { androidAdapter } from "./android.ts";
 import { appleAdapter } from "./apple.ts";
 import { linuxAdapter } from "./linux.ts";
-import { nativeShell } from "./shells.ts";
+import { nativeShell, nativeShellPackage } from "./shells.ts";
 import { windowsAdapter } from "./windows.ts";
 
 export interface NativeAdapter {
@@ -79,40 +79,52 @@ const BINARIES: Partial<Record<string, string>> = {
 };
 
 /**
- * The `hermesc` that compiles bundles: `WEFT_HERMESC`, else the one shipped
- * by the `hermes-compiler` package, which matches the kernel's Hermes release.
- * On Linux hosts without a packaged binary (arm64) it is the one that
- * native/linux/build-core.sh builds with the kernel.
+ * The shell supplies the compiler that matches its kernel's Hermes release.
+ * The Linux shell itself ships the arm64 Linux executable, which
+ * `hermes-compiler` does not provide.
  */
-function hermesc(nativeRoot?: string): string {
+function hermesc(platform: NativePlatform, shell: string, nativeRoot?: string): string {
   const override = process.env.WEFT_HERMESC;
   if (override) return override;
-  const binary = BINARIES[`${process.platform}-${process.arch}`];
-  if (!binary) {
-    if (process.platform === "linux") {
-      const built = join(nativeShell("linux", nativeRoot), `build/linux-${process.arch}/bin/hermesc`);
-      if (existsSync(built)) return built;
+  const host = `${process.platform}-${process.arch}`;
+  if (host === "linux-arm64") {
+    let linuxShell: string;
+    try {
+      linuxShell = platform === "linux" ? shell : nativeShell("linux", nativeRoot);
+    } catch (cause) {
+      throw new Error(
+        "weft: on Linux arm64 install hermesc with `pnpm add -D @weft-ui/native-linux`, or set WEFT_HERMESC",
+        { cause },
+      );
     }
-    throw new Error(
-      `weft: hermes-compiler ships no hermesc for ${process.platform}-${process.arch}. ` +
-        (process.platform === "linux"
-          ? "Build it with the kernel by native/linux/build-core.sh, or point WEFT_HERMESC at a hermesc of the kernel's Hermes release."
-          : "Build it with `cmake -S native/core -B native/core/build && cmake --build native/core/build --target hermesc` " +
-            "and point WEFT_HERMESC at native/core/build/bin/hermesc."),
-    );
+    const compiler = join(linuxShell, "build/linux-arm64/bin/hermesc");
+    if (existsSync(compiler)) return compiler;
+    throw new Error(`weft: hermesc is missing at ${compiler}; reinstall @weft-ui/native-linux or set WEFT_HERMESC`);
   }
-  const manifest = createRequire(import.meta.url).resolve("hermes-compiler/package.json");
-  return join(dirname(manifest), "hermesc", binary);
+  const name = nativeShellPackage(platform);
+  const binary = BINARIES[host];
+  if (!binary) throw new Error(`weft: ${name} does not supply hermesc for ${host}; set WEFT_HERMESC`);
+  try {
+    const manifest = createRequire(join(shell, "package.json")).resolve("hermes-compiler/package.json");
+    return join(dirname(manifest), "hermesc", binary);
+  } catch (cause) {
+    if ((cause as NodeJS.ErrnoException).code !== "MODULE_NOT_FOUND") throw cause;
+    throw new Error(`weft: ${name} cannot find hermes-compiler; reinstall the package or set WEFT_HERMESC`);
+  }
 }
 
 /** Compiles the bundle at `input` to Hermes bytecode at `output`. */
-export async function compileBytecode(input: string, output: string, nativeRoot?: string): Promise<void> {
-  const compiler = hermesc(nativeRoot);
+export async function compileBytecode(
+  input: string, output: string, platform: NativePlatform, shell: string, nativeRoot?: string,
+): Promise<void> {
+  const compiler = hermesc(platform, shell, nativeRoot);
   try {
     await execute(compiler, [...HERMESC_FLAGS, `-out=${output}`, input]);
   } catch (cause) {
     const { stderr, code } = cause as { stderr?: string; code?: string };
-    if (code === "ENOENT") throw new Error(`weft: hermesc not found at ${compiler}; reinstall dependencies or set WEFT_HERMESC`);
+    if (code === "ENOENT") {
+      throw new Error(`weft: hermesc not found at ${compiler}; reinstall ${nativeShellPackage(platform)} or set WEFT_HERMESC`);
+    }
     throw new Error(`weft: hermesc failed on ${input}\n${stderr ?? String(cause)}`);
   }
 }

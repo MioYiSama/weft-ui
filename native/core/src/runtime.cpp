@@ -410,7 +410,10 @@ bool weft_runtime_dispatch(weft_runtime *rt, uint32_t scope, uint32_t handler,
     try {
       const uint8_t *at = payload;
       value = weft::ops::read_value(at, payload + len);
-      if (at != payload + len) throw weft::ops::Error("weft: trailing bytes after the payload");
+      if (at != payload + len) {
+        log(*rt, WEFT_LOG_ERROR, "weft: trailing bytes after the payload");
+        return true;
+      }
     } catch (const weft::ops::Error &e) {
       log(*rt, WEFT_LOG_ERROR, e.what());
       return true;

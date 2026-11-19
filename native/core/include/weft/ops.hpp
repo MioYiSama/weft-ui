@@ -24,7 +24,16 @@ using Value = std::variant<bool, double, std::string_view>;
 /// A malformed batch or value.
 class Error : public std::runtime_error {
  public:
-  using std::runtime_error::runtime_error;
+  /// The decoding error kinds of docs/src/content/docs/protocol.md
+  /// ("Decoding errors").
+  enum class Kind { Truncated, Version, Opcode, Tag, Utf8 };
+
+  Error(Kind kind, const std::string &what) : std::runtime_error(what), kind_(kind) {}
+
+  Kind kind() const { return kind_; }
+
+ private:
+  Kind kind_;
 };
 
 struct Op {
@@ -47,7 +56,7 @@ struct Op {
 /// Reads the ops of one batch in order.
 class Reader {
  public:
-  /// Throws `Error` on an empty batch or an unsupported version.
+  /// Throws `Error` on an empty batch (`Truncated`) or an unsupported version.
   Reader(const uint8_t *data, size_t len);
 
   /// Reads the next op into `op`; returns false at the end of the batch.
@@ -62,6 +71,9 @@ class Reader {
 
 /// Reads one encoded value (a tag byte and its data), advancing `at`.
 Value read_value(const uint8_t *&at, const uint8_t *end);
+
+/// Appends the encoding of `value` (a tag byte and its data) to `out`.
+void encode_value(const Value &value, std::string &out);
 
 /// `true` / `false`, the number as JavaScript prints it, or a JSON string.
 std::string format_value(const Value &value);

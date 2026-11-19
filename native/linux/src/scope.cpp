@@ -48,14 +48,15 @@ void Scope::apply(uint32_t, const ops::Value &) {}
 
 bool Scope::dispatch(uint32_t slot) { return session_.dispatch(id_, slot, {}); }
 
-bool Scope::dispatch(uint32_t slot, bool value) { return session_.dispatch(id_, slot, std::string(1, value ? 1 : 0)); }
+bool Scope::dispatch(uint32_t slot, bool value) {
+  std::string payload;
+  ops::encode_value(value, payload);
+  return session_.dispatch(id_, slot, payload);
+}
 
 bool Scope::dispatch(uint32_t slot, std::string_view value) {
-  // Tag 3, the UTF-8 length as a little-endian u32, the bytes.
-  std::string payload(1, char(3));
-  auto length = uint32_t(value.size());
-  for (int shift = 0; shift < 32; shift += 8) payload.push_back(char(length >> shift & 0xff));
-  payload.append(value);
+  std::string payload;
+  ops::encode_value(value, payload);
   return session_.dispatch(id_, slot, payload);
 }
 

@@ -20,6 +20,8 @@
 #include <thread>
 #include <vector>
 
+#include "json.hpp"
+
 namespace {
 
 struct Failure : std::runtime_error {
@@ -325,15 +327,6 @@ std::vector<std::string> decode(const std::vector<uint8_t> &bytes) {
   return out;
 }
 
-bool rejects(const std::vector<uint8_t> &bytes) {
-  try {
-    decode(bytes);
-    return false;
-  } catch (const weft::ops::Error &) {
-    return true;
-  }
-}
-
 void ops() {
   Batch b;
   b.u8(1).u32(1).u32(0);
@@ -360,21 +353,128 @@ void ops() {
                                 "branch 1 0 0",
                                 "attach 0 0 1",
                             }));
+}
 
-  CHECK(rejects({}));
-  CHECK(rejects({2}));
-  CHECK(rejects(Batch().u8(9).bytes));
-  CHECK(rejects(Batch().u8(1).u32(1).bytes));
-  CHECK(rejects(Batch().u8(4).u32(1).u32(0).u32(3).u32(1).bytes));
-  CHECK(rejects(Batch().u8(2).u32(1).u32(0).u8(7).bytes));
-  CHECK(rejects(Batch().u8(2).u32(1).u32(0).string("\xc0\xaf").bytes));
-  CHECK(rejects(Batch().u8(2).u32(1).u32(0).string("\xed\xa0\x80").bytes));
+// The shared corpus (protocol/corpus).
+
+json::Value read_corpus(const std::string &file) {
+  auto bytes = read_file(std::string(WEFT_CORPUS_DIR) + "/" + file);
+  return json::parse(std::string_view(reinterpret_cast<const char *>(bytes.data()), bytes.size()));
+}
+
+/// The bytes of a corpus `hex` string, which may contain whitespace.
+std::vector<uint8_t> hex_bytes(const std::string &hex) {
+  std::string digits;
+  for (char c : hex) {
+    if (c != ' ' && c != '\n') digits += c;
+  }
+  std::vector<uint8_t> out;
+  for (size_t i = 0; i + 1 < digits.size(); i += 2) {
+    out.push_back(uint8_t(std::stoul(digits.substr(i, 2), nullptr, 16)));
+  }
+  return out;
+}
+
+/// A corpus value (`{"bool": b}`, `{"number": n}` or `{"string": s}`); strings point into `value`.
+weft::ops::Value corpus_value(const json::Value &value) {
+  if (value.has("bool")) return value["bool"].boolean();
+  if (value.has("number")) return value["number"].number();
+  return std::string_view(value["string"].string());
+}
+
+const char *kind_name(weft::ops::Error::Kind kind) {
+  using Kind = weft::ops::Error::Kind;
+  switch (kind) {
+    case Kind::Truncated: return "truncated";
+    case Kind::Version: return "version";
+    case Kind::Opcode: return "opcode";
+    case Kind::Tag: return "tag";
+    case Kind::Utf8: return "utf8";
+  }
+  return "?";
+}
+
+const char *op_name(weft::ops::Code code) {
+  using weft::ops::Code;
+  switch (code) {
+    case Code::Create: return "create";
+    case Code::Set: return "set";
+    case Code::Branch: return "branch";
+    case Code::Rows: return "rows";
+    case Code::Attach: return "attach";
+  }
+  return "?";
+}
+
+void check_op(const std::string &name, const weft::ops::Op &op, const json::Value &want) {
+  using weft::ops::Code;
+  CHECK_EQ(name + " " + op_name(op.code), name + " " + want["op"].string());
+  CHECK_EQ(op.scope, want["scope"].u32());
+  switch (op.code) {
+    case Code::Create:
+      CHECK_EQ(op.index, want["template"].u32());
+      break;
+    case Code::Set:
+      CHECK_EQ(op.index, want["slot"].u32());
+      CHECK(op.value == corpus_value(want["value"]));
+      break;
+    case Code::Branch:
+    case Code::Attach:
+      CHECK_EQ(op.index, want["point"].u32());
+      CHECK_EQ(op.child, want["child"].u32());
+      break;
+    case Code::Rows: {
+      CHECK_EQ(op.index, want["point"].u32());
+      auto &children = want["children"].array();
+      CHECK_EQ(op.count, uint32_t(children.size()));
+      for (uint32_t i = 0; i < op.count; i++) CHECK_EQ(op.row(i), children[i].u32());
+      break;
+    }
+  }
+}
+
+void corpus() {
+  for (auto &c : read_corpus("ops.json")["cases"].array()) {
+    const std::string &name = c["name"].string();
+    auto bytes = hex_bytes(c["hex"].string());
+    if (c.has("ops")) {
+      weft::ops::Reader reader(bytes.data(), bytes.size());
+      auto &want = c["ops"].array();
+      size_t count = 0;
+      for (weft::ops::Op op; reader.next(op); count++) {
+        CHECK(count < want.size());
+        check_op(name, op, want[count]);
+      }
+      CHECK_EQ(name + " " + std::to_string(count), name + " " + std::to_string(want.size()));
+    } else {
+      std::string kind = "none";
+      try {
+        decode(bytes);
+      } catch (const weft::ops::Error &e) {
+        kind = kind_name(e.kind());
+      }
+      CHECK_EQ(name + " " + kind, name + " " + c["error"].string());
+    }
+  }
+
+  for (auto &c : read_corpus("values.json")["cases"].array()) {
+    const std::string &name = c["name"].string();
+    auto bytes = hex_bytes(c["hex"].string());
+    auto want = corpus_value(c["value"]);
+    const uint8_t *at = bytes.data();
+    CHECK(weft::ops::read_value(at, bytes.data() + bytes.size()) == want);
+    CHECK(at == bytes.data() + bytes.size());
+    std::string encoded;
+    weft::ops::encode_value(want, encoded);
+    CHECK_EQ(name + " " + encoded, name + " " + std::string(bytes.begin(), bytes.end()));
+  }
 }
 
 const std::map<std::string, std::function<void()>> kCases = {
-    {"timers", timers}, {"microtasks", microtasks}, {"console", console},
-    {"text", text},     {"calls", calls},           {"session", session},
+    {"timers", timers},   {"microtasks", microtasks},   {"console", console},
+    {"text", text},       {"calls", calls},             {"session", session},
     {"refused", refused}, {"stable_rows", stable_rows}, {"ops", ops},
+    {"corpus", corpus},
 };
 
 }  // namespace

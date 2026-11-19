@@ -18,7 +18,11 @@ uint32_t load_u32(const uint8_t *p) {
 }
 
 void need(const uint8_t *at, const uint8_t *end, size_t size) {
-  if (size_t(end - at) < size) throw Error("weft ops: truncated batch");
+  if (size_t(end - at) < size) throw Error(Error::Kind::Truncated, "weft ops: truncated batch");
+}
+
+void put_u32(uint32_t value, std::string &out) {
+  for (int shift = 0; shift < 32; shift += 8) out.push_back(char(value >> shift & 0xff));
 }
 
 uint32_t take_u32(const uint8_t *&at, const uint8_t *end) {
@@ -141,8 +145,10 @@ std::string json_string(std::string_view text) {
 uint32_t Op::row(uint32_t i) const { return load_u32(rows + size_t(i) * 4); }
 
 Reader::Reader(const uint8_t *data, size_t len) : at_(data), end_(data + len) {
-  if (len == 0) throw Error("weft ops: empty batch");
-  if (*at_ != kVersion) throw Error("weft ops: unsupported version " + std::to_string(*at_));
+  if (len == 0) throw Error(Error::Kind::Truncated, "weft ops: empty batch");
+  if (*at_ != kVersion) {
+    throw Error(Error::Kind::Version, "weft ops: unsupported version " + std::to_string(*at_));
+  }
   at_++;
 }
 
@@ -176,7 +182,7 @@ bool Reader::next(Op &op) {
       at_ += size_t(op.count) * 4;
       return true;
   }
-  throw Error("weft ops: unknown opcode " + std::to_string(code));
+  throw Error(Error::Kind::Opcode, "weft ops: unknown opcode " + std::to_string(code));
 }
 
 Value read_value(const uint8_t *&at, const uint8_t *end) {
@@ -196,12 +202,28 @@ Value read_value(const uint8_t *&at, const uint8_t *end) {
       uint32_t len = take_u32(at, end);
       need(at, end, len);
       std::string_view text(reinterpret_cast<const char *>(at), len);
-      if (!valid_utf8(text)) throw Error("weft ops: invalid UTF-8 in a string value");
+      if (!valid_utf8(text)) throw Error(Error::Kind::Utf8, "weft ops: invalid UTF-8 in a string value");
       at += len;
       return text;
     }
     default:
-      throw Error("weft ops: unknown value tag " + std::to_string(tag));
+      throw Error(Error::Kind::Tag, "weft ops: unknown value tag " + std::to_string(tag));
+  }
+}
+
+void encode_value(const Value &value, std::string &out) {
+  if (auto *flag = std::get_if<bool>(&value)) {
+    out.push_back(char(*flag ? kTrue : kFalse));
+  } else if (auto *number = std::get_if<double>(&value)) {
+    out.push_back(char(kNumber));
+    auto bits = std::bit_cast<uint64_t>(*number);
+    put_u32(uint32_t(bits), out);
+    put_u32(uint32_t(bits >> 32), out);
+  } else {
+    auto text = std::get<std::string_view>(value);
+    out.push_back(char(kString));
+    put_u32(uint32_t(text.size()), out);
+    out.append(text);
   }
 }
 

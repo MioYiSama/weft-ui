@@ -18,7 +18,10 @@ foreach(source IN LISTS js_sources)
 endforeach()
 add_custom_target(weft_core_test_bundles DEPENDS ${bundles})
 
+get_filename_component(repo ${PROJECT_SOURCE_DIR}/../.. ABSOLUTE)
+
 add_executable(weft_core_tests kernel_test.cpp)
+target_compile_definitions(weft_core_tests PRIVATE WEFT_CORPUS_DIR="${repo}/protocol/corpus")
 # Only the C ABI crosses the boundary of a shared kernel. Compile the C++
 # ops helper into the test hosts, and place Windows DLLs beside each executable.
 function(weft_test_host target)
@@ -39,7 +42,7 @@ function(weft_test_host target)
 endfunction()
 weft_test_host(weft_core_tests)
 add_dependencies(weft_core_tests weft_core_test_bundles)
-foreach(name timers microtasks console text calls session refused stable_rows ops)
+foreach(name timers microtasks console text calls session refused stable_rows ops corpus)
   add_test(NAME core.${name} COMMAND weft_core_tests ${CMAKE_CURRENT_BINARY_DIR}/js ${name})
 endforeach()
 
@@ -49,7 +52,6 @@ endforeach()
 # file the JS headless renderer wrote.
 if(WEFT_CONFORMANCE)
   find_program(WEFT_NODE node REQUIRED)
-  get_filename_component(repo ${PROJECT_SOURCE_DIR}/../.. ABSOLUTE)
   set(out ${CMAKE_CURRENT_BINARY_DIR}/conformance)
   add_executable(weft_conformance conformance.cpp)
   weft_test_host(weft_conformance)

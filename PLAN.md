@@ -776,7 +776,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P1.1 规范：解码错误 | ☑ | |
 | P1.2 共享样例 | ☑ | |
 | P1.3 TS 错误种类与样例测试 | ☑ | C-apps 有一处预期外差异，见执行中发现 |
-| P1.4 C++ 内核样例与值编码 | ☐ | |
+| P1.4 C++ 内核样例与值编码 | ☑ | |
 | P1.5 Swift 严格 UTF-8 与样例 | ☐ | |
 | P1.6 Kotlin 严格 UTF-8 与样例 | ☐ | |
 | P1.7 C# 严格 UTF-8、opcode 优先与样例 | ☐ | |

@@ -76,6 +76,8 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 
 值以一个 u8 标签开头：`0` false、`1` true、`2` 数字（f64 小端，`Int` 槽的值也按 f64 传）、`3` 字符串（u32 字节长度 + UTF-8）。JS 侧的 `OpWriter`（`@weft-ui/runtime` 的 `src/ops.ts`）复用同一块缓冲，每批的字节只在下一次写入前有效。
 
+版本号、opcode、值标签和解码错误种类，以及 WeChat 样式单位、平台名和平台调用模块，都只在 [`protocol/weft.protocol.json`](https://github.com/MioYiSama/weft-ui/blob/master/protocol/weft.protocol.json) 中定义一次。`pnpm gen:protocol`（`protocol/generate.ts`）据此生成 TypeScript、Rust、C++、Swift、Kotlin 和 C# 的常量；生成文件过期时 `pnpm test` 会失败。
+
 ## 解码错误
 
 一批 ops 解码失败时只会报下面 5 种错误之一，所有读取器使用相同的种类名：

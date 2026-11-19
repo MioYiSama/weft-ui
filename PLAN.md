@@ -765,6 +765,16 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | UI 层面的跨宿主 conformance | P1 已覆盖真实宿主的读取器、编码器和帧；UI 层面由各平台的点击流程覆盖 | 出现 UI 层面的跨平台不一致缺陷 |
 | storage 参数样例 | 格式是普通 JSON 数组 | storage 改用二进制格式 |
 
+## 后续计划项
+
+由[执行中发现](#执行中发现)转出，不属于本计划，留给下一份计划排期。
+
+| 编号 | 内容 | 来源 |
+| --- | --- | --- |
+| N1 | Linux 容器适配 pnpm 11：`compose.yaml` 把 `npm_config_store_dir` 改为 `pnpm_config_store_dir`，并为容器里非交互的 `pnpm install` 设置 `CI=true`；同步更新 C-linux 命令 | [P0.1]、[P1.8] |
+| N2 | Android `Session.kt` 和 Windows `WeftSession.Commit` 改为先解码整批、成功后再应用，符合 P1.1「整批不应用」；用共享样例里批次后部出错的用例覆盖 | [P1.6]、[P1.7] |
+| N3 | 消除 `native/android/src/test/kotlin/dev/weft/CorpusTest.kt:15` 中 `System.getProperty` 返回 `String?` 引起的 Kotlin 类型警告 | [P2.5] |
+
 ## 进度表
 
 状态取值：`☐` 未开始，`◐` 进行中，`☑` 完成，`⏸` 已提交但等待在其他宿主上验证（要写明缺哪项检查）。
@@ -799,21 +809,21 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P5.1 原生平台适配器 | ☑ | C-ts 通过（vite 16），C-apps 无差异 |
 | P5.2 集中解析原生壳路径 | ☑ | C-ts 通过（vite 16），C-apps 无差异 |
 | P6.1 共享 hermesc 引导 | ☑ | 干净构建、C-apple 通过；Apple 全 SDK 和 Android 全 ABI 产物已重建 |
-| P6.2 两套语法共用 fixture 检查 | ☑ | Rust fixture、fmt、clippy 通过；未安装 tree-sitter CLI，按验收条件跳过 |
-| P6.3 文档收尾 | ☐ | |
+| P6.2 两套语法共用 fixture 检查 | ☑ | Rust fixture、fmt、clippy 通过；提交时未装 tree-sitter CLI，之后用 tree-sitter 0.27.2 补跑 `fixtures.sh` 通过 |
+| P6.3 文档收尾 | ☑ | docs 构建、C-rust、C-ts、C-apps 通过 |
 
 ## 执行中发现
 
 （执行时追加。格式：`- [任务号] 发现内容；结论：转为新计划项 / 不处理（原因）`）
 
-- [P0.1] `native/linux/build/linux-arm64` 的 CMake 缓存指向容器内的 `/hermes-src`，新建的容器里没有这个目录，`build-core.sh` 配置失败；把 Mac 的 Hermes 源码 `docker compose cp` 到 `/hermes-src` 后可用。随后 ninja 1.13.2 在 `weft_core` 的 dyndep 上触发断言 `edge && !edge->outputs_ready()`，删除 `CMakeFiles/weft_core.dir` 后恢复。结论：待定（本地构建目录状态问题，与代码无关）
-- [P0.1] 容器里的 `pnpm install`（pnpm 11）没有采用 compose 里的 `npm_config_store_dir`，在挂载的工作区根目录建了未被忽略的 `.pnpm-store/`。已删除；之后的 C-linux 额外传 `pnpm_config_store_dir`。结论：待定（compose 的环境变量名需要随 pnpm 11 调整）
+- [P0.1] `native/linux/build/linux-arm64` 的 CMake 缓存指向容器内的 `/hermes-src`，新建的容器里没有这个目录，`build-core.sh` 配置失败；把 Mac 的 Hermes 源码 `docker compose cp` 到 `/hermes-src` 后可用。随后 ninja 1.13.2 在 `weft_core` 的 dyndep 上触发断言 `edge && !edge->outputs_ready()`，删除 `CMakeFiles/weft_core.dir` 后恢复。结论：不处理（本地构建目录状态问题，与代码无关）
+- [P0.1] 容器里的 `pnpm install`（pnpm 11）没有采用 compose 里的 `npm_config_store_dir`，在挂载的工作区根目录建了未被忽略的 `.pnpm-store/`。已删除；之后的 C-linux 额外传 `pnpm_config_store_dir`。结论：转为新计划项（[N1](#后续计划项)）
 - [P1.3] 把 `frame`/`unframe` 移到 `frame.ts` 后，5 个原生平台的 `js/index.js` 只有一处差异：基线里 `native.ts` 已不再使用的模块级 `new TextEncoder` 原本排在 `X="<platform>"` 之后，现在 `frame.ts` 的模块级 `new TextEncoder,new TextDecoder` 排在它之前（`}},X=…;new TextEncoder;var ie=new TextDecoder;` → `}};new TextEncoder,new TextDecoder;var X=…,ie=new TextDecoder;`）。example 没有用 `fetch`，两个函数被摇掉，只剩下构造表达式。web、wechat 不变。要逐字节一致，只能在 `native.ts` 里保留一个无用的 encoder，所以没有这样做。另外 TS 7 的 `types` 默认为空，`packages/platform/tsconfig.json` 补上了 `"types": ["node"]`（与 `packages/vite` 一致），否则 `frame.test.ts` 找不到 `node:fs`。结论：接受（运行时行为不变）
-- [P1.6] Android `Session.kt` 逐个应用 `OpReader.next()` 的结果，批次后部出现非法 op 时，前面合法的 op 已经应用，不符合 P1.1「整批不应用」。结论：待定（不在 P1.6 范围内）
-- [P1.7] Windows `WeftSession.Commit` 同样边解码边应用，批次后部的非法 op 会留下已应用的前缀，不符合 P1.1「整批不应用」。结论：待定（不在 P1.7 范围内）
-- [P1.8] 换用 `pnpm_config_store_dir` 后，容器里非交互的 `pnpm install` 需要重建已有的 node_modules，必须设 `CI=true` 才不会中止。C-linux 的命令需要同时传这两个环境变量。结论：待定（与 P0.1 的 pnpm 11 问题一起处理）
-- [P2.5] C-android 通过，但编译未改动的 `CorpusTest.kt:15` 时，Kotlin 报告 Java 互操作的 `String?` 与 `String` 类型不匹配警告。结论：待定（不在 P2.5 范围内）
+- [P1.6] Android `Session.kt` 逐个应用 `OpReader.next()` 的结果，批次后部出现非法 op 时，前面合法的 op 已经应用，不符合 P1.1「整批不应用」。结论：转为新计划项（[N2](#后续计划项)）
+- [P1.7] Windows `WeftSession.Commit` 同样边解码边应用，批次后部的非法 op 会留下已应用的前缀，不符合 P1.1「整批不应用」。结论：转为新计划项（[N2](#后续计划项)）
+- [P1.8] 换用 `pnpm_config_store_dir` 后，容器里非交互的 `pnpm install` 需要重建已有的 node_modules，必须设 `CI=true` 才不会中止。C-linux 的命令需要同时传这两个环境变量。结论：转为新计划项（[N1](#后续计划项)）
+- [P2.5] C-android 通过，但编译未改动的 `CorpusTest.kt:15` 时，Kotlin 报告 Java 互操作的 `String?` 与 `String` 类型不匹配警告。结论：转为新计划项（[N3](#后续计划项)）
 - [P2.5] macOS 的拼音输入法会拦截 XCUITest 模拟的英文输入，导致文本框断言失败；临时切到 ABC 输入源后通过，测试结束后已恢复原输入源。结论：不处理（运行 macOS 点击测试时使用 ABC 输入源）
-- [P2.2] C-apps 仅 `js/index.js` 有差异：wechat 增加 23 字节，ios、macos、android、windows、linux 各增加 94 字节。Rolldown 保留了生成的 `WechatUnit`、`Opcode` 和 `ValueTag` 对象；对比语法树，在替换等值常量引用并忽略压缩后的标识符重命名后，其余结构、字面量和属性不变。已更新这六个文件的 W 工作树基线；结论：接受（运行时行为不变）
+- [P2.2] C-apps 仅 `js/index.js` 有差异：wechat 增加 23 字节，ios、macos、android、windows、linux 各增加 94 字节。Rolldown 保留了生成的 `WechatUnit`、`Opcode` 和 `ValueTag` 对象；对比语法树，在替换等值常量引用并忽略压缩后的标识符重命名后，其余结构、字面量和属性不变。已更新这六个文件的基线；结论：接受（运行时行为不变）
 - [P3.4] 对整个 transformer 按函数名搜索时，`sema/lower.rs` 中负责 AST 到 IR 转换的 `if_node`、`for_node` 也会命中；限定 `bridge` 和 `web` 后，JS 控制流生成函数只在 `bridge/flow.rs` 命中。结论：不处理（验收 rg 的范围过宽，sema 的同名函数与 JS 生成无关）
 - [P4.3] P4.3 和 P4.4 都将一个文件拆成多个文件，默认 `git diff -M --stat` 未识别重命名。`-M30%` 分别识别了 `lower.rs → lower/nodes.rs` 和 `view.rs → view/mod.rs`，函数体对比也确认无改动。结论：不处理（默认相似度阈值不适合一拆多）

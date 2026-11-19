@@ -9,6 +9,7 @@ pnpm install
 pnpm build:wasm
 pnpm --filter example build:web      # Vite app in example/apps/web/
 pnpm --filter example build:wechat   # mini program project in example/apps/wechat/
+pnpm gen:protocol               # regenerate protocol constants from protocol/weft.protocol.json
 pnpm test                       # includes tests/conformance/: headless ops goldens, Web and mini program parity
 cargo test --workspace          # parser, transformer backends, TodoList snapshots
 
@@ -70,6 +71,10 @@ With `@weft-ui/vite`, `entry` selects the JS/TS entry for non-Web builds, relati
 Set `native` to override the directory containing the native shells (`apple/`, `android/`, `windows/`, `linux/`). It accepts an absolute path or a path relative to the Vite root. By default, the plugin uses the Weft workspace's `native/` directory.
 
 `WEFT_PLATFORM=<platform> vite build` (comma-separated for several) builds into `apps/<platform>/`. The project template there is copied on the first build and then belongs to you; `apps/<platform>/weft/` is regenerated on every build. Open `apps/wechat/` in WeChat DevTools. Platform APIs come from `@weft-ui/platform` (`run`, `fetch`, `storage`, `platform`, `isSupported`); unsupported ones reject with `PlatformError`. Native platforms (`ios`, `macos`, `android`, `windows`, `linux`) build `apps/<platform>/weft/bundle.hbc` (Hermes bytecode for the kernel in `native/core`) and `layout.json`. `macos` and `ios` also generate SwiftUI views into the `WeftApp` package in `apps/<platform>/weft/`, linked by the Xcode project `apps/<platform>/App.xcodeproj` and its WeftKit shell (`native/apple`), and run `xcodebuild` (`WEFT_NATIVE=0` only generates the project). `windows` generates WinUI 3 views (`weft/Generated.cs`) for the dotnet project `apps/windows/App.csproj`, linked against the Weft.WinUI shell (`native/windows`), and runs `dotnet build` on Windows hosts. `android` generates Jetpack Compose views into the Gradle module `apps/android/weft/` (with the bytecode as an asset), used by the Gradle project `apps/android/` together with its Android shell (`native/android`), and runs `./gradlew assembleDebug` on any host. `linux` generates GTK 4 views (`weft/Generated.cpp`) for the CMake project `apps/linux/`, linked against the C++ shell (`native/linux`), and builds it with CMake on Linux hosts (the executable is `apps/linux/build/app`).
+
+## Protocol
+
+`protocol/` holds the cross-language contract between the compiler, the JS runtime and the native shells. `weft.protocol.json` is the schema: the protocol version, opcodes, value tags, decoding error kinds, WeChat style units, platform names and platform call modules. `generate.ts` writes the constants for TypeScript, Rust, C++, Swift, Kotlin and C# from it (`pnpm gen:protocol`); generated files start with a "do not edit" header, and `pnpm test` fails when one is out of date. `corpus/` is the shared test corpus of encoded batches, values and platform call frames that every reader and encoder is tested against.
 
 `WEFT_UPDATE_SNAPSHOTS=1` rewrites Rust snapshots (`crates/transformer/tests/snapshots/`) and conformance goldens (`tests/conformance/golden/`).
 

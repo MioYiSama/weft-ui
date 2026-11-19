@@ -76,6 +76,8 @@ A batch of ops is a byte sequence: the first byte is the version number `1`, fol
 
 Each value starts with a u8 tag: `0` for false, `1` for true, `2` for a number (little-endian f64, including values in `Int` slots), or `3` for a string (u32 byte length followed by UTF-8). On the JS side, `OpWriter` (`src/ops.ts` in `@weft-ui/runtime`) reuses the same buffer. The bytes of a batch are valid only until the next write.
 
+The version, opcodes, value tags and decoding error kinds, together with the WeChat style units, the platform names and the platform call modules, are defined once in [`protocol/weft.protocol.json`](https://github.com/MioYiSama/weft-ui/blob/master/protocol/weft.protocol.json). `pnpm gen:protocol` (`protocol/generate.ts`) generates the constants for TypeScript, Rust, C++, Swift, Kotlin and C# from it, and `pnpm test` fails when a generated file is out of date.
+
 ## Decoding errors
 
 Decoding a batch fails with exactly one of five errors. Every reader uses the same kind names:

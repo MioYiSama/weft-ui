@@ -34,12 +34,12 @@ public enum WeftValue: Equatable, Sendable {
     func encode(into bytes: inout [UInt8]) {
         switch self {
         case .bool(let value):
-            bytes.append(value ? 1 : 0)
+            bytes.append((value ? ValueTag.true : .false).rawValue)
         case .number(let value):
-            bytes.append(2)
+            bytes.append(ValueTag.number.rawValue)
             withUnsafeBytes(of: value.bitPattern.littleEndian) { bytes.append(contentsOf: $0) }
         case .string(let value):
-            bytes.append(3)
+            bytes.append(ValueTag.string.rawValue)
             let utf8 = Array(value.utf8)
             withUnsafeBytes(of: UInt32(utf8.count).littleEndian) { bytes.append(contentsOf: $0) }
             bytes.append(contentsOf: utf8)

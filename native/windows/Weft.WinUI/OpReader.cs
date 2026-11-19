@@ -1,18 +1,9 @@
 using System;
 using System.Buffers.Binary;
 using System.Text;
+using Weft.WinUI.Protocol;
 
 namespace Weft.WinUI;
-
-/// <summary>Opcodes of the view protocol (docs/src/content/docs/protocol.md, "Ops").</summary>
-internal enum OpCode : byte
-{
-    Create = 1,
-    Set = 2,
-    Branch = 3,
-    Rows = 4,
-    Attach = 5,
-}
 
 /// <summary>
 /// One decoded op. <see cref="Arg"/> is the field after the scope: the
@@ -32,9 +23,6 @@ internal sealed class OpException(string message, string? kind = null) : Excepti
 /// <summary>Decodes one batch of ops in the binary encoding (version 1).</summary>
 internal ref struct OpReader
 {
-    /// <summary>The encoding version this reader accepts.</summary>
-    public const byte Version = 1;
-
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
     private readonly ReadOnlySpan<byte> bytes;
@@ -43,7 +31,7 @@ internal ref struct OpReader
     public OpReader(ReadOnlySpan<byte> bytes)
     {
         if (bytes.IsEmpty) throw new OpException("truncated batch", "truncated");
-        if (bytes[0] != Version) throw new OpException($"unknown encoding version {bytes[0]}", "version");
+        if (bytes[0] != WeftProtocol.Version) throw new OpException($"unknown encoding version {bytes[0]}", "version");
         this.bytes = bytes;
         offset = 1;
     }
@@ -98,12 +86,12 @@ internal ref struct OpReader
     private WeftValue Value()
     {
         var tag = Byte();
-        return tag switch
+        return (ValueTag)tag switch
         {
-            0 => WeftValue.Of(false),
-            1 => WeftValue.Of(true),
-            2 => WeftValue.Of(BinaryPrimitives.ReadDoubleLittleEndian(Take(8))),
-            3 => ReadString(),
+            ValueTag.False => WeftValue.Of(false),
+            ValueTag.True => WeftValue.Of(true),
+            ValueTag.Number => WeftValue.Of(BinaryPrimitives.ReadDoubleLittleEndian(Take(8))),
+            ValueTag.String => ReadString(),
             _ => throw new OpException($"unknown value tag {tag}", "tag"),
         };
     }

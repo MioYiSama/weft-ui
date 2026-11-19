@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Weft.WinUI;
+using Weft.WinUI.Protocol;
 
 namespace Weft.WinUI.Tests;
 

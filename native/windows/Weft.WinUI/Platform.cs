@@ -9,20 +9,22 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Weft.WinUI.Protocol;
 
 namespace Weft.WinUI;
 
 /// <summary>The platform modules of the shell; byte formats in docs/src/content/docs/protocol.md ("Platform calls").</summary>
 internal static class PlatformModules
 {
-    public static readonly HashSet<string> Supported = ["fetch", "storage"];
+    public static readonly HashSet<string> Supported = [WeftProtocol.FetchModule, WeftProtocol.StorageModule];
 
     private static readonly HttpClient Http = new();
 
     public static Task<byte[]> Call(string module, string method, byte[] args) => (module, method) switch
     {
-        ("fetch", "request") => Fetch(args),
-        ("storage", "get" or "set" or "remove") => Task.FromResult(Storage.Call(method, args)),
+        (WeftProtocol.FetchModule, WeftProtocol.FetchRequest) => Fetch(args),
+        (WeftProtocol.StorageModule, WeftProtocol.StorageGet or WeftProtocol.StorageSet or WeftProtocol.StorageRemove) =>
+            Task.FromResult(Storage.Call(method, args)),
         _ => throw new InvalidOperationException($"weft: {module}.{method} is not implemented"),
     };
 
@@ -97,9 +99,9 @@ internal static class Storage
         var stored = values ??= Load();
         switch (method)
         {
-            case "get":
+            case WeftProtocol.StorageGet:
                 return JsonSerializer.SerializeToUtf8Bytes(stored.GetValueOrDefault(key));
-            case "set":
+            case WeftProtocol.StorageSet:
                 if (list.Length != 2) throw new InvalidOperationException("weft: storage.set expects [key, value]");
                 stored[key] = list[1];
                 break;

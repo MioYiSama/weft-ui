@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Weft.WinUI.Protocol;
 using Windows.UI;
 
 namespace Weft.WinUI;
@@ -59,16 +60,16 @@ public readonly struct WeftValue : IEquatable<WeftValue>
         switch (kind)
         {
             case Kind.Bool:
-                bytes.Add(boolean ? (byte)1 : (byte)0);
+                bytes.Add((byte)(boolean ? ValueTag.True : ValueTag.False));
                 break;
             case Kind.Number:
-                bytes.Add(2);
+                bytes.Add((byte)ValueTag.Number);
                 Span<byte> f64 = stackalloc byte[8];
                 BinaryPrimitives.WriteDoubleLittleEndian(f64, number);
                 foreach (var b in f64) bytes.Add(b);
                 break;
             default:
-                bytes.Add(3);
+                bytes.Add((byte)ValueTag.String);
                 var utf8 = Encoding.UTF8.GetBytes(text!);
                 Span<byte> length = stackalloc byte[4];
                 BinaryPrimitives.WriteUInt32LittleEndian(length, (uint)utf8.Length);

@@ -785,7 +785,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P2.2 TS 消费方 | ☐ | |
 | P2.3 Rust 消费方 | ☐ | |
 | P2.4 C++ 与 Linux 消费方 | ☑ | rg、C-core、C-windows、C-linux（含 `linux.frames`）通过 |
-| P2.5 Swift、Kotlin、C# 消费方 | ☐ | |
+| P2.5 Swift、Kotlin、C# 消费方 | ☑ | rg、C-apple、C-android、C-windows、五平台 C-ui 通过 |
 | P2.6 平台 API 编译期契约 | ☐ | |
 | P3.1 共用缩进 writer | ☐ | |
 | P3.2 Template 共享查询 | ☐ | |
@@ -812,3 +812,5 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 - [P1.6] Android `Session.kt` 逐个应用 `OpReader.next()` 的结果，批次后部出现非法 op 时，前面合法的 op 已经应用，不符合 P1.1「整批不应用」。结论：待定（不在 P1.6 范围内）
 - [P1.7] Windows `WeftSession.Commit` 同样边解码边应用，批次后部的非法 op 会留下已应用的前缀，不符合 P1.1「整批不应用」。结论：待定（不在 P1.7 范围内）
 - [P1.8] 换用 `pnpm_config_store_dir` 后，容器里非交互的 `pnpm install` 需要重建已有的 node_modules，必须设 `CI=true` 才不会中止。C-linux 的命令需要同时传这两个环境变量。结论：待定（与 P0.1 的 pnpm 11 问题一起处理）
+- [P2.5] C-android 通过，但编译未改动的 `CorpusTest.kt:15` 时，Kotlin 报告 Java 互操作的 `String?` 与 `String` 类型不匹配警告。结论：待定（不在 P2.5 范围内）
+- [P2.5] macOS 的拼音输入法会拦截 XCUITest 模拟的英文输入，导致文本框断言失败；临时切到 ABC 输入源后通过，测试结束后已恢复原输入源。结论：不处理（运行 macOS 点击测试时使用 ABC 输入源）

@@ -29,16 +29,16 @@ sealed class WeftValue {
 
     /** The binary encoding: a tag byte and the data. */
     internal fun encode(): ByteArray = when (this) {
-        is Bool -> byteArrayOf(if (value) 1 else 0)
+        is Bool -> byteArrayOf((if (value) ValueTag.TRUE else ValueTag.FALSE).toByte())
         is Number -> ByteArray(9).also { bytes ->
-            bytes[0] = 2
+            bytes[0] = ValueTag.NUMBER.toByte()
             val bits = value.toRawBits()
             for (i in 0 until 8) bytes[1 + i] = (bits ushr (8 * i)).toByte()
         }
         is Text -> {
             val utf8 = value.encodeToByteArray()
             ByteArrayOutputStream(5 + utf8.size).apply {
-                write(3)
+                write(ValueTag.STRING)
                 for (i in 0 until 4) write(utf8.size ushr (8 * i))
                 write(utf8)
             }.toByteArray()

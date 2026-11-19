@@ -3,13 +3,15 @@ import Foundation
 /// The platform modules of the shell; byte formats in
 /// docs/src/content/docs/protocol.md ("Platform calls").
 enum PlatformModules {
-    static let supported: Set<String> = ["fetch", "storage"]
+    static let supported: Set<String> = [WeftProtocol.fetchModule, WeftProtocol.storageModule]
 
     static func call(_ module: String, _ method: String, _ args: Data) async throws -> Data {
         switch (module, method) {
-        case ("fetch", "request"):
+        case (WeftProtocol.fetchModule, WeftProtocol.fetchRequest):
             try await fetch(args)
-        case ("storage", "get"), ("storage", "set"), ("storage", "remove"):
+        case (WeftProtocol.storageModule, WeftProtocol.storageGet),
+             (WeftProtocol.storageModule, WeftProtocol.storageSet),
+             (WeftProtocol.storageModule, WeftProtocol.storageRemove):
             try storage(method, args)
         default:
             throw PlatformFailure("weft: \(module).\(method) is not implemented")
@@ -44,10 +46,10 @@ enum PlatformModules {
         let defaults = UserDefaults.standard
         let name = "weft.storage.\(key)"
         switch method {
-        case "get":
+        case WeftProtocol.storageGet:
             guard let value = defaults.string(forKey: name) else { return Data("null".utf8) }
             return try JSONSerialization.data(withJSONObject: value, options: .fragmentsAllowed)
-        case "set":
+        case WeftProtocol.storageSet:
             guard args.count == 2 else { throw PlatformFailure("weft: storage.set expects [key, value]") }
             defaults.set(args[1], forKey: name)
         default:

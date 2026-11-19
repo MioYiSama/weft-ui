@@ -31,37 +31,33 @@ struct OpReader {
     private let bytes: UnsafeRawBufferPointer
     private var offset = 1
 
-    /// The encoding version of `bytes`.
-    static let version: UInt8 = 1
-
     init(_ bytes: UnsafeRawBufferPointer) throws(OpError) {
         guard let version = bytes.first else { throw .truncated }
-        guard version == Self.version else { throw .version(version) }
+        guard version == WeftProtocol.version else { throw .version(version) }
         self.bytes = bytes
     }
 
     /// The next op, or `nil` at the end of the batch.
     mutating func next() throws(OpError) -> Op? {
         guard offset < bytes.count else { return nil }
-        let opcode = try byte()
+        let rawOpcode = try byte()
+        guard let opcode = OpCode(rawValue: rawOpcode) else { throw .opcode(rawOpcode) }
         switch opcode {
-        case 1:
+        case .create:
             return .create(scope: try u32(), template: try u32())
-        case 2:
+        case .set:
             return .set(scope: try u32(), slot: try u32(), value: try value())
-        case 3:
+        case .branch:
             return .branch(scope: try u32(), point: try u32(), child: try u32())
-        case 4:
+        case .rows:
             let scope = try u32(), point = try u32(), count = try u32()
             guard Int(count) <= (bytes.count - offset) / 4 else { throw .truncated }
             var children: [UInt32] = []
             children.reserveCapacity(Int(count))
             for _ in 0..<count { children.append(try u32()) }
             return .rows(scope: scope, point: point, children: children)
-        case 5:
+        case .attach:
             return .attach(scope: try u32(), point: try u32(), child: try u32())
-        default:
-            throw .opcode(opcode)
         }
     }
 
@@ -80,17 +76,17 @@ struct OpReader {
     }
 
     private mutating func value() throws(OpError) -> WeftValue {
-        let tag = try byte()
+        let rawTag = try byte()
+        guard let tag = ValueTag(rawValue: rawTag) else { throw .tag(rawTag) }
         switch tag {
-        case 0: return .bool(false)
-        case 1: return .bool(true)
-        case 2: return .number(Double(bitPattern: UInt64(littleEndian: try take(8).loadUnaligned(as: UInt64.self))))
-        case 3:
+        case .false: return .bool(false)
+        case .true: return .bool(true)
+        case .number: return .number(Double(bitPattern: UInt64(littleEndian: try take(8).loadUnaligned(as: UInt64.self))))
+        case .string:
             let payload = try take(Int(try u32()))
             let invalid = transcode(payload.makeIterator(), from: UTF8.self, to: UTF8.self, stoppingOnError: true) { _ in }
             guard !invalid else { throw .utf8 }
             return .string(String(decoding: payload, as: UTF8.self))
-        default: throw .tag(tag)
         }
     }
 }

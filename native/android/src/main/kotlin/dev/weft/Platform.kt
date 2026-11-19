@@ -33,9 +33,11 @@ internal class PlatformModules(context: Context) {
         }
     }
 
-    private fun call(module: String, method: String, args: ByteArray): ByteArray = when (module to method) {
-        "fetch" to "request" -> fetch(args)
-        "storage" to "get", "storage" to "set", "storage" to "remove" -> storage(method, args)
+    private fun call(module: String, method: String, args: ByteArray): ByteArray = when {
+        module == WeftProtocol.FETCH_MODULE && method == WeftProtocol.FETCH_REQUEST -> fetch(args)
+        module == WeftProtocol.STORAGE_MODULE &&
+            (method == WeftProtocol.STORAGE_GET || method == WeftProtocol.STORAGE_SET || method == WeftProtocol.STORAGE_REMOVE) ->
+            storage(method, args)
         else -> throw PlatformFailure("weft: $module.$method is not implemented")
     }
 
@@ -67,8 +69,9 @@ internal class PlatformModules(context: Context) {
         val array = JSONArray(args.decodeToString())
         val key = array.optString(0, null) ?: throw PlatformFailure("weft: storage.$method expects a JSON array of strings")
         when (method) {
-            "get" -> return (preferences.getString(key, null)?.let(JSONObject::quote) ?: "null").encodeToByteArray()
-            "set" -> {
+            WeftProtocol.STORAGE_GET ->
+                return (preferences.getString(key, null)?.let(JSONObject::quote) ?: "null").encodeToByteArray()
+            WeftProtocol.STORAGE_SET -> {
                 if (array.length() != 2) throw PlatformFailure("weft: storage.set expects [key, value]")
                 preferences.edit().putString(key, array.getString(1)).apply()
             }
@@ -78,7 +81,7 @@ internal class PlatformModules(context: Context) {
     }
 
     companion object {
-        val SUPPORTED = setOf("fetch", "storage")
+        val SUPPORTED = setOf(WeftProtocol.FETCH_MODULE, WeftProtocol.STORAGE_MODULE)
 
         /** Name of the shared preferences of `storage`. */
         private const val STORAGE = "weft.storage"

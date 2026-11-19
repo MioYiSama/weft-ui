@@ -43,7 +43,7 @@ internal class OpReader(bytes: ByteBuffer) {
     init {
         if (!this.bytes.hasRemaining()) throw OpException("truncated")
         val version = this.bytes.get().toInt() and 0xff
-        if (version != VERSION) throw OpException("version", "version $version")
+        if (version != WeftProtocol.VERSION) throw OpException("version", "version $version")
     }
 
     /** The next op, or null at the end of the batch. */
@@ -51,17 +51,17 @@ internal class OpReader(bytes: ByteBuffer) {
         if (!bytes.hasRemaining()) return null
         try {
             return when (val opcode = byte()) {
-                1 -> Op.Create(u32(), u32())
-                2 -> Op.Set(u32(), u32(), value())
-                3 -> Op.Branch(u32(), u32(), u32())
-                4 -> {
+                OpCode.CREATE -> Op.Create(u32(), u32())
+                OpCode.SET -> Op.Set(u32(), u32(), value())
+                OpCode.BRANCH -> Op.Branch(u32(), u32(), u32())
+                OpCode.ROWS -> {
                     val scope = u32()
                     val point = u32()
                     val count = bytes.int.toUInt().toLong()
                     if (count > bytes.remaining() / 4) throw OpException("truncated")
                     Op.Rows(scope, point, IntArray(count.toInt()) { u32() })
                 }
-                5 -> Op.Attach(u32(), u32(), u32())
+                OpCode.ATTACH -> Op.Attach(u32(), u32(), u32())
                 else -> throw OpException("opcode", "opcode $opcode")
             }
         } catch (_: BufferUnderflowException) {
@@ -75,10 +75,10 @@ internal class OpReader(bytes: ByteBuffer) {
     private fun u32(): Int = bytes.int
 
     private fun value(): WeftValue = when (val tag = byte()) {
-        0 -> WeftValue.Bool(false)
-        1 -> WeftValue.Bool(true)
-        2 -> WeftValue.Number(bytes.double)
-        3 -> WeftValue.Text(text())
+        ValueTag.FALSE -> WeftValue.Bool(false)
+        ValueTag.TRUE -> WeftValue.Bool(true)
+        ValueTag.NUMBER -> WeftValue.Number(bytes.double)
+        ValueTag.STRING -> WeftValue.Text(text())
         else -> throw OpException("tag", "tag $tag")
     }
 
@@ -103,10 +103,5 @@ internal class OpReader(bytes: ByteBuffer) {
         } finally {
             buffer.limit(limit)
         }
-    }
-
-    companion object {
-        /** The encoding version this reader decodes. */
-        const val VERSION = 1
     }
 }

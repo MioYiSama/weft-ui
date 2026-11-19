@@ -8,7 +8,7 @@ import java.nio.ByteBuffer
 
 class OpReaderTest {
     private class Batch {
-        private val out = ByteArrayOutputStream().apply { write(OpReader.VERSION) }
+        private val out = ByteArrayOutputStream().apply { write(WeftProtocol.VERSION) }
 
         fun byte(value: Int) = apply { out.write(value) }
 

@@ -22,7 +22,7 @@
 1. **基线**：产物比对的基线是本计划 B0 记录的 `/tmp/weft-m0/`，不是 PLAN.md 的 `/tmp/weft-baseline/`。C-apps 指 `/tmp/weft-m0/check-apps.sh`。
 2. **行为变化**：F1–F4 是缺陷修复，按任务写明的方式改变行为。每个缺陷先写测试，确认它在修复前失败，再修复；提交正文写明失败的现象。
 3. **新增快照**：T1、T2 可以用 `WEFT_UPDATE_SNAPSHOTS` 生成**新**夹具的快照和黄金文件；已有快照和黄金文件必须不变。
-4. **共享资源串行**：Windows 虚拟机、Linux 容器、`native/core/build`、`example/apps` 同一时间只能被一个任务使用。并行执行的任务在运行这些检查时用 `flock` 加锁：`/tmp/weft-m0/win.lock`、`linux.lock`、`core.lock`、`apps.lock`、`apple.lock`。
+4. **共享资源串行**：Windows 虚拟机、Linux 容器、`native/core/build`、`example/apps` 同一时间只能被一个任务使用。并行执行的任务在运行这些检查时加锁：`source /tmp/weft-m0/lock.sh; weft_lock <win|linux|core|apps|apple>`（macOS 没有 `flock`，`lock.sh` 用 `mkdir` 实现，进程退出时释放）。B0 写好的检查脚本 `/tmp/weft-m0/c-*.sh` 已经自带锁。
 5. **对外操作**：推送分支、修改仓库设置（必过检查）、`npm publish` 需要维护者确认，不在任务里自动执行。任务能在本地完成的部分照常完成；需要确认的步骤记入进度表备注。
 
 ## 环境
@@ -291,13 +291,13 @@ flowchart LR
 
 | 任务 | 状态 | 备注 |
 | --- | --- | --- |
-| B0 基线 | ☐ | |
+| B0 基线 | ◐ | clippy 0；tsc：vite 16、tests 59，其余 0；C-apps 基线已存；C-linux 通过 |
 | F1 `setInterval(fn, 0)` | ☐ | |
 | F2 Apple、Linux 整批解码 | ☐ | |
 | F3 格式化器注释 | ☐ | |
 | F4 Linux 纹理缓存 | ☐ | |
 | F5 中文侧边栏链接 | ☐ | |
-| F6 compiler 注释 | ☐ | |
+| F6 compiler 注释 | ☑ | 只改注释；compiler 包构建与 tsc 通过 |
 | N.1 native 包 | ☐ | |
 | N.2 Linux 壳内置 core | ☐ | |
 | N.3 模块解析定位壳 | ☐ | |

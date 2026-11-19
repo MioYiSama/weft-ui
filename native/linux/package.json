@@ -27,5 +27,8 @@
   ],
   "dependencies": {
     "hermes-compiler": "260318099.0.8"
+  },
+  "weft": {
+    "protocol": 1
   }
 }

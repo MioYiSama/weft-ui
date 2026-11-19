@@ -5,7 +5,7 @@ import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultS
 import { type AppResult, compileApp } from "@weft-ui/compiler";
 import { NATIVE_PLATFORMS, PLATFORMS, type NativePlatform, type Platform } from "@weft-ui/runtime/protocol";
 import { HERMES_TARGET, compileBytecode, nativeAdapter } from "./native.ts";
-import { nativeShell } from "./shells.ts";
+import { checkShellProtocol, nativeShell } from "./shells.ts";
 
 /** Options of the Weft Vite plugin. */
 export interface WeftOptions {
@@ -212,7 +212,10 @@ export default function weft(options: WeftOptions = {}): Plugin {
       selected = selectPlatforms(configured, config.builder !== undefined);
       shells.clear();
       for (const platform of selected) {
-        if (isNativePlatform(platform)) shells.set(platform, nativeShell(platform, nativeRoot));
+        if (!isNativePlatform(platform)) continue;
+        const shell = nativeShell(platform, nativeRoot);
+        checkShellProtocol(platform, shell);
+        shells.set(platform, shell);
       }
       entry = selected.some((platform) => platform !== "web") ? resolveEntry(root, options.entry) : undefined;
       return {

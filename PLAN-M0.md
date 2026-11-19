@@ -309,7 +309,7 @@ R1、R2 在 M0 收尾后接着做（下一节）。
 ### R1 0.2.0
 
 - **改动**：为 M0 加一个 minor changeset，运行 `pnpm version-packages`，9 个发布包一起升到 0.2.0，CHANGELOG 随之更新。
-- **验收**：`changeset status` 显示没有待处理的 changeset；9 个发布包都是 0.2.0，私有包的版本不变；`pnpm -r pack` 得到的 `@weft-ui/vite` 的 peerDependencies 是 `^0.2.0`。
+- **验收**：`.changeset/` 里没有待处理的 changeset；9 个发布包都是 0.2.0，私有包的版本不变；`pnpm -r pack` 得到的 `@weft-ui/vite` 的 peerDependencies 是 `^0.2.0`。
 - **提交**：`chore: version packages 0.2.0`
 - **之后由维护者完成**：merge 到 master，以 dry run 运行 Release，下载 `packages` artifact，在本机暂存 4 个 native 包并批准；然后给 9 个包配置可信发布，以后的版本都由工作流暂存。
 
@@ -339,9 +339,9 @@ R1、R2 在 M0 收尾后接着做（下一节）。
 | W2 夜间流水线 | ☑ | C-ci 通过；在 m0 分支临时加 push 触发（未进入 master），android-ui、ios-ui 在全部 M0 提交上通过（run 44506071160） |
 | H1 仓库卫生 | ☑ | C-ci 通过；issue 模板 YAML 可解析；CONTRIBUTING、SECURITY、README 的相对链接都指向存在的文件。GitHub 私有漏洞报告需要在仓库设置里开启 |
 | X1 收尾 | ☑ | docs 构建、C-rust（clippy 0）、C-ts（tsc 不超基线）、C-apps 通过；ROADMAP 第 2 节已更新 |
-| U1 ICU4X Unicode 后端 | ◐ | |
-| R2 Release 工作流 | ◐ | |
-| R1 0.2.0 | ☐ | |
+| U1 ICU4X Unicode 后端 | ☑ | `core.unicode` 在 macOS、Windows、Linux 通过，crate 7 个单元测试通过；C-rust（clippy 0）、C-core、C-windows、C-linux 通过。Release 构建的 Linux x64、arm64 内核和 arm64 `hermesc` 都不依赖 libicu，需要 glibc 2.38；`libweft_core.so` 只导出 6 个 C ABI 符号；arm64 剥离后的体积从 3.3 MB 增加到 5.9 MB |
+| R2 Release 工作流 | ☑ | C-ci 通过；m0 分支临时加 push 触发（未进 master），两次 dry run 全部作业通过（run 44516606264、44520242849），`windows-11-arm` 可以构建 arm64 内核。第二次包含 U1 和 0.2.0，9 个包都通过 `npm stage publish --dry-run`；native 包解压后的体积：Apple 29.5 MB、Linux 18.4 MB、Android 10.1 MB、Windows 4.9 MB |
+| R1 0.2.0 | ⏸ | 9 个发布包为 0.2.0，私有包不变；打包后 `@weft-ui/vite` 的 peerDependencies 为 `^0.2.0`。等维护者暂存并批准（见 R1「之后由维护者完成」） |
 
 ## 执行中发现
 
@@ -361,4 +361,6 @@ R1、R2 在 M0 收尾后接着做（下一节）。
 - [W1] Windows 运行器检出时 `core.autocrlf` 把黄金文件转成 CRLF，`conformance.board`、`conformance.todo` 在第 1 行就不一致；虚拟机用 robocopy 同步 Mac 的工作区，所以本地从未出现。结论：已修复（`.gitattributes` 固定 `*.ops` 为 LF，提交 `test(conformance): keep the goldens LF on Windows checkouts`）。
 - [W1] 容器的 `node_modules` 卷在 N.1 之后需要重新 `pnpm install` 才有 native 包的链接，否则内核 conformance 报「needs the native shell」。结论：不处理（C-linux 命令本身先跑 `pnpm install`；只影响手动在旧容器里跑内核测试）。
 - [W1] 缓存未命中时 windows 作业要 24 分钟：`build-core.ps1` 和内核测试各编译一次 Hermes（11 分钟、10.5 分钟），而 `Weft.WinUI.Tests` 并不加载 `weft_core.dll`。结论：已修复（去掉 `build-core.ps1`，内核测试按它的参数构建 DLL，提交 `ci: build Hermes once in the Windows job`；冷缓存 11 分钟，热缓存约 2 分钟）。
+- [R2] Linux 上 Hermes 动态链接系统 ICU，预编译内核只能在 ICU 版本完全一致（`libicuuc.so.78`）的发行版上加载。Unicode Lite 会让非 ASCII 字符的大小写转换失效，`toLocaleString` 也只返回固定文本；静态链接 ICU 每个架构要多约 30 MB。结论：已修复（维护者选用 ICU4X，任务 U1）。
+- [R1] npm 的 2FA-bypass token 将在 2027 年 1 月失去直接发布的权限。结论：发布改用可信发布（OIDC）加暂存发布，不配置 token（任务 R2）。
 - [X1] `pnpm pack --dry-run` 执行 `prepack` 但不执行 `postpack`，会在 native 包目录留下 `LICENSE-hermes`（Linux 还有 `core/`，已被忽略）。结论：已修复（4 个包的 `.gitignore` 忽略 `/LICENSE-hermes`）。

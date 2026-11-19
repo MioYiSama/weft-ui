@@ -55,7 +55,7 @@ C 端流量集中在手机和小程序上。7 个平台同步推进的成本是 
 | 无障碍 | 没有 label、role 等 API；Android `Image` 的 `contentDescription = null` | 上架合规和可用性要求 | 中 |
 | 国际化 | Hermes 构建时关闭了 Intl（`native/core/CMakeLists.txt`）；Android 区域设置有 TODO | 缺日期和数字格式、RTL、语言切换 | 中 |
 | 开发循环 | Web 有 Vite 开发服务器；原生和小程序只能整包构建；Hermes 调试器被关闭；生成的 JS 没有 source map | 改一行要重编原生工程；原生上无法断点调试 | 高 |
-| 分发 | TS 包 0.1.0 已发布；原生壳与预编译内核拆成 `@weft-ui/native-<target>`，`@weft-ui/vite` 按包解析壳和 hermesc（M0.4），已在仓库外用 tarball 验证 Android、iOS；native 包尚未发布到 npm（[PLAN-M0](PLAN-M0.md) R1）；没有脚手架 | native 包发布前，外部项目仍只能用 Web 和小程序 | 高 |
+| 分发 | TS 包 0.1.0 已发布；原生壳与预编译内核拆成 `@weft-ui/native-<target>`，`@weft-ui/vite` 按包解析壳和 hermesc（M0.4），已在仓库外用 tarball 验证 Android、iOS；Release 工作流在各平台构建全部内核，打包后通过可信发布暂存到 npm，维护者批准后上线；0.2.0 等待首次暂存（[PLAN-M0](PLAN-M0.md) R1）；没有脚手架 | native 包发布前，外部项目仍只能用 Web 和小程序 | 高 |
 | CI | PR 流水线（`ci.yml`）跑 C-rust、C-ts、C-core、C-linux、C-apple、C-android、C-windows；夜间流水线（`nightly.yml`）跑 Android、iOS 点击流程 | Windows、Linux 的点击流程仍在本地跑；没有截图回归和性能基准 | 低 |
 | 编辑器 | `weft lsp` 支持诊断、补全、悬停、跳转、格式化；Zed 扩展；TS content mapper | 缺 VS Code 扩展、重命名、查找引用、代码操作 | 中 |
 | 测试 | 协议共享样例全宿主覆盖；conformance 用 3 个夹具、快照用 2 个夹具，其中 Gallery 覆盖全部元素、样式属性、自定义组件和插槽；每个原生平台只有一条点击流程 | 缺跨平台截图回归、性能基准、真机或小程序自动化 | 中 |

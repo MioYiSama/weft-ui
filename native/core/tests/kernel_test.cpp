@@ -151,13 +151,21 @@ void timers() {
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   shell.tick_in.reset();
   weft_runtime_tick(shell.rt);
-  CHECK_EQ(shell.lines(), (std::vector<std::string>{"a 0", "args 1 two", "interval 1", "outer", "b 20", "done"}));
+  CHECK_EQ(shell.lines(),
+           (std::vector<std::string>{"a 0", "args 1 two", "zero 1", "interval 1", "outer", "b 20", "done"}));
   CHECK(shell.tick_in.has_value());
   shell.pump();
   auto lines = shell.lines();
   CHECK(index_of(lines, "done") < index_of(lines, "nested"));
-  CHECK_EQ(std::count_if(lines.begin(), lines.end(), [](auto &l) { return l.rfind("interval", 0) == 0; }), 3);
+  auto count = [&](const char *prefix) {
+    return std::count_if(lines.begin(), lines.end(), [&](auto &l) { return l.rfind(prefix, 0) == 0; });
+  };
+  CHECK_EQ(count("interval"), 3);
   index_of(lines, "interval 3");
+  // A zero delay interval repeats too, once per tick.
+  CHECK_EQ(count("zero"), 3);
+  CHECK(index_of(lines, "done") < index_of(lines, "zero 2"));
+  index_of(lines, "zero 3");
   CHECK(std::find(lines.begin(), lines.end(), "cancelled") == lines.end());
 }
 

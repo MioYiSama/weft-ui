@@ -100,8 +100,7 @@ class WeftSession private constructor(context: Context, layoutHash: Long, privat
     private fun commit(ops: ByteBuffer) {
         committing = true
         try {
-            val reader = OpReader(ops)
-            while (true) apply(reader.next() ?: break)
+            for (op in OpReader.readAll(ops)) apply(op)
         } catch (error: OpException) {
             fail("weft: malformed ops (${error.message})")
         } catch (error: RuntimeException) {

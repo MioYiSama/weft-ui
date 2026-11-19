@@ -20,18 +20,17 @@ public sealed class CorpusTests
             var bytes = Hex(row);
             if (row.TryGetProperty("error", out var kind))
             {
-                var error = Assert.ThrowsExactly<OpException>(() => ReadBatch(bytes), name);
+                var error = Assert.ThrowsExactly<OpException>(() => OpReader.ReadAll(bytes, []), name);
                 Assert.AreEqual(kind.GetString(), error.Kind, name);
                 continue;
             }
 
-            var reader = new OpReader(bytes);
-            foreach (var expected in row.GetProperty("ops").EnumerateArray())
-            {
-                Assert.IsTrue(reader.Next(out var op), name);
-                AssertOp(ref reader, op, expected, name);
-            }
-            Assert.IsFalse(reader.Next(out _), name);
+            var ops = new List<Op>();
+            OpReader.ReadAll(bytes, ops);
+            var expected = row.GetProperty("ops");
+            Assert.AreEqual(expected.GetArrayLength(), ops.Count, name);
+            var index = 0;
+            foreach (var op in expected.EnumerateArray()) AssertOp(ops[index++], op, name);
         }
     }
 
@@ -109,13 +108,7 @@ public sealed class CorpusTests
         return WeftValue.Of(value.GetProperty("string").GetString()!);
     }
 
-    private static void ReadBatch(byte[] bytes)
-    {
-        var reader = new OpReader(bytes);
-        while (reader.Next(out _)) { }
-    }
-
-    private static void AssertOp(ref OpReader reader, in Op op, JsonElement expected, string name)
+    private static void AssertOp(in Op op, JsonElement expected, string name)
     {
         var code = expected.GetProperty("op").GetString() switch
         {
@@ -144,11 +137,11 @@ public sealed class CorpusTests
             case OpCode.Rows:
                 Assert.AreEqual(expected.GetProperty("point").GetUInt32(), op.Arg, name);
                 var children = expected.GetProperty("children");
-                Assert.AreEqual(children.GetArrayLength(), op.RowsCount, name);
+                Assert.AreEqual(children.GetArrayLength(), op.Rows!.Length, name);
                 var i = 0;
                 foreach (var child in children.EnumerateArray())
                 {
-                    Assert.AreEqual(child.GetUInt32(), reader.Row(op, i++), name);
+                    Assert.AreEqual(child.GetUInt32(), op.Rows[i++], name);
                 }
                 break;
         }

@@ -20,11 +20,11 @@ class CorpusTest {
             val name = case.getString("name")
             val bytes = ByteBuffer.wrap(case.bytes())
             if (case.has("error")) {
-                val error = assertThrows(name, OpException::class.java) { decodeOps(bytes) }
+                val error = assertThrows(name, OpException::class.java) { OpReader.readAll(bytes) }
                 assertEquals(name, case.getString("error"), error.kind)
             } else {
                 val ops = case.getJSONArray("ops")
-                assertEquals(name, List(ops.length()) { op(ops.getJSONObject(it)) }, decodeOps(bytes))
+                assertEquals(name, List(ops.length()) { op(ops.getJSONObject(it)) }, OpReader.readAll(bytes))
             }
         }
     }
@@ -58,11 +58,6 @@ class CorpusTest {
     }
 
     private fun load(file: String): JSONObject = JSONObject(corpus.resolve(file).readText())
-
-    private fun decodeOps(bytes: ByteBuffer): List<Op> {
-        val reader = OpReader(bytes)
-        return generateSequence { reader.next() }.toList()
-    }
 
     private fun op(json: JSONObject): Op {
         val scope = json.getInt("scope")

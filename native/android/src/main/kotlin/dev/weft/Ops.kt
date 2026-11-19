@@ -104,4 +104,15 @@ internal class OpReader(bytes: ByteBuffer) {
             buffer.limit(limit)
         }
     }
+
+    companion object {
+        /**
+         * Decodes the whole batch [bytes]. Throws [OpException] when any op
+         * fails to decode, so a malformed batch applies none of its ops.
+         */
+        fun readAll(bytes: ByteBuffer): List<Op> {
+            val reader = OpReader(bytes)
+            return generateSequence { reader.next() }.toList()
+        }
+    }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Text;
 using Weft.WinUI.Protocol;
 
@@ -8,10 +9,10 @@ namespace Weft.WinUI;
 /// <summary>
 /// One decoded op. <see cref="Arg"/> is the field after the scope: the
 /// template (create), slot (set) or point (branch / rows / attach);
-/// <see cref="Child"/> is the child of branch / attach. The children of
-/// <c>rows</c> stay in the batch: read them with <see cref="OpReader.Row"/>.
+/// <see cref="Child"/> is the child of branch / attach and
+/// <see cref="Rows"/> the children of rows.
 /// </summary>
-internal readonly record struct Op(OpCode Code, uint Scope, uint Arg, uint Child, WeftValue Value, int RowsOffset, int RowsCount);
+internal readonly record struct Op(OpCode Code, uint Scope, uint Arg, uint Child, WeftValue Value, uint[]? Rows);
 
 /// <summary>Why a batch of ops could not be decoded or applied.</summary>
 internal sealed class OpException(string message, string? kind = null) : Exception(message)
@@ -28,7 +29,7 @@ internal ref struct OpReader
     private readonly ReadOnlySpan<byte> bytes;
     private int offset;
 
-    public OpReader(ReadOnlySpan<byte> bytes)
+    private OpReader(ReadOnlySpan<byte> bytes)
     {
         if (bytes.IsEmpty) throw new OpException("truncated batch", "truncated");
         if (bytes[0] != WeftProtocol.Version) throw new OpException($"unknown encoding version {bytes[0]}", "version");
@@ -37,7 +38,7 @@ internal ref struct OpReader
     }
 
     /// <summary>Decodes the next op; false at the end of the batch.</summary>
-    public bool Next(out Op op)
+    private bool Next(out Op op)
     {
         op = default;
         if (offset >= bytes.Length) return false;
@@ -45,21 +46,22 @@ internal ref struct OpReader
         switch (code)
         {
             case OpCode.Create:
-                op = new Op(code, U32(), U32(), 0, default, 0, 0);
+                op = new Op(code, U32(), U32(), 0, default, null);
                 break;
             case OpCode.Set:
-                op = new Op(code, U32(), U32(), 0, Value(), 0, 0);
+                op = new Op(code, U32(), U32(), 0, Value(), null);
                 break;
             case OpCode.Branch or OpCode.Attach:
-                op = new Op(code, U32(), U32(), U32(), default, 0, 0);
+                op = new Op(code, U32(), U32(), U32(), default, null);
                 break;
             case OpCode.Rows:
                 var scope = U32();
                 var list = U32();
                 var count = U32();
                 if (count > (uint)(bytes.Length - offset) / 4) throw new OpException("truncated rows", "truncated");
-                op = new Op(code, scope, list, 0, default, offset, (int)count);
-                offset += (int)count * 4;
+                var rows = new uint[count];
+                for (var i = 0; i < rows.Length; i++) rows[i] = U32();
+                op = new Op(code, scope, list, 0, default, rows);
                 break;
             default:
                 throw new OpException($"unknown opcode {(byte)code}", "opcode");
@@ -67,9 +69,17 @@ internal ref struct OpReader
         return true;
     }
 
-    /// <summary>Child <paramref name="index"/> of a <c>rows</c> op.</summary>
-    public readonly uint Row(in Op op, int index) =>
-        BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(op.RowsOffset + index * 4, 4));
+    /// <summary>
+    /// Decodes the whole batch <paramref name="bytes"/> into the cleared
+    /// <paramref name="ops"/>. Throws <see cref="OpException"/> when any op
+    /// fails to decode, so a malformed batch applies none of its ops.
+    /// </summary>
+    public static void ReadAll(ReadOnlySpan<byte> bytes, List<Op> ops)
+    {
+        ops.Clear();
+        var reader = new OpReader(bytes);
+        while (reader.Next(out var op)) ops.Add(op);
+    }
 
     private ReadOnlySpan<byte> Take(uint count)
     {

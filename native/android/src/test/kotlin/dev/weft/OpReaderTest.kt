@@ -16,10 +16,7 @@ class OpReaderTest {
             for (value in values) for (i in 0 until 4) out.write(value ushr (8 * i))
         }
 
-        fun ops(): List<Op> {
-            val reader = OpReader(ByteBuffer.wrap(out.toByteArray()))
-            return generateSequence { reader.next() }.toList()
-        }
+        fun ops(): List<Op> = OpReader.readAll(ByteBuffer.wrap(out.toByteArray()))
     }
 
     @Test

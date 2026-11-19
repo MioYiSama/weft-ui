@@ -27,6 +27,7 @@
     { "name": "empty-batch", "hex": "", "error": "truncated" },
     { "name": "version-2", "hex": "02", "error": "version" },
     { "name": "unknown-opcode-9", "hex": "01 09", "error": "opcode" },
+    { "name": "unknown-opcode-after-create", "hex": "01 01 03 00 00 00 02 00 00 00 09", "error": "opcode" },
     { "name": "truncated-u32", "hex": "01 01 03 00 00 00 02 00", "error": "truncated" },
     { "name": "rows-count-overflow", "hex": "01 04 02 00 00 00 00 00 00 00 ff ff ff ff 03 00 00 00", "error": "truncated" },
     { "name": "string-length-overflow", "hex": "01 02 03 00 00 00 00 00 00 00 03 ff ff ff ff 61", "error": "truncated" },

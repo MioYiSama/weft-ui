@@ -37,6 +37,8 @@ public sealed class WeftSession
     private long due;
     /// <summary>Whether a batch of ops is being applied; the kernel is not reentrant.</summary>
     private bool committing;
+    /// <summary>The ops of the batch being applied, reused across commits.</summary>
+    private readonly List<Op> batch = [];
     private bool failed;
     /// <summary>The last error the kernel logged: why <c>weft_runtime_new</c> failed.</summary>
     private string? lastError;
@@ -133,8 +135,8 @@ public sealed class WeftSession
         committing = true;
         try
         {
-            var reader = new OpReader(bytes);
-            while (reader.Next(out var op)) Apply(ref reader, op);
+            OpReader.ReadAll(bytes, batch);
+            foreach (ref readonly var op in CollectionsMarshal.AsSpan(batch)) Apply(op);
         }
         catch (Exception error)
         {
@@ -142,11 +144,12 @@ public sealed class WeftSession
         }
         finally
         {
+            batch.Clear();
             committing = false;
         }
     }
 
-    private void Apply(ref OpReader reader, in Op op)
+    private void Apply(in Op op)
     {
         switch (op.Code)
         {
@@ -164,9 +167,7 @@ public sealed class WeftSession
                 Mount(op.Scope, op.Arg, [op.Child]);
                 break;
             case OpCode.Rows:
-                var rows = new uint[op.RowsCount];
-                for (var i = 0; i < rows.Length; i++) rows[i] = reader.Row(op, i);
-                Mount(op.Scope, op.Arg, rows);
+                Mount(op.Scope, op.Arg, op.Rows!);
                 break;
         }
     }

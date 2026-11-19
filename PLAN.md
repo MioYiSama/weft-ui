@@ -783,7 +783,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P1.8 Linux 帧测试 | ☑ | |
 | P2.1 Schema、生成器与漂移检查 | ☑ | |
 | P2.2 TS 消费方 | ☑ | C-apps 的 WeChat 和原生 JS 常量表示有差异，见执行中发现 |
-| P2.3 Rust 消费方 | ☐ | |
+| P2.3 Rust 消费方 | ☑ | clippy 0；快照与 C-apps 无差异 |
 | P2.4 C++ 与 Linux 消费方 | ☑ | rg、C-core、C-windows、C-linux（含 `linux.frames`）通过 |
 | P2.5 Swift、Kotlin、C# 消费方 | ☑ | rg、C-apple、C-android、C-windows、五平台 C-ui 通过 |
 | P2.6 平台 API 编译期契约 | ☐ | |

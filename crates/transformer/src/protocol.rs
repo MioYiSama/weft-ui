@@ -3,7 +3,6 @@
 
 /// Target platform; the string form matches `WEFT_PLATFORM`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[expect(dead_code, reason = "The Rust consumers are migrated in P2.3")]
 pub enum Platform {
     Web,
     Wechat,
@@ -14,7 +13,6 @@ pub enum Platform {
     Linux,
 }
 
-#[expect(dead_code, reason = "The Rust consumers are migrated in P2.3")]
 impl Platform {
     /// Every platform, in declaration order.
     pub const ALL: [Platform; 7] = [
@@ -58,7 +56,6 @@ impl Platform {
 }
 
 /// Codes of the conversions in the WeChat sink's style unit table.
-#[expect(dead_code, reason = "The Rust consumers are migrated in P2.3")]
 pub(crate) mod wechat_unit {
     pub(crate) const PX: u8 = 1;
     pub(crate) const BOLD: u8 = 2;

@@ -114,17 +114,13 @@ fn transform_program(
     program: &Program,
     platform: Platform,
 ) -> (Vec<JsModule>, Vec<OutputFile>, Option<ViewLayout>) {
-    let files = || program.modules.iter().map(|module| module.file);
-    let remote = |layout: &ViewLayout| {
-        files()
-            .map(|file| crate::bridge::remote_module(program, layout, file))
-            .collect()
-    };
     match platform {
         // DOM code lives in the logic modules; there are no view files.
         Platform::Web => (
-            files()
-                .map(|file| crate::web::module(program, file))
+            program
+                .modules
+                .iter()
+                .map(|module| crate::web::module(program, module.file))
                 .collect(),
             Vec::new(),
             None,
@@ -133,27 +129,37 @@ fn transform_program(
             let layout = ViewLayout::new(program);
             let cx = Context::new(program, Some(&layout), platform);
             let views = crate::wechat::transform(&cx);
-            (remote(&layout), views, Some(layout))
+            (remote_modules(program, &layout), views, Some(layout))
         }
-        Platform::Ios
-        | Platform::Macos
-        | Platform::Android
-        | Platform::Windows
-        | Platform::Linux => {
-            let layout = ViewLayout::new(program);
-            let mut views = vec![OutputFile {
-                path: "layout.json".to_owned(),
-                contents: layout.to_json(),
-            }];
-            let cx = Context::new(program, Some(&layout), platform);
-            views.extend(match platform {
-                Platform::Ios | Platform::Macos => crate::swiftui::transform(&cx),
-                Platform::Android => crate::compose::transform(&cx),
-                Platform::Windows => crate::winui::transform(&cx),
-                Platform::Linux => crate::gtk::transform(&cx),
-                Platform::Web | Platform::Wechat => unreachable!("{platform} is not native"),
-            });
-            (remote(&layout), views, Some(layout))
+        Platform::Ios | Platform::Macos => {
+            transform_native(program, platform, crate::swiftui::transform)
         }
+        Platform::Android => transform_native(program, platform, crate::compose::transform),
+        Platform::Windows => transform_native(program, platform, crate::winui::transform),
+        Platform::Linux => transform_native(program, platform, crate::gtk::transform),
     }
+}
+
+fn transform_native(
+    program: &Program,
+    platform: Platform,
+    transform_view: impl FnOnce(&Context<'_>) -> Vec<OutputFile>,
+) -> (Vec<JsModule>, Vec<OutputFile>, Option<ViewLayout>) {
+    let layout = ViewLayout::new(program);
+    let layout_file = OutputFile {
+        path: "layout.json".to_owned(),
+        contents: layout.to_json(),
+    };
+    let cx = Context::new(program, Some(&layout), platform);
+    let mut views = transform_view(&cx);
+    views.insert(0, layout_file);
+    (remote_modules(program, &layout), views, Some(layout))
+}
+
+fn remote_modules(program: &Program, layout: &ViewLayout) -> Vec<JsModule> {
+    program
+        .modules
+        .iter()
+        .map(|module| crate::bridge::remote_module(program, layout, module.file))
+        .collect()
 }

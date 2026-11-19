@@ -88,17 +88,14 @@ function rustMatches(flag: "native" | "apple"): string {
 }
 
 function rust(): string {
-  const notUsedYet = '#[expect(dead_code, reason = "The Rust consumers are migrated in P2.3")]';
   return `//! Target names and WeChat style unit codes shared with the runtime.
 
 /// Target platform; the string form matches \`WEFT_PLATFORM\`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-${notUsedYet}
 pub enum Platform {
 ${platforms.map(({ name }) => `    ${pascal(name)},`).join("\n")}
 }
 
-${notUsedYet}
 impl Platform {
     /// Every platform, in declaration order.
     pub const ALL: [Platform; ${platforms.length}] = [
@@ -127,7 +124,6 @@ ${rustMatches("apple")}
 }
 
 /// Codes of the conversions in the WeChat sink's style unit table.
-${notUsedYet}
 pub(crate) mod wechat_unit {
 ${Object.entries(wechatUnits).map(([key, code]) => `    pub(crate) const ${key.toUpperCase()}: u8 = ${code};`).join("\n")}
 }

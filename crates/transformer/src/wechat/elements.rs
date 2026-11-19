@@ -13,6 +13,7 @@
 //! | `y{N}`     | data of slot content; its template name is in `t`      |
 
 use crate::ir::{ComponentId, Element, NodeId, Prop, PropValue};
+use crate::protocol::wechat_unit;
 use crate::view::{Constant, ViewLayout, ViewNodeKind};
 
 /// How a property value reaches the view.
@@ -39,9 +40,9 @@ impl Unit {
     /// Code of the unit in the sink's table.
     pub(crate) fn code(self) -> u8 {
         match self {
-            Unit::Color => 3,
-            Unit::Px => 1,
-            Unit::Bold => 2,
+            Unit::Color => wechat_unit::COLOR,
+            Unit::Px => wechat_unit::PX,
+            Unit::Bold => wechat_unit::BOLD,
         }
     }
 }

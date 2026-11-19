@@ -8,6 +8,7 @@
     "./remote": "./src/remote.ts",
     "./wechat": "./src/wechat.ts",
     "./native": "./src/native.ts",
+    "./protocol": "./src/protocol.ts",
     "./testing": "./src/testing.ts"
   },
   "devDependencies": {

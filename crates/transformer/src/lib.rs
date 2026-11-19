@@ -15,6 +15,7 @@ mod deps;
 pub mod gtk;
 pub mod ide;
 pub mod ir;
+mod protocol;
 mod report;
 mod sema;
 pub mod swiftui;

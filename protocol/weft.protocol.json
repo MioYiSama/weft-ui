@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "opcodes": { "create": 1, "set": 2, "branch": 3, "rows": 4, "attach": 5 },
+  "valueTags": { "false": 0, "true": 1, "number": 2, "string": 3 },
+  "errorKinds": ["truncated", "version", "opcode", "tag", "utf8"],
+  "wechatUnits": { "px": 1, "bold": 2, "color": 3 },
+  "platforms": [
+    { "name": "web" },
+    { "name": "wechat" },
+    { "name": "ios", "native": true, "apple": true },
+    { "name": "macos", "native": true, "apple": true },
+    { "name": "android", "native": true },
+    { "name": "windows", "native": true },
+    { "name": "linux", "native": true }
+  ],
+  "platformModules": { "fetch": ["request"], "storage": ["get", "set", "remove"] }
+}

@@ -5,6 +5,7 @@
   "packageManager": "pnpm@11.28.12",
   "scripts": {
     "build:wasm": "pnpm --filter @weft-ui/compiler build:wasm",
+    "gen:protocol": "node protocol/generate.ts",
     "test": "pnpm -r --if-present test"
   }
 }

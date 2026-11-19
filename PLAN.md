@@ -781,7 +781,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P1.6 Kotlin 严格 UTF-8 与样例 | ☑ | |
 | P1.7 C# 严格 UTF-8、opcode 优先与样例 | ☑ | |
 | P1.8 Linux 帧测试 | ☑ | |
-| P2.1 Schema、生成器与漂移检查 | ☐ | |
+| P2.1 Schema、生成器与漂移检查 | ☑ | |
 | P2.2 TS 消费方 | ☐ | |
 | P2.3 Rust 消费方 | ☐ | |
 | P2.4 C++ 与 Linux 消费方 | ☐ | |

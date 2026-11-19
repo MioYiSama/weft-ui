@@ -12,6 +12,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "scripts": {
+    "prepack": "node ../pack.mjs prepack apple",
+    "postpack": "node ../pack.mjs postpack apple"
+  },
   "files": [
     "Package.swift",
     "Sources",

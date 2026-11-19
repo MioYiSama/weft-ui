@@ -12,8 +12,13 @@
   "publishConfig": {
     "access": "public"
   },
+  "scripts": {
+    "prepack": "node ../pack.mjs prepack linux",
+    "postpack": "node ../pack.mjs postpack linux"
+  },
   "files": [
     "CMakeLists.txt",
+    "core",
     "include",
     "src",
     "build/linux-x64/libweft_core.so",

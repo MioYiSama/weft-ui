@@ -299,7 +299,7 @@ flowchart LR
 | F5 中文侧边栏链接 | ☑ | 文档构建通过；6 个中文侧边栏均链接中文版，英文页面无中文版链接 |
 | F6 compiler 注释 | ☑ | 只改注释；compiler 包构建与 tsc 通过 |
 | N.1 native 包 | ☑ | 4 个 pack 清单符合白名单；SwiftPM 可解析无测试的包；C-apple、C-android、C-apps 通过 |
-| N.2 Linux 壳内置 core | ☐ | |
+| N.2 Linux 壳内置 core | ☑ | Linux tarball 解压到容器 `/tmp` 后独立配置、构建成功；打包后无 `core/` 残留；C-linux 通过 |
 | N.3 模块解析定位壳 | ☐ | |
 | N.4 hermesc 随 native 包 | ☐ | |
 | N.5 协议版本检查 | ☐ | |
@@ -323,4 +323,5 @@ flowchart LR
 
 - [F5] 中文「工具链」指南的页底「下一页」仍链接英文语法；结论：不处理（Starlight 单独生成分页链接，F5 只修正侧边栏）。
 - [F5] 文档构建在修复前后均提示 `i18n` 集合缺失或为空、`404` 文档条目缺失；结论：不处理（已有警告，不影响构建及侧边栏验收）。
+- [N.2] 重建 Linux 容器后，内核 CMake 缓存指向的 `/hermes-src` 不再存在；重新指向工作区中已有的 Hermes 源码后 C-linux 通过；结论：不处理（同 PLAN.md P0.1，仅限本地缓存）。
 - [T2] B0 的 `tests` tsc 基线为 59，但未传 `--runExternalCode`，TypeScript 不会加载 `.weft` content mapper；C-ts 仅对 `tests` 启用该参数后，既有错误 56 个、Gallery 新增 0 个。剩余错误来自既有 fixture 和 native driver 的类型导入路径；结论：不处理这些既有错误，C-ts 与 W1 按启用 mapper 后的 56 个错误作基线。

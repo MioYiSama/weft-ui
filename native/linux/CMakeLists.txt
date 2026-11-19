@@ -24,10 +24,15 @@ if(NOT EXISTS ${weft_core})
   message(FATAL_ERROR "weft: the native kernel for Linux ${weft_arch} is missing (${weft_core}); "
     "build it with native/linux/build-core.sh")
 endif()
+# The package ships the op reader and headers; a workspace build uses the originals.
+set(weft_core_source ${CMAKE_CURRENT_LIST_DIR}/core)
+if(NOT EXISTS "${weft_core_source}/include")
+  set(weft_core_source ${CMAKE_CURRENT_LIST_DIR}/../core)
+endif()
 add_library(weft_core_shared SHARED IMPORTED GLOBAL)
 set_target_properties(weft_core_shared PROPERTIES
   IMPORTED_LOCATION ${weft_core}
-  INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/../core/include
+  INTERFACE_INCLUDE_DIRECTORIES ${weft_core_source}/include
   INTERFACE_COMPILE_DEFINITIONS WEFT_CORE_SHARED)
 
 # Only the kernel's C ABI crosses the shared library, so the shell compiles
@@ -40,7 +45,7 @@ add_library(weft_linux STATIC
   src/session.cpp
   src/stack.cpp
   src/texture_cache.cpp
-  ${CMAKE_CURRENT_LIST_DIR}/../core/src/ops.cpp
+  ${weft_core_source}/src/ops.cpp
 )
 add_library(weft::linux ALIAS weft_linux)
 target_include_directories(weft_linux PUBLIC include)

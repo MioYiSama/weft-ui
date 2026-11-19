@@ -12,6 +12,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "scripts": {
+    "prepack": "node ../pack.mjs prepack windows",
+    "postpack": "node ../pack.mjs postpack windows"
+  },
   "files": [
     "Weft.WinUI.targets",
     "Weft.WinUI",

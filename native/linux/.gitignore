@@ -1,2 +1,4 @@
 /build/
+# Copied in by native/pack.mjs prepack.
+/LICENSE-hermes
 /core/

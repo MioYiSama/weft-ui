@@ -1,0 +1,11 @@
+{
+  "$schema": "../node_modules/@changesets/config/schema.json",
+  "baseBranch": "master",
+  "access": "public",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "format": false,
+  "fixed": [["@weft-ui/*"]],
+  "privatePackages": { "version": false, "tag": false },
+  "updateInternalDependencies": "patch"
+}

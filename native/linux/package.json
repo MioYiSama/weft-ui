@@ -18,6 +18,7 @@
     "prepublishOnly": "node ../pack.mjs prepublishOnly linux"
   },
   "files": [
+    "CHANGELOG.md",
     "LICENSE-hermes",
     "CMakeLists.txt",
     "core",

@@ -212,10 +212,10 @@ flowchart LR
 ## V1 版本与兼容规则（M0.5）
 
 - **改动**：
-  - 根目录加入 `@changesets/cli`；`.changeset/config.json`：`baseBranch: master`、`access: public`、全部发布包（5 个 TS 包与 4 个 native 包）放进一个 `fixed` 组、私有包不参与版本和标签；根 `package.json` 加 `changeset` 和 `version` 脚本。
+  - 根目录加入 `@changesets/cli`；`.changeset/config.json`：`baseBranch: master`、`access: public`、全部发布包（5 个 TS 包与 4 个 native 包）放进一个 `fixed` 组、私有包不参与版本和标签；根 `package.json` 加 `changeset` 和 `version-packages` 脚本。
   - 每个发布包新增 `CHANGELOG.md`，记录 0.1.0（native 包记为首个版本，写明随 0.1.0 一起发布）。
   - `protocol/SPEC.md` 和中文版新增小节「Versioning」：协议版本是 `weft.protocol.json` 里的整数，任何不兼容的线路格式变化都要加一；native 包在 `package.json` 里记录所实现的协议版本，`@weft-ui/vite` 构建前比对（N.5）；1.0 之前包版本的 minor 可以包含破坏性变更，协议版本变化必然伴随包的 minor 升级；1.0 之后的兼容承诺见 ROADMAP M6.6。
-  - README 的贡献相关段落说明「每个用户可见的改动附带一个 changeset」。
+  - `.changeset/README.md` 说明「每个用户可见的改动附带一个 changeset」；README 和 CONTRIBUTING 的说明由 H1 补上。
 - **验收**：`pnpm changeset status` 正常运行；在仓库的临时副本里加一个只改 `@weft-ui/runtime` 的 changeset 后 `pnpm changeset version`，9 个发布包版本一起升级、私有包不变；`pnpm --filter docs build` 成功。
 - **提交**：`build: version every package together with changesets`
 
@@ -306,7 +306,7 @@ flowchart LR
 | N.6 发布检查与仓库外验证 | ☑ | C-pack 仓库外构建 Android APK 与 iOS 模拟器应用；4 个壳包包含 Hermes 许可证；缺 x86 ABI 时拒绝发布，文档构建通过 |
 | T1 快照夹具 | ☑ | Gallery 覆盖 7 个元素、8 个字面量和绑定样式属性及插槽；TodoList 快照无改动；C-rust 通过（clippy 0） |
 | T2 conformance 夹具 | ☑ | `board.ops`、`todo.ops` 无改动；C-ts 通过（tests 56，与启用 mapper 的基线一致）；C-core 和 C-windows 均通过 `conformance.gallery` |
-| V1 版本规则 | ☐ | |
+| V1 版本规则 | ☑ | `changeset status` 正常运行；临时副本里只给 runtime 加 minor changeset，9 个发布包一起升到 0.2.0，私有包不变；发布包的 `files` 加入 `CHANGELOG.md`（pnpm pack 默认不带）；`pnpm version` 是 pnpm 内置命令，脚本名用 `version-packages` |
 | W1 PR 流水线 | ☐ | |
 | W2 夜间流水线 | ☐ | |
 | H1 仓库卫生 | ☐ | |

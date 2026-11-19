@@ -18,6 +18,7 @@
     "prepublishOnly": "node ../pack.mjs prepublishOnly android"
   },
   "files": [
+    "CHANGELOG.md",
     "LICENSE-hermes",
     "build.gradle.kts",
     "consumer-rules.pro",

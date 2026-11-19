@@ -10,13 +10,17 @@
 //! index holds whatever was resolved.
 
 use std::cell::RefCell;
+use std::fmt;
 
 use weft_ui_ast::{Diagnostic, FileId, ParsedProgram, SourceMap, Span};
 
-use crate::elements::{self, ElementSpec, PropKind, PropSpec, PropType};
-use crate::ir::{ComponentId, EventId, ModelId, ParamKind, Program, Type};
+use crate::elements::{ElementSpec, PropKind, PropSpec, PropType};
+use crate::ir::{ComponentId, ParamKind, Program, Type};
 use crate::sema;
-use crate::sema::builtins;
+use crate::sema::builtins::{MemberKind, MemberSig};
+use crate::sema::record::{LocalBinding, Recorder, Target};
+
+pub use crate::sema::record::ProbeContext;
 
 /// Outcome of [`analyze`].
 #[derive(Debug, Clone)]
@@ -189,90 +193,13 @@ pub struct Probe {
     pub candidates: Vec<Symbol>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ProbeContext {
-    /// A node in a component body: elements, components and slots.
-    Node,
-    /// An expression: parameters, states, loop variables, lambda parameters.
-    Value,
-    /// An event handler value: events.
-    Handler,
-    /// After `.` / `?.`: fields and built-in members of the receiver.
-    Member,
-    /// A type annotation: built-in types and models.
-    Type,
-    /// The target of an assignment in a lambda: states.
-    AssignTarget,
-}
-
-// ---- recording -----------------------------------------------------------
-
-/// What an occurrence refers to; program-level declarations are resolved to
-/// [`Symbol`]s once the whole program is known.
-#[derive(Debug, Clone)]
-pub(crate) enum Target {
-    Model(ModelId),
-    Event(EventId),
-    Component(ComponentId),
-    Field(ModelId, usize),
-    EventParam(EventId, usize),
-    ComponentParam(ComponentId, usize),
-    /// Locals and built-ins, complete when recorded.
-    Symbol(Symbol),
-}
-
-#[derive(Debug)]
-pub(crate) struct RawCall {
-    pub args: Span,
-    pub params: Vec<Target>,
-    /// Per parameter: whether an argument was matched to it.
-    pub given: Vec<bool>,
-}
-
-#[derive(Debug)]
-pub(crate) struct RawProbe {
-    pub context: ProbeContext,
-    pub candidates: Vec<Target>,
-}
-
-/// Collects the index during analysis; owned by the checker in a `RefCell`
-/// because the checker is shared immutably while bodies are lowered.
-#[derive(Debug, Default)]
-pub(crate) struct Recorder {
-    pub probe_name: Option<String>,
-    pub refs: Vec<(Span, Target)>,
-    pub calls: Vec<RawCall>,
-    pub probe: Option<RawProbe>,
-}
-
-impl Recorder {
-    pub(crate) fn is_probe(&self, name: &str) -> bool {
-        self.probe.is_none() && self.probe_name.as_deref() == Some(name)
-    }
-}
-
 // ---- built-in symbols ----------------------------------------------------
 
-/// Built-in types valid in annotations; `Children` only for parameters.
-pub(crate) const BUILTIN_TYPES: [&str; 5] = ["Int", "Float", "Bool", "String", "Children"];
-
-/// Every built-in member name, for completion after `.`.
-pub(crate) const MEMBER_NAMES: [&str; 8] = [
-    "length",
-    "isEmpty",
-    "trim",
-    "uppercase",
-    "lowercase",
-    "contains",
-    "toString",
-    "toFixed",
-];
-
-pub(crate) fn type_symbol(name: &str) -> Symbol {
+fn type_symbol(name: String) -> Symbol {
     Symbol {
         kind: SymbolKind::Type,
-        name: name.to_owned(),
-        detail: name.to_owned(),
+        detail: name.clone(),
+        name,
         def: None,
     }
 }
@@ -298,7 +225,7 @@ fn prop_signature(prop: &PropSpec) -> String {
     }
 }
 
-pub(crate) fn prop_symbol(element: Option<&ElementSpec>, prop: &PropSpec) -> Symbol {
+fn prop_symbol(element: Option<&ElementSpec>, prop: &PropSpec) -> Symbol {
     let signature = prop_signature(prop);
     Symbol {
         kind: SymbolKind::Prop,
@@ -311,7 +238,7 @@ pub(crate) fn prop_symbol(element: Option<&ElementSpec>, prop: &PropSpec) -> Sym
     }
 }
 
-pub(crate) fn element_symbol(spec: &ElementSpec) -> Symbol {
+fn element_symbol(spec: &ElementSpec) -> Symbol {
     let props: Vec<String> = spec.props.iter().map(prop_signature).collect();
     let children = if spec.children { " { … }" } else { "" };
     Symbol {
@@ -322,44 +249,24 @@ pub(crate) fn element_symbol(spec: &ElementSpec) -> Symbol {
     }
 }
 
-pub(crate) fn element_symbols() -> impl Iterator<Item = Symbol> {
-    elements::ELEMENTS.iter().map(element_symbol)
-}
-
-/// Built-in member `name` of a non-optional `recv`, displayed with `display`.
-pub(crate) fn member_symbol(
-    recv: &Type,
-    name: &str,
-    display: impl Fn(&Type) -> String,
-) -> Option<Symbol> {
-    let sig = builtins::member(recv, name)?;
-    let detail = match sig.kind {
-        builtins::MemberKind::Property => format!("{name}: {}", display(&sig.ret)),
-        builtins::MemberKind::Method => {
-            let params: Vec<String> = sig.params.iter().map(&display).collect();
-            format!("{name}({}): {}", params.join(", "), display(&sig.ret))
-        }
-    };
-    Some(Symbol {
-        kind: SymbolKind::Member,
-        name: name.to_owned(),
-        detail,
-        def: None,
-    })
-}
-
 /// Displays a type, with `unknown` for types that failed to resolve.
-pub(crate) fn display_type(ty: &Type, model_name: &dyn Fn(ModelId) -> String) -> String {
+fn display_type(ty: &Type, program: &Program, out: &mut fmt::Formatter<'_>) -> fmt::Result {
     match ty {
-        Type::Int => "Int".to_owned(),
-        Type::Float => "Float".to_owned(),
-        Type::Bool => "Bool".to_owned(),
-        Type::String => "String".to_owned(),
-        Type::Model(id) => model_name(*id),
-        Type::Array(elem) => format!("{}[]", display_type(elem, model_name)),
-        Type::Optional(elem) => format!("{}?", display_type(elem, model_name)),
-        Type::Null => "null".to_owned(),
-        Type::Error => "unknown".to_owned(),
+        Type::Int => out.write_str("Int"),
+        Type::Float => out.write_str("Float"),
+        Type::Bool => out.write_str("Bool"),
+        Type::String => out.write_str("String"),
+        Type::Model(id) => out.write_str(&program.model(*id).name),
+        Type::Array(elem) => {
+            display_type(elem, program, out)?;
+            out.write_str("[]")
+        }
+        Type::Optional(elem) => {
+            display_type(elem, program, out)?;
+            out.write_str("?")
+        }
+        Type::Null => out.write_str("null"),
+        Type::Error => out.write_str("unknown"),
     }
 }
 
@@ -371,14 +278,60 @@ struct Resolver<'a> {
 }
 
 impl Resolver<'_> {
-    fn ty(&self, ty: &Type) -> String {
-        display_type(ty, &|id| self.program.model(id).name.clone())
+    fn ty<'a>(&'a self, ty: &'a Type) -> impl fmt::Display + 'a {
+        fmt::from_fn(move |out| display_type(ty, self.program, out))
+    }
+
+    fn member_symbol(&self, name: String, sig: MemberSig) -> Symbol {
+        let detail = match sig.kind {
+            MemberKind::Property => format!("{name}: {}", self.ty(&sig.ret)),
+            MemberKind::Method => {
+                let params = fmt::from_fn(|out| {
+                    for (index, ty) in sig.params.iter().enumerate() {
+                        if index != 0 {
+                            out.write_str(", ")?;
+                        }
+                        write!(out, "{}", self.ty(ty))?;
+                    }
+                    Ok(())
+                });
+                format!("{name}({params}): {}", self.ty(&sig.ret))
+            }
+        };
+        Symbol {
+            kind: SymbolKind::Member,
+            name,
+            detail,
+            def: None,
+        }
     }
 
     fn symbol(&self, target: Target) -> Symbol {
         let program = self.program;
         match target {
-            Target::Symbol(symbol) => symbol,
+            Target::Element(spec) => element_symbol(spec),
+            Target::Prop { owner, prop } => prop_symbol(owner, prop),
+            Target::Member { name, signature } => self.member_symbol(name, signature),
+            Target::Type(name) => type_symbol(name),
+            Target::Local {
+                binding,
+                name,
+                ty,
+                def,
+            } => {
+                let (kind, prefix) = match binding {
+                    LocalBinding::Param => (SymbolKind::Param, "(parameter) "),
+                    LocalBinding::State => (SymbolKind::State, "state "),
+                    LocalBinding::LoopItem => (SymbolKind::LoopVar, "(loop variable) "),
+                    LocalBinding::LambdaParam => (SymbolKind::LambdaParam, "(lambda parameter) "),
+                };
+                Symbol {
+                    kind,
+                    detail: format!("{prefix}{name}: {}", self.ty(&ty)),
+                    name,
+                    def: Some(def),
+                }
+            }
             Target::Model(id) => {
                 let model = program.model(id);
                 let fields: String = model
@@ -464,10 +417,10 @@ impl Resolver<'_> {
     /// `name: Type` with ` = default` as written in the source.
     fn component_param(&self, id: ComponentId, index: usize) -> String {
         let param = &self.program.component(id).params[index];
-        let ty = match &param.kind {
-            ParamKind::Value(ty) => self.ty(ty),
-            ParamKind::Children => "Children".to_owned(),
-        };
+        let ty = fmt::from_fn(|out| match &param.kind {
+            ParamKind::Value(ty) => display_type(ty, self.program, out),
+            ParamKind::Children => out.write_str("Children"),
+        });
         match &param.default {
             Some(default) => format!(
                 "{}: {ty} = {}",

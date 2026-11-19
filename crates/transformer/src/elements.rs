@@ -91,6 +91,7 @@ const LAYOUT: [PropSpec; 5] = [
     value("background", PropType::Color),
 ];
 
+#[derive(Debug)]
 pub(crate) struct ElementSpec {
     pub element: Element,
     pub name: &'static str,

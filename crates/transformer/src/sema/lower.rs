@@ -9,14 +9,16 @@ use weft_ui_ast::{AssignOp, BinaryOp, Diagnostic, FileId, Span, UnaryOp};
 
 use crate::color::Color;
 use crate::deps;
-use crate::elements::{self, ElementSpec, LIFECYCLE as CALL_HOOKS, PropKind, PropSpec, PropType};
-use crate::ide::{self, ProbeContext, RawCall, Symbol, SymbolKind, Target};
+use crate::elements::{
+    self, ELEMENTS as BUILTIN_ELEMENTS, ElementSpec, LIFECYCLE as CALL_HOOKS, PropKind, PropType,
+};
 use crate::ir::{
     Arg, Assign, Binding, BindingId, BindingKind, Branch, Coercion, ComponentId, Dep, EmitArg,
     EventId, Expr, ExprKind, FieldId, Handler, InterpPart, Loop, LoopId, Node, NodeId, NodeKind,
     Param, ParamId, ParamKind, Prop, PropValue, State, StateId, Type,
 };
 use crate::sema::builtins::{self, MemberKind};
+use crate::sema::record::{LocalBinding, ProbeContext, RawCall, Target};
 use crate::sema::{Checker, DeclKind, article};
 
 /// A component instantiated inside another component's body.
@@ -170,26 +172,22 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
 
     // ---- editor index --------------------------------------------------
 
-    fn display_type(&self, ty: &Type) -> String {
-        ide::display_type(ty, &|id| self.cx.models[id.index()].name.clone())
-    }
-
     fn local_target(&self, local: &Local) -> Target {
-        let (kind, prefix) = match local.kind {
+        let binding = match local.kind {
             LocalKind::Param(p) | LocalKind::Slot(p) => match self.component {
                 Some(component) => return Target::ComponentParam(component, p.index()),
-                None => (SymbolKind::Param, "(parameter) "),
+                None => LocalBinding::Param,
             },
-            LocalKind::State(_) => (SymbolKind::State, "state "),
-            LocalKind::Item(_) => (SymbolKind::LoopVar, "(loop variable) "),
-            LocalKind::LambdaArg => (SymbolKind::LambdaParam, "(lambda parameter) "),
+            LocalKind::State(_) => LocalBinding::State,
+            LocalKind::Item(_) => LocalBinding::LoopItem,
+            LocalKind::LambdaArg => LocalBinding::LambdaParam,
         };
-        Target::Symbol(Symbol {
-            kind,
+        Target::Local {
+            binding,
             name: local.name.clone(),
-            detail: format!("{prefix}{}: {}", local.name, self.display_type(&local.ty)),
-            def: Some(local.span),
-        })
+            ty: local.ty.clone(),
+            def: local.span,
+        }
     }
 
     /// Reports a probe with the locals `keep` accepts, then `extra`.
@@ -327,7 +325,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         }
         let name = first.name.as_str();
         if self.cx.is_probe(name) {
-            let elements = ide::element_symbols().map(Target::Symbol);
+            let elements = BUILTIN_ELEMENTS.iter().map(Target::Element);
             let components = self
                 .cx
                 .visible_decls(self.file, |k| matches!(k, DeclKind::Component(_)));
@@ -356,8 +354,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             return Some(self.push_node(NodeKind::Slot { param }, span, 0..0));
         }
         if let Some(spec) = elements::element(name) {
-            self.cx
-                .record(first.span, || Target::Symbol(ide::element_symbol(spec)));
+            self.cx.record(first.span, || Target::Element(spec));
             return Some(self.builtin_element(spec, e, span));
         }
         match self.cx.global(self.file, name, first.span, self.diags) {
@@ -376,8 +373,13 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         }
     }
 
-    fn builtin_element(&mut self, spec: &ElementSpec, e: &ast::ElementNode, span: Span) -> NodeId {
-        let props_spec: Vec<PropSpec> = spec.props.iter().chain(&CALL_HOOKS).copied().collect();
+    fn builtin_element(
+        &mut self,
+        spec: &'static ElementSpec,
+        e: &ast::ElementNode,
+        span: Span,
+    ) -> NodeId {
+        let props_spec: Vec<_> = spec.props.iter().chain(&CALL_HOOKS).collect();
         let slots: Vec<ArgSlot<'_>> = props_spec
             .iter()
             .map(|p| ArgSlot {
@@ -389,7 +391,10 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         let matched = self.match_args(spec.name, &slots, &e.args, span);
         self.record_args(args_span(e, span), &matched, |i| {
             let owner = (i < spec.props.len()).then_some(spec);
-            Target::Symbol(ide::prop_symbol(owner, &props_spec[i]))
+            Target::Prop {
+                owner,
+                prop: props_spec[i],
+            }
         });
 
         let first_binding = self.bindings.len();
@@ -502,7 +507,10 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
         self.record_args(args_span(e, span), &matched, |i| {
             match value_params.get(i) {
                 Some(&(param, _, _)) => Target::ComponentParam(id, param.index()),
-                None => Target::Symbol(ide::prop_symbol(None, &CALL_HOOKS[i - value_params.len()])),
+                None => Target::Prop {
+                    owner: None,
+                    prop: &CALL_HOOKS[i - value_params.len()],
+                },
             }
         });
 
@@ -1206,9 +1214,9 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             );
             return error_expr(span);
         };
-        self.cx.record(name.span, || {
-            let member = ide::member_symbol(&inner, &name.name, |t| self.display_type(t));
-            Target::Symbol(member.expect("the member exists"))
+        self.cx.record(name.span, || Target::Member {
+            name: name.name.clone(),
+            signature: sig.clone(),
         });
         let args = match (sig.kind, call) {
             (MemberKind::Property, None) => Vec::new(),
@@ -1275,10 +1283,14 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             Type::Model(id) => (0..self.cx.models[id.index()].fields.len())
                 .map(|i| Target::Field(*id, i))
                 .collect(),
-            ty => ide::MEMBER_NAMES
-                .iter()
-                .filter_map(|m| ide::member_symbol(ty, m, |t| self.display_type(t)))
-                .map(Target::Symbol)
+            ty => builtins::MEMBER_NAMES
+                .into_iter()
+                .filter_map(|name| {
+                    Some(Target::Member {
+                        signature: builtins::member(ty, name)?,
+                        name: name.to_owned(),
+                    })
+                })
                 .collect(),
         };
         self.cx.set_probe(ProbeContext::Member, candidates);

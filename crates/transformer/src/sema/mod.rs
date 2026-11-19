@@ -3,6 +3,7 @@
 
 pub(crate) mod builtins;
 mod lower;
+pub(crate) mod record;
 
 use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap};
@@ -13,12 +14,12 @@ use weft_ui_ast::{Diagnostic, FileId, ParsedFile, ParsedProgram, SourceMap, Span
 
 use crate::deps;
 use crate::elements::{self, LIFECYCLE as CALL_HOOKS};
-use crate::ide::{self, ProbeContext, RawCall, RawProbe, Recorder, Target};
 use crate::ir::{
     Component, ComponentId, Event, EventId, Field, Model, ModelId, Module, Param, ParamKind,
     Program, Type, type_display,
 };
 use lower::{Instance, Lowerer};
+use record::{ProbeContext, RawCall, RawProbe, Recorder, Target};
 
 /// Name of the slot parameter type.
 const CHILDREN: &str = "Children";
@@ -149,10 +150,10 @@ impl Checker<'_> {
         if !self.is_probe(name) {
             return;
         }
-        let builtins = ide::BUILTIN_TYPES
-            .iter()
-            .filter(|&&t| children || t != CHILDREN)
-            .map(|t| Target::Symbol(ide::type_symbol(t)));
+        let builtins = PRIMITIVES
+            .into_iter()
+            .chain(children.then_some(CHILDREN))
+            .map(|name| Target::Type(name.to_owned()));
         let models = self.visible_decls(file, |k| matches!(k, DeclKind::Model(_)));
         self.set_probe(ProbeContext::Type, builtins.chain(models).collect());
     }
@@ -166,7 +167,7 @@ impl Checker<'_> {
         if let ast::TypeExprKind::Named(name) = &ty.kind {
             self.probe_type(file, &name.name, false);
             if PRIMITIVES.contains(&name.name.as_str()) {
-                self.record(name.span, || Target::Symbol(ide::type_symbol(&name.name)));
+                self.record(name.span, || Target::Type(name.name.clone()));
             }
         }
         match &ty.kind {
@@ -587,7 +588,7 @@ fn signature(
         let is_children =
             matches!(&param.ty.kind, ast::TypeExprKind::Named(n) if n.name == CHILDREN);
         if is_children {
-            cx.record(param.ty.span, || Target::Symbol(ide::type_symbol(CHILDREN)));
+            cx.record(param.ty.span, || Target::Type(CHILDREN.to_owned()));
         }
         let kind = if is_children {
             if let Some(prev) = params.iter().find(|p| p.kind == ParamKind::Children) {

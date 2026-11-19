@@ -792,7 +792,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P3.3 共用 CSS 元数据 | ☑ | `rg` 仅命中 `style.rs`；clippy 0；快照与 C-apps 无差异，C-ts 通过 |
 | P3.4 DOM 与 remote 共用控制流 | ☑ | JS 控制流 `rg` 仅命中 `bridge/flow.rs`（全树另有 sema 同名函数，见下）；clippy 0；快照与 C-apps 无差异，C-ts 通过 |
 | P4.1 元素目录移出 sema | ☑ | `rg` 通过；clippy 0；快照不变 |
-| P4.2 语义记录归属 sema | ☐ | |
+| P4.2 语义记录归属 sema | ☑ | sema 不引用 ide；clippy 0；测试目录无改动 |
 | P4.3 拆分 lower.rs | ☐ | |
 | P4.4 拆分 view.rs | ☐ | |
 | P4.5 收窄公开 API | ☐ | |

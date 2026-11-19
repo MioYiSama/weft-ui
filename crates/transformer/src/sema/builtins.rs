@@ -2,12 +2,25 @@
 
 use crate::ir::{Member, Type};
 
+/// Every built-in member name, for completion after `.`.
+pub(crate) const MEMBER_NAMES: [&str; 8] = [
+    "length",
+    "isEmpty",
+    "trim",
+    "uppercase",
+    "lowercase",
+    "contains",
+    "toString",
+    "toFixed",
+];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MemberKind {
     Property,
     Method,
 }
 
+#[derive(Debug, Clone)]
 pub(crate) struct MemberSig {
     pub member: Member,
     pub kind: MemberKind,

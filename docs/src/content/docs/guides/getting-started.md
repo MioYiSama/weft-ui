@@ -9,7 +9,7 @@ With Weft UI, you write the view in `.weft` and share one JavaScript or TypeScri
 
 ## Set up the workspace
 
-You'll need Git, Node.js 24, and the pnpm version pinned in the [root `package.json`](https://github.com/MioYiSama/weft-ui/blob/master/package.json). The example uses the Weft UI compiler built from this checkout, so you'll also need Rust and Cargo, the [`wasm32-unknown-unknown` target](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html), and `wasm-bindgen-cli` matching the [compiler's pinned version](https://github.com/MioYiSama/weft-ui/blob/master/crates/wasm/Cargo.toml). If you installed Rust through rustup, set up the target and CLI with:
+You'll need Git, Node.js 24, and the pnpm version pinned in the [root `package.json`](https://github.com/weft-ui/weft-ui/blob/master/package.json). The example uses the Weft UI compiler built from this checkout, so you'll also need Rust and Cargo, the [`wasm32-unknown-unknown` target](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html), and `wasm-bindgen-cli` matching the [compiler's pinned version](https://github.com/weft-ui/weft-ui/blob/master/crates/wasm/Cargo.toml). If you installed Rust through rustup, set up the target and CLI with:
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -19,7 +19,7 @@ cargo install wasm-bindgen-cli --version 0.2.130 --locked
 Clone the repository, install dependencies, and build the compiler:
 
 ```sh
-git clone https://github.com/MioYiSama/weft-ui.git
+git clone https://github.com/weft-ui/weft-ui.git
 cd weft-ui
 pnpm install
 pnpm build
@@ -40,10 +40,10 @@ When editing the source, use `pnpm --filter example exec vite` instead of buildi
 
 ## Find your way around the example
 
-- [`src/App.weft`](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft) declares the data model, events, and view.
-- [`src/index.ts`](https://github.com/MioYiSama/weft-ui/blob/master/example/src/index.ts) initializes the model, handles events, and starts the app.
-- [`vite.config.ts`](https://github.com/MioYiSama/weft-ui/blob/master/example/vite.config.ts) registers `@weft-ui/vite`.
-- [`index.html`](https://github.com/MioYiSama/weft-ui/blob/master/example/index.html) is the Web entry point. It loads `src/index.ts` and provides the `#app` mount element.
+- [`src/App.weft`](https://github.com/weft-ui/weft-ui/blob/master/example/src/App.weft) declares the data model, events, and view.
+- [`src/index.ts`](https://github.com/weft-ui/weft-ui/blob/master/example/src/index.ts) initializes the model, handles events, and starts the app.
+- [`vite.config.ts`](https://github.com/weft-ui/weft-ui/blob/master/example/vite.config.ts) registers `@weft-ui/vite`.
+- [`index.html`](https://github.com/weft-ui/weft-ui/blob/master/example/index.html) is the Web entry point. It loads `src/index.ts` and provides the `#app` mount element.
 - `apps/` holds platform projects and build output.
 
 ## Follow the Add button
@@ -76,7 +76,7 @@ Once the handlers are registered, `run(app)` from `@weft-ui/platform` mounts the
 
 ## Next steps
 
-- [Views](/guides/views/): write layouts, bindings, and lists. See the [grammar specification](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.md) for the full language rules.
+- [Views](/guides/views/): write layouts, bindings, and lists. See the [grammar specification](https://github.com/weft-ui/weft-ui/blob/master/crates/parser/GRAMMAR.md) for the full language rules.
 - [Logic](/guides/logic/): initialize models and handle view events in JavaScript or TypeScript.
 - [Platform API](/guides/platform-api/): share code that uses storage or makes network requests.
 - [Platforms](/guides/platforms/): build and open the app on another target.

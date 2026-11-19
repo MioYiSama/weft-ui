@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-`.weft` 文件描述要渲染的内容和要发出的事件。视图通过类型明确的参数接收逻辑层的数据，用局部 `state` 保存只属于当前视图的状态。[示例应用](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft)用布局和事件实现了一个待办清单。
+`.weft` 文件描述要渲染的内容和要发出的事件。视图通过类型明确的参数接收逻辑层的数据，用局部 `state` 保存只属于当前视图的状态。[示例应用](https://github.com/weft-ui/weft-ui/blob/master/example/src/App.weft)用布局和事件实现了一个待办清单。
 
 ## 声明模型、事件和组件
 
@@ -171,4 +171,4 @@ component App(todos: Todo[]) {
 
 导入路径相对于发起导入的文件。导入不传递：`App.weft` 要使用 `TodoList`，就导入 `TodoList.weft`；要引用 `Todo` 类型，还要直接导入 `Todo.weft`。通过导入关联起来的文件中，模型、事件和组件不能重名，也不能与内置元素重名。
 
-完整的语法和类型规则见 [Weft UI 语法规范](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md)。
+完整的语法和类型规则见 [Weft UI 语法规范](https://github.com/weft-ui/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md)。

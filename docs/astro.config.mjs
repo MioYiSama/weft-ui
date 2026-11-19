@@ -4,7 +4,7 @@ import starlight from "@astrojs/starlight";
 import { langRedirect } from "./src/i18n/lang-redirect.mjs";
 import weft from "./src/weft.tmLanguage.json" with { type: "json" };
 
-const repo = "https://github.com/MioYiSama/weft-ui";
+const repo = "https://github.com/weft-ui/weft-ui";
 
 export default defineConfig({
   site: "https://weftui.mioyi.net",

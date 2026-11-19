@@ -9,7 +9,7 @@ sidebar:
 
 ## 创建应用
 
-下面沿用[待办事项示例](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft)：输入框绑定 `model.draft`，每条待办的复选框绑定该项的 `done` 字段。将视图保存为 `App.weft`：
+下面沿用[待办事项示例](https://github.com/weft-ui/weft-ui/blob/master/example/src/App.weft)：输入框绑定 `model.draft`，每条待办的复选框绑定该项的 `done` 字段。将视图保存为 `App.weft`：
 
 ```weft
 model Todo {
@@ -103,7 +103,7 @@ app.onDraft((model, { value }) => {
 
 输入过长时，处理函数不改 `model.draft`，输入框就会恢复为上一次绑定的值。复选框也遵循同样的规则。处理函数也可以写入另一个值，比如整理输入文本的格式；这时控件会显示改写后的值。要让本次更新接受或拒绝输入，请在任何 `await` 之前决定是否写入模型。处理函数的返回值即使是 `true` 或 `false`，也不能决定是否接受输入。
 
-在 Web 上，一轮更新结束后，如果 DOM 中的值与绑定值不同，运行时会恢复绑定值。通过视图协议通信时，运行时在同步更新后比较用户提交的值和绑定值，并告诉视图层是否需要恢复。完整规则见[语法规范的事件参数](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md#事件参数)和[视图协议的事件规则](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.zh-CN.md#事件)。
+在 Web 上，一轮更新结束后，如果 DOM 中的值与绑定值不同，运行时会恢复绑定值。通过视图协议通信时，运行时在同步更新后比较用户提交的值和绑定值，并告诉视图层是否需要恢复。完整规则见[语法规范的事件参数](https://github.com/weft-ui/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md#事件参数)和[视图协议的事件规则](https://github.com/weft-ui/weft-ui/blob/master/protocol/SPEC.zh-CN.md#事件)。
 
 ## 响应挂载和卸载
 

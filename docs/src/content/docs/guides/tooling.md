@@ -5,7 +5,7 @@ sidebar:
   order: 6
 ---
 
-The Weft UI language server helps you edit `.weft` files. The TypeScript content mapper lets TypeScript understand imports such as `import { App } from "./App.weft"` in the [todo example](https://github.com/MioYiSama/weft-ui/blob/master/example/src/index.ts). You can use both in the same project.
+The Weft UI language server helps you edit `.weft` files. The TypeScript content mapper lets TypeScript understand imports such as `import { App } from "./App.weft"` in the [todo example](https://github.com/weft-ui/weft-ui/blob/master/example/src/index.ts). You can use both in the same project.
 
 ## Install the CLI
 
@@ -35,7 +35,7 @@ weft fmt --stdin --path example/src/App.weft < example/src/App.weft
 
 ## Use the Weft UI language server
 
-`weft lsp` speaks the Language Server Protocol over stdin and stdout. Open [`App.weft`](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft) in a connected editor to try these features:
+`weft lsp` speaks the Language Server Protocol over stdin and stdout. Open [`App.weft`](https://github.com/weft-ui/weft-ui/blob/master/example/src/App.weft) in a connected editor to try these features:
 
 - **Diagnostics:** Weft UI reports syntax and semantic errors as you edit, for example if you replace `todo.name` with a field that `Todo` does not declare.
 - **Completion:** Type `todo.` inside the loop to see the model's fields. The server also suggests names and keywords in context, including named arguments you have not supplied yet.
@@ -46,7 +46,7 @@ The Weft UI server does not provide find references or rename. TypeScript can na
 
 ### Zed
 
-With Rust installed through [rustup](https://rustup.rs/), run `zed: install dev extension` from Zed's command palette and select [`crates/zed/`](https://github.com/MioYiSama/weft-ui/blob/master/crates/zed/) in your checkout. The extension runs `weft lsp` using the `weft` it finds on the worktree's `PATH`. If Zed cannot find it, set `lsp.weft.binary.path` in Zed's settings to the full path of your executable:
+With Rust installed through [rustup](https://rustup.rs/), run `zed: install dev extension` from Zed's command palette and select [`crates/zed/`](https://github.com/weft-ui/weft-ui/blob/master/crates/zed/) in your checkout. The extension runs `weft lsp` using the `weft` it finds on the worktree's `PATH`. If Zed cannot find it, set `lsp.weft.binary.path` in Zed's settings to the full path of your executable:
 
 ```jsonc
 {
@@ -58,7 +58,7 @@ With Rust installed through [rustup](https://rustup.rs/), run `zed: install dev 
 }
 ```
 
-The extension also loads the [Weft UI Tree-sitter grammar](https://github.com/MioYiSama/weft-ui/blob/master/packages/tree-sitter/) from a pinned commit for highlighting, brackets, indentation, and the outline.
+The extension also loads the [Weft UI Tree-sitter grammar](https://github.com/weft-ui/weft-ui/blob/master/packages/tree-sitter/) from a pinned commit for highlighting, brackets, indentation, and the outline.
 
 ### Other editors
 
@@ -66,9 +66,9 @@ If your editor's LSP client lets you register a custom server, associate it with
 
 ## Type-check Weft UI imports with TypeScript
 
-Use a TypeScript version that supports [content mappers](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers), introduced in 7.1. Add `@weft-ui/content-mapper` as a dev dependency. The [example project](https://github.com/MioYiSama/weft-ui/blob/master/example/package.json) already declares it as a workspace dependency; follow [Getting started](/guides/getting-started/) to install dependencies and build the compiler WASM and packages with `pnpm build`.
+Use a TypeScript version that supports [content mappers](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers), introduced in 7.1. Add `@weft-ui/content-mapper` as a dev dependency. The [example project](https://github.com/weft-ui/weft-ui/blob/master/example/package.json) already declares it as a workspace dependency; follow [Getting started](/guides/getting-started/) to install dependencies and build the compiler WASM and packages with `pnpm build`.
 
-Add `contentMappers` at the top level of `tsconfig.json`, outside `compilerOptions`, as in the [example config](https://github.com/MioYiSama/weft-ui/blob/master/example/tsconfig.json):
+Add `contentMappers` at the top level of `tsconfig.json`, outside `compilerOptions`, as in the [example config](https://github.com/weft-ui/weft-ui/blob/master/example/tsconfig.json):
 
 ```jsonc
 {

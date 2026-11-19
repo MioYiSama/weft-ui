@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-A `.weft` file describes what to render and which events to send. Use typed parameters to receive data from the logic layer and local `state` for details that belong to a single view. The [example app](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft) uses both layout and events to build a todo list.
+A `.weft` file describes what to render and which events to send. Use typed parameters to receive data from the logic layer and local `state` for details that belong to a single view. The [example app](https://github.com/weft-ui/weft-ui/blob/master/example/src/App.weft) uses both layout and events to build a todo list.
 
 ## Declare models, events, and components
 
@@ -171,4 +171,4 @@ component App(todos: Todo[]) {
 
 Import paths are relative to the file that imports them. Imports are not transitive: `App.weft` imports `TodoList.weft` to use `TodoList`, and it imports `Todo.weft` directly to name the `Todo` type. Use distinct names for models, events, and components across the connected files, and avoid names of built-in elements.
 
-For the complete syntax and type rules, see the [Weft UI grammar specification](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.md).
+For the complete syntax and type rules, see the [Weft UI grammar specification](https://github.com/weft-ui/weft-ui/blob/master/crates/parser/GRAMMAR.md).

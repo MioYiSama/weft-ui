@@ -16,7 +16,7 @@
     "version": "0.0.1",
     "description": "Weft UI grammar for tree-sitter",
     "links": {
-      "repository": "https://github.com/MioYiSama/weft-ui"
+      "repository": "https://github.com/weft-ui/weft-ui"
     }
   }
 }

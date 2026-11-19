@@ -9,7 +9,7 @@ sidebar:
 
 ## 准备工作区
 
-你需要 Git、Node.js 24，以及[仓库根目录 `package.json`](https://github.com/MioYiSama/weft-ui/blob/master/package.json) 指定版本的 pnpm。示例用的是从仓库源码构建的 Weft UI 编译器，因此还需要 Rust 和 Cargo、[`wasm32-unknown-unknown` 目标](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html)，以及与[编译器锁定版本](https://github.com/MioYiSama/weft-ui/blob/master/crates/wasm/Cargo.toml)一致的 `wasm-bindgen-cli`。如果你用 rustup 安装了 Rust，可用以下命令安装目标和 CLI：
+你需要 Git、Node.js 24，以及[仓库根目录 `package.json`](https://github.com/weft-ui/weft-ui/blob/master/package.json) 指定版本的 pnpm。示例用的是从仓库源码构建的 Weft UI 编译器，因此还需要 Rust 和 Cargo、[`wasm32-unknown-unknown` 目标](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html)，以及与[编译器锁定版本](https://github.com/weft-ui/weft-ui/blob/master/crates/wasm/Cargo.toml)一致的 `wasm-bindgen-cli`。如果你用 rustup 安装了 Rust，可用以下命令安装目标和 CLI：
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -19,7 +19,7 @@ cargo install wasm-bindgen-cli --version 0.2.130 --locked
 克隆仓库，安装依赖并构建编译器：
 
 ```sh
-git clone https://github.com/MioYiSama/weft-ui.git
+git clone https://github.com/weft-ui/weft-ui.git
 cd weft-ui
 pnpm install
 pnpm build
@@ -40,10 +40,10 @@ pnpm --filter example exec vite preview --outDir apps/web
 
 ## 示例目录
 
-- [`src/App.weft`](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft) 声明数据模型、事件和视图。
-- [`src/index.ts`](https://github.com/MioYiSama/weft-ui/blob/master/example/src/index.ts) 初始化模型、处理事件并启动应用。
-- [`vite.config.ts`](https://github.com/MioYiSama/weft-ui/blob/master/example/vite.config.ts) 注册 `@weft-ui/vite` 插件。
-- [`index.html`](https://github.com/MioYiSama/weft-ui/blob/master/example/index.html) 是 Web 入口，负责加载 `src/index.ts`，并提供挂载点 `#app`。
+- [`src/App.weft`](https://github.com/weft-ui/weft-ui/blob/master/example/src/App.weft) 声明数据模型、事件和视图。
+- [`src/index.ts`](https://github.com/weft-ui/weft-ui/blob/master/example/src/index.ts) 初始化模型、处理事件并启动应用。
+- [`vite.config.ts`](https://github.com/weft-ui/weft-ui/blob/master/example/vite.config.ts) 注册 `@weft-ui/vite` 插件。
+- [`index.html`](https://github.com/weft-ui/weft-ui/blob/master/example/index.html) 是 Web 入口，负责加载 `src/index.ts`，并提供挂载点 `#app`。
 - `apps/` 存放各平台的项目和构建产物。
 
 ## 点击 Add 后发生了什么
@@ -76,7 +76,7 @@ app.onAdd((model) => {
 
 ## 下一步
 
-- [视图](/zh/guides/views/)：编写布局、数据绑定和列表。完整语言规则见 [Weft UI 语法规范](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md)。
+- [视图](/zh/guides/views/)：编写布局、数据绑定和列表。完整语言规则见 [Weft UI 语法规范](https://github.com/weft-ui/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md)。
 - [逻辑](/zh/guides/logic/)：用 JavaScript 或 TypeScript 初始化模型、处理视图事件。
 - [平台 API](/zh/guides/platform-api/)：在各平台共用存储和网络请求代码。
 - [平台](/zh/guides/platforms/)：为其他平台构建并运行应用。

@@ -9,7 +9,7 @@ sidebar:
 
 ## 配置 Vite
 
-在 `vite.config.ts` 中注册 `@weft-ui/vite`。下面是[待办示例](https://github.com/MioYiSama/weft-ui/blob/master/example/vite.config.ts)的配置：
+在 `vite.config.ts` 中注册 `@weft-ui/vite`。下面是[待办示例](https://github.com/weft-ui/weft-ui/blob/master/example/vite.config.ts)的配置：
 
 ```ts
 import { defineConfig } from "vite";
@@ -56,13 +56,13 @@ WEFT_PLATFORM=web,wechat pnpm exec vite build
 
 Web 按 Vite 的常规方式输出到 `apps/web/`。其他平台首次构建时，Weft UI 会将工程模板复制到 `apps/<platform>/`。`weft/` 以外的工程文件由你维护，可以在里面修改签名、图标或平台配置。后续构建会重新生成 `apps/<platform>/weft/`，不再覆盖模板文件。修改 `app.id` 或 `app.name` 不会更新已有工程，请直接修改工程文件。
 
-Web 以外平台的逻辑层打包在 `weft/js/index.js` 中。原生平台还会生成视图代码、`layout.json` 和 Hermes 字节码（除 Android 外都在 `weft/bundle.hbc`）。布局文件及逻辑层与视图层的交互见[视图协议](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.zh-CN.md)。
+Web 以外平台的逻辑层打包在 `weft/js/index.js` 中。原生平台还会生成视图代码、`layout.json` 和 Hermes 字节码（除 Android 外都在 `weft/bundle.hbc`）。布局文件及逻辑层与视图层的交互见[视图协议](https://github.com/weft-ui/weft-ui/blob/master/protocol/SPEC.zh-CN.md)。
 
 如果只想生成原生工程，不运行该平台的构建工具，可以设置 `WEFT_NATIVE=0`。当前主机无法运行目标平台的构建工具时，插件也只生成工程，并给出警告。两种情况下都仍需使用 `hermesc` 生成字节码。插件通常会自动找到它；如需换用其他二进制文件，可设置 `WEFT_HERMESC`，所用 Hermes 版本须与内核一致。
 
 ## Web
 
-[示例的 `index.html`](https://github.com/MioYiSama/weft-ui/blob/master/example/index.html) 通过模块脚本加载 `/src/index.ts`，由 `run(app)` 把应用挂载到 `id="app"` 的元素上。用 Vite 开发服务器在浏览器里查看改动，再把静态站点构建到 `apps/web/`：
+[示例的 `index.html`](https://github.com/weft-ui/weft-ui/blob/master/example/index.html) 通过模块脚本加载 `/src/index.ts`，由 `run(app)` 把应用挂载到 `id="app"` 的元素上。用 Vite 开发服务器在浏览器里查看改动，再把静态站点构建到 `apps/web/`：
 
 ```sh
 pnpm --filter example exec vite
@@ -77,9 +77,9 @@ pnpm --filter example build:web
 pnpm --filter example build:wechat
 ```
 
-在微信开发者工具中打开 `example/apps/wechat/`，不要打开下一级的 `weft/`。生成的 WXML 和逻辑代码包都在 `weft/` 中。[模板](https://github.com/MioYiSama/weft-ui/blob/master/packages/vite/templates/wechat/project.config.json)默认使用 `touristappid`。要使用已注册的小程序，请在工程的 `project.config.json` 中设置 `appid`。
+在微信开发者工具中打开 `example/apps/wechat/`，不要打开下一级的 `weft/`。生成的 WXML 和逻辑代码包都在 `weft/` 中。[模板](https://github.com/weft-ui/weft-ui/blob/master/packages/vite/templates/wechat/project.config.json)默认使用 `touristappid`。要使用已注册的小程序，请在工程的 `project.config.json` 中设置 `appid`。
 
-在模拟器里也可以试一次添加、勾选和删除。工作区还有[Web 和小程序的自动化测试](https://github.com/MioYiSama/weft-ui/blob/master/tests/vite/platforms.test.ts)，不需要启动微信开发者工具：
+在模拟器里也可以试一次添加、勾选和删除。工作区还有[Web 和小程序的自动化测试](https://github.com/weft-ui/weft-ui/blob/master/tests/vite/platforms.test.ts)，不需要启动微信开发者工具：
 
 ```sh
 pnpm --filter @weft-ui/tests test
@@ -151,7 +151,7 @@ pnpm --filter example test:linux
 
 ### 在 Docker 中构建 Linux 应用
 
-[Docker Compose 配置](https://github.com/MioYiSama/weft-ui/blob/master/native/linux/docker/compose.yaml)包含 Linux 构建工具和 XFCE 桌面。先在主机的工作区根目录构建编译器的 WASM，再启动并进入容器：
+[Docker Compose 配置](https://github.com/weft-ui/weft-ui/blob/master/native/linux/docker/compose.yaml)包含 Linux 构建工具和 XFCE 桌面。先在主机的工作区根目录构建编译器的 WASM，再启动并进入容器：
 
 ```sh
 pnpm build:wasm

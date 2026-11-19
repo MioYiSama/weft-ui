@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "description": "Weft UI native shell and prebuilt kernel for iOS and macOS",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/MioYiSama/weft-ui",
+  "homepage": "https://github.com/weft-ui/weft-ui",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MioYiSama/weft-ui.git",
+    "url": "git+https://github.com/weft-ui/weft-ui.git",
     "directory": "native/apple"
   },
   "publishConfig": {

@@ -20,7 +20,30 @@ env:
   HERMES_TAG: hermes-v260318099.0.8
 
 jobs:
+  # A scheduled run is skipped when master has not moved since the last
+  # successful nightly run; manual runs always go ahead.
+  changed:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(gh run list -R "$GITHUB_REPOSITORY" --workflow nightly.yml --branch master --status success --limit 1 --json headSha --jq '.[0].headSha // ""')
+          if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$last" = "$GITHUB_SHA" ]; then
+            echo "master is still at $last, which passed the last nightly run"
+            echo run=false >> "$GITHUB_OUTPUT"
+          else
+            echo run=true >> "$GITHUB_OUTPUT"
+          fi
+
   wasm:
+    needs: changed
+    if: needs.changed.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7

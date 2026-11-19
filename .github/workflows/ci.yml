@@ -25,7 +25,73 @@ env:
   HERMES_TAG: hermes-v260318099.0.8
 
 jobs:
+  # Which jobs a change needs: a pull request that only touches docs or plans
+  # skips the kernel builds. Skipped jobs count as passed for required checks.
+  # Manual runs check everything.
+  changes:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      rust: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.rust == 'true' }}
+      core: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.core == 'true' }}
+      linux: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.linux == 'true' }}
+      apple: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.apple == 'true' }}
+      android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
+      windows: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.windows == 'true' }}
+    steps:
+      # Pushes are diffed with git; pull requests through the API.
+      - if: github.event_name == 'push'
+        uses: actions/checkout@v7
+      - id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            kernel: &kernel
+              - .github/workflows/ci.yml
+              - .github/actions/**
+              - protocol/**
+              - native/core/**
+            # The compiler and Vite plugin bundle the conformance fixtures; crates/unicode is in the Linux kernel.
+            compiler: &compiler
+              - crates/**
+              - Cargo.toml
+              - Cargo.lock
+              - packages/**
+              - package.json
+              - pnpm-lock.yaml
+              - pnpm-workspace.yaml
+              - tests/conformance/**
+            rust:
+              - .github/workflows/ci.yml
+              - crates/**
+              - Cargo.toml
+              - Cargo.lock
+            core:
+              - *kernel
+              - *compiler
+            linux:
+              - *kernel
+              - *compiler
+              - native/linux/**
+            apple:
+              - *kernel
+              - native/apple/**
+            android:
+              - *kernel
+              - *compiler
+              - native/android/**
+              - example/**
+            windows:
+              - *kernel
+              - *compiler
+              - native/windows/**
+
   rust:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -84,7 +150,8 @@ jobs:
       - run: pnpm --filter docs build
 
   core:
-    needs: wasm
+    needs: [changes, wasm]
+    if: needs.changes.outputs.core == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -100,7 +167,8 @@ jobs:
       - run: ctest --test-dir native/core/build --output-on-failure
 
   linux:
-    needs: wasm
+    needs: [changes, wasm]
+    if: needs.changes.outputs.linux == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -130,7 +198,8 @@ jobs:
         run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
   apple:
-    needs: wasm
+    needs: [changes, wasm]
+    if: needs.changes.outputs.apple == 'true'
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
@@ -149,7 +218,8 @@ jobs:
       - run: swift test --package-path native/apple
 
   android:
-    needs: wasm
+    needs: [changes, wasm]
+    if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -175,7 +245,8 @@ jobs:
       - run: example/apps/android/gradlew -p example/apps/android :weft-android:testDebugUnitTest
 
   windows:
-    needs: wasm
+    needs: [changes, wasm]
+    if: needs.changes.outputs.windows == 'true'
     runs-on: windows-2025
     defaults:
       run:

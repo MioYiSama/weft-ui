@@ -447,18 +447,14 @@ void corpus() {
     const std::string &name = c["name"].string();
     auto bytes = hex_bytes(c["hex"].string());
     if (c.has("ops")) {
-      weft::ops::Reader reader(bytes.data(), bytes.size());
+      auto ops = weft::ops::read_all(bytes.data(), bytes.size());
       auto &want = c["ops"].array();
-      size_t count = 0;
-      for (weft::ops::Op op; reader.next(op); count++) {
-        CHECK(count < want.size());
-        check_op(name, op, want[count]);
-      }
-      CHECK_EQ(name + " " + std::to_string(count), name + " " + std::to_string(want.size()));
+      CHECK_EQ(name + " " + std::to_string(ops.size()), name + " " + std::to_string(want.size()));
+      for (size_t i = 0; i < ops.size(); i++) check_op(name, ops[i], want[i]);
     } else {
       std::string kind = "none";
       try {
-        decode(bytes);
+        weft::ops::read_all(bytes.data(), bytes.size());
       } catch (const weft::ops::Error &e) {
         kind = kind_name(e.kind());
       }

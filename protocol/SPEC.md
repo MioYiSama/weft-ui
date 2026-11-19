@@ -95,6 +95,13 @@ Decoding a batch fails with exactly one of five errors. Every reader uses the sa
 
 The shared corpus in [`protocol/corpus/`](corpus/) lists encoded batches with their decoded ops or error kinds, encoded values, and platform call frames. The readers, value encoders and frame codecs of every platform shell are tested against it.
 
+## Versioning
+
+- The protocol version is the integer `version` of [`weft.protocol.json`](weft.protocol.json), written as the first byte of every batch. Any change that an existing reader or kernel would misread (new opcodes, value tags, field layouts, or changed semantics of an op or event) increments it. Additions that old readers never receive do not.
+- Each native shell package (`@weft-ui/native-<target>`) records the protocol version it implements in `weft.protocol` of its `package.json`; `pnpm gen:protocol` writes it. Before a native build, `@weft-ui/vite` compares it with the protocol version of `@weft-ui/runtime`, which the compiled bundle speaks, and fails with both versions when they differ, so a mismatch never reaches a device.
+- All `@weft-ui/*` packages are released together with one version. Before 1.0, a minor release may break compatibility, and every protocol version change comes with a new minor release; patch releases never change the protocol. Use the same version of every `@weft-ui/*` package.
+- From 1.0 on, the range of compiler, runtime, kernel and shell versions that may be mixed within one major version is stated here (ROADMAP M6.6).
+
 ## Text form
 
 Debug dumps and golden files use one op per line, with strings and booleans written as JSON:

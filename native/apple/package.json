@@ -18,6 +18,7 @@
     "prepublishOnly": "node ../pack.mjs prepublishOnly apple"
   },
   "files": [
+    "CHANGELOG.md",
     "LICENSE-hermes",
     "Package.swift",
     "Sources",

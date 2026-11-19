@@ -1,6 +1,7 @@
 ---
 import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
+import { Image } from "astro:assets";
 import { Code } from "astro:components";
 import githubDark from "@shikijs/themes/github-dark-default";
 import githubLight from "@shikijs/themes/github-light-default";
@@ -8,6 +9,13 @@ import WeftMark from "./WeftMark.astro";
 import { landing, type Lang } from "../i18n/landing";
 import { langRedirect } from "../i18n/lang-redirect.mjs";
 import weft from "../weft.tmLanguage.json";
+import webShot from "../assets/screenshots/web.png";
+import wechatShot from "../assets/screenshots/wechat.png";
+import iosShot from "../assets/screenshots/ios.png";
+import macosShot from "../assets/screenshots/macos.png";
+import androidShot from "../assets/screenshots/android.png";
+import windowsShot from "../assets/screenshots/windows.png";
+import linuxShot from "../assets/screenshots/linux.png";
 
 interface Props {
   lang: Lang;
@@ -92,6 +100,19 @@ const platforms = [
   { id: "windows", view: "WinUI 3", engine: "Hermes", tool: "dotnet build", min: "10 1809" },
   { id: "linux", view: "GTK 4", engine: "Hermes", tool: "CMake", min: "GTK 4.10" },
 ];
+
+// Screenshots of example/ on each platform, in the order of `platforms`. Phones are
+// cropped to the top of the screen; desktop shots are 2x captures of the window.
+const shots = {
+  web: { name: "Web", kind: "browser", src: webShot },
+  wechat: { name: t.showcase.wechat, kind: "phone", src: wechatShot },
+  ios: { name: "iOS", kind: "phone", src: iosShot },
+  macos: { name: "macOS", kind: "window", src: macosShot },
+  android: { name: "Android", kind: "phone", src: androidShot },
+  windows: { name: "Windows", kind: "window", src: windowsShot },
+  linux: { name: "Linux", kind: "window", src: linuxShot },
+} as const;
+const slides = platforms.map((p) => ({ id: p.id, view: p.view, ...shots[p.id as keyof typeof shots] }));
 
 // Icons in the order of `t.features.items`.
 const icons = [
@@ -199,6 +220,76 @@ const github =
           </div>
         </div>
         <p class="caption">{t.caption[0]} <code>.weft</code>{lang === "en" ? "" : " "}{t.caption[1]}</p>
+      </section>
+
+      <section class="container section" data-carousel>
+        <div class="section-head">
+          <p class="eyebrow">{t.showcase.eyebrow}</p>
+          <h2>{t.showcase.heading}</h2>
+          <p class="sub">{t.showcase.sub}</p>
+        </div>
+        <div class="shot-tabs" role="tablist" aria-label={t.showcase.heading}>
+          {
+            slides.map((s, i) => (
+              <button
+                type="button"
+                role="tab"
+                class="shot-tab"
+                id={`shot-tab-${s.id}`}
+                aria-controls={`shot-${s.id}`}
+                aria-selected={i === 0 ? "true" : "false"}
+                tabindex={i === 0 ? 0 : -1}
+              >
+                <span class="shot-name">{s.name}</span>
+                <span class="shot-view">{s.view}</span>
+                <span class="shot-progress" aria-hidden="true" />
+              </button>
+            ))
+          }
+        </div>
+        <div class="stage">
+          <div class="stage-track" data-track>
+            {
+              slides.map((s, i) => (
+                <div
+                  class={`slide slide-${s.kind}`}
+                  role="tabpanel"
+                  id={`shot-${s.id}`}
+                  aria-labelledby={`shot-tab-${s.id}`}
+                  inert={i !== 0}
+                >
+                  <div class={`frame frame-${s.kind}`}>
+                    {s.kind === "browser" && (
+                      <div class="browser-bar" aria-hidden="true">
+                        <span class="browser-dot" />
+                        <span class="browser-dot" />
+                        <span class="browser-dot" />
+                        <span class="browser-url">localhost:5173</span>
+                      </div>
+                    )}
+                    <Image
+                      src={s.src}
+                      width={s.kind === "phone" ? 360 : Math.round(s.src.width / 2)}
+                      densities={[1, 2]}
+                      alt={`${t.showcase.alt[0]}${s.name}${t.showcase.alt[1]}`}
+                      loading="eager"
+                    />
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+          <button class="stage-button stage-prev" type="button" data-step="-1" aria-label={t.showcase.prev}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+          </button>
+          <button class="stage-button stage-next" type="button" data-step="1" aria-label={t.showcase.next}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+          </button>
+          <button class="stage-button stage-pause" type="button" data-pause data-label-pause={t.showcase.pause} data-label-play={t.showcase.play} aria-label={t.showcase.pause}>
+            <svg class="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+            <svg class="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z" /></svg>
+          </button>
+        </div>
       </section>
 
       <section class="container section">
@@ -332,6 +423,69 @@ const github =
       }
       light.addEventListener("change", apply);
       apply();
+
+      // Screenshot carousel. The active tab's progress bar is a CSS animation; when it ends, the
+      // next slide shows. Hover, keyboard focus, the pause button and leaving the viewport pause it.
+      const still = matchMedia("(prefers-reduced-motion: reduce)");
+      for (const root of document.querySelectorAll<HTMLElement>("[data-carousel]")) {
+        const track = root.querySelector<HTMLElement>("[data-track]")!;
+        const slides = Array.from(track.children) as HTMLElement[];
+        const list = root.querySelector<HTMLElement>('[role="tablist"]')!;
+        const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+        const pause = root.querySelector<HTMLButtonElement>("[data-pause]")!;
+        let index = 0;
+
+        const show = (next: number, scroll = true) => {
+          index = (next + slides.length) % slides.length;
+          tabs.forEach((tab, i) => {
+            tab.setAttribute("aria-selected", String(i === index));
+            tab.tabIndex = i === index ? 0 : -1;
+          });
+          slides.forEach((slide, i) => (slide.inert = i !== index));
+          const behavior = still.matches ? "auto" : "smooth";
+          if (scroll) track.scrollTo({ left: index * track.clientWidth, behavior });
+          // Narrow screens scroll the tab row; keep the active tab in it.
+          const tab = tabs[index];
+          if (list.scrollWidth > list.clientWidth) {
+            list.scrollTo({ left: tab.offsetLeft - (list.clientWidth - tab.offsetWidth) / 2, behavior });
+          }
+        };
+
+        const setPaused = (paused: boolean) => {
+          root.toggleAttribute("data-paused", paused);
+          pause.setAttribute("aria-label", paused ? pause.dataset.labelPlay! : pause.dataset.labelPause!);
+        };
+
+        tabs.forEach((tab, i) => {
+          tab.addEventListener("click", () => show(i));
+          tab.addEventListener("animationend", () => show(index + 1));
+          tab.addEventListener("keydown", (event) => {
+            const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+            const target = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : step && index + step;
+            if (target === undefined) return;
+            event.preventDefault();
+            show(target);
+            tabs[index].focus();
+          });
+        });
+        for (const button of root.querySelectorAll<HTMLButtonElement>("[data-step]")) {
+          button.addEventListener("click", () => show(index + Number(button.dataset.step)));
+        }
+        pause.addEventListener("click", () => setPaused(!root.hasAttribute("data-paused")));
+
+        // Swipes and trackpad scrolls snap to a slide; follow them once the scroll settles.
+        let settle: ReturnType<typeof setTimeout>;
+        track.addEventListener("scroll", () => {
+          clearTimeout(settle);
+          settle = setTimeout(() => {
+            const landed = Math.round(track.scrollLeft / track.clientWidth);
+            if (landed !== index) show(landed, false);
+          }, 100);
+        });
+
+        new IntersectionObserver(([entry]) => root.toggleAttribute("data-away", !entry.isIntersecting)).observe(root);
+        setPaused(still.matches);
+      }
     </script>
   </body>
 </html>
@@ -772,6 +926,278 @@ const github =
     color: var(--muted);
   }
 
+  /* Showcase carousel */
+  .shot-tabs {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+    overflow: hidden;
+  }
+
+  .shot-tab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 64px;
+    padding: 14px 16px;
+    border: 0;
+    background: var(--bg);
+    color: var(--muted);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s;
+  }
+
+  .shot-tab + .shot-tab {
+    border-left: 1px solid var(--border);
+  }
+
+  .shot-tab:hover {
+    background: var(--surface);
+    color: var(--fg);
+  }
+
+  .shot-tab[aria-selected="true"] {
+    background: var(--surface);
+    color: var(--fg);
+  }
+
+  .shot-tab:focus-visible {
+    outline: 2px solid #0070f3;
+    outline-offset: -2px;
+  }
+
+  .shot-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .shot-view {
+    font-size: 12px;
+    color: var(--subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .shot-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--fg);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .shot-tab[aria-selected="true"] .shot-progress {
+    animation: shot-progress 5s linear forwards;
+  }
+
+  [data-carousel]:is([data-paused], [data-away]) .shot-progress,
+  [data-carousel]:has(.stage:hover, .shot-tabs:hover, :focus-visible) .shot-progress {
+    animation-play-state: paused;
+  }
+
+  [data-carousel][data-paused] .shot-tab[aria-selected="true"] .shot-progress {
+    animation: none;
+    transform: scaleX(1);
+  }
+
+  @keyframes shot-progress {
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .stage {
+    position: relative;
+    height: 560px;
+    border: 1px solid var(--border);
+    border-radius: 0 0 14px 14px;
+    background:
+      radial-gradient(ellipse 60% 70% at 50% 100%, color-mix(in srgb, #0070f3 12%, transparent), transparent),
+      var(--surface);
+    overflow: hidden;
+  }
+
+  .stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-position: center;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 20%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .stage-track {
+    position: relative;
+    display: flex;
+    height: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .stage-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .slide {
+    display: flex;
+    flex: 0 0 100%;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 80px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .slide :global(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Phones rise from the bottom edge of the stage, cut below the content. */
+  .slide-phone {
+    align-items: flex-end;
+    padding-bottom: 0;
+  }
+
+  .frame-phone {
+    width: 380px;
+    max-width: 100%;
+    padding: 10px 10px 0;
+    border: 1px solid var(--border-strong);
+    border-bottom: 0;
+    border-radius: 52px 52px 0 0;
+    background: #0a0a0a;
+    box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.5);
+  }
+
+  .frame-phone :global(img) {
+    width: 100%;
+    border-radius: 42px 42px 0 0;
+  }
+
+  .frame-window :global(img) {
+    filter: drop-shadow(0 24px 40px rgb(0 0 0 / 0.28)) drop-shadow(0 0 1px rgb(0 0 0 / 0.4));
+  }
+
+  .frame-browser {
+    max-width: 100%;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.45);
+  }
+
+  .browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    border-bottom: 1px solid #e5e5e5;
+    background: #f5f5f5;
+  }
+
+  .browser-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #d4d4d4;
+  }
+
+  .browser-url {
+    flex: 1;
+    max-width: 240px;
+    margin: 0 auto;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: #fff;
+    font-family: "Geist Mono Variable", monospace;
+    font-size: 11px;
+    color: #707070;
+    text-align: center;
+  }
+
+  .stage-button {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border-strong);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
+    color: var(--muted);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition:
+      background 0.15s,
+      color 0.15s,
+      transform 0.15s;
+  }
+
+  .stage-button:hover {
+    background: var(--bg);
+    color: var(--fg);
+  }
+
+  .stage-button:active {
+    transform: scale(0.94);
+  }
+
+  .stage-button:focus-visible {
+    outline: 2px solid #0070f3;
+    outline-offset: 2px;
+  }
+
+  .stage-prev,
+  .stage-next {
+    top: 50%;
+    margin-top: -22px;
+  }
+
+  .stage-prev {
+    left: 20px;
+  }
+
+  .stage-next {
+    right: 20px;
+  }
+
+  .stage-pause {
+    right: 20px;
+    bottom: 20px;
+  }
+
+  .icon-play,
+  [data-paused] .icon-pause {
+    display: none;
+  }
+
+  [data-paused] .icon-play {
+    display: block;
+  }
+
   /* Platforms */
   .platforms {
     display: grid;
@@ -1004,6 +1430,18 @@ const github =
     .features {
       grid-template-columns: repeat(2, 1fr);
     }
+
+    .shot-tabs {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(124px, 1fr);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .shot-tabs::-webkit-scrollbar {
+      display: none;
+    }
   }
 
   @media (max-width: 640px) {
@@ -1020,6 +1458,32 @@ const github =
     .steps,
     .features {
       grid-template-columns: 1fr;
+    }
+
+    .stage {
+      height: 440px;
+    }
+
+    .slide {
+      padding: 32px 20px;
+    }
+
+    .slide-phone {
+      padding-bottom: 0;
+    }
+
+    .frame-phone {
+      width: 300px;
+    }
+
+    .stage-prev,
+    .stage-next {
+      display: none;
+    }
+
+    .stage-pause {
+      right: 12px;
+      bottom: 12px;
     }
 
     .footer-inner {

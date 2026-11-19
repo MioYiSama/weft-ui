@@ -20,6 +20,19 @@ export interface LandingStrings {
   start: string;
   copy: string;
   caption: [string, string];
+  showcase: {
+    eyebrow: string;
+    heading: string;
+    sub: string;
+    /** Name of the WeChat mini program platform. */
+    wechat: string;
+    /** Alt text of a screenshot, around the platform name. */
+    alt: [string, string];
+    prev: string;
+    next: string;
+    pause: string;
+    play: string;
+  };
   platforms: {
     eyebrow: string;
     heading: string;
@@ -52,6 +65,17 @@ export const landing: Record<Lang, LandingStrings> = {
     start: "开始阅读",
     copy: "复制命令",
     caption: ["视图声明在", "里，状态和业务逻辑留在 TypeScript。视图想改 model，只能发出事件。"],
+    showcase: {
+      eyebrow: "效果",
+      heading: "同一个应用，七个平台的原生界面",
+      sub: "仓库里的 example 应用，分别在七个平台上构建、运行并截图。.weft 文件和 TypeScript 逻辑完全相同，按钮、输入框和复选框都是各平台自己的控件。",
+      wechat: "微信小程序",
+      alt: ["示例应用在 ", " 上运行的截图"],
+      prev: "上一张",
+      next: "下一张",
+      pause: "暂停轮播",
+      play: "继续轮播",
+    },
     platforms: {
       eyebrow: "平台",
       heading: "七个平台，一种写法",
@@ -124,6 +148,17 @@ export const landing: Record<Lang, LandingStrings> = {
       "Views are declared in",
       "; state and business logic stay in TypeScript. A view changes the model only by sending events.",
     ],
+    showcase: {
+      eyebrow: "Showcase",
+      heading: "One app, native on all seven",
+      sub: "The repository's example app, built, run and captured on each platform. The .weft file and the TypeScript logic are identical; the buttons, inputs and checkboxes are each platform's own controls.",
+      wechat: "WeChat",
+      alt: ["The example app running on ", ""],
+      prev: "Previous screenshot",
+      next: "Next screenshot",
+      pause: "Pause the slideshow",
+      play: "Resume the slideshow",
+    },
     platforms: {
       eyebrow: "Platforms",
       heading: "Seven platforms, one way to write",

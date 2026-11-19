@@ -790,7 +790,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P3.1 共用缩进 writer | ☑ | clippy 0；快照与 C-apps 无差异 |
 | P3.2 Template 共享查询 | ☑ | clippy 0；快照与 C-apps 无差异 |
 | P3.3 共用 CSS 元数据 | ☑ | `rg` 仅命中 `style.rs`；clippy 0；快照与 C-apps 无差异，C-ts 通过 |
-| P3.4 DOM 与 remote 共用控制流 | ☐ | |
+| P3.4 DOM 与 remote 共用控制流 | ☑ | JS 控制流 `rg` 仅命中 `bridge/flow.rs`（全树另有 sema 同名函数，见下）；clippy 0；快照与 C-apps 无差异，C-ts 通过 |
 | P4.1 元素目录移出 sema | ☐ | |
 | P4.2 语义记录归属 sema | ☐ | |
 | P4.3 拆分 lower.rs | ☐ | |
@@ -815,3 +815,4 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 - [P2.5] C-android 通过，但编译未改动的 `CorpusTest.kt:15` 时，Kotlin 报告 Java 互操作的 `String?` 与 `String` 类型不匹配警告。结论：待定（不在 P2.5 范围内）
 - [P2.5] macOS 的拼音输入法会拦截 XCUITest 模拟的英文输入，导致文本框断言失败；临时切到 ABC 输入源后通过，测试结束后已恢复原输入源。结论：不处理（运行 macOS 点击测试时使用 ABC 输入源）
 - [P2.2] C-apps 仅 `js/index.js` 有差异：wechat 增加 23 字节，ios、macos、android、windows、linux 各增加 94 字节。Rolldown 保留了生成的 `WechatUnit`、`Opcode` 和 `ValueTag` 对象；对比语法树，在替换等值常量引用并忽略压缩后的标识符重命名后，其余结构、字面量和属性不变。已更新这六个文件的 W 工作树基线；结论：接受（运行时行为不变）
+- [P3.4] 对整个 transformer 按函数名搜索时，`sema/lower.rs` 中负责 AST 到 IR 转换的 `if_node`、`for_node` 也会命中；限定 `bridge` 和 `web` 后，JS 控制流生成函数只在 `bridge/flow.rs` 命中。结论：不处理（验收 rg 的范围过宽，sema 的同名函数与 JS 生成无关）

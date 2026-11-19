@@ -12,6 +12,7 @@
 
 pub(crate) mod blocks;
 pub(crate) mod expr;
+pub(crate) mod flow;
 mod host;
 pub(crate) mod js;
 pub(crate) mod remote;

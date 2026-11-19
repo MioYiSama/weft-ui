@@ -4,19 +4,17 @@
 //! update function that re-runs only the bindings whose dirty bits are set
 //! and walks into nested blocks only when bits they depend on are set.
 
-use std::fmt::Write;
+use std::fmt::{self, Display, Write};
 
 use crate::bridge::DomView;
 use crate::bridge::blocks::{
-    Consts, Ctx, Literal, Parts, arg_updates, arg_values, binding_cond, branch_index, handler_body,
-    instance_watches, lifecycle, lifecycle_handlers, literal, root_shape, walk_cond, words,
+    Consts, Ctx, Literal, Parts, binding_cond, handler_body, instance_watches, literal, words,
 };
 use crate::bridge::expr::{Env, expr};
+use crate::bridge::flow::{Backend, ComponentIr, Flow};
 use crate::bridge::js::{self, Code};
 use crate::color::Color;
-use crate::ir::{
-    Component, ComponentId, DepRoot, Element, NodeId, NodeKind, Program, Prop, PropValue,
-};
+use crate::ir::{Component, ComponentId, Element, NodeId, NodeKind, Program, Prop, PropValue};
 use crate::style::{COLUMN_STYLE, CssUnit, ROW_STYLE, css};
 
 /// The DOM [`DomView`].
@@ -41,14 +39,7 @@ fn component(program: &Program, id: ComponentId, consts: &mut Consts, out: &mut 
         words(comp.slots.len())
     ));
     instance_watches(program, comp, consts, out);
-    let mut generator = Gen {
-        program,
-        comp,
-        consts,
-    };
-    let mut body = Code::default();
-    generator.block(&comp.roots, &Ctx::default(), "c", &mut body);
-    out.append(body);
+    Flow::new(program, comp, consts, Gen).block(&comp.roots, &Ctx::default(), "c", out);
     out.line("return c;");
     out.close("}");
 }
@@ -128,63 +119,15 @@ fn apply(target: Target, node: &str, value: &str) -> String {
     }
 }
 
-struct Gen<'a> {
-    program: &'a Program,
-    comp: &'a Component,
-    consts: &'a mut Consts,
-}
+struct Gen;
 
-impl<'a> Gen<'a> {
-    fn node_kind(&self, id: NodeId) -> &'a NodeKind {
-        &self.comp.node(id).kind
-    }
-
-    fn is_element(&self, id: NodeId) -> bool {
-        matches!(self.node_kind(id), NodeKind::Element { .. })
-    }
-
-    /// Builds the nodes `roots` into the block object `var` (already declared).
-    fn block(&mut self, roots: &[NodeId], ctx: &Ctx, var: &str, out: &mut Code) {
-        // The first node must be stable: dynamic content is inserted before
-        // anchors, so a leading anchor gets a marker comment in front.
-        let marker = roots.first().is_none_or(|&r| !self.is_element(r));
-        let mut html = String::new();
-        if marker {
-            html.push_str("<!---->");
-        }
-        for &root in roots {
-            self.html(root, &mut html);
-        }
-        let template = self
-            .consts
-            .template(format!("$.template({})", js::string(&html)));
-        out.line(format!("const f = {template}();"));
-        self.refs(roots, "f", marker.then(|| "f.firstChild".to_owned()), out);
-
-        let mut parts = Parts::default();
-        for &root in roots {
-            self.node(root, ctx, &mut parts);
-        }
-        out.append(parts.create);
-        out.line(format!("{var}.init(f);"));
-        if !parts.update.is_empty() {
-            out.open(format!("{var}.u = () => {{"));
-            out.append(parts.update);
-            out.close("};");
-        }
-        if !parts.cleanup.is_empty() {
-            out.open(format!("{var}.x = () => {{"));
-            out.append(parts.cleanup);
-            out.close("};");
-        }
-    }
-
-    fn html(&self, id: NodeId, out: &mut String) {
+impl Gen {
+    fn html(comp: &Component, id: NodeId, out: &mut String) {
         let NodeKind::Element {
             element,
             props,
             children,
-        } = self.node_kind(id)
+        } = &comp.node(id).kind
         else {
             out.push_str("<!---->");
             return;
@@ -248,7 +191,7 @@ impl<'a> Gen<'a> {
             html_text(text, out);
         }
         for &child in children {
-            self.html(child, out);
+            Self::html(comp, child, out);
         }
         out.push_str("</");
         out.push_str(tag);
@@ -257,52 +200,67 @@ impl<'a> Gen<'a> {
 
     /// Declares `n{id}` for every template node of `nodes` and their element
     /// children.
-    fn refs(&self, nodes: &[NodeId], parent: &str, mut prev: Option<String>, out: &mut Code) {
+    fn refs(
+        comp: &Component,
+        nodes: &[NodeId],
+        parent: &str,
+        mut prev: Option<String>,
+        out: &mut Code,
+    ) {
         for &id in nodes {
             let name = format!("n{}", id.0);
-            let init = match &prev {
-                Some(prev) => format!("{prev}.nextSibling"),
-                None => format!("{parent}.firstChild"),
-            };
-            out.line(format!("const {name} = {init};"));
-            if let NodeKind::Element { children, .. } = self.node_kind(id)
+            match &prev {
+                Some(prev) => out.line(format!("const {name} = {prev}.nextSibling;")),
+                None => out.line(format!("const {name} = {parent}.firstChild;")),
+            }
+            if let NodeKind::Element { children, .. } = &comp.node(id).kind
                 && !children.is_empty()
             {
-                self.refs(children, &name, None, out);
+                Self::refs(comp, children, &name, None, out);
             }
             prev = Some(name);
         }
     }
+}
 
-    fn node(&mut self, id: NodeId, ctx: &Ctx, parts: &mut Parts) {
-        match self.node_kind(id) {
-            NodeKind::Element { .. } => self.element(id, ctx, parts),
-            NodeKind::If { .. } => self.if_node(id, ctx, parts),
-            NodeKind::For { .. } => self.for_node(id, ctx, parts),
-            NodeKind::Component { .. } => self.component_node(id, ctx, parts),
-            NodeKind::Slot { .. } => {
-                let (y, n) = (format!("y{}", id.0), format!("n{}", id.0));
-                parts.create.line(format!(
-                    "const {y} = c.children ? c.children.create() : null;"
-                ));
-                parts
-                    .create
-                    .line(format!("if ({y}) {y}.mount({n}.parentNode, {n});"));
-                parts.cleanup.line(format!("if ({y}) {y}.destroy(false);"));
-            }
+impl Backend for Gen {
+    fn start_block(&self, comp: &Component, roots: &[NodeId], consts: &mut Consts, out: &mut Code) {
+        // The first node must be stable: dynamic content is inserted before
+        // anchors, so a leading anchor gets a marker comment in front.
+        let marker = roots
+            .first()
+            .is_none_or(|&r| !matches!(comp.node(r).kind, NodeKind::Element { .. }));
+        let mut html = String::new();
+        if marker {
+            html.push_str("<!---->");
         }
+        for &root in roots {
+            Self::html(comp, root, &mut html);
+        }
+        let template = consts.template(format!("$.template({})", js::string(&html)));
+        out.line(format!("const f = {template}();"));
+        Self::refs(
+            comp,
+            roots,
+            "f",
+            marker.then(|| "f.firstChild".to_owned()),
+            out,
+        );
     }
 
-    fn element(&mut self, id: NodeId, ctx: &Ctx, parts: &mut Parts) {
-        let NodeKind::Element {
-            element,
-            props,
-            children,
-        } = self.node_kind(id)
-        else {
-            unreachable!("caller checked the node kind");
-        };
-        let element = *element;
+    fn init_block(&self, var: &str, out: &mut Code) {
+        out.line(format!("{var}.init(f);"));
+    }
+
+    fn element<'parent>(
+        &self,
+        ir: &ComponentIr<'_>,
+        id: NodeId,
+        parent: &'parent str,
+        element: Element,
+        props: &[Prop],
+        parts: &mut Parts,
+    ) -> &'parent str {
         let n = format!("n{}", id.0);
         let mut listened = false;
         for prop in props {
@@ -314,7 +272,7 @@ impl<'a> Gen<'a> {
                     let target = target(element, prop.name);
                     let value = expr(value, Env::default());
                     parts.create.line(apply(target, &n, &value));
-                    if let Some(cond) = binding_cond(self.comp, prop.binding) {
+                    if let Some(cond) = binding_cond(ir.comp, prop.binding) {
                         parts
                             .update
                             .line(format!("if ({cond}) {}", apply(target, &n, &value)));
@@ -323,7 +281,7 @@ impl<'a> Gen<'a> {
                 PropValue::Handler(_) if matches!(prop.name, "onMount" | "onUnmount") => {}
                 PropValue::Handler(handler) => {
                     listened = true;
-                    let body = handler_body(self.program, handler);
+                    let body = handler_body(ir.program, handler);
                     parts.create.line(match (element, prop.name) {
                         (Element::Input, "onChange") => {
                             format!("$.input({n}, ($a) => {{ {body} }});")
@@ -349,149 +307,33 @@ impl<'a> Gen<'a> {
                 _ => {}
             }
         }
-        for &child in children {
-            self.node(child, ctx, parts);
-        }
-        lifecycle(self.program, lifecycle_handlers(props), parts);
+        // The element DOM is in the template; dynamic children use their own anchors.
+        parent
     }
 
-    fn if_node(&mut self, id: NodeId, ctx: &Ctx, parts: &mut Parts) {
-        let NodeKind::If { branches, binding } = self.node_kind(id) else {
-            unreachable!("caller checked the node kind");
-        };
-        let (var, n) = (format!("i{}", id.0), format!("n{}", id.0));
-        let index = branch_index(branches);
-
-        let mut create = Code::default();
-        create.open(format!("const {var} = new $.Branches({n}, (i) => {{"));
-        create.open("switch (i) {");
-        let mut all_roots = Vec::new();
-        for (i, branch) in branches.iter().enumerate() {
-            create.open(format!("case {i}: {{"));
-            create.line("const b = new $.Block();");
-            self.block(&branch.children, ctx, "b", &mut create);
-            create.line("return b;");
-            create.close("}");
-            all_roots.extend_from_slice(&branch.children);
-        }
-        create.line("default:");
-        create.line("  return null;");
-        create.close("}");
-        create.close("});");
-        create.line(format!("{var}.set({index});"));
-        parts.create.append(create);
-
-        if let Some(cond) = binding_cond(self.comp, *binding) {
-            parts
-                .update
-                .line(format!("if ({cond}) {var}.set({index});"));
-        }
-        if let Some(cond) = walk_cond(self.comp, &all_roots, ctx) {
-            parts.update.line(format!("if ({cond}) {var}.update();"));
-        }
-        parts.cleanup.line(format!("{var}.destroy();"));
+    fn anchor<'parent>(&self, id: NodeId, _parent: &'parent str) -> impl Display + 'parent {
+        fmt::from_fn(move |f| write!(f, "n{}", id.0))
     }
 
-    fn for_node(&mut self, id: NodeId, ctx: &Ctx, parts: &mut Parts) {
-        let NodeKind::For {
-            loop_id,
-            list,
-            key,
-            children,
-            list_binding,
-            ..
-        } = self.node_kind(id)
-        else {
-            unreachable!("caller checked the node kind");
-        };
-        let loop_id = *loop_id;
-        let (var, n, row) = (
-            format!("l{}", id.0),
-            format!("n{}", id.0),
-            format!("r{}", loop_id.0),
-        );
-        let list = expr(list, Env::default());
-        let key = expr(
-            key,
-            Env {
-                key_loop: Some(loop_id),
-            },
-        );
-        let shape = root_shape(self.program, self.comp, self.consts, DepRoot::Item(loop_id));
-        let words = words(self.comp.loops[loop_id.index()].slots.len());
-
-        parts
-            .create
-            .open(format!("const {var} = new $.List({n}, (item) => {{"));
-        parts.create.line(format!(
-            "const {row} = new $.Row({words}, {}.depth + 1, {shape}, item);",
-            ctx.scope()
-        ));
-        let mut body = Code::default();
-        self.block(children, &ctx.with_loop(loop_id), &row, &mut body);
-        parts.create.append(body);
-        parts.create.line(format!("return {row};"));
-        parts.create.close(format!("}}, ($it) => {key});"));
-        parts.create.line(format!("{var}.set({list});"));
-
-        if let Some(cond) = binding_cond(self.comp, *list_binding) {
-            parts.update.line(format!("if ({cond}) {var}.set({list});"));
-        }
-        if let Some(cond) = walk_cond(self.comp, children, ctx) {
-            parts.update.line(format!("if ({cond}) {var}.update();"));
-        }
-        parts.cleanup.line(format!("{var}.destroy();"));
+    fn block_decl(&self, _id: NodeId, _index: usize, out: &mut Code) {
+        out.line("const b = new $.Block();");
     }
 
-    fn component_node(&mut self, id: NodeId, ctx: &Ctx, parts: &mut Parts) {
-        let NodeKind::Component {
-            component,
-            args,
-            props,
-            children,
-        } = self.node_kind(id)
-        else {
-            unreachable!("caller checked the node kind");
-        };
-        let callee = self.program.component(*component);
-        let (var, n) = (format!("k{}", id.0), format!("n{}", id.0));
+    fn row_args(&self, _id: NodeId) -> impl Display {
+        ""
+    }
 
-        let slot = if children.is_empty() {
-            "null".to_owned()
-        } else {
-            let slot = format!("s{}", id.0);
-            parts
-                .create
-                .open(format!("const {slot} = new $.Slot(() => {{"));
-            parts.create.line("const b = new $.Block();");
-            let mut body = Code::default();
-            self.block(children, ctx, "b", &mut body);
-            parts.create.append(body);
-            parts.create.line("return b;");
-            parts.create.close("});");
-            slot
-        };
+    fn mount<'args>(
+        &self,
+        id: NodeId,
+        _parent: &'args str,
+        child: &'args str,
+    ) -> impl Display + 'args {
+        fmt::from_fn(move |f| write!(f, "{child}.mount(n{0}.parentNode, n{0});", id.0))
+    }
 
-        parts.create.line(format!(
-            "const {var} = {}$c(c.app, [{}], {slot}, {}.depth + 1);",
-            callee.name,
-            arg_values(callee, args).join(", "),
-            ctx.scope()
-        ));
-        parts
-            .create
-            .line(format!("{var}.mount({n}.parentNode, {n});"));
-
-        arg_updates(self.comp, &var, args, &mut parts.update);
-        if !children.is_empty()
-            && let Some(cond) = walk_cond(self.comp, children, ctx)
-        {
-            parts
-                .update
-                .line(format!("if ({cond}) s{}.update();", id.0));
-        }
-        parts.cleanup.line(format!("{var}.destroy(false);"));
-        lifecycle(self.program, lifecycle_handlers(props), parts);
+    fn slot_destroy(&self) -> &'static str {
+        "destroy(false)"
     }
 }
 

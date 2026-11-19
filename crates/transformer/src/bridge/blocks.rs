@@ -147,9 +147,13 @@ pub fn binding_cond(comp: &Component, binding: Option<BindingId>) -> Option<Stri
 
 /// Bits of the view bindings in the subtrees of `roots` that are visible
 /// from `ctx`: the condition for walking into a nested block.
-pub fn walk_cond(comp: &Component, roots: &[NodeId], ctx: &Ctx) -> Option<String> {
+pub fn walk_cond(
+    comp: &Component,
+    roots: impl IntoIterator<Item = NodeId>,
+    ctx: &Ctx,
+) -> Option<String> {
     let mut bits = Vec::new();
-    for &root in roots {
+    for root in roots {
         subtree_bits(comp, root, &mut bits);
     }
     bits.retain(|&bit| ctx.sees(bit));

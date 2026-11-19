@@ -291,8 +291,8 @@ flowchart LR
 
 | 任务 | 状态 | 备注 |
 | --- | --- | --- |
-| B0 基线 | ◐ | clippy 0；tsc：vite 16、tests 59，其余 0；C-apps 基线已存；C-linux 通过 |
-| F1 `setInterval(fn, 0)` | ☐ | |
+| B0 基线 | ☑ | clippy 0；tsc：vite 16、tests 59，其余 0；C-apps 基线已存；C-core、C-apple、C-android、C-windows（`net10.0`）、C-linux 通过 |
+| F1 `setInterval(fn, 0)` | ☑ | 修复前 `count("zero") == 3` 失败（只执行 1 次）；C-core、C-windows 通过 |
 | F2 Apple、Linux 整批解码 | ☐ | |
 | F3 格式化器注释 | ☐ | |
 | F4 Linux 纹理缓存 | ☐ | |

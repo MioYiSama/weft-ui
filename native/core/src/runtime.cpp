@@ -51,8 +51,10 @@ struct Timer {
   Clock::time_point due;
   /// Arming order: breaks ties of `due`, and timers armed during a tick wait for the next one.
   uint64_t seq;
-  /// Period of an interval; zero for a timeout.
+  /// Period of an interval, which may be zero.
   Clock::duration period;
+  /// Interval rather than timeout.
+  bool repeat;
   std::shared_ptr<Callback> callback;
 };
 
@@ -210,8 +212,7 @@ jsi::Value arm(weft_runtime &rt, const jsi::Value *args, size_t count, bool repe
   for (size_t i = 2; i < count; i++) callback->args.emplace_back(js, args[i]);
   auto period = std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double, std::milli>(ms));
   uint32_t id = ++rt.last_timer;
-  rt.timers.emplace(id, Timer{Clock::now() + period, ++rt.seq, repeat ? period : Clock::duration::zero(),
-                              std::move(callback)});
+  rt.timers.emplace(id, Timer{Clock::now() + period, ++rt.seq, period, repeat, std::move(callback)});
   request(rt);
   return jsi::Value(double(id));
 }
@@ -387,9 +388,10 @@ void weft_runtime_tick(weft_runtime *rt) {
     }
     if (next == rt->timers.end()) break;
     auto callback = next->second.callback;
-    if (next->second.period == Clock::duration::zero()) {
+    if (!next->second.repeat) {
       rt->timers.erase(next);
     } else {
+      // A new arming order defers the repeat to the next tick, even with a zero period.
       next->second.due = now + next->second.period;
       next->second.seq = ++rt->seq;
     }

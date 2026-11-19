@@ -29,6 +29,9 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions.unitTests.all {
+        it.systemProperty("weft.corpus", file("../../protocol/corpus").absolutePath)
+    }
     sourceSets {
         named("main") {
             jniLibs.directories.add("build/jniLibs")
@@ -52,4 +55,5 @@ dependencies {
     api("androidx.compose.foundation:foundation:1.12.1")
     api("androidx.compose.material3:material3:1.4.0")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20260814")
 }

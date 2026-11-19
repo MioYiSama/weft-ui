@@ -1,8 +1,13 @@
 package dev.weft
 
+import java.nio.Buffer
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.charset.CharacterCodingException
+import java.nio.charset.CharsetDecoder
+import java.nio.charset.CodingErrorAction
+import java.nio.charset.StandardCharsets
 
 /** One view protocol op (docs/src/content/docs/protocol.md, "Ops"). */
 internal sealed interface Op {
@@ -25,20 +30,20 @@ internal sealed interface Op {
 }
 
 /** Why a batch of ops could not be decoded. */
-internal class OpException(message: String) : Exception(message)
+internal class OpException(val kind: String, message: String = kind) : Exception(message)
 
 /**
  * Decodes one batch of ops in the binary encoding (version 1). Reads [bytes]
- * from its position to its limit; strings are copied, so decoded ops outlive
- * the buffer.
+ * from its position to its limit; decoded ops outlive the buffer.
  */
 internal class OpReader(bytes: ByteBuffer) {
     private val bytes: ByteBuffer = bytes.slice().order(ByteOrder.LITTLE_ENDIAN)
+    private var utf8Decoder: CharsetDecoder? = null
 
     init {
         if (!this.bytes.hasRemaining()) throw OpException("truncated")
         val version = this.bytes.get().toInt() and 0xff
-        if (version != VERSION) throw OpException("version $version")
+        if (version != VERSION) throw OpException("version", "version $version")
     }
 
     /** The next op, or null at the end of the batch. */
@@ -57,7 +62,7 @@ internal class OpReader(bytes: ByteBuffer) {
                     Op.Rows(scope, point, IntArray(count.toInt()) { u32() })
                 }
                 5 -> Op.Attach(u32(), u32(), u32())
-                else -> throw OpException("opcode $opcode")
+                else -> throw OpException("opcode", "opcode $opcode")
             }
         } catch (_: BufferUnderflowException) {
             throw OpException("truncated")
@@ -73,14 +78,31 @@ internal class OpReader(bytes: ByteBuffer) {
         0 -> WeftValue.Bool(false)
         1 -> WeftValue.Bool(true)
         2 -> WeftValue.Number(bytes.double)
-        3 -> {
-            val length = bytes.int.toUInt().toLong()
-            if (length > bytes.remaining()) throw OpException("truncated")
-            val utf8 = ByteArray(length.toInt())
-            bytes.get(utf8)
-            WeftValue.Text(utf8.decodeToString())
+        3 -> WeftValue.Text(text())
+        else -> throw OpException("tag", "tag $tag")
+    }
+
+    private fun text(): String {
+        val length = bytes.int.toUInt().toLong()
+        if (length > bytes.remaining()) throw OpException("truncated")
+        if (length == 0L) return ""
+
+        val decoder = utf8Decoder ?: StandardCharsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+            .also { utf8Decoder = it }
+        // Bound decoding to the string without copying its bytes. Use Buffer's
+        // limit setter for Android versions that lack the covariant override.
+        val buffer: Buffer = bytes
+        val limit = buffer.limit()
+        buffer.limit(buffer.position() + length.toInt())
+        try {
+            return decoder.decode(bytes).toString()
+        } catch (_: CharacterCodingException) {
+            throw OpException("utf8", "invalid UTF-8")
+        } finally {
+            buffer.limit(limit)
         }
-        else -> throw OpException("tag $tag")
     }
 
     companion object {

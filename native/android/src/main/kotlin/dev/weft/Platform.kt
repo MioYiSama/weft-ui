@@ -87,7 +87,7 @@ internal class PlatformModules(context: Context) {
         private val background: ExecutorService = Executors.newCachedThreadPool()
 
         /** Splits `u32 head length (LE) | head (UTF-8 JSON) | body`. */
-        private fun unframe(data: ByteArray): Pair<JSONObject, ByteArray> {
+        internal fun unframe(data: ByteArray): Pair<JSONObject, ByteArray> {
             if (data.size < 4) throw PlatformFailure("weft: truncated frame")
             val length = (0 until 4).fold(0L) { acc, i -> acc or ((data[i].toLong() and 0xff) shl (8 * i)) }
             if (length > data.size - 4) throw PlatformFailure("weft: invalid frame head")
@@ -95,7 +95,7 @@ internal class PlatformModules(context: Context) {
             return head to data.copyOfRange(4 + length.toInt(), data.size)
         }
 
-        private fun frame(head: JSONObject, body: ByteArray): ByteArray {
+        internal fun frame(head: JSONObject, body: ByteArray): ByteArray {
             val json = head.toString().encodeToByteArray()
             val out = ByteArray(4 + json.size + body.size)
             for (i in 0 until 4) out[i] = (json.size ushr (8 * i)).toByte()

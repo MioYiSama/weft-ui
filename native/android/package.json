@@ -12,6 +12,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "scripts": {
+    "prepack": "node ../pack.mjs prepack android",
+    "postpack": "node ../pack.mjs postpack android"
+  },
   "files": [
     "build.gradle.kts",
     "consumer-rules.pro",

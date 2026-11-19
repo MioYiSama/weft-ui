@@ -1,0 +1,23 @@
+{
+  "name": "@weft-ui/native-linux",
+  "version": "0.1.0",
+  "description": "Weft UI native shell and prebuilt kernel for Linux",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/MioYiSama/weft-ui",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MioYiSama/weft-ui.git",
+    "directory": "native/linux"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "CMakeLists.txt",
+    "include",
+    "src",
+    "build/linux-x64/libweft_core.so",
+    "build/linux-arm64/libweft_core.so",
+    "build/linux-arm64/bin/hermesc"
+  ]
+}

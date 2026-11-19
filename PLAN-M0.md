@@ -298,7 +298,7 @@ flowchart LR
 | F4 Linux 纹理缓存 | ☑ | 淘汰测试修复前失败；C-linux（含 `linux.textures`）、C-ui Linux 通过 |
 | F5 中文侧边栏链接 | ☑ | 文档构建通过；6 个中文侧边栏均链接中文版，英文页面无中文版链接 |
 | F6 compiler 注释 | ☑ | 只改注释；compiler 包构建与 tsc 通过 |
-| N.1 native 包 | ☐ | |
+| N.1 native 包 | ☑ | 4 个 pack 清单符合白名单；SwiftPM 可解析无测试的包；C-apple、C-android、C-apps 通过 |
 | N.2 Linux 壳内置 core | ☐ | |
 | N.3 模块解析定位壳 | ☐ | |
 | N.4 hermesc 随 native 包 | ☐ | |

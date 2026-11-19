@@ -4,7 +4,14 @@
 // protocol ops to the scopes of the SwiftUI views that weft_ui_transformer::swiftui
 // generates, and implements the platform modules.
 
+import Foundation
 import PackageDescription
+
+let shellDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+let testDirectory = shellDirectory.appendingPathComponent("Tests/WeftKitTests")
+let testTargets: [Target] = FileManager.default.fileExists(atPath: testDirectory.path)
+    ? [.testTarget(name: "WeftKitTests", dependencies: ["WeftKit"])]
+    : []
 
 let package = Package(
     name: "WeftKit",
@@ -16,6 +23,5 @@ let package = Package(
     targets: [
         .binaryTarget(name: "WeftCore", path: "build/WeftCore.xcframework"),
         .target(name: "WeftKit", dependencies: ["WeftCore"]),
-        .testTarget(name: "WeftKitTests", dependencies: ["WeftKit"]),
-    ]
+    ] + testTargets
 )

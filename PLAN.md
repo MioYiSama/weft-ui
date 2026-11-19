@@ -794,7 +794,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P4.1 元素目录移出 sema | ☑ | `rg` 通过；clippy 0；快照不变 |
 | P4.2 语义记录归属 sema | ☑ | sema 不引用 ide；clippy 0；测试目录无改动 |
 | P4.3 拆分 lower.rs | ☑ | 5 个文件，最长 542 行；clippy 0；快照不变 |
-| P4.4 拆分 view.rs | ☐ | |
+| P4.4 拆分 view.rs | ☑ | layout 快照、hash 与 C-apps 无差异；clippy 0 |
 | P4.5 收窄公开 API | ☐ | |
 | P5.1 原生平台适配器 | ☑ | C-ts 通过（vite 16），C-apps 无差异 |
 | P5.2 集中解析原生壳路径 | ☑ | C-ts 通过（vite 16），C-apps 无差异 |

@@ -321,7 +321,7 @@ flowchart LR
 
 - [F4] Linux 内核增量构建再次触发 PLAN.md P0.1 记录的 Ninja dyndep 断言，删除内核构建目录中的 `CMakeFiles/weft_core.dir` 后 C-linux 通过；结论：不处理（本地构建目录状态问题）
 
-- [F5] 中文「工具链」指南的页底「下一页」仍链接英文语法；结论：不处理（Starlight 单独生成分页链接，F5 只修正侧边栏）。
+- [F5] 中文「工具链」指南的页底「下一页」仍链接英文语法；结论：已修复（路由中间件同样改写 `pagination.prev`/`next`，提交 `docs: localize the specification links of the Chinese pagination`）。
 - [F5] 文档构建在修复前后均提示 `i18n` 集合缺失或为空、`404` 文档条目缺失；结论：不处理（已有警告，不影响构建及侧边栏验收）。
 - [N.2] 重建 Linux 容器后，内核 CMake 缓存指向的 `/hermes-src` 不再存在；重新指向工作区中已有的 Hermes 源码后 C-linux 通过；结论：不处理（同 PLAN.md P0.1，仅限本地缓存）。
 - [T2] B0 的 `tests` tsc 基线为 59，但未传 `--runExternalCode`，TypeScript 不会加载 `.weft` content mapper；C-ts 仅对 `tests` 启用该参数后，既有错误 56 个、Gallery 新增 0 个。剩余错误来自既有 fixture 和 native driver 的类型导入路径；结论：不处理这些既有错误，C-ts 与 W1 按启用 mapper 后的 56 个错误作基线。

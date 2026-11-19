@@ -392,14 +392,14 @@ export function px(value: number): string {
   return `${value}px`;
 }
 
-const COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
 /**
  * Dynamic value of a `Color` property: `#RGB`, `#RRGGBB` or `#RRGGBBAA`.
  * Anything else renders transparent, with a warning in dev builds.
  */
 export function color(value: string): string {
-  if (COLOR.test(value)) return value;
+  if (HEX_COLOR.test(value)) return value;
   // Vite replaces `import.meta.env` statically, so it must be read in place; it is absent outside Vite.
   if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
     console.warn(`weft: invalid color ${JSON.stringify(value)}, expected #RGB, #RRGGBB or #RRGGBBAA`);

@@ -1,8 +1,9 @@
+import type { PlatformModule } from "@weft-ui/runtime/protocol";
 import { PlatformError } from "./error.ts";
-import type { Api, App, RequestInit, Response } from "./index.d.ts";
+import type { App, RequestInit, Response } from "./index.d.ts";
 
 export { PlatformError } from "./error.ts";
-export type { Api, App, Platform, RequestInit, Response } from "./index.d.ts";
+export type { App, RequestInit, Response } from "./index.d.ts";
 
 function localStorage(): Storage | null {
   try {
@@ -48,6 +49,6 @@ export const storage = {
 export const platform = { os: "web", version: navigator.userAgent } as const;
 
 /** Checks whether the browser currently exposes the requested capability. */
-export function isSupported(api: Api): boolean {
+export function isSupported(api: PlatformModule): boolean {
   return api === "fetch" ? typeof globalThis.fetch === "function" : localStorage() !== null;
 }

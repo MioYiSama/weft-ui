@@ -1,5 +1,8 @@
 import { readFileSync } from "node:fs";
+import type { Platform } from "@weft-ui/runtime/protocol";
 import type * as WasmCompiler from "../wasm/weft_ui_wasm.js";
+
+export type { Platform } from "@weft-ui/runtime/protocol";
 
 let compiler: Promise<typeof WasmCompiler> | undefined;
 
@@ -18,9 +21,6 @@ function loadCompiler() {
   })();
   return compiler;
 }
-
-/** Target platform; matches `WEFT_PLATFORM`. */
-export type Platform = "web" | "wechat" | "ios" | "macos" | "android" | "windows" | "linux";
 
 /** Generated JS logic module of one `.weft` file. */
 export interface LogicModule {

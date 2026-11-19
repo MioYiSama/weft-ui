@@ -13,6 +13,7 @@
  */
 
 import { color } from "./core.ts";
+import { WechatUnit } from "./protocol.ts";
 import type { Session, Sink, Value } from "./remote.ts";
 
 type Data = Record<string, unknown>;
@@ -25,7 +26,7 @@ export interface TemplateKeys {
   t?: string;
   /** Branch index of an `if` branch template. */
   i?: number;
-  /** `[key, unit]` per value slot: unit `1` appends `px`, `2` maps a flag to `font-weight`. */
+  /** `[key, unit]` per value slot: `1` appends `px`, `2` maps a flag to `font-weight`, `3` converts a color. */
   v?: [string, number][];
   /** `[key, controlled value slot or -1]` per event slot. */
   e?: [string, number][];
@@ -68,10 +69,6 @@ interface Scope {
   /** Handler ids of the scope's event slots. */
   hs: number[];
 }
-
-const PX = 1;
-const BOLD = 2;
-const COLOR = 3;
 
 /** Renders one app into a view component through `setData`. */
 export class WechatSink implements Sink {
@@ -135,9 +132,9 @@ export class WechatSink implements Sink {
   set(id: number, slot: number, value: Value): void {
     const scope = this.#scope(id);
     const [key, unit] = scope.keys.v![slot];
-    scope.o[key] = unit === PX ? `${value}px`
-      : unit === BOLD ? (value ? "bold" : "normal")
-      : unit === COLOR ? color(value as string)
+    scope.o[key] = unit === WechatUnit.Px ? `${value}px`
+      : unit === WechatUnit.Bold ? (value ? "bold" : "normal")
+      : unit === WechatUnit.Color ? color(value as string)
       : value;
     if (!scope.fresh) this.#pend(scope, key);
   }

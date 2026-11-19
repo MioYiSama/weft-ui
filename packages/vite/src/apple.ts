@@ -3,10 +3,7 @@ import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import type { Platform } from "@weft-ui/compiler";
-
-/** Platforms whose views are the SwiftUI of `weft_ui_transformer::swiftui`, built against WeftKit. */
-export const APPLE: readonly Platform[] = ["ios", "macos"];
+import type { Platform } from "@weft-ui/runtime/protocol";
 
 /**
  * WeftKit, the Swift package of the Apple shell (`native/apple`), taken

@@ -1,19 +1,15 @@
-/** Platforms recognized by Weft; availability depends on the selected build target. */
-export type Platform = "web" | "wechat" | "ios" | "macos" | "android" | "windows" | "linux";
+import type { Platform, PlatformModule } from "@weft-ui/runtime/protocol";
 
 declare global {
   /** The platform being built, defined by `@weft-ui/vite` in every environment. */
   const __WEFT_PLATFORM__: Platform;
 }
 
-/** Optional platform capabilities. */
-export type Api = "fetch" | "storage";
-
 /** An API unavailable on the current platform. Async APIs reject with this error. */
 export class PlatformError extends Error {
   /** The unsupported capability. */
-  readonly api: Api;
-  constructor(api: Api, os: Platform);
+  readonly api: PlatformModule;
+  constructor(api: PlatformModule, os: Platform);
 }
 
 /** The lifecycle shared by generated root components on every platform. */
@@ -68,4 +64,4 @@ export const storage: {
 export const platform: { readonly os: Platform; readonly version: string };
 
 /** Reports current host capability availability, without invoking the API. */
-export function isSupported(api: Api): boolean;
+export function isSupported(api: PlatformModule): boolean;

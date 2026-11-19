@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@weft-ui/compiler": "workspace:*",
+    "@weft-ui/runtime": "workspace:*",
     "hermes-compiler": "260318099.0.8"
   },
   "peerDependencies": {
@@ -20,7 +21,6 @@
     "@types/node": "^26.6.6",
     "@weft-ui/content-mapper": "workspace:*",
     "@weft-ui/platform": "workspace:*",
-    "@weft-ui/runtime": "workspace:*",
     "happy-dom": "^21.0.4",
     "typescript": "7.1.0-beta",
     "vite": "^8.3.8",

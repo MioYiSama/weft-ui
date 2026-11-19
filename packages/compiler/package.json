@@ -9,6 +9,9 @@
   "scripts": {
     "build:wasm": "cargo build -p weft-ui-wasm --release --target wasm32-unknown-unknown && wasm-bindgen --target web --out-dir wasm --out-name weft_ui_wasm ../../target/wasm32-unknown-unknown/release/weft_ui_wasm.wasm"
   },
+  "dependencies": {
+    "@weft-ui/runtime": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "typescript": "^7.0.2"

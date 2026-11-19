@@ -6,12 +6,13 @@
  */
 
 import { NativeSink, kernel } from "@weft-ui/runtime/native";
+import type { PlatformModule } from "@weft-ui/runtime/protocol";
 import { PlatformError } from "./error.ts";
 import { frame, unframe } from "./frame.ts";
-import type { Api, App, RequestInit, Response } from "./index.d.ts";
+import type { App, RequestInit, Response } from "./index.d.ts";
 
 export { PlatformError } from "./error.ts";
-export type { Api, App, Platform, RequestInit, Response } from "./index.d.ts";
+export type { App, RequestInit, Response } from "./index.d.ts";
 
 const os = __WEFT_PLATFORM__;
 const decoder = new TextDecoder();
@@ -64,6 +65,6 @@ export const platform = {
 };
 
 /** Whether the shell implements the API's platform module. */
-export function isSupported(api: Api): boolean {
+export function isSupported(api: PlatformModule): boolean {
   return globalThis.__weft?.supports(api) ?? false;
 }

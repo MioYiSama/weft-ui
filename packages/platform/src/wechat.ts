@@ -1,9 +1,10 @@
+import type { PlatformModule } from "@weft-ui/runtime/protocol";
 import { view } from "@weft-ui/runtime/wechat";
 import { PlatformError } from "./error.ts";
-import type { Api, App as WeftApp, RequestInit, Response } from "./index.d.ts";
+import type { App as WeftApp, RequestInit, Response } from "./index.d.ts";
 
 export { PlatformError } from "./error.ts";
-export type { Api, App, Platform, RequestInit, Response } from "./index.d.ts";
+export type { App, RequestInit, Response } from "./index.d.ts";
 
 interface Failure {
   errMsg: string;
@@ -175,7 +176,7 @@ export const platform = {
 } as const;
 
 /** Checks whether all host functions for the requested capability exist. */
-export function isSupported(api: Api): boolean {
+export function isSupported(api: PlatformModule): boolean {
   if (typeof wx === "undefined") return false;
   return api === "fetch"
     ? typeof wx.request === "function"

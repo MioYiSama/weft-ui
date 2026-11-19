@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, readdir, rename, rm, stat, symlink, writeFile
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { PLATFORMS } from "@weft-ui/runtime/protocol";
 import weft, { type WeftOptions } from "@weft-ui/vite";
 import { Window } from "happy-dom";
 import { createBuilder } from "vite";
@@ -82,7 +83,11 @@ async function build(platform: string | undefined, options: WeftOptions = {}) {
       root,
       configFile: false,
       logLevel: "silent",
-      plugins: [weft({ platforms: ["web", "wechat"], app: { id: "com.example.test", name: "Test \"App\"" }, ...options })],
+      plugins: [weft({
+        platforms: PLATFORMS.filter((platform) => platform === "web" || platform === "wechat"),
+        app: { id: "com.example.test", name: "Test \"App\"" },
+        ...options,
+      })],
     });
     await builder.buildApp();
   } finally {

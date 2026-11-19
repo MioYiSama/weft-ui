@@ -4,30 +4,17 @@
  * files.
  */
 
+import { VERSION, Opcode, ValueTag, type OpErrorKind } from "./protocol.ts";
 import type { Ops, Value } from "./remote.ts";
-
-/** Protocol version written as the first byte of every batch. */
-export const VERSION = 1;
-
-const CREATE = 1;
-const SET = 2;
-const BRANCH = 3;
-const ROWS = 4;
-const ATTACH = 5;
-
-const FALSE = 0;
-const TRUE = 1;
-const NUMBER = 2;
-const STRING = 3;
 
 /**
  * A batch that failed to decode; `kind` is one of the error kinds of
  * docs/src/content/docs/protocol.md ("Decoding errors").
  */
 export class OpsError extends Error {
-  readonly kind: "truncated" | "version" | "opcode" | "tag" | "utf8";
+  readonly kind: OpErrorKind;
 
-  constructor(kind: OpsError["kind"], message: string) {
+  constructor(kind: OpErrorKind, message: string) {
     super(message);
     this.name = "OpsError";
     this.kind = kind;
@@ -66,7 +53,7 @@ export class OpWriter implements Ops {
   }
 
   create(scope: number, template: number): void {
-    this.#op(CREATE, 8);
+    this.#op(Opcode.Create, 8);
     this.#u32(scope);
     this.#u32(template);
   }
@@ -74,38 +61,38 @@ export class OpWriter implements Ops {
   set(scope: number, slot: number, value: Value): void {
     if (typeof value === "string") {
       // UTF-8 needs at most three bytes per UTF-16 code unit.
-      this.#op(SET, 13 + value.length * 3);
+      this.#op(Opcode.Set, 13 + value.length * 3);
       this.#u32(scope);
       this.#u32(slot);
-      this.#bytes[this.#length++] = STRING;
+      this.#bytes[this.#length++] = ValueTag.String;
       const start = this.#length + 4;
       const { written } = this.#encoder.encodeInto(value, this.#bytes.subarray(start));
       this.#u32(written);
       this.#length += written;
     } else if (typeof value === "number") {
-      this.#op(SET, 17);
+      this.#op(Opcode.Set, 17);
       this.#u32(scope);
       this.#u32(slot);
-      this.#bytes[this.#length++] = NUMBER;
+      this.#bytes[this.#length++] = ValueTag.Number;
       this.#view.setFloat64(this.#length, value, true);
       this.#length += 8;
     } else {
-      this.#op(SET, 9);
+      this.#op(Opcode.Set, 9);
       this.#u32(scope);
       this.#u32(slot);
-      this.#bytes[this.#length++] = value ? TRUE : FALSE;
+      this.#bytes[this.#length++] = value ? ValueTag.True : ValueTag.False;
     }
   }
 
   branch(scope: number, point: number, child: number): void {
-    this.#op(BRANCH, 12);
+    this.#op(Opcode.Branch, 12);
     this.#u32(scope);
     this.#u32(point);
     this.#u32(child);
   }
 
   rows(scope: number, point: number, children: readonly number[]): void {
-    this.#op(ROWS, 12 + children.length * 4);
+    this.#op(Opcode.Rows, 12 + children.length * 4);
     this.#u32(scope);
     this.#u32(point);
     this.#u32(children.length);
@@ -113,7 +100,7 @@ export class OpWriter implements Ops {
   }
 
   attach(scope: number, point: number, child: number): void {
-    this.#op(ATTACH, 12);
+    this.#op(Opcode.Attach, 12);
     this.#u32(scope);
     this.#u32(point);
     this.#u32(child);
@@ -170,21 +157,21 @@ export function decode(batch: Uint8Array): Op[] {
   while (at < batch.length) {
     const code = u8();
     switch (code) {
-      case CREATE:
+      case Opcode.Create:
         ops.push({ op: "create", scope: u32(), template: u32() });
         break;
-      case SET: {
+      case Opcode.Set: {
         const scope = u32();
         const slot = u32();
         const tag = u8();
         let value: Value;
-        if (tag === FALSE || tag === TRUE) {
-          value = tag === TRUE;
-        } else if (tag === NUMBER) {
+        if (tag === ValueTag.False || tag === ValueTag.True) {
+          value = tag === ValueTag.True;
+        } else if (tag === ValueTag.Number) {
           need(8);
           value = view.getFloat64(at, true);
           at += 8;
-        } else if (tag === STRING) {
+        } else if (tag === ValueTag.String) {
           const length = u32();
           need(length);
           try {
@@ -199,10 +186,10 @@ export function decode(batch: Uint8Array): Op[] {
         ops.push({ op: "set", scope, slot, value });
         break;
       }
-      case BRANCH:
+      case Opcode.Branch:
         ops.push({ op: "branch", scope: u32(), point: u32(), child: u32() });
         break;
-      case ROWS: {
+      case Opcode.Rows: {
         const scope = u32();
         const point = u32();
         const count = u32();
@@ -211,7 +198,7 @@ export function decode(batch: Uint8Array): Op[] {
         ops.push({ op: "rows", scope, point, children });
         break;
       }
-      case ATTACH:
+      case Opcode.Attach:
         ops.push({ op: "attach", scope: u32(), point: u32(), child: u32() });
         break;
       default:

@@ -782,7 +782,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P1.7 C# 严格 UTF-8、opcode 优先与样例 | ☑ | |
 | P1.8 Linux 帧测试 | ☑ | |
 | P2.1 Schema、生成器与漂移检查 | ☑ | |
-| P2.2 TS 消费方 | ☐ | |
+| P2.2 TS 消费方 | ☑ | C-apps 的 WeChat 和原生 JS 常量表示有差异，见执行中发现 |
 | P2.3 Rust 消费方 | ☐ | |
 | P2.4 C++ 与 Linux 消费方 | ☑ | rg、C-core、C-windows、C-linux（含 `linux.frames`）通过 |
 | P2.5 Swift、Kotlin、C# 消费方 | ☑ | rg、C-apple、C-android、C-windows、五平台 C-ui 通过 |
@@ -814,3 +814,4 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 - [P1.8] 换用 `pnpm_config_store_dir` 后，容器里非交互的 `pnpm install` 需要重建已有的 node_modules，必须设 `CI=true` 才不会中止。C-linux 的命令需要同时传这两个环境变量。结论：待定（与 P0.1 的 pnpm 11 问题一起处理）
 - [P2.5] C-android 通过，但编译未改动的 `CorpusTest.kt:15` 时，Kotlin 报告 Java 互操作的 `String?` 与 `String` 类型不匹配警告。结论：待定（不在 P2.5 范围内）
 - [P2.5] macOS 的拼音输入法会拦截 XCUITest 模拟的英文输入，导致文本框断言失败；临时切到 ABC 输入源后通过，测试结束后已恢复原输入源。结论：不处理（运行 macOS 点击测试时使用 ABC 输入源）
+- [P2.2] C-apps 仅 `js/index.js` 有差异：wechat 增加 23 字节，ios、macos、android、windows、linux 各增加 94 字节。Rolldown 保留了生成的 `WechatUnit`、`Opcode` 和 `ValueTag` 对象；对比语法树，在替换等值常量引用并忽略压缩后的标识符重命名后，其余结构、字面量和属性不变。已更新这六个文件的 W 工作树基线；结论：接受（运行时行为不变）

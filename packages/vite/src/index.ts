@@ -2,15 +2,13 @@ import { cpSync, existsSync, globSync, mkdirSync, readFileSync, readdirSync, rea
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultServerConditions } from "vite";
-import { type AppResult, type Platform, compileApp } from "@weft-ui/compiler";
+import { type AppResult, compileApp } from "@weft-ui/compiler";
+import { APPLE_PLATFORMS, NATIVE_PLATFORMS, PLATFORMS, type Platform } from "@weft-ui/runtime/protocol";
 import { BUNDLE_ASSET, WEFT_ANDROID, gradleBuild, moduleBuild, settingsFragment } from "./android.ts";
-import { APPLE, WEFT_KIT, packageManifest, xcodebuild } from "./apple.ts";
-import { HERMES_TARGET, NATIVE, compileBytecode } from "./native.ts";
+import { WEFT_KIT, packageManifest, xcodebuild } from "./apple.ts";
+import { HERMES_TARGET, compileBytecode } from "./native.ts";
 import { WEFT_LINUX, cmakeBuild, cmakeLists } from "./linux.ts";
 import { WEFT_WINUI, dotnetBuild, targets } from "./windows.ts";
-
-/** Every target platform. */
-export const PLATFORMS: readonly Platform[] = ["web", "wechat", "ios", "macos", "android", "windows", "linux"];
 
 /** Options of the Weft Vite plugin. */
 export interface WeftOptions {
@@ -185,7 +183,7 @@ function writeGenerated(generated: string, result: AppResult) {
  * the Web.
  */
 export default function weft(options: WeftOptions = {}): Plugin {
-  const configured = options.platforms ?? [...PLATFORMS];
+  const configured = options.platforms ?? PLATFORMS;
   const include = options.include ?? "src/**/*.weft";
   let root = process.cwd();
   let appsDir: string;
@@ -223,7 +221,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
         };
       }
       // Platform apps run in a browser, a mini program logic layer or Hermes: never a server.
-      const native = NATIVE.includes(platform);
+      const native = (NATIVE_PLATFORMS as readonly Platform[]).includes(platform);
       const environment: EnvironmentOptions = {
         consumer: "client",
         resolve: {
@@ -301,7 +299,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
         name: options.app?.name ?? basename(root),
       });
       writeGenerated(generated, app);
-      if (!NATIVE.includes(platform)) return;
+      if (!(NATIVE_PLATFORMS as readonly Platform[]).includes(platform)) return;
       const projectPath = relative(root, project).replaceAll("\\", "/") || ".";
       // The Android module packages the bytecode as an asset.
       const bytecode = join(generated, platform === "android" ? BUNDLE_ASSET : "bundle.hbc");
@@ -316,7 +314,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
         return;
       }
       const release = this.environment.config.mode === "release";
-      if (APPLE.includes(platform)) {
+      if ((APPLE_PLATFORMS as readonly Platform[]).includes(platform)) {
         writeFileSync(join(generated, "Package.swift"), packageManifest(WEFT_KIT));
         if (process.env.WEFT_NATIVE === "0") return;
         if (process.platform !== "darwin") {

@@ -3,11 +3,7 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
-import type { Platform } from "@weft-ui/compiler";
 import { WEFT_LINUX } from "./linux.ts";
-
-/** Platforms whose logic runs in the native kernel (`native/core`). */
-export const NATIVE: readonly Platform[] = ["ios", "macos", "android", "windows", "linux"];
 
 /**
  * Syntax the bundle keeps for Hermes; newer syntax is lowered by Vite.

@@ -49,6 +49,10 @@ importers:
         version: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)
 
   packages/compiler:
+    dependencies:
+      '@weft-ui/runtime':
+        specifier: workspace:*
+        version: link:../runtime
     devDependencies:
       '@types/node':
         specifier: ^26.6.6
@@ -100,6 +104,9 @@ importers:
       '@weft-ui/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@weft-ui/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       hermes-compiler:
         specifier: 260318099.0.8
         version: 260318099.0.8
@@ -113,9 +120,6 @@ importers:
       '@weft-ui/platform':
         specifier: workspace:*
         version: link:../platform
-      '@weft-ui/runtime':
-        specifier: workspace:*
-        version: link:../runtime
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4

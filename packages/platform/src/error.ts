@@ -1,10 +1,10 @@
-import type { Api, Platform } from "./index.d.ts";
+import type { Platform, PlatformModule } from "@weft-ui/runtime/protocol";
 
 /** An API unavailable on the current platform. */
 export class PlatformError extends Error {
-  readonly api: Api;
+  readonly api: PlatformModule;
 
-  constructor(api: Api, os: Platform) {
+  constructor(api: PlatformModule, os: Platform) {
     super(`${api} is not supported on ${os}`);
     this.name = "PlatformError";
     this.api = api;

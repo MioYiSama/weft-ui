@@ -12,11 +12,9 @@
 #include <string_view>
 #include <variant>
 
+#include "weft/protocol.hpp"
+
 namespace weft::ops {
-
-inline constexpr uint8_t kVersion = 1;
-
-enum class Code : uint8_t { Create = 1, Set = 2, Branch = 3, Rows = 4, Attach = 5 };
 
 /// A slot value; `Int` slots carry a double like every number.
 using Value = std::variant<bool, double, std::string_view>;
@@ -37,7 +35,7 @@ class Error : public std::runtime_error {
 };
 
 struct Op {
-  Code code{};
+  protocol::Code code{};
   uint32_t scope = 0;
   /// The template (`create`), value slot (`set`) or mount point (other ops).
   uint32_t index = 0;

@@ -10,6 +10,7 @@
 #include "point.hpp"
 #include "stack.hpp"
 #include "weft/gtk.hpp"
+#include "weft/protocol.hpp"
 
 namespace weft {
 
@@ -140,24 +141,24 @@ void Session::commit(const uint8_t *ops, size_t len) {
 
 void Session::apply(const ops::Op &op) {
   switch (op.code) {
-    case ops::Code::Create: {
+    case protocol::Code::Create: {
       auto scope = make_(op.index, op.scope, *this);
       if (!scope) throw OpError("the views have no template " + std::to_string(op.index));
       scopes_[op.scope] = std::move(scope);
       break;
     }
-    case ops::Code::Set: {
+    case protocol::Code::Set: {
       auto found = scopes_.find(op.scope);
       if (found != scopes_.end()) found->second->apply(op.index, op.value);
       break;
     }
-    case ops::Code::Branch:
+    case protocol::Code::Branch:
       mount(op.scope, op.index, op.child == 0 ? std::vector<uint32_t>{} : std::vector<uint32_t>{op.child});
       break;
-    case ops::Code::Attach:
+    case protocol::Code::Attach:
       mount(op.scope, op.index, {op.child});
       break;
-    case ops::Code::Rows: {
+    case protocol::Code::Rows: {
       std::vector<uint32_t> rows(op.count);
       for (uint32_t i = 0; i < op.count; i++) rows[i] = op.row(i);
       mount(op.scope, op.index, std::move(rows));

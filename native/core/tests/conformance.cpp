@@ -6,6 +6,7 @@
 // The annotated ops log must equal the golden file byte for byte.
 
 #include <weft/ops.hpp>
+#include <weft/protocol.hpp>
 #include <weft/runtime.h>
 
 #include <algorithm>
@@ -28,7 +29,7 @@
 
 namespace {
 
-using weft::ops::Code;
+using weft::protocol::Code;
 
 struct Protocol : std::runtime_error {
   using std::runtime_error::runtime_error;

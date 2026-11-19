@@ -8,11 +8,6 @@
 namespace weft::ops {
 namespace {
 
-constexpr uint8_t kFalse = 0;
-constexpr uint8_t kTrue = 1;
-constexpr uint8_t kNumber = 2;
-constexpr uint8_t kString = 3;
-
 uint32_t load_u32(const uint8_t *p) {
   return uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16 | uint32_t(p[3]) << 24;
 }
@@ -146,7 +141,7 @@ uint32_t Op::row(uint32_t i) const { return load_u32(rows + size_t(i) * 4); }
 
 Reader::Reader(const uint8_t *data, size_t len) : at_(data), end_(data + len) {
   if (len == 0) throw Error(Error::Kind::Truncated, "weft ops: empty batch");
-  if (*at_ != kVersion) {
+  if (*at_ != protocol::kVersion) {
     throw Error(Error::Kind::Version, "weft ops: unsupported version " + std::to_string(*at_));
   }
   at_++;
@@ -156,24 +151,24 @@ bool Reader::next(Op &op) {
   if (at_ == end_) return false;
   uint8_t code = *at_++;
   op = Op{};
-  op.code = static_cast<Code>(code);
+  op.code = static_cast<protocol::Code>(code);
   switch (op.code) {
-    case Code::Create:
+    case protocol::Code::Create:
       op.scope = take_u32(at_, end_);
       op.index = take_u32(at_, end_);
       return true;
-    case Code::Set:
+    case protocol::Code::Set:
       op.scope = take_u32(at_, end_);
       op.index = take_u32(at_, end_);
       op.value = read_value(at_, end_);
       return true;
-    case Code::Branch:
-    case Code::Attach:
+    case protocol::Code::Branch:
+    case protocol::Code::Attach:
       op.scope = take_u32(at_, end_);
       op.index = take_u32(at_, end_);
       op.child = take_u32(at_, end_);
       return true;
-    case Code::Rows:
+    case protocol::Code::Rows:
       op.scope = take_u32(at_, end_);
       op.index = take_u32(at_, end_);
       op.count = take_u32(at_, end_);
@@ -188,17 +183,18 @@ bool Reader::next(Op &op) {
 Value read_value(const uint8_t *&at, const uint8_t *end) {
   need(at, end, 1);
   uint8_t tag = *at++;
-  switch (tag) {
-    case kFalse:
-    case kTrue:
-      return tag == kTrue;
-    case kNumber: {
+  switch (static_cast<protocol::Tag>(tag)) {
+    case protocol::Tag::False:
+      return false;
+    case protocol::Tag::True:
+      return true;
+    case protocol::Tag::Number: {
       need(at, end, 8);
       uint64_t bits = uint64_t(load_u32(at)) | uint64_t(load_u32(at + 4)) << 32;
       at += 8;
       return std::bit_cast<double>(bits);
     }
-    case kString: {
+    case protocol::Tag::String: {
       uint32_t len = take_u32(at, end);
       need(at, end, len);
       std::string_view text(reinterpret_cast<const char *>(at), len);
@@ -213,15 +209,15 @@ Value read_value(const uint8_t *&at, const uint8_t *end) {
 
 void encode_value(const Value &value, std::string &out) {
   if (auto *flag = std::get_if<bool>(&value)) {
-    out.push_back(char(*flag ? kTrue : kFalse));
+    out.push_back(char(*flag ? protocol::Tag::True : protocol::Tag::False));
   } else if (auto *number = std::get_if<double>(&value)) {
-    out.push_back(char(kNumber));
+    out.push_back(char(protocol::Tag::Number));
     auto bits = std::bit_cast<uint64_t>(*number);
     put_u32(uint32_t(bits), out);
     put_u32(uint32_t(bits >> 32), out);
   } else {
     auto text = std::get<std::string_view>(value);
-    out.push_back(char(kString));
+    out.push_back(char(protocol::Tag::String));
     put_u32(uint32_t(text.size()), out);
     out.append(text);
   }
@@ -238,15 +234,15 @@ std::string format(const Op &op) {
     return std::string(name) + ' ' + std::to_string(op.scope) + ' ' + std::to_string(op.index);
   };
   switch (op.code) {
-    case Code::Create:
+    case protocol::Code::Create:
       return head("create");
-    case Code::Set:
+    case protocol::Code::Set:
       return head("set") + ' ' + format_value(op.value);
-    case Code::Branch:
+    case protocol::Code::Branch:
       return head("branch") + ' ' + std::to_string(op.child);
-    case Code::Attach:
+    case protocol::Code::Attach:
       return head("attach") + ' ' + std::to_string(op.child);
-    case Code::Rows: {
+    case protocol::Code::Rows: {
       std::string out = head("rows") + " [";
       for (uint32_t i = 0; i < op.count; i++) {
         if (i > 0) out += ' ';

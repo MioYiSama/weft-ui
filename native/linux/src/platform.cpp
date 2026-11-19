@@ -1,6 +1,7 @@
 #include "platform.hpp"
 
 #include "frame.hpp"
+#include "weft/protocol.hpp"
 
 #include <json-glib/json-glib.h>
 #include <libsoup/soup.h>
@@ -190,7 +191,7 @@ std::vector<uint8_t> storage(const std::string &method, const std::vector<uint8_
   json_node_unref(root);
   if (list.empty()) throw std::runtime_error("weft: storage." + method + " expects a JSON array of strings");
   auto &values = stored();
-  if (method == "get") {
+  if (method == protocol::kStorageGet) {
     auto found = values.find(list[0]);
     if (found == values.end()) return bytes_of("null");
     JsonNode *value = json_node_init_string(json_node_alloc(), found->second.c_str());
@@ -198,7 +199,7 @@ std::vector<uint8_t> storage(const std::string &method, const std::vector<uint8_
     json_node_unref(value);
     return bytes_of(json);
   }
-  if (method == "set") {
+  if (method == protocol::kStorageSet) {
     if (list.size() != 2) throw std::runtime_error("weft: storage.set expects [key, value]");
     values[list[0]] = list[1];
   } else if (values.erase(list[0]) == 0) {
@@ -210,15 +211,18 @@ std::vector<uint8_t> storage(const std::string &method, const std::vector<uint8_
 
 }  // namespace
 
-bool supported(std::string_view module) { return module == "fetch" || module == "storage"; }
+bool supported(std::string_view module) {
+  return module == protocol::kFetchModule || module == protocol::kStorageModule;
+}
 
 void call(const std::string &module, const std::string &method, std::vector<uint8_t> args,
           GCancellable *cancellable, Done done) {
   auto pending = std::make_unique<Pending>(cancellable, std::move(done));
   try {
-    if (module == "fetch" && method == "request") {
+    if (module == protocol::kFetchModule && method == protocol::kFetchRequest) {
       fetch(args, pending);
-    } else if (module == "storage" && (method == "get" || method == "set" || method == "remove")) {
+    } else if (module == protocol::kStorageModule &&
+               (method == protocol::kStorageGet || method == protocol::kStorageSet || method == protocol::kStorageRemove)) {
       auto result = storage(method, args);
       finish_later(std::move(pending), true, std::move(result));
     } else {

@@ -2,6 +2,7 @@
 // a fake platform shell. Bundles are the compiled files of tests/js/.
 
 #include <weft/ops.hpp>
+#include <weft/protocol.hpp>
 #include <weft/runtime.h>
 
 #include <algorithm>
@@ -297,7 +298,7 @@ void stable_rows() {
 
 /// Encodes ops for the decoder tests.
 struct Batch {
-  std::vector<uint8_t> bytes{weft::ops::kVersion};
+  std::vector<uint8_t> bytes{weft::protocol::kVersion};
   Batch &u8(uint8_t v) {
     bytes.push_back(v);
     return *this;
@@ -394,8 +395,8 @@ const char *kind_name(weft::ops::Error::Kind kind) {
   return "?";
 }
 
-const char *op_name(weft::ops::Code code) {
-  using weft::ops::Code;
+const char *op_name(weft::protocol::Code code) {
+  using weft::protocol::Code;
   switch (code) {
     case Code::Create: return "create";
     case Code::Set: return "set";
@@ -407,7 +408,7 @@ const char *op_name(weft::ops::Code code) {
 }
 
 void check_op(const std::string &name, const weft::ops::Op &op, const json::Value &want) {
-  using weft::ops::Code;
+  using weft::protocol::Code;
   CHECK_EQ(name + " " + op_name(op.code), name + " " + want["op"].string());
   CHECK_EQ(op.scope, want["scope"].u32());
   switch (op.code) {

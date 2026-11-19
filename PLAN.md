@@ -784,7 +784,7 @@ if ((Get-Content C:\weft\interactive.log -Tail 1) -ne 'exit 0') { exit 1 }
 | P2.1 Schema、生成器与漂移检查 | ☑ | |
 | P2.2 TS 消费方 | ☐ | |
 | P2.3 Rust 消费方 | ☐ | |
-| P2.4 C++ 与 Linux 消费方 | ☐ | |
+| P2.4 C++ 与 Linux 消费方 | ☑ | rg、C-core、C-windows、C-linux（含 `linux.frames`）通过 |
 | P2.5 Swift、Kotlin、C# 消费方 | ☐ | |
 | P2.6 平台 API 编译期契约 | ☐ | |
 | P3.1 共用缩进 writer | ☐ | |

@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultServerConditions } from "vite";
 import { type AppResult, compileApp } from "@weft-ui/compiler";
 import { NATIVE_PLATFORMS, PLATFORMS, type NativePlatform, type Platform } from "@weft-ui/runtime/protocol";
-import { ADAPTERS, HERMES_TARGET, compileBytecode, nativeAdapters } from "./native.ts";
+import { HERMES_TARGET, compileBytecode, nativeAdapter } from "./native.ts";
+import { nativeShell } from "./shells.ts";
 
 /** Options of the Weft Vite plugin. */
 export interface WeftOptions {
@@ -12,7 +13,7 @@ export interface WeftOptions {
   platforms?: Platform[];
   /** Directory for platform projects; absolute or relative to the Vite root. Defaults to `./apps`. */
   apps?: string;
-  /** Directory containing the native shells; absolute or relative to the Vite root. Defaults to the workspace's `native/` directory. */
+  /** Overrides the installed native shell packages with a directory containing the shells; absolute or relative to the Vite root. */
   native?: string;
   /** Values filled into the project templates copied to `<apps>/<platform>/` on the first build. */
   app?: {
@@ -190,7 +191,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
   let root = process.cwd();
   let appsDir: string;
   let nativeRoot: string | undefined;
-  let adapters = ADAPTERS;
+  const shells = new Map<NativePlatform, string>();
   let entry: string | undefined;
   let selected: Platform[] = [];
   /** App-level compilation of each non-Web environment; inline plugins are shared by every environment. */
@@ -207,9 +208,12 @@ export default function weft(options: WeftOptions = {}): Plugin {
       appsDir = resolve(root, options.apps ?? "./apps");
       if (env.command !== "build") return;
       nativeRoot = options.native === undefined ? undefined : resolve(root, options.native);
-      adapters = nativeRoot === undefined ? ADAPTERS : nativeAdapters(nativeRoot);
       // The CLI passes `builder: {}` for `--app`; the plugin's own builder below makes plain `vite build` an app build.
       selected = selectPlatforms(configured, config.builder !== undefined);
+      shells.clear();
+      for (const platform of selected) {
+        if (isNativePlatform(platform)) shells.set(platform, nativeShell(platform, nativeRoot));
+      }
       entry = selected.some((platform) => platform !== "web") ? resolveEntry(root, options.entry) : undefined;
       return {
         builder: {},
@@ -306,7 +310,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
       });
       writeGenerated(generated, app);
       if (!isNativePlatform(platform)) return;
-      const adapter = adapters[platform];
+      const adapter = nativeAdapter(platform, shells.get(platform)!);
       const projectPath = relative(root, project).replaceAll("\\", "/") || ".";
       const bytecode = join(generated, adapter.bytecode);
       try {

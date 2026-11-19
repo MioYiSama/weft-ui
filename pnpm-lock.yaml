@@ -41,6 +41,18 @@ importers:
       '@weft-ui/content-mapper':
         specifier: workspace:*
         version: link:../packages/content-mapper
+      '@weft-ui/native-android':
+        specifier: workspace:*
+        version: link:../native/android
+      '@weft-ui/native-apple':
+        specifier: workspace:*
+        version: link:../native/apple
+      '@weft-ui/native-linux':
+        specifier: workspace:*
+        version: link:../native/linux
+      '@weft-ui/native-windows':
+        specifier: workspace:*
+        version: link:../native/windows
       typescript:
         specifier: 7.1.0-beta
         version: 7.1.0-beta
@@ -125,6 +137,18 @@ importers:
       '@weft-ui/content-mapper':
         specifier: workspace:*
         version: link:../content-mapper
+      '@weft-ui/native-android':
+        specifier: workspace:*
+        version: link:../../native/android
+      '@weft-ui/native-apple':
+        specifier: workspace:*
+        version: link:../../native/apple
+      '@weft-ui/native-linux':
+        specifier: workspace:*
+        version: link:../../native/linux
+      '@weft-ui/native-windows':
+        specifier: workspace:*
+        version: link:../../native/windows
       '@weft-ui/platform':
         specifier: workspace:*
         version: link:../platform

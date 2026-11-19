@@ -9,6 +9,10 @@
   },
   "devDependencies": {
     "@weft-ui/content-mapper": "workspace:*",
+    "@weft-ui/native-android": "workspace:*",
+    "@weft-ui/native-apple": "workspace:*",
+    "@weft-ui/native-linux": "workspace:*",
+    "@weft-ui/native-windows": "workspace:*",
     "typescript": "7.1.0-beta",
     "vite": "^8.3.8"
   },

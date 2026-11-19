@@ -42,18 +42,19 @@ async function runTool(
 
 export type RunTool = typeof runTool;
 
-export function nativeAdapters(root?: string): Record<NativePlatform, NativeAdapter> {
-  const apple = appleAdapter(runTool, nativeShell("apple", root));
-  return {
-    ios: apple,
-    macos: apple,
-    android: androidAdapter(runTool, nativeShell("android", root)),
-    windows: windowsAdapter(runTool, nativeShell("windows", root)),
-    linux: linuxAdapter(runTool, nativeShell("linux", root)),
-  };
+export function nativeAdapter(platform: NativePlatform, shell: string): NativeAdapter {
+  switch (platform) {
+    case "ios":
+    case "macos":
+      return appleAdapter(runTool, shell);
+    case "android":
+      return androidAdapter(runTool, shell);
+    case "windows":
+      return windowsAdapter(runTool, shell);
+    case "linux":
+      return linuxAdapter(runTool, shell);
+  }
 }
-
-export const ADAPTERS: Record<NativePlatform, NativeAdapter> = nativeAdapters();
 
 /**
  * Syntax the bundle keeps for Hermes; newer syntax is lowered by Vite.

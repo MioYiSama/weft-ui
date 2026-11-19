@@ -200,6 +200,12 @@ void text() {
   CHECK_EQ(shell.lines(), (std::vector<std::string>{"10 héllo ✓"}));
 }
 
+void unicode() {
+  Shell shell;
+  CHECK(shell.start("unicode"));
+  CHECK_EQ(shell.lines(), (std::vector<std::string>{"Unicode OK"}));
+}
+
 void calls() {
   Shell shell;
   CHECK(shell.start("calls"));
@@ -483,7 +489,7 @@ const std::map<std::string, std::function<void()>> kCases = {
     {"timers", timers},   {"microtasks", microtasks},   {"console", console},
     {"text", text},       {"calls", calls},             {"session", session},
     {"refused", refused}, {"stable_rows", stable_rows}, {"ops", ops},
-    {"corpus", corpus},
+    {"corpus", corpus},   {"unicode", unicode},
 };
 
 }  // namespace

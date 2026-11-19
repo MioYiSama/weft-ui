@@ -5,9 +5,9 @@
 # compiler of the same release, build/linux-<arch>/bin/hermesc, since the
 # hermes-compiler package has no Linux arm64 binary (point WEFT_HERMESC at it).
 #
-# Needs a C++20 compiler, CMake, Ninja, Python 3 and ICU (libicu-dev on
-# Debian and Ubuntu). Set WEFT_HERMES_SOURCE to reuse a checkout of the
-# kernel's Hermes tag instead of cloning it.
+# Needs a C++20 compiler, CMake, Ninja, Python 3 and a stable Rust toolchain.
+# Set WEFT_HERMES_SOURCE to reuse a checkout of the kernel's Hermes tag
+# instead of cloning it.
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)

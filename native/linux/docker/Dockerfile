@@ -1,5 +1,5 @@
 # Linux desktop for building and testing Weft apps: the GTK 4 toolchain,
-# Hermes' build dependencies, Node.js with pnpm, and an XFCE session served
+# kernel build dependencies, Node.js with pnpm, and an XFCE session served
 # over VNC (display :1, port 5901). See compose.yaml.
 FROM ubuntu:26.04
 
@@ -11,7 +11,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential cmake ninja-build pkg-config python3 git ca-certificates curl xz-utils \
-      libicu-dev \
       libgtk-4-dev libsoup-3.0-dev libjson-glib-dev \
       xfce4 xfce4-terminal dbus-x11 at-spi2-core \
       tigervnc-standalone-server tigervnc-tools \
@@ -35,6 +34,10 @@ RUN for dir in node_modules packages/compiler/node_modules packages/platform/nod
 
 # Ubuntu images have the user `ubuntu` with uid 1000, the usual desktop uid.
 USER ubuntu
-ENV DISPLAY=:1
+RUN curl --proto '=https' --tlsv1.2 -fsSLo /tmp/rustup-init.sh https://sh.rustup.rs \
+    && sh /tmp/rustup-init.sh -y --profile minimal --default-toolchain stable \
+    && rm /tmp/rustup-init.sh
+ENV PATH="/home/ubuntu/.cargo/bin:${PATH}" \
+    DISPLAY=:1
 ENTRYPOINT ["weft-desktop"]
 CMD ["sleep", "infinity"]

@@ -135,11 +135,11 @@ pnpm --filter example test:windows
 
 ## Linux
 
-在 Linux 主机上准备 C++20 工具链、CMake 3.28 或更高版本、`pkg-config`，以及 ICU、GTK 4.10 或更高版本、libsoup 3 和 json-glib 的开发包。在 Debian 或 Ubuntu 上，这些库的开发包分别是 `libicu-dev`、`libgtk-4-dev`、`libsoup-3.0-dev` 和 `libjson-glib-dev`。
+在 Linux 主机上准备 C++20 工具链、CMake 3.28 或更高版本、`pkg-config`，以及 GTK 4.10 或更高版本、libsoup 3 和 json-glib 的开发包。在 Debian 或 Ubuntu 上，这些库的开发包分别是 `libgtk-4-dev`、`libsoup-3.0-dev` 和 `libjson-glib-dev`。预构建的内核自带 Unicode 数据，无需安装系统 ICU。
 
 `hermes-compiler` 不提供 Linux arm64 版本，所以 Vite 在这类主机上使用 `@weft-ui/native-linux` 提供的 `hermesc`。即使目标是其他原生平台，也要安装这个包，或设置 `WEFT_HERMESC`。
 
-在 Weft UI 工作区构建内核还需要 Ninja 和 Python 3。内核脚本会在 `native/linux/build/linux-<arch>/` 下生成 `libweft_core.so` 和 `bin/hermesc`。
+在 Weft UI 工作区构建内核还需要 Ninja、Python 3 和稳定版 Rust 工具链。内核脚本会在 `native/linux/build/linux-<arch>/` 下生成 `libweft_core.so` 和 `bin/hermesc`。
 
 ```sh
 native/linux/build-core.sh

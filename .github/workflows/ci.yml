@@ -89,7 +89,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build libicu-dev
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
       - uses: actions/cache@v6
         with:
           path: native/core/build
@@ -158,7 +158,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build libicu-dev
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
       - uses: actions/cache@v6
         with:
           path: |

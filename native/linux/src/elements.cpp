@@ -7,10 +7,10 @@
 #include <cmath>
 #include <cstdio>
 #include <string>
-#include <unordered_map>
 #include <utility>
 
 #include "stack.hpp"
+#include "texture_cache.hpp"
 #include "weft/gtk.hpp"
 
 namespace weft {
@@ -230,8 +230,8 @@ void Checkbox::toggled(GtkCheckButton *button, Checkbox *self) {
 namespace {
 
 /// Downloaded images by source, shared by every `Image` of the process.
-std::unordered_map<std::string, GdkTexture *> &textures() {
-  static std::unordered_map<std::string, GdkTexture *> textures;
+TextureCache &textures() {
+  static TextureCache textures(64 * 1024 * 1024);
   return textures;
 }
 
@@ -250,9 +250,7 @@ struct Load {
 void loaded(Load *load, GBytes *bytes, GError *error) {
   GdkTexture *texture = nullptr;
   if (bytes) texture = gdk_texture_new_from_bytes(bytes, &error);
-  if (texture) {
-    textures().emplace(load->src, texture);
-  } else {
+  if (!texture) {
     std::fprintf(stderr, "[weft warn] weft: cannot load the image %s (%s)\n", load->src.c_str(),
                  error ? error->message : "unknown error");
   }
@@ -260,6 +258,10 @@ void loaded(Load *load, GBytes *bytes, GError *error) {
     auto *shown = static_cast<const char *>(g_object_get_data(G_OBJECT(picture), "weft-src"));
     if (texture && shown && load->src == shown) gtk_picture_set_paintable(picture, GDK_PAINTABLE(texture));
     g_object_unref(picture);
+  }
+  if (texture) {
+    textures().insert(std::move(load->src), texture);
+    g_object_unref(texture);
   }
   if (error) g_error_free(error);
   if (bytes) g_bytes_unref(bytes);
@@ -278,9 +280,8 @@ void Image::set_src(std::string_view src) {
   auto *picture = GTK_PICTURE(widget());
   std::string source(src);
   g_object_set_data_full(G_OBJECT(picture), "weft-src", g_strdup(source.c_str()), g_free);
-  auto cached = textures().find(source);
-  if (cached != textures().end()) {
-    gtk_picture_set_paintable(picture, GDK_PAINTABLE(cached->second));
+  if (auto *cached = textures().find(source)) {
+    gtk_picture_set_paintable(picture, GDK_PAINTABLE(cached));
     return;
   }
   gtk_picture_set_paintable(picture, nullptr);

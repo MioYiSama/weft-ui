@@ -4,3 +4,8 @@ target_link_libraries(weft_linux_tests PRIVATE weft_linux)
 target_include_directories(weft_linux_tests PRIVATE ../src)
 target_compile_definitions(weft_linux_tests PRIVATE WEFT_CORPUS_DIR="${corpus}")
 add_test(NAME linux.frames COMMAND weft_linux_tests)
+
+add_executable(weft_linux_texture_tests texture_cache_test.cpp)
+target_link_libraries(weft_linux_texture_tests PRIVATE weft_linux)
+target_include_directories(weft_linux_texture_tests PRIVATE ../src)
+add_test(NAME linux.textures COMMAND weft_linux_texture_tests)

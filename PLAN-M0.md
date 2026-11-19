@@ -295,7 +295,7 @@ flowchart LR
 | F1 `setInterval(fn, 0)` | ☑ | 修复前 `count("zero") == 3` 失败（只执行 1 次）；C-core、C-windows 通过 |
 | F2 Apple、Linux 整批解码 | ☐ | |
 | F3 格式化器注释 | ☑ | 5 个黄金用例在修复前均报内部错误；修复后通过并验证幂等，C-rust 通过（clippy 0） |
-| F4 Linux 纹理缓存 | ☐ | |
+| F4 Linux 纹理缓存 | ☑ | 淘汰测试修复前失败；C-linux（含 `linux.textures`）、C-ui Linux 通过 |
 | F5 中文侧边栏链接 | ☑ | 文档构建通过；6 个中文侧边栏均链接中文版，英文页面无中文版链接 |
 | F6 compiler 注释 | ☑ | 只改注释；compiler 包构建与 tsc 通过 |
 | N.1 native 包 | ☐ | |
@@ -315,6 +315,8 @@ flowchart LR
 ## 执行中发现
 
 （执行时追加。格式：`- [任务号] 发现内容；结论：转为新计划项 / 不处理（原因）`）
+
+- [F4] Linux 内核增量构建再次触发 PLAN.md P0.1 记录的 Ninja dyndep 断言，删除内核构建目录中的 `CMakeFiles/weft_core.dir` 后 C-linux 通过；结论：不处理（本地构建目录状态问题）
 
 - [F5] 中文「工具链」指南的页底「下一页」仍链接英文语法；结论：不处理（Starlight 单独生成分页链接，F5 只修正侧边栏）。
 - [F5] 文档构建在修复前后均提示 `i18n` 集合缺失或为空、`404` 文档条目缺失；结论：不处理（已有警告，不影响构建及侧边栏验收）。

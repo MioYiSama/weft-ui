@@ -1,11 +1,11 @@
 ---
 title: Logic and events
-description: Handle Weft events in JavaScript or TypeScript, update the model, and control what inputs display.
+description: Handle Weft UI events in JavaScript or TypeScript, update the model, and control what inputs display.
 sidebar:
   order: 3
 ---
 
-The `.weft` view reads the app model to render. Its inline event handlers can change local `state`, but they cannot assign to model fields. To change the model, emit an event from the view and handle it in JavaScript or TypeScript. Weft then updates the parts of the view that read the changed fields. See [Views](/guides/views/) for when to use local state.
+The `.weft` view reads the app model to render. Its inline event handlers can change local `state`, but they cannot assign to model fields. To change the model, emit an event from the view and handle it in JavaScript or TypeScript. Weft UI then updates the parts of the view that read the changed fields. See [Views](/guides/views/) for when to use local state.
 
 ## Create the app
 
@@ -66,7 +66,7 @@ TypeScript gets the constructor, model and event types from the `.weft` declarat
 
 ## Handle events and update the model
 
-Weft generates a registration method for each event the component or its children can emit. The method adds `on` and capitalizes the first letter of the event name: `Toggle` becomes `app.onToggle`. The name comes from the declared event, not the element property that emits it. The callback receives the model first, then an object keyed by the event's field names. `Toggle(id: Int)` yields `{ id: number }`; events without fields pass `{}`, which you can ignore.
+Weft UI generates a registration method for each event the component or its children can emit. The method adds `on` and capitalizes the first letter of the event name: `Toggle` becomes `app.onToggle`. The name comes from the declared event, not the element property that emits it. The callback receives the model first, then an object keyed by the event's field names. `Toggle(id: Int)` yields `{ id: number }`; events without fields pass `{}`, which you can ignore.
 
 ```ts
 app.onClick((model) => {
@@ -85,9 +85,9 @@ app.onToggle((model, { id }) => {
 });
 ```
 
-Weft tracks assignments through generated setters, not proxies. This includes assigning to `todo.done` on an item. Arrays are typed as readonly and frozen at runtime: to add or remove an item, assign a new array rather than calling `push` or writing to an index. The model objects inside the array are still mutable.
+Weft UI tracks assignments through generated setters, not proxies. This includes assigning to `todo.done` on an item. Arrays are typed as readonly and frozen at runtime: to add or remove an item, assign a new array rather than calling `push` or writing to an index. The model objects inside the array are still mutable.
 
-Assignments change the model immediately. Weft normally batches view updates in a microtask. When an event comes through the view protocol, the runtime flushes pending updates synchronously before replying to the view. Weft does not await a handler's promise, but a write after `await` is tracked just like a synchronous write.
+Assignments change the model immediately. Weft UI normally batches view updates in a microtask. When an event comes through the view protocol, the runtime flushes pending updates synchronously before replying to the view. Weft UI does not await a handler's promise, but a write after `await` is tracked just like a synchronous write.
 
 ## Accept or reject input edits
 

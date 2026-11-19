@@ -1,15 +1,15 @@
 ---
 title: Getting started
-description: Build and run the Weft todo example in your browser.
+description: Build and run the Weft UI todo example in your browser.
 sidebar:
   order: 1
 ---
 
-With Weft, you write the view in `.weft` and share one JavaScript or TypeScript codebase across platforms. Weft compiles the view to browser DOM on Web, WXML in WeChat Mini Programs, and native UI on iOS, macOS, Android, Windows, and Linux. Start with the Web build of the example todo app; you won't need any native platform SDKs.
+With Weft UI, you write the view in `.weft` and share one JavaScript or TypeScript codebase across platforms. Weft UI compiles the view to browser DOM on Web, WXML in WeChat Mini Programs, and native UI on iOS, macOS, Android, Windows, and Linux. Start with the Web build of the example todo app; you won't need any native platform SDKs.
 
 ## Set up the workspace
 
-You'll need Git, Node.js 24, and the pnpm version pinned in the [root `package.json`](https://github.com/MioYiSama/weft-ui/blob/master/package.json). The example uses the Weft compiler built from this checkout, so you'll also need Rust and Cargo, the [`wasm32-unknown-unknown` target](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html), and `wasm-bindgen-cli` matching the [compiler's pinned version](https://github.com/MioYiSama/weft-ui/blob/master/crates/wasm/Cargo.toml). If you installed Rust through rustup, set up the target and CLI with:
+You'll need Git, Node.js 24, and the pnpm version pinned in the [root `package.json`](https://github.com/MioYiSama/weft-ui/blob/master/package.json). The example uses the Weft UI compiler built from this checkout, so you'll also need Rust and Cargo, the [`wasm32-unknown-unknown` target](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html), and `wasm-bindgen-cli` matching the [compiler's pinned version](https://github.com/MioYiSama/weft-ui/blob/master/crates/wasm/Cargo.toml). If you installed Rust through rustup, set up the target and CLI with:
 
 ```sh
 rustup target add wasm32-unknown-unknown

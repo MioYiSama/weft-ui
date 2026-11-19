@@ -52,14 +52,14 @@ export const landing: Record<Lang, LandingStrings> = {
   "zh-CN": {
     prefix: "/zh",
     other: { lang: "en", label: "EN", href: "/" },
-    title: "Weft — 一份视图，七个平台原生运行",
+    title: "Weft UI — 一次编写，处处原生界面",
     description:
-      "Weft 是一门编译型 UI 语言：用 .weft 描述视图，用 JS/TS 写逻辑，编译成 DOM、微信小程序、SwiftUI、Jetpack Compose、WinUI 3 和 GTK 4 的原生代码。",
+      "Weft UI 是一门编译型 UI 语言：用 .weft 描述视图，用 JS/TS 写逻辑，编译成 DOM、微信小程序、SwiftUI、Jetpack Compose、WinUI 3 和 GTK 4 的原生代码。",
     nav: { guides: "指南", grammar: "语法", protocol: "视图协议", docs: "文档" },
     pill: "7 个平台 · 原生视图 · 一份逻辑",
-    headline: ["一份视图", "七个平台原生运行"],
+    headline: ["一次编写", "处处原生界面"],
     lead: [
-      "Weft 是一门编译型 UI 语言。用",
+      "Weft UI 是一门编译型 UI 语言。用",
       "描述视图，用 JS/TS 写逻辑，编译成 DOM、微信小程序、SwiftUI、Jetpack Compose、WinUI 3 和 GTK 4 的原生代码。",
     ],
     start: "快速上手",
@@ -126,20 +126,20 @@ export const landing: Record<Lang, LandingStrings> = {
         { title: "出包", body: "生成 apps/<platform>/ 原生工程，再调用宿主构建工具。", code: "apps/<platform>/" },
       ],
     },
-    final: { heading: "开始用 Weft 编织界面", sub: "从指南读起，或者直接看示例工程。", primary: "阅读指南", secondary: "查看示例" },
+    final: { heading: "开始用 Weft UI 编织界面", sub: "从指南读起，或者直接看示例工程。", primary: "阅读指南", secondary: "查看示例" },
     theme: { label: "主题", light: "浅色", auto: "跟随系统", dark: "深色" },
   },
   en: {
     prefix: "",
     other: { lang: "zh-CN", label: "中文", href: "/zh/" },
-    title: "Weft — One view, native on seven platforms",
+    title: "Weft UI — Write once. Native UI everywhere.",
     description:
-      "Weft is a compiled UI language: describe views in .weft, write logic in JS/TS, and compile to native code for the DOM, WeChat mini programs, SwiftUI, Jetpack Compose, WinUI 3 and GTK 4.",
+      "Weft UI is a compiled UI language: describe views in .weft, write logic in JS/TS, and compile to native code for the DOM, WeChat mini programs, SwiftUI, Jetpack Compose, WinUI 3 and GTK 4.",
     nav: { guides: "Guides", grammar: "Grammar", protocol: "View protocol", docs: "Docs" },
     pill: "7 platforms · Native views · One codebase",
-    headline: ["One view.", "Native on seven platforms."],
+    headline: ["Write once.", "Native UI everywhere."],
     lead: [
-      "Weft is a compiled UI language. Describe views in",
+      "Weft UI is a compiled UI language. Describe views in",
       ", write logic in JS/TS, and compile to native code for the DOM, WeChat mini programs, SwiftUI, Jetpack Compose, WinUI 3 and GTK 4.",
     ],
     start: "Get started",
@@ -218,7 +218,7 @@ export const landing: Record<Lang, LandingStrings> = {
       ],
     },
     final: {
-      heading: "Start weaving interfaces with Weft",
+      heading: "Start weaving interfaces with Weft UI",
       sub: "Start with the guides, or jump straight into the example project.",
       primary: "Read the guides",
       secondary: "See the example",

@@ -1,5 +1,5 @@
 ---
-title: 编写 Weft 视图
+title: 编写 Weft UI 视图
 description: 用类型化参数、布局、带键列表、局部状态和可复用组件编写 .weft 视图。
 sidebar:
   order: 2
@@ -81,7 +81,7 @@ component Estimate(title: String, note: String? = null, hours: Float = 0.0) {
 
 ## 按条件渲染和遍历列表
 
-`if` 节点选择要渲染的节点块，不返回值。条件仍然必须是 `Bool`，但 `else` 可以省略，也可以用 `else if` 串接多个条件。`for` 节点遍历数组，循环头必须写 `; key = ...`。给每一项一个稳定且唯一的 `Int` 或 `String` 键，例如待办事项的 ID。这样数组重排时，Weft 仍能识别原来的各行。
+`if` 节点选择要渲染的节点块，不返回值。条件仍然必须是 `Bool`，但 `else` 可以省略，也可以用 `else if` 串接多个条件。`for` 节点遍历数组，循环头必须写 `; key = ...`。给每一项一个稳定且唯一的 `Int` 或 `String` 键，例如待办事项的 ID。这样数组重排时，Weft UI 仍能识别原来的各行。
 
 把下面的代码保存为 `TodoList.weft`，与 `Todo.weft` 放在同一目录：
 
@@ -171,4 +171,4 @@ component App(todos: Todo[]) {
 
 导入路径相对于发起导入的文件。导入不传递：`App.weft` 要使用 `TodoList`，就导入 `TodoList.weft`；要引用 `Todo` 类型，还要直接导入 `Todo.weft`。通过导入关联起来的文件中，模型、事件和组件不能重名，也不能与内置元素重名。
 
-完整的语法和类型规则见 [Weft 语法规范](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md)。
+完整的语法和类型规则见 [Weft UI 语法规范](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md)。

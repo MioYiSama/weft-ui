@@ -1,6 +1,6 @@
 ---
 title: 构建各平台应用
-description: 配置 Weft 的 Vite 插件，构建各平台工程并运行示例的 UI 测试。
+description: 配置 Weft UI 的 Vite 插件，构建各平台工程并运行示例的 UI 测试。
 sidebar:
   order: 5
 ---
@@ -24,7 +24,7 @@ export default defineConfig({
 | --- | --- | --- |
 | `platforms` | `web`、`wechat`、`ios`、`macos`、`android`、`windows`、`linux` | `vite build --app` 构建的平台，也是 `WEFT_PLATFORM` 可显式指定的平台。 |
 | `apps` | `./apps` | 各平台工程的输出目录，可用绝对路径或相对于 Vite 根目录的路径。 |
-| `native` | Weft 工作区中的 `native/` 目录 | 原生平台壳所在的目录，包含 `apple/`、`android/`、`windows/` 和 `linux/`。可用绝对路径或相对于 Vite 根目录的路径。 |
+| `native` | Weft UI 工作区中的 `native/` 目录 | 原生平台壳所在的目录，包含 `apple/`、`android/`、`windows/` 和 `linux/`。可用绝对路径或相对于 Vite 根目录的路径。 |
 | `app.id` | `""` | 填入需要应用 ID 的模板，例如 Apple 的 Bundle ID 或 Android 的应用 ID。请在首次构建前设置；它不是微信小程序的 AppID。 |
 | `app.name` | Vite 根目录的目录名 | 首次构建时填入平台工程模板的显示名称。 |
 | `include` | `src/**/*.weft` | 相对于 Vite 根目录的 glob。Web 以外的平台会将匹配的 `.weft` 文件一起编译。 |
@@ -43,7 +43,7 @@ WEFT_PLATFORM=web,wechat pnpm exec vite build
 
 ## 工程目录
 
-Web 按 Vite 的常规方式输出到 `apps/web/`。其他平台首次构建时，Weft 会将工程模板复制到 `apps/<platform>/`。`weft/` 以外的工程文件由你维护，可以在里面修改签名、图标或平台配置。后续构建会重新生成 `apps/<platform>/weft/`，不再覆盖模板文件。修改 `app.id` 或 `app.name` 不会更新已有工程，请直接修改工程文件。
+Web 按 Vite 的常规方式输出到 `apps/web/`。其他平台首次构建时，Weft UI 会将工程模板复制到 `apps/<platform>/`。`weft/` 以外的工程文件由你维护，可以在里面修改签名、图标或平台配置。后续构建会重新生成 `apps/<platform>/weft/`，不再覆盖模板文件。修改 `app.id` 或 `app.name` 不会更新已有工程，请直接修改工程文件。
 
 Web 以外平台的逻辑层打包在 `weft/js/index.js` 中。原生平台还会生成视图代码、`layout.json` 和 Hermes 字节码（除 Android 外都在 `weft/bundle.hbc`）。布局文件及逻辑层与视图层的交互见[视图协议](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.zh-CN.md)。
 

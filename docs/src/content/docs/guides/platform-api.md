@@ -1,6 +1,6 @@
 ---
 title: Platform API
-description: Start a Weft app, make HTTP requests, and store data with the same API on every target.
+description: Start a Weft UI app, make HTTP requests, and store data with the same API on every target.
 sidebar:
   order: 4
 ---
@@ -47,7 +47,7 @@ export interface Response {
 
 - Omit `method` for `GET`. To send JSON, pass `JSON.stringify(data)` as the body and set `Content-Type: application/json` in `headers`. Prefer absolute HTTPS URLs for cross-platform requests; the host still controls which requests it allows.
 - An HTTP error status isn't a rejected request. Check `ok` (true for status codes 200–299) or `status` before reading the body. Use `text()` for UTF-8 text, `json()` to parse JSON, or `arrayBuffer()` for raw bytes. Read each response with just one body reader for portability: the browser response body is single-use.
-- The portable API has no response headers, streaming body, `FormData` request body, cancellation signal, or timeout option. There is no shared size limit specified by Weft; host limits still apply. Don't rely on browser-only Fetch options in shared code.
+- The portable API has no response headers, streaming body, `FormData` request body, cancellation signal, or timeout option. There is no shared size limit specified by Weft UI; host limits still apply. Don't rely on browser-only Fetch options in shared code.
 
 This helper loads starter todos from a JSON endpoint you supply. It leaves local todos alone when it can't load them. Check the returned data's shape before assigning it to your model: `json()` parses the body but does not validate it against your model type.
 
@@ -114,7 +114,7 @@ To forget the saved flag, use `await storage.remove("clicked")`. That removes th
 
 ## Check the host and its capabilities
 
-`platform` exposes the read-only fields `os` and `version`. `os` is one of `web`, `wechat`, `ios`, `macos`, `android`, `windows`, or `linux`. `version` is a host-specific string, not the Weft package version. Don't assume a common format across platforms. For example, on Web it is the full user agent string; on native targets it is empty if the kernel isn't present or the shell supplies no version.
+`platform` exposes the read-only fields `os` and `version`. `os` is one of `web`, `wechat`, `ios`, `macos`, `android`, `windows`, or `linux`. `version` is a host-specific string, not the Weft UI package version. Don't assume a common format across platforms. For example, on Web it is the full user agent string; on native targets it is empty if the kernel isn't present or the shell supplies no version.
 
 `isSupported(api: "fetch" | "storage"): boolean` checks whether the current host exposes a capability without performing a request or a storage operation. Use it to choose a fallback. A `true` result does not guarantee an individual operation will succeed.
 
@@ -127,7 +127,7 @@ To forget the saved flag, use `await storage.remove("clicked")`. That removes th
 | Windows | `HttpClient` | `storage.json` in the app's local application data directory | `Environment.OSVersion.Version` as a string |
 | Linux | libsoup | `storage.json` in the app's XDG user data directory | Distribution version ID, or kernel release if unavailable |
 
-All five native shells supplied by Weft implement both capabilities. The native implementation asks the running shell what it supports. See [Platforms](/guides/platforms/) for host setup or the [view protocol spec](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.md#platform-calls) for the native call format.
+All five native shells supplied by Weft UI implement both capabilities. The native implementation asks the running shell what it supports. See [Platforms](/guides/platforms/) for host setup or the [view protocol spec](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.md#platform-calls) for the native call format.
 
 ## Handle unavailable APIs with `PlatformError`
 

@@ -1,15 +1,15 @@
 ---
 title: 快速上手
-description: 构建 Weft 待办示例，并在浏览器中运行。
+description: 构建 Weft UI 待办示例，并在浏览器中运行。
 sidebar:
   order: 1
 ---
 
-用 Weft 开发时，视图写在 `.weft` 文件里，各平台共用一套 JavaScript 或 TypeScript 逻辑。Weft 会把视图编译为 Web 上的 DOM、微信小程序里的 WXML，以及 iOS、macOS、Android、Windows 和 Linux 上的原生界面。先运行待办示例的 Web 版本，不需要安装原生平台的 SDK。
+用 Weft UI 开发时，视图写在 `.weft` 文件里，各平台共用一套 JavaScript 或 TypeScript 逻辑。Weft UI 会把视图编译为 Web 上的 DOM、微信小程序里的 WXML，以及 iOS、macOS、Android、Windows 和 Linux 上的原生界面。先运行待办示例的 Web 版本，不需要安装原生平台的 SDK。
 
 ## 准备工作区
 
-你需要 Git、Node.js 24，以及[仓库根目录 `package.json`](https://github.com/MioYiSama/weft-ui/blob/master/package.json) 指定版本的 pnpm。示例用的是从仓库源码构建的 Weft 编译器，因此还需要 Rust 和 Cargo、[`wasm32-unknown-unknown` 目标](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html)，以及与[编译器锁定版本](https://github.com/MioYiSama/weft-ui/blob/master/crates/wasm/Cargo.toml)一致的 `wasm-bindgen-cli`。如果你用 rustup 安装了 Rust，可用以下命令安装目标和 CLI：
+你需要 Git、Node.js 24，以及[仓库根目录 `package.json`](https://github.com/MioYiSama/weft-ui/blob/master/package.json) 指定版本的 pnpm。示例用的是从仓库源码构建的 Weft UI 编译器，因此还需要 Rust 和 Cargo、[`wasm32-unknown-unknown` 目标](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html)，以及与[编译器锁定版本](https://github.com/MioYiSama/weft-ui/blob/master/crates/wasm/Cargo.toml)一致的 `wasm-bindgen-cli`。如果你用 rustup 安装了 Rust，可用以下命令安装目标和 CLI：
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -76,7 +76,7 @@ app.onAdd((model) => {
 
 ## 下一步
 
-- [视图](/zh/guides/views/)：编写布局、数据绑定和列表。完整语言规则见 [Weft 语法规范](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md)。
+- [视图](/zh/guides/views/)：编写布局、数据绑定和列表。完整语言规则见 [Weft UI 语法规范](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.zh-CN.md)。
 - [逻辑](/zh/guides/logic/)：用 JavaScript 或 TypeScript 初始化模型、处理视图事件。
 - [平台 API](/zh/guides/platform-api/)：在各平台共用存储和网络请求代码。
 - [平台](/zh/guides/platforms/)：为其他平台构建并运行应用。

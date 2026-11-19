@@ -1,5 +1,5 @@
 ---
-title: Write Weft views
+title: Write Weft UI views
 description: Build .weft views with typed parameters, layout, keyed lists, local state, and reusable components.
 sidebar:
   order: 2
@@ -171,4 +171,4 @@ component App(todos: Todo[]) {
 
 Import paths are relative to the file that imports them. Imports are not transitive: `App.weft` imports `TodoList.weft` to use `TodoList`, and it imports `Todo.weft` directly to name the `Todo` type. Use distinct names for models, events, and components across the connected files, and avoid names of built-in elements.
 
-For the complete syntax and type rules, see the [Weft grammar specification](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.md).
+For the complete syntax and type rules, see the [Weft UI grammar specification](https://github.com/MioYiSama/weft-ui/blob/master/crates/parser/GRAMMAR.md).

@@ -1,6 +1,6 @@
 ---
 title: Build for each platform
-description: Configure the Weft Vite plugin, build a platform project, and run the example’s UI tests.
+description: Configure the Weft UI Vite plugin, build a platform project, and run the example’s UI tests.
 sidebar:
   order: 5
 ---
@@ -24,7 +24,7 @@ export default defineConfig({
 | --- | --- | --- |
 | `platforms` | `web`, `wechat`, `ios`, `macos`, `android`, `windows`, `linux` | The targets for `vite build --app` and the targets you can explicitly request with `WEFT_PLATFORM`. |
 | `apps` | `./apps` | The output directory for platform projects. Use an absolute path or a path relative to the Vite root. |
-| `native` | The Weft workspace’s `native/` directory | The directory containing `apple/`, `android/`, `windows/`, and `linux/`. Use an absolute path or a path relative to the Vite root. |
+| `native` | The Weft UI workspace’s `native/` directory | The directory containing `apple/`, `android/`, `windows/`, and `linux/`. Use an absolute path or a path relative to the Vite root. |
 | `app.id` | `""` | The ID filled into templates that use it, such as the Apple bundle identifier or Android application ID. Set it before the first build; it does not set the WeChat AppID. |
 | `app.name` | The name of the Vite root directory | The display name filled into platform templates on the first build. |
 | `include` | `src/**/*.weft` | A glob relative to the Vite root. Non-Web builds compile the matched `.weft` files together. |
@@ -43,9 +43,9 @@ Without `WEFT_PLATFORM`, `vite build` builds Web, while `vite build --app` build
 
 ## Project layout
 
-Web is ordinary Vite output in `apps/web/`. For other targets, Weft copies a project template into `apps/<platform>/` on the first build. The project files outside `weft/` are yours: edit signing, icons, or platform configuration there. Later builds regenerate `apps/<platform>/weft/`, not the template files. Changing `app.id` or `app.name` does not update an existing project; edit its files directly.
+Web is ordinary Vite output in `apps/web/`. For other targets, Weft UI copies a project template into `apps/<platform>/` on the first build. The project files outside `weft/` are yours: edit signing, icons, or platform configuration there. Later builds regenerate `apps/<platform>/weft/`, not the template files. Changing `app.id` or `app.name` does not update an existing project; edit its files directly.
 
-For non-Web targets, `weft/js/index.js` contains the bundled logic. For native targets, Weft also writes generated views, `layout.json`, and Hermes bytecode (`weft/bundle.hbc`, except on Android). The [view protocol spec](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.md) describes the layout and the connection between the logic and view layers.
+For non-Web targets, `weft/js/index.js` contains the bundled logic. For native targets, Weft UI also writes generated views, `layout.json`, and Hermes bytecode (`weft/bundle.hbc`, except on Android). The [view protocol spec](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.md) describes the layout and the connection between the logic and view layers.
 
 Set `WEFT_NATIVE=0` to generate the native project without running its build tool. On a host that cannot run the target’s build tool, the plugin generates the project and warns instead. Either way, bytecode generation still needs `hermesc`. The plugin normally finds it for you; set `WEFT_HERMESC` to use a different binary from the same Hermes release as the kernel.
 

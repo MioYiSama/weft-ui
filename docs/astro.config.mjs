@@ -10,8 +10,8 @@ export default defineConfig({
   site: "https://weftui.mioyi.net",
   integrations: [
     starlight({
-      title: "Weft",
-      description: "One .weft view plus one JS/TS codebase, compiled to native apps on seven platforms.",
+      title: "Weft UI",
+      description: "Write once. Native UI everywhere.",
       logo: {
         light: "./src/assets/logo-light.svg",
         dark: "./src/assets/logo-dark.svg",

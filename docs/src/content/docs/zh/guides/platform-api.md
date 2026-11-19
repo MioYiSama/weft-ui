@@ -1,6 +1,6 @@
 ---
 title: 平台 API
-description: 在各平台使用同一套 API 启动 Weft 应用、发送 HTTP 请求和保存数据。
+description: 在各平台使用同一套 API 启动 Weft UI 应用、发送 HTTP 请求和保存数据。
 sidebar:
   order: 4
 ---
@@ -47,7 +47,7 @@ export interface Response {
 
 - 不传 `method` 时默认为 `GET`。发送 JSON 时，用 `JSON.stringify(data)` 生成请求体，并在 `headers` 中设置 `Content-Type: application/json`。跨平台请求建议使用绝对 HTTPS URL，具体哪些请求能发出仍取决于宿主的网络规则。
 - HTTP 错误状态本身不会让请求的 Promise 拒绝。读取响应体前先检查 `ok`（状态码为 200–299 时是 `true`）或 `status`。`text()` 读取 UTF-8 文本，`json()` 解析 JSON，`arrayBuffer()` 读取原始字节。浏览器中的响应体只能读取一次，因此跨平台代码中每次只调用一种读取方法。
-- 通用接口不提供响应头、流式响应体、`FormData` 请求体、取消信号或超时选项。Weft 没有规定统一的大小上限，宿主的限制仍然适用。共用代码不要依赖浏览器 Fetch 独有的选项。
+- 通用接口不提供响应头、流式响应体、`FormData` 请求体、取消信号或超时选项。Weft UI 没有规定统一的大小上限，宿主的限制仍然适用。共用代码不要依赖浏览器 Fetch 独有的选项。
 
 下面的函数从你提供的 JSON 接口加载初始待办事项。加载失败时不改动本地列表。将结果写入模型前，先检查数据结构：`json()` 只解析 JSON，不会根据模型类型校验数据。
 
@@ -114,7 +114,7 @@ app.onClick(async (model) => {
 
 ## 查看宿主和可用能力
 
-`platform` 有 `os` 和 `version` 两个只读字段。`os` 的取值为 `web`、`wechat`、`ios`、`macos`、`android`、`windows` 或 `linux`。`version` 是宿主报告的字符串，不是 Weft 的包版本，也没有跨平台的统一格式。比如，在 Web 上它是完整的用户代理字符串；在原生目标上，如果没有内核或平台壳没有提供版本，它就是空字符串。
+`platform` 有 `os` 和 `version` 两个只读字段。`os` 的取值为 `web`、`wechat`、`ios`、`macos`、`android`、`windows` 或 `linux`。`version` 是宿主报告的字符串，不是 Weft UI 的包版本，也没有跨平台的统一格式。比如，在 Web 上它是完整的用户代理字符串；在原生目标上，如果没有内核或平台壳没有提供版本，它就是空字符串。
 
 `isSupported(api: "fetch" | "storage"): boolean` 检查当前宿主是否提供该能力，不会实际发请求或读写存储。可以据此选择备用方案。返回 `true` 不代表某次调用一定成功。
 
@@ -127,7 +127,7 @@ app.onClick(async (model) => {
 | Windows | `HttpClient` | 应用本地数据目录中的 `storage.json` | `Environment.OSVersion.Version` 转成的字符串 |
 | Linux | libsoup | 应用的 XDG 用户数据目录中的 `storage.json` | 发行版版本标识，取不到时用内核版本 |
 
-Weft 自带的五个原生平台壳均实现了这两项能力。原生实现会向正在运行的平台壳查询支持情况。宿主配置见[平台指南](/zh/guides/platforms/)，原生调用格式见[视图协议规范](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.zh-CN.md#平台调用)。
+Weft UI 自带的五个原生平台壳均实现了这两项能力。原生实现会向正在运行的平台壳查询支持情况。宿主配置见[平台指南](/zh/guides/platforms/)，原生调用格式见[视图协议规范](https://github.com/MioYiSama/weft-ui/blob/master/protocol/SPEC.zh-CN.md#平台调用)。
 
 ## 用 `PlatformError` 处理不可用的 API
 

@@ -1,11 +1,11 @@
 ---
 title: 编辑器与 TypeScript 工具
-description: 格式化 Weft 文件，为编辑器接入 Weft 语言服务器，并检查 .weft 导入的类型。
+description: 格式化 Weft UI 文件，为编辑器接入 Weft UI 语言服务器，并检查 .weft 导入的类型。
 sidebar:
   order: 6
 ---
 
-编辑 `.weft` 文件时，可以用 Weft 语言服务器查看错误、补全代码。[待办示例](https://github.com/MioYiSama/weft-ui/blob/master/example/src/index.ts)中的 `import { App } from "./App.weft"` 则由 TypeScript 内容映射器提供类型信息。同一个项目可以同时使用这两种工具。
+编辑 `.weft` 文件时，可以用 Weft UI 语言服务器查看错误、补全代码。[待办示例](https://github.com/MioYiSama/weft-ui/blob/master/example/src/index.ts)中的 `import { App } from "./App.weft"` 则由 TypeScript 内容映射器提供类型信息。同一个项目可以同时使用这两种工具。
 
 ## 安装 CLI
 
@@ -15,7 +15,7 @@ sidebar:
 cargo install --path crates/cli
 ```
 
-## 格式化 Weft 文件
+## 格式化 Weft UI 文件
 
 `weft fmt` 会直接改写文件。可以指定文件或目录，不传路径时从当前目录开始。扫描目录时会递归查找 `.weft` 文件，遵循 `.gitignore`，并跳过隐藏文件和目录。直接指定文件时，不限制扩展名。
 
@@ -33,7 +33,7 @@ weft fmt --check example/src
 weft fmt --stdin --path example/src/App.weft < example/src/App.weft
 ```
 
-## 使用 Weft 语言服务器
+## 使用 Weft UI 语言服务器
 
 `weft lsp` 通过标准输入和输出与编辑器通信，使用语言服务器协议（LSP）。在已接入的编辑器里打开 [`App.weft`](https://github.com/MioYiSama/weft-ui/blob/master/example/src/App.weft)，就可以试用以下功能：
 
@@ -42,7 +42,7 @@ weft fmt --stdin --path example/src/App.weft < example/src/App.weft
 - **悬停与跳转到定义：** 把鼠标停在 `todo.name` 上可以查看字段的类型，也可以跳转到字段声明。定义可以位于导入的 `.weft` 文件中。服务器对已打开的文件使用编辑器里尚未保存的内容，其余导入从磁盘读取。
 - **格式化文档：** 使用编辑器的文档格式化命令。服务器与 CLI 使用同一个格式化工具，但会采用编辑器的缩进设置。
 
-Weft 语言服务器不提供查找引用或重命名。下文介绍的 TypeScript 内容映射器可以在 TypeScript 代码和映射后的 Weft 声明之间跳转。
+Weft UI 语言服务器不提供查找引用或重命名。下文介绍的 TypeScript 内容映射器可以在 TypeScript 代码和映射后的 Weft UI 声明之间跳转。
 
 ### Zed
 
@@ -58,13 +58,13 @@ Weft 语言服务器不提供查找引用或重命名。下文介绍的 TypeScri
 }
 ```
 
-扩展还会从固定的提交加载 [Weft 的 Tree-sitter 语法](https://github.com/MioYiSama/weft-ui/blob/master/packages/tree-sitter/)，用于语法高亮、括号匹配、缩进和文档大纲。
+扩展还会从固定的提交加载 [Weft UI 的 Tree-sitter 语法](https://github.com/MioYiSama/weft-ui/blob/master/packages/tree-sitter/)，用于语法高亮、括号匹配、缩进和文档大纲。
 
 ### 其他编辑器
 
 如果编辑器的 LSP 客户端支持添加自定义服务器，把服务器关联到 `.weft` 文件，将可执行文件设为 `weft` 或它的绝对路径，唯一的启动参数填 `lsp`。如果需要选择通信方式，选 stdio。语法高亮与语言服务器是两回事，需要单独配置。
 
-## 用 TypeScript 检查 Weft 导入
+## 用 TypeScript 检查 Weft UI 导入
 
 使用支持[内容映射器](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/#content-mappers)的 TypeScript 版本。这个功能从 7.1 开始提供。将 `@weft-ui/content-mapper` 加到开发依赖里。[示例项目](https://github.com/MioYiSama/weft-ui/blob/master/example/package.json)已经将它列为工作区依赖；按[快速开始](/zh/guides/getting-started/)安装依赖，再运行 `pnpm build:wasm` 构建编译器的 WASM。
 
@@ -84,11 +84,11 @@ tsc --runExternalCode
 
 在 VS Code 中，要使用支持内容映射器的 TypeScript 工具。工作区必须受信任，同时还要允许映射器运行。只给你信任的代码授予权限。
 
-映射器把生成的[逻辑模块](/zh/guides/logic/)声明交给 TypeScript，不需要写出声明文件。Weft 错误会标在原始 `.weft` 文件里。生成的模型、字段、事件、组件和参数名会映射回各自的声明，因此可以跨文件跳转到定义、查找引用。例如，在 `index.ts` 里对 `app.onToggle` 执行“转到定义”，可以跳到 `App.weft` 中的 `event Toggle`。TypeScript 代码里的类型错误仍会标在 `.ts` 文件中，但相关的声明位置可以指向 `.weft`。
+映射器把生成的[逻辑模块](/zh/guides/logic/)声明交给 TypeScript，不需要写出声明文件。Weft UI 错误会标在原始 `.weft` 文件里。生成的模型、字段、事件、组件和参数名会映射回各自的声明，因此可以跨文件跳转到定义、查找引用。例如，在 `index.ts` 里对 `app.onToggle` 执行“转到定义”，可以跳到 `App.weft` 中的 `event Toggle`。TypeScript 代码里的类型错误仍会标在 `.ts` 文件中，但相关的声明位置可以指向 `.weft`。
 
 ## 改用生成的声明文件
 
-如果 TypeScript 环境无法运行内容映射器，可以在 Weft 的 Vite 插件中启用 `dts: true`。这个选项默认关闭。
+如果 TypeScript 环境无法运行内容映射器，可以在 Weft UI 的 Vite 插件中启用 `dts: true`。这个选项默认关闭。
 
 ```ts
 import { defineConfig } from "vite";
@@ -109,4 +109,4 @@ export default defineConfig({
 }
 ```
 
-类型检查前先运行 Vite，让插件生成声明文件。比如待办示例启用 `dts` 后，运行 `pnpm --filter example build:web` 会在 `src/App.weft` 旁生成 `src/App.d.weft.ts`。导入路径仍然写 `./App.weft`：TypeScript 从相邻的声明文件读取类型，Vite 仍然编译 Weft 源文件。这种方式不会把 TypeScript 的跳转位置映射回 `.weft`。
+类型检查前先运行 Vite，让插件生成声明文件。比如待办示例启用 `dts` 后，运行 `pnpm --filter example build:web` 会在 `src/App.weft` 旁生成 `src/App.d.weft.ts`。导入路径仍然写 `./App.weft`：TypeScript 从相邻的声明文件读取类型，Vite 仍然编译 Weft UI 源文件。这种方式不会把 TypeScript 的跳转位置映射回 `.weft`。

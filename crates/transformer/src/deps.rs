@@ -20,6 +20,7 @@ pub(crate) fn collect(expr: &Expr, out: &mut Vec<Dep>) {
         | ExprKind::Bool(_)
         | ExprKind::Null
         | ExprKind::Str(_)
+        | ExprKind::Theme(_)
         | ExprKind::LambdaArg
         | ExprKind::Error => {}
         // Roots and fields are always handled by `path`.

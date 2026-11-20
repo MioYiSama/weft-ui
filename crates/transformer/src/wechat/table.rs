@@ -13,6 +13,8 @@
 //! | `p`   | key per mount point; `[indexKey, dataKey]` for branches         |
 //! | `d`   | constants that cannot be inlined into WXML, by key             |
 
+use std::fmt;
+
 use crate::bridge::js::{self, Code};
 use crate::ir::{NodeKind, Program, Prop};
 use crate::view::{PointKind, Template, TemplateKind, ViewLayout, ViewNodeKind};
@@ -25,6 +27,18 @@ pub(crate) fn object(program: &Program, layout: &ViewLayout) -> String {
     let mut out = Code::default();
     out.open("{");
     out.line(format!("hash: \"{:016x}\",", layout.hash()));
+    if !layout.theme().is_empty() {
+        let names = fmt::from_fn(|out| {
+            for (i, (name, _, _)) in layout.theme().iter().enumerate() {
+                if i != 0 {
+                    out.write_str(", ")?;
+                }
+                write!(out, "\"{name}\"")?;
+            }
+            Ok(())
+        });
+        out.line(format!("theme: [{names}],"));
+    }
     out.open("templates: [");
     for template in layout.templates() {
         out.line(format!("{},", entry(program, template)));

@@ -1,0 +1,25 @@
+theme {
+  accent = "#0a84ff" dark "#409cff",
+  gap = 8,
+  scale = -1.25,
+}
+
+style Accent {
+  color = theme.accent,
+}
+
+model Model { flag: Bool }
+
+component Badge(tint: Color) {
+  Text("badge", color = tint)
+}
+
+component Theme(model: Model) {
+  Column(gap = theme.gap) {
+    Text("accent", color = theme.accent)
+    Text("styled", style = Accent)
+    Text("flag", color = if (model.flag) theme.accent else "#000000")
+    Text("${theme.scale}")
+    Badge(theme.accent)
+  }
+}

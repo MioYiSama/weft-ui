@@ -50,6 +50,7 @@ impl ViewLayout {
             })
             .collect();
         let mut layout = ViewLayout {
+            theme: program.theme.as_ref().map(|theme| theme.colors.clone()),
             templates,
             components,
             hash: 0,
@@ -81,6 +82,7 @@ fn constant(expr: &Expr, ty: PropType) -> Option<Constant> {
             Color::parse(s).expect("color literals were validated during semantic analysis"),
         )),
         ExprKind::Str(s) => Some(Constant::String(s.clone())),
+        ExprKind::Theme(name) => Some(Constant::Token(name.clone())),
         ExprKind::Int(v) => Some(Constant::Int(*v)),
         ExprKind::Bool(v) => Some(Constant::Bool(*v)),
         ExprKind::Coerce { expr, .. } => constant(expr, ty),

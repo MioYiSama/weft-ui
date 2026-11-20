@@ -91,6 +91,9 @@ pub(crate) fn inline(target: Target, constant: &Constant) -> Option<String> {
     match (target, constant) {
         (Target::Text | Target::Attr(_), Constant::String(s)) => markup_safe(s).then(|| s.clone()),
         (Target::Style(_, CssUnit::Color), Constant::Color(color)) => Some(color.to_string()),
+        (Target::Style(_, CssUnit::Color), Constant::Token(name)) => {
+            Some(crate::style::theme_color(name).to_string())
+        }
         (Target::Flag(_), Constant::Bool(b)) => Some(b.to_string()),
         (Target::Style(_, CssUnit::Px), Constant::Int(v)) => Some(format!("{v}px")),
         (Target::Style(_, CssUnit::Bold), Constant::Bool(b)) => {

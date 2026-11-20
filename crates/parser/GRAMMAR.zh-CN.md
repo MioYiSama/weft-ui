@@ -12,6 +12,7 @@
 - 保留关键字：`if` `else` `for` `in` `true` `false` `null`。
 - 上下文关键字（其他位置是普通标识符，例如 Demo 中的参数 `model`）：
   - `import`（后跟字符串）、`model` / `event` / `component` / `type` / `style`（后跟标识符）只在顶层开启声明；
+  - `theme`（后跟 `{`）开启顶层主题声明；`dark` 只在主题条目中引出第二个颜色；
   - `state`（后跟标识符）只在组件体内开启状态声明；
   - `let`（后跟标识符）在组件体或块的开头开启局部声明；
   - `key` 只在 `for` 头部出现。
@@ -27,11 +28,14 @@ EBNF 记法：`X?` 可选，`X*` 零或多次，`X+` 一或多次，`"tok"` 为 
 ```text
 File        = Import* Item* EOF ;
 Import      = "import" STRING ;               (* 不允许插值 *)
-Item        = Model | Event | Component | TypeAlias | Style ;
+Item        = Model | Event | Component | TypeAlias | Style | Theme ;
 TypeAlias   = "type" IDENT "=" Type ;
 Style       = "style" IDENT "{" ( StyleEntry ","? )* "}" ;
 StyleEntry  = IDENT "=" ConstValue ;
-ConstValue  = STRING | "-"? INT | "-"? FLOAT | "true" | "false" ;   (* 不允许插值 *)
+Theme       = "theme" "{" ( ThemeEntry ","? )* "}" ;
+ThemeEntry  = IDENT "=" ( COLOR_STRING ( "dark" COLOR_STRING )? | "-"? INT | "-"? FLOAT ) ;
+ConstValue  = STRING | "-"? INT | "-"? FLOAT | "true" | "false" | "theme" "." IDENT ;
+(* ConstValue 中的 STRING 和 COLOR_STRING 不允许插值。 *)
 
 Model       = "model" IDENT "{" FieldList? "}" ;
 Event       = "event" IDENT ( "(" FieldList? ")" )? ;
@@ -114,12 +118,13 @@ Call        = IDENT "(" ArgList? ")" ;
 - 导入闭包内 `model`、`event`、`component`、`type`、`style` 共用一个命名空间，任何重名都报错；也不能与内置元素重名。
 - 宿主侧的事件注册方法由事件名派生（`onFooBar` / `on_foo_bar`），因此忽略大小写和下划线后相同的两个事件名（如 `FooBar` 与 `foo_bar`）也报错。
 - 循环导入、找不到的文件都报错。
+- `theme` 是主题令牌的保留名，不能作为组件参数、`state`、`let`、`for` 循环变量或 lambda 参数的名字。
 - 组件内名称查找顺序：lambda 参数 → `let` 绑定（由内向外） → `for` 变量 → `state` → 组件参数。组件内不允许遮蔽已有名称。
 - `let` 声明不可变的表达式别名，在同一块内的声明之后可见，也可以在嵌套块和 lambda 中使用。省略类型标注时，类型由表达式推导。编译器在每个使用处内联表达式，因此依赖与直接写出表达式相同。
 
 ### 类型
 
-- 基础类型 `Int` `Float` `Bool` `String`，复合类型 `T[]`、`T?`，以及 `model` 名。
+- 基础类型 `Int`、`Float`、`Bool`、`String`、`Color`，复合类型 `T[]`、`T?`，以及 `model` 名。
 - 一个组件可以声明多个 `Children` 参数（插槽）。组件体内以参数名作为节点使用。插槽没有默认值，调用时可以不填。
 - 调用方在尾随块里用 `name: { ... }` 填充同名 `Children` 参数，其余节点填充按声明顺序排列的第一个 `Children` 参数。具名填充只能直接写在组件调用的尾随块里。未知插槽名、同一插槽填充两次（包括同时使用具名和非具名内容），以及给没有插槽的组件传入子块，都会报错。
 - `type` 为其他类型声明别名，例如 `type Kind = "text" | "image"`。类型检查时展开别名；别名不能直接或间接引用自身。可用别名书写可空联合（`Kind?`）和联合数组（`Kind[]`）。
@@ -127,7 +132,7 @@ Call        = IDENT "(" ArgList? ")" ;
 - 赋值兼容：相同类型；`Int` → `Float`；`null` → `T?`；`T` → `T?`。字符串字面量可以赋给包含它的联合，普通 `String` 值不可以。联合可以赋给包含其全部成员的联合，也可以赋给 `String`。
 - 期望类型为联合时，`if` 表达式的两个分支和 `??` 的右侧按该联合检查。联合值与字符串字面量用 `==` 或 `!=` 比较时，字面量必须是联合的成员。
 - 算术：`Int op Int → Int`（整除），含 `Float` 时为 `Float`；`String + String → String`。
-- 比较 `< <= > >=` 只用于数值或字符串；`== !=` 只用于标量及其可空类型。
+- 比较 `< <= > >=` 只用于数值或字符串；`== !=` 只用于 `Color` 之外的标量及其可空类型。
 - `a ?? b` 要求 `a: T?`；`a?.f` 要求 `a` 可空，结果可空。对非空值用 `?.` 给出警告。
 - 字符串插值只接受 `Int`、`Float`、`Bool`、`String` 和字符串字面量联合。
 - `model` 不允许不经过数组或可空类型的直接递归。
@@ -137,7 +142,7 @@ Call        = IDENT "(" ArgList? ")" ;
 | 接收者           | 成员                                                         |
 | ---------------- | ------------------------------------------------------------ |
 | `String`         | `length: Int` `isEmpty: Bool` `trim()` `uppercase()` `lowercase()` `contains(String): Bool` |
-| `T[]`            | `length: Int` `isEmpty: Bool` `contains(T): Bool`（`T` 为标量） |
+| `T[]`            | `length: Int` `isEmpty: Bool` `contains(T): Bool`（`T` 为 `Color` 之外的标量） |
 | `Int` `Bool`     | `toString(): String`                                         |
 | `Float`          | `toString(): String` `toFixed(Int): String`                  |
 
@@ -155,7 +160,7 @@ Call        = IDENT "(" ArgList? ")" ;
 
 ### 回调参数
 
-类型为 `Event` 的回调不接收载荷；`Event<T>` 接收一个载荷，类型可以是 `Int`、`Float`、`Bool`、`String` 或字符串字面量联合。这两种类型只能直接用于组件参数。回调参数总是可选的，不能声明默认值。调用方可以传入上述任一种事件参数形式；直接按名称转发载荷时，载荷类型须能赋给接收方。调用未传入的回调没有效果。
+类型为 `Event` 的回调不接收载荷；`Event<T>` 接收一个载荷，类型可以是 `Int`、`Float`、`Bool`、`String`、`Color` 或字符串字面量联合。这两种类型只能直接用于组件参数。回调参数总是可选的，不能声明默认值。调用方可以传入上述任一种事件参数形式；直接按名称转发载荷时，载荷类型须能赋给接收方。调用未传入的回调没有效果。
 
 例如，`Rating(value: Int, onSelect: Event<Int>)` 组件可以写 `Button(onClick = onSelect(1))`。调用方可以写 `Rating(score, onSelect = Rated)` 发出宿主事件，也可以写 `Rating(score, onSelect = { v -> score = v; Rated(score) })`，先更新本地状态再发出事件。经回调传递的宿主事件仍归提供回调的组件。
 
@@ -167,9 +172,16 @@ Call        = IDENT "(" ArgList? ")" ;
 
 ### 样式
 
-- 顶层声明 `style Muted { color = "#6b7280", size = 12 }` 为内置元素的具名值属性设置默认值。样式不能设置位置属性或事件，不能引用其他样式，也不能使用计算表达式。
+- 顶层声明 `style Muted { color = "#6b7280", size = 12 }` 为内置元素的具名值属性设置默认值。样式值可以是字面量或 `theme.name`。样式不能设置位置属性或事件，不能引用其他样式，也不能使用计算表达式。
 - `Text("note", style = Muted, size = 14)` 只应用一个可见的样式。元素必须接受样式中的每个属性。显式参数覆盖样式默认值（这里的 `size` 为 `14`），其余值按普通元素参数检查类型。类型错误会报在 `style = Muted` 参数处。
 - 只有内置元素能使用 `style`，组件调用不能使用。
+
+### 主题
+
+- 整个导入闭包最多允许一个 `theme` 声明，其中的令牌名不能重复。`theme.name` 必须写在声明主题的文件中，或写在直接导入它的文件中。样式里的令牌引用按样式声明所在文件解析。
+- 颜色令牌包含浅色值和可选的 `dark` 深色值。省略时，深色模式也使用浅色值。系统外观变化时，宿主自动更新所渲染的颜色。整数和浮点数令牌没有深浅色变体，在编译期替换为字面量。
+- `Color` 是独立类型，可用于模型字段、`Event<Color>` 回调参数等类型标注。需要 `Color` 的位置可传入 `String`：字面量必须是十六进制颜色，其他值在运行时解析。`Color` 不能赋给 `String`，也不能比较或插值。在 TypeScript 声明中表示为 `string`。
+- 目前 Web 和微信小程序支持主题声明和引用。各平台支持情况见[功能支持矩阵](https://weftui.mioyi.net/zh/reference/elements/#功能支持)。
 
 ### 内置元素与布局
 
@@ -196,7 +208,7 @@ Call        = IDENT "(" ArgList? ")" ;
 - **长度**：`Int`，单位是逻辑像素：iOS / macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px；小程序用 `px`，不用 `rpx`。
 - **`Column` / `Row`**：子元素沿主轴（`Column` 纵向、`Row` 横向）从起点依次排列，交叉轴对齐起点，不拉伸、不自动撑满；`gap` 是相邻子元素的间距，`padding` 是四边相同的内边距，语义同 CSS。平台默认值不同时由后端显式设置，例如 Web 和小程序写 `align-items:flex-start`，SwiftUI 写 `VStack(alignment: .leading)`。
 - **`width` / `height`**：固定尺寸；不写时由内容决定。
-- **颜色**：`Color` 属性接受 `#RGB`、`#RRGGBB` 或 `#RRGGBBAA`（十六进制，大小写不限），在类型检查中按 `String` 处理。字面量在编译期校验，不合法时报错，并预解析为 RGBA 写进视图布局；动态值由平台在运行时解析，不合法时按透明处理，在开发构建中打警告。
+- **颜色**：`Color` 属性接受 `theme.accent` 等 `Color` 值，也接受 `#RGB`、`#RRGGBB` 或 `#RRGGBBAA`（十六进制，大小写不限）。颜色字面量在编译期校验并以 RGBA 写入视图布局。动态值中的无效颜色和未知令牌显示为透明，开发构建还会发出警告。
 - **`Image`**：`src` 是图片 URL，没有内置网络图片控件的平台由内核下载。
 
 ### 依赖分析

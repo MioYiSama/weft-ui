@@ -35,7 +35,8 @@
   },
   "features": {
     "theme": {
-      "doc": { "en": "Theme declarations and color tokens.", "zh": "主题声明和颜色令牌。" }
+      "doc": { "en": "Theme declarations and color tokens.", "zh": "主题声明和颜色令牌。" },
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
     },
     "assets": {
       "doc": { "en": "Local image assets and custom fonts.", "zh": "本地图片资源和自定义字体。" }

@@ -53,7 +53,7 @@ pub(crate) fn member(recv: &Type, name: &str) -> Option<MemberSig> {
         (Type::String, "uppercase") => sig(Member::Uppercase, Method, vec![], Type::String),
         (Type::String, "lowercase") => sig(Member::Lowercase, Method, vec![], Type::String),
         (Type::String, "contains") => sig(Member::Contains, Method, vec![Type::String], Type::Bool),
-        (Type::Array(elem), "contains") if elem.is_scalar() => {
+        (Type::Array(elem), "contains") if elem.is_comparable_scalar() => {
             sig(Member::Contains, Method, vec![(**elem).clone()], Type::Bool)
         }
         (Type::Int | Type::Float | Type::Bool, "toString") => {

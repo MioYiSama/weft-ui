@@ -177,6 +177,8 @@ pub enum SymbolKind {
     Type,
     /// A compile-time style declaration.
     Style,
+    /// A color or numeric token declared in `theme`.
+    ThemeToken,
 }
 
 /// An argument list; `args` spans from the callee name to the end of the
@@ -321,6 +323,16 @@ impl Resolver<'_> {
                     def: Some(style.def),
                 }
             }
+            Target::ThemeToken {
+                ty,
+                def,
+                declaration,
+            } => Symbol {
+                kind: SymbolKind::ThemeToken,
+                name: self.sources.snippet(def).to_owned(),
+                detail: format!("{}: {}", self.sources.snippet(declaration), self.ty(&ty)),
+                def: Some(def),
+            },
             Target::Local {
                 binding,
                 name,
@@ -484,6 +496,35 @@ component App(model: Model) {
   }
 }
 "##;
+
+    #[test]
+    fn resolves_theme_tokens_and_completes_in_declaration_order() {
+        let app = r##"theme { accent = "#fff" dark "#000", gap = 8 }
+style Accent { color = theme.accent }
+component App() { Text("accent", style = Accent) }"##;
+        let analysis = analyze_app(app, None);
+        let token = at(&analysis, app, "accent }");
+        assert_eq!(token.kind, SymbolKind::ThemeToken);
+        assert_eq!(token.detail, "accent = \"#fff\" dark \"#000\": Color");
+        assert_eq!(
+            analysis
+                .sources
+                .snippet(token.def.expect("token definition")),
+            "accent"
+        );
+
+        let analysis = analyze_app(&app.replace("theme.accent", "theme.PROBE"), Some("PROBE"));
+        let probe = analysis.index.probe.expect("a theme member probe");
+        assert_eq!(probe.context, ProbeContext::Member);
+        assert_eq!(
+            probe
+                .candidates
+                .iter()
+                .map(|token| token.name.as_str())
+                .collect::<Vec<_>>(),
+            ["accent", "gap"]
+        );
+    }
 
     #[test]
     fn resolves_names_to_signatures_and_definitions() {

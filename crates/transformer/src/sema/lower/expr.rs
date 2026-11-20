@@ -2,10 +2,10 @@ use weft_ui_ast as ast;
 use weft_ui_ast::span::offset;
 use weft_ui_ast::{BinaryOp, Diagnostic, Span, UnaryOp};
 
-use crate::ir::{Coercion, Expr, ExprKind, FieldId, InterpPart, Type};
-use crate::sema::DeclKind;
+use crate::ir::{Coercion, Expr, ExprKind, FieldId, InterpPart, ThemeUse, Type};
 use crate::sema::builtins::{self, MemberKind};
 use crate::sema::record::{ProbeContext, Target};
+use crate::sema::{DeclKind, theme};
 
 use super::Lowerer;
 use super::scope::LocalKind;
@@ -13,13 +13,13 @@ use super::scope::LocalKind;
 impl Lowerer<'_, '_> {
     /// Lowers `e` and checks that it can be used where `ty` is expected.
     pub(crate) fn expr_as(&mut self, e: &ast::Expr, ty: &Type) -> Expr {
-        let expr = self.expr_inner(e, union_type(ty));
+        let expr = self.expr_inner(e, contextual_type(ty));
         self.coerce_to(expr, ty)
     }
 
-    /// Lowers a style entry to a constant and checks it at the application site.
-    pub(super) fn style_expr_as(&mut self, value: &ast::Expr, ty: &Type, span: Span) -> Expr {
-        let mut expr = if let ast::ExprKind::Unary {
+    /// Lowers a style entry to a constant in the declaring file.
+    pub(in crate::sema) fn style_value(&mut self, value: &ast::Expr) -> Expr {
+        if let ast::ExprKind::Unary {
             op: UnaryOp::Neg,
             expr: operand,
         } = &value.kind
@@ -30,12 +30,11 @@ impl Lowerer<'_, '_> {
                 ExprKind::Float(v) => ExprKind::Float(-v),
                 _ => unreachable!("a style value can only negate a numeric literal"),
             };
+            expr.span = value.span;
             expr
         } else {
             self.expr(value)
-        };
-        expr.span = span;
-        self.coerce_to(expr, ty)
+        }
     }
 
     pub(super) fn coerce_to(&mut self, expr: Expr, ty: &Type) -> Expr {
@@ -49,6 +48,13 @@ impl Lowerer<'_, '_> {
                 expr.span,
                 format!("`{value:?}` is not a member of `{name}`"),
             );
+            return error_expr(expr.span);
+        }
+        if expr.ty == Type::String
+            && matches!(contextual_type(ty), Some(Type::Color))
+            && let ExprKind::Str(value) = &expr.kind
+            && theme::literal_color(value, expr.span, self.diags).is_none()
+        {
             return error_expr(expr.span);
         }
         match coerce(expr, ty) {
@@ -72,18 +78,18 @@ impl Lowerer<'_, '_> {
         self.expr_inner(e, None)
     }
 
-    /// Applies a union hint to result positions without deciding their nullability.
-    fn expr_with_union(&mut self, e: &ast::Expr, union: Option<&Type>) -> Expr {
-        let expr = self.expr_inner(e, union);
-        if let Some(union) = union
+    /// Applies a type hint to result positions without deciding their nullability.
+    fn expr_with_hint(&mut self, e: &ast::Expr, hint: Option<&Type>) -> Expr {
+        let expr = self.expr_inner(e, hint);
+        if let Some(hint) = hint
             && !matches!(expr.ty, Type::Null | Type::Optional(_))
         {
-            return self.coerce_to(expr, union);
+            return self.coerce_to(expr, hint);
         }
         expr
     }
 
-    fn expr_inner(&mut self, e: &ast::Expr, union: Option<&Type>) -> Expr {
+    fn expr_inner(&mut self, e: &ast::Expr, hint: Option<&Type>) -> Expr {
         let span = e.span;
         let (kind, ty) = match &e.kind {
             ast::ExprKind::Int(v) => (ExprKind::Int(*v), Type::Int),
@@ -93,6 +99,15 @@ impl Lowerer<'_, '_> {
             ast::ExprKind::Str(parts) => (self.string(parts), Type::String),
             ast::ExprKind::Ident(name) => return self.ident(name, span),
             ast::ExprKind::Field { base, name, safe } => {
+                if !*safe
+                    && matches!(&base.kind, ast::ExprKind::Ident(namespace) if namespace == theme::NAME)
+                {
+                    let expr = self.cx.theme_expr(name, span, self.diags);
+                    if !expr.ty.has_error() {
+                        self.theme_use.merge(ThemeUse { first: Some(span) });
+                    }
+                    return expr;
+                }
                 let base = self.expr(base);
                 return self.access(base, name, *safe, None, span);
             }
@@ -104,13 +119,13 @@ impl Lowerer<'_, '_> {
                 rhs,
             } => {
                 let lhs = self.expr(lhs);
-                return self.coalesce(lhs, rhs, union, span);
+                return self.coalesce(lhs, rhs, hint, span);
             }
             ast::ExprKind::Binary { op, lhs, rhs } => return self.binary(*op, lhs, rhs, span),
             ast::ExprKind::If { cond, then, else_ } => {
                 let cond = self.expr_as(cond, &Type::Bool);
-                let then = self.expr_with_union(then, union);
-                let else_ = self.expr_with_union(else_, union);
+                let then = self.expr_with_hint(then, hint);
+                let else_ = self.expr_with_hint(else_, hint);
                 let Some(ty) = unify(&then.ty, &else_.ty) else {
                     let msg = format!(
                         "`if` branches have different types: `{}` and `{}`",
@@ -154,7 +169,7 @@ impl Lowerer<'_, '_> {
                 ast::StrPart::Lit(s) => InterpPart::Lit(s.clone()),
                 ast::StrPart::Expr(e) => {
                     let expr = self.expr(e);
-                    if !expr.ty.is_scalar() && !expr.ty.has_error() {
+                    if !expr.ty.is_comparable_scalar() && !expr.ty.has_error() {
                         let ty = self.type_name(&expr.ty);
                         self.error(
                             expr.span,
@@ -485,15 +500,13 @@ impl Lowerer<'_, '_> {
         make(lhs, rhs, result_ty)
     }
 
-    fn coalesce(&mut self, lhs: Expr, rhs: &ast::Expr, union: Option<&Type>, span: Span) -> Expr {
+    fn coalesce(&mut self, lhs: Expr, rhs: &ast::Expr, hint: Option<&Type>, span: Span) -> Expr {
         let present = match &lhs.ty {
             Type::Optional(inner) => inner,
             ty => ty,
         };
-        let target = union
-            .filter(|ty| assignable(present, ty))
-            .unwrap_or(present);
-        let rhs = self.expr_with_union(rhs, union.or_else(|| union_type(present)));
+        let target = hint.filter(|ty| assignable(present, ty)).unwrap_or(present);
+        let rhs = self.expr_with_hint(rhs, hint.or_else(|| contextual_type(present)));
         let ty = if lhs.ty.has_error() || rhs.ty.has_error() {
             Type::Error
         } else if matches!(lhs.ty, Type::Optional(_)) {
@@ -532,6 +545,15 @@ pub(super) fn error_expr(span: Span) -> Expr {
     }
 }
 
+/// Types whose literals are checked at result positions, ignoring an optional wrapper.
+fn contextual_type(ty: &Type) -> Option<&Type> {
+    match ty {
+        Type::Color => Some(ty),
+        Type::Optional(inner) if **inner == Type::Color => Some(inner),
+        _ => union_type(ty),
+    }
+}
+
 /// The expected union, ignoring an optional wrapper.
 fn union_type(ty: &Type) -> Option<&Type> {
     match ty {
@@ -547,9 +569,9 @@ fn includes_union(members: &[String], other: &[String]) -> bool {
 
 fn is_comparable(ty: &Type) -> bool {
     match ty {
-        Type::Optional(inner) => inner.is_scalar(),
+        Type::Optional(inner) => inner.is_comparable_scalar(),
         Type::Null => true,
-        ty => ty.is_scalar(),
+        ty => ty.is_comparable_scalar(),
     }
 }
 
@@ -560,6 +582,7 @@ pub(super) fn assignable(from: &Type, to: &Type) -> bool {
         _ if from.has_error() || to.has_error() => true,
         (Type::Null, Type::Optional(_))
         | (Type::Int, Type::Float)
+        | (Type::String, Type::Color)
         | (Type::Union(_), Type::String) => true,
         (Type::Union(from), Type::Union(to)) => includes_union(to, from),
         (Type::Optional(_), _) => false,
@@ -588,8 +611,8 @@ fn coerce(expr: Expr, to: &Type) -> Result<Expr, Expr> {
             ..expr
         }),
         (Type::Int, Type::Float) => Ok(wrap(Coercion::IntToFloat, expr, Type::Float)),
-        (Type::Union(_), Type::String) => Ok(Expr {
-            ty: Type::String,
+        (Type::Union(_), Type::String) | (Type::String, Type::Color) => Ok(Expr {
+            ty: to.clone(),
             ..expr
         }),
         (Type::Union(from), Type::Union(to_members)) if includes_union(to_members, from) => {
@@ -618,6 +641,7 @@ fn unify(a: &Type, b: &Type) -> Option<Type> {
         _ if a.has_error() || b.has_error() => Some(Type::Error),
         (Type::Null, other) | (other, Type::Null) => Some(other.clone().optional()),
         (Type::Int, Type::Float) | (Type::Float, Type::Int) => Some(Type::Float),
+        (Type::String, Type::Color) | (Type::Color, Type::String) => Some(Type::Color),
         (Type::Union(x), Type::Union(y)) if includes_union(x, y) => Some(a.clone()),
         (Type::Union(x), Type::Union(y)) if includes_union(y, x) => Some(b.clone()),
         (Type::Union(_), Type::Union(_) | Type::String) | (Type::String, Type::Union(_)) => {

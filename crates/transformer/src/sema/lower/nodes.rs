@@ -4,19 +4,17 @@ use weft_ui_ast as ast;
 use weft_ui_ast::span::offset;
 use weft_ui_ast::{Diagnostic, Span};
 
-use crate::color::Color;
 use crate::deps;
 use crate::elements::{
     self, Children, ELEMENTS as BUILTIN_ELEMENTS, ElementSpec, LIFECYCLE as CALL_HOOKS, PropKind,
-    PropType,
 };
 use crate::ir::{
-    Arg, ArgValue, Binding, BindingId, BindingKind, Branch, ComponentId, Dep, Expr, ExprKind, Loop,
-    LoopId, Node, NodeId, NodeKind, Param, ParamId, ParamKind, Prop, PropValue, SlotFill, Type,
-    first_slot, slot_params,
+    Arg, ArgValue, Binding, BindingId, BindingKind, Branch, ComponentId, Dep, Expr, Loop, LoopId,
+    Node, NodeId, NodeKind, Param, ParamId, ParamKind, Prop, PropValue, SlotFill, Type, first_slot,
+    slot_params,
 };
 use crate::sema::record::{ProbeContext, RawCall, Target};
-use crate::sema::{DeclKind, article};
+use crate::sema::{DeclKind, Style, article};
 
 use super::expr::error_expr;
 use super::scope::LocalKind;
@@ -192,14 +190,23 @@ impl<'cx> Lowerer<'cx, '_> {
             let Some(arg) = arg else {
                 if let Some((style, span)) = style
                     && prop.is_style_property()
-                    && let Some(entry) = style
+                    && let Some(index) = style
+                        .declaration
                         .entries
                         .iter()
-                        .find(|entry| entry.name.name == prop.name)
+                        .position(|entry| entry.name.name == prop.name)
                 {
-                    let ty = prop.prop_type();
-                    let expr = self.style_expr_as(&entry.value, &ty.to_type(), span);
-                    self.check_element_color(&expr, ty);
+                    let (value, usage) = &style.values[index];
+                    let expr = Expr {
+                        span,
+                        ..value.clone()
+                    };
+                    if usage.first.is_some() {
+                        let mut usage = *usage;
+                        usage.first = Some(span);
+                        self.theme_use.merge(usage);
+                    }
+                    let expr = self.coerce_to(expr, &prop.prop_type().to_type());
                     props.push(Prop {
                         name: prop.name,
                         value: PropValue::Expr(expr),
@@ -212,12 +219,11 @@ impl<'cx> Lowerer<'cx, '_> {
             let (value, binding) = match prop.kind {
                 PropKind::Value(ty) => {
                     let expr = self.expr_as(&arg.value, &ty.to_type());
-                    self.check_element_color(&expr, ty);
                     let binding = self.bind(BindingKind::Prop(prop.name), expr_deps(&expr));
                     (PropValue::Expr(expr), binding)
                 }
                 PropKind::Handler { payload } => {
-                    let payload = payload.map(PropType::to_type);
+                    let payload = payload.map(|ty| ty.to_type());
                     let Some((handler, deps)) =
                         self.handler(&arg.value, prop.name, payload.as_ref(), false)
                     else {
@@ -278,23 +284,11 @@ impl<'cx> Lowerer<'cx, '_> {
         )
     }
 
-    fn check_element_color(&mut self, expr: &Expr, ty: PropType) {
-        if ty == PropType::Color
-            && let ExprKind::Str(value) = &expr.kind
-            && Color::parse(value).is_none()
-        {
-            self.error(
-                expr.span,
-                format!("invalid color `{value}`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`"),
-            );
-        }
-    }
-
     fn element_style(
         &mut self,
         spec: &ElementSpec,
         arg: &ast::Arg,
-    ) -> Option<(&'cx ast::StyleDecl, Span)> {
+    ) -> Option<(&'cx Style<'cx>, Span)> {
         let cx = self.cx;
         if matches!(arg.value.kind, ast::ExprKind::Error) {
             return None;
@@ -311,8 +305,8 @@ impl<'cx> Lowerer<'cx, '_> {
             if let Some(DeclKind::Style(id)) =
                 cx.global(self.file, name, arg.value.span, self.diags)
             {
-                let style = cx.styles[id];
-                for entry in &style.entries {
+                let style = &cx.styles[id];
+                for entry in &style.declaration.entries {
                     let property = &entry.name.name;
                     if !spec
                         .props

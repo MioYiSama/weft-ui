@@ -12,6 +12,7 @@ This document defines the normative grammar of the `.weft` language. The parser 
 - Reserved keywords: `if` `else` `for` `in` `true` `false` `null`.
 - Contextual keywords (ordinary identifiers elsewhere, such as the `model` parameter in Demo):
   - `import` (followed by a string) and `model` / `event` / `component` / `type` / `style` (followed by an identifier) begin declarations only at the top level;
+  - `theme` followed by `{` begins a top-level theme declaration; `dark` introduces its second color only in a theme entry;
   - `state` (followed by an identifier) begins a state declaration only in a component body;
   - `let` (followed by an identifier) begins a local declaration at the start of a component body or block;
   - `key` appears only in a `for` header.
@@ -27,11 +28,14 @@ EBNF notation: `X?` means optional, `X*` means zero or more occurrences, `X+` me
 ```text
 File        = Import* Item* EOF ;
 Import      = "import" STRING ;               (* no interpolation *)
-Item        = Model | Event | Component | TypeAlias | Style ;
+Item        = Model | Event | Component | TypeAlias | Style | Theme ;
 TypeAlias   = "type" IDENT "=" Type ;
 Style       = "style" IDENT "{" ( StyleEntry ","? )* "}" ;
 StyleEntry  = IDENT "=" ConstValue ;
-ConstValue  = STRING | "-"? INT | "-"? FLOAT | "true" | "false" ;   (* no interpolation *)
+Theme       = "theme" "{" ( ThemeEntry ","? )* "}" ;
+ThemeEntry  = IDENT "=" ( COLOR_STRING ( "dark" COLOR_STRING )? | "-"? INT | "-"? FLOAT ) ;
+ConstValue  = STRING | "-"? INT | "-"? FLOAT | "true" | "false" | "theme" "." IDENT ;
+(* STRING in ConstValue and COLOR_STRING must not contain interpolation. *)
 
 Model       = "model" IDENT "{" FieldList? "}" ;
 Event       = "event" IDENT ( "(" FieldList? ")" )? ;
@@ -114,12 +118,13 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 - Within the import closure, `model`, `event`, `component`, `type`, and `style` declarations share one namespace. Duplicate names and names that collide with built-in elements are errors.
 - Host-side event registration methods are derived from event names (`onFooBar` / `on_foo_bar`). Two event names that differ only in case and underscores (such as `FooBar` and `foo_bar`) are therefore also an error.
 - Import cycles and missing files are errors.
+- `theme` is reserved for the token namespace: it cannot name a component parameter, state, `let`, `for` variable, or lambda parameter.
 - Name lookup within a component proceeds in this order: lambda parameters → `let` bindings (innermost block first) → `for` variables → `state` → component parameters. Names may not shadow existing names within a component.
 - `let` creates an immutable expression alias, visible after its declaration in the same block and in nested blocks and lambdas. Its type is inferred unless annotated. The compiler substitutes its expression at each use site, so dependencies are the same as if the expression had been written there directly.
 
 ### Types
 
-- Primitive types are `Int` `Float` `Bool` `String`. Other types are compound types `T[]` and `T?` and `model` names.
+- Primitive types are `Int` `Float` `Bool` `String` `Color`. Other types are compound types `T[]` and `T?` and `model` names.
 - A component can declare multiple `Children` parameters (slots). The component body uses each parameter name as a node. Slots have no default value and can be omitted.
 - A caller fills slots in a trailing block: `name: { ... }` fills the corresponding `Children` parameter, and all other nodes go to the first `Children` parameter in declaration order. Named fills are only allowed directly in a component call's trailing block. Unknown slot names, filling a slot twice (including through both named and unnamed content), and passing a block to a component without slots are errors.
 - `type` declares an alias for another type, such as `type Kind = "text" | "image"`. Aliases are expanded for type checking and cannot refer to themselves directly or indirectly. Use an alias to write a nullable union (`Kind?`) or an array of unions (`Kind[]`).
@@ -127,7 +132,7 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 - Assignment compatibility: identical types; `Int` → `Float`; `null` → `T?`; `T` → `T?`. A string literal can be assigned to a union that contains it, but an arbitrary `String` value cannot. A union can be assigned to another union containing all its members or to `String`.
 - Where a union is expected, both arms of an `if` expression and the fallback of `??` are checked against that union. When a union is compared with a string literal using `==` or `!=`, the literal must be a member.
 - Arithmetic: `Int op Int → Int` (integer division); the result is `Float` if either operand is `Float`. `String + String → String`.
-- Comparisons `< <= > >=` apply only to numbers or strings. `== !=` apply only to scalar types and their nullable forms.
+- Comparisons `< <= > >=` apply only to numbers or strings. `== !=` apply to scalar types other than `Color` and their nullable forms.
 - `a ?? b` requires `a: T?`. `a?.f` requires a nullable receiver and produces a nullable result. Using `?.` on a non-nullable value emits a warning.
 - String interpolation accepts only `Int`, `Float`, `Bool`, `String`, and string literal unions.
 - A `model` cannot refer directly to itself except through an array or a nullable type.
@@ -137,7 +142,7 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 | Receiver         | Members                                                      |
 | ---------------- | ------------------------------------------------------------ |
 | `String`         | `length: Int` `isEmpty: Bool` `trim()` `uppercase()` `lowercase()` `contains(String): Bool` |
-| `T[]`            | `length: Int` `isEmpty: Bool` `contains(T): Bool` (`T` is scalar) |
+| `T[]`            | `length: Int` `isEmpty: Bool` `contains(T): Bool` (`T` is a scalar other than `Color`) |
 | `Int` `Bool`     | `toString(): String`                                         |
 | `Float`          | `toString(): String` `toFixed(Int): String`                  |
 
@@ -155,7 +160,7 @@ Element event arguments have payload types (`onClick` has no payload; `Input.onC
 
 ### Callback parameters
 
-A component parameter of type `Event` takes no payload; `Event<T>` takes a single `Int`, `Float`, `Bool`, `String`, or string literal union payload. These types are only allowed directly on component parameters. Callback parameters are optional and cannot declare a default value. The caller supplies any of the event argument forms above; when forwarding a payload by name, its type must be assignable to the receiver's payload type. An omitted callback can be invoked safely and does nothing.
+A component parameter of type `Event` takes no payload; `Event<T>` takes a single `Int`, `Float`, `Bool`, `String`, `Color`, or string literal union payload. These types are only allowed directly on component parameters. Callback parameters are optional and cannot declare a default value. The caller supplies any of the event argument forms above; when forwarding a payload by name, its type must be assignable to the receiver's payload type. An omitted callback can be invoked safely and does nothing.
 
 For example, a `Rating(value: Int, onSelect: Event<Int>)` component can use `Button(onClick = onSelect(1))`. Its caller can pass `Rating(score, onSelect = Rated)` to send a host event, or `Rating(score, onSelect = { v -> score = v; Rated(score) })` to set local state before sending the event. A host event passed through a callback still belongs to the component that supplies it.
 
@@ -167,9 +172,16 @@ For example, a `Rating(value: Int, onSelect: Event<Int>)` component can use `But
 
 ### Styles
 
-- A top-level `style Muted { color = "#6b7280", size = 12 }` groups defaults for named value properties declared by built-in elements. A style cannot set positional properties or events, refer to other styles, or contain computed values.
+- A top-level `style Muted { color = "#6b7280", size = 12 }` groups defaults for named value properties declared by built-in elements. A style accepts literals and `theme.name` references. It cannot set positional properties or events, refer to other styles, or contain computed values.
 - Apply a single visible style with `Text("note", style = Muted, size = 14)`. Every property in the style must be accepted by the element. Explicit arguments override the defaults (here, `size` is `14`), and the remaining values are checked as ordinary element arguments. Style values that fail type checking are reported at the `style = Muted` argument.
 - `style` is only available on built-in elements, not on component calls.
+
+### Themes
+
+- At most one `theme` declaration is allowed in the import closure. Tokens have unique names within it. A `theme.name` expression must appear in the declaring file or in a file that directly imports it. Style values are resolved in the file that declares the style.
+- A color token has a light color and an optional `dark` color. When omitted, the light color is also used in dark mode. The host updates the rendered colors when the system appearance changes. Integer and floating-point tokens have no appearance variants and are substituted as literals at compile time.
+- `Color` is a distinct type usable in annotations, including model fields and `Event<Color>` callback parameters. A `String` can be used where a `Color` is expected; literals must be hexadecimal colors and other values are parsed at runtime. A `Color` is not assignable to `String` and cannot be compared or interpolated. In TypeScript declarations it is represented as `string`.
+- Theme declarations and references are currently supported on the Web and in WeChat mini programs. See the [support matrix](https://weftui.mioyi.net/reference/elements/#feature-support).
 
 ### Built-in elements and layout
 
@@ -196,7 +208,7 @@ All elements also have `onMount` / `onUnmount`.
 - **Lengths**: `Int`, measured in logical pixels: pt on iOS / macOS, dp on Android, DIP on Windows, and CSS px on the web. Mini programs use `px`, not `rpx`.
 - **`Column` / `Row`**: Children are laid out in order from the start of the main axis (vertical for `Column`, horizontal for `Row`). They align to the start of the cross axis, without stretching or automatically filling the available space. As in CSS, `gap` is the space between adjacent children, and `padding` is the same inset on all four sides. When platform defaults differ, the backend sets the alignment explicitly, for example `align-items:flex-start` on the web and in mini programs, and `VStack(alignment: .leading)` in SwiftUI.
 - **`width` / `height`**: Fixed dimensions. If omitted, the content determines the size.
-- **Colors**: A `Color` property accepts `#RGB`, `#RRGGBB`, or `#RRGGBBAA` (case-insensitive hexadecimal) and is treated as `String` during type checking. Literals are validated at compile time: invalid literals are errors, and valid ones are parsed into RGBA and stored in the view layout. The platform parses dynamic values at runtime, treating invalid values as transparent and emitting a warning in development builds.
+- **Colors**: A `Color` property accepts a `Color` value such as `theme.accent`, or `#RGB`, `#RRGGBB`, or `#RRGGBBAA` (case-insensitive hexadecimal). Literals are validated at compile time and stored as RGBA in the view layout. Invalid dynamic colors and unknown runtime tokens are transparent, with a warning in development builds.
 - **`Image`**: `src` is an image URL. On platforms without a built-in control for remote images, the core downloads the image.
 
 ### Dependency analysis

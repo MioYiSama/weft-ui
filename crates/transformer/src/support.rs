@@ -2,21 +2,47 @@
 
 use weft_ui_ast::Diagnostic;
 
-use crate::elements::{Element, Level};
+use crate::elements::{Element, FEATURES, Level};
 use crate::ir::{NodeKind, Program};
 use crate::transform::Platform;
 
 pub(crate) fn check(program: &Program, platform: Platform) -> Vec<Diagnostic> {
-    check_with(program, platform, |element, member| {
-        let spec = element.spec();
-        let support = match member {
-            None => spec.support,
-            Some(name) => spec.prop(name)?.support,
-        };
+    let level = |support: &[(Platform, Level)]| {
         support
             .iter()
             .find_map(|&(target, level)| (target == platform).then_some(level))
-    })
+    };
+    let mut diagnostics = check_with(program, platform, |element, member| {
+        let spec = element.spec();
+        level(match member {
+            None => spec.support,
+            Some(name) => spec.prop(name)?.support,
+        })
+    });
+    if let Some(theme) = &program.theme
+        && FEATURES
+            .iter()
+            .any(|feature| feature.name == "theme" && level(feature.support) == Some(Level::No))
+    {
+        let previous = diagnostics.len();
+        let unsupported = |span| {
+            Diagnostic::error(
+                span,
+                format!("theme tokens are not supported on {platform}"),
+            )
+        };
+        diagnostics.extend(
+            program
+                .components
+                .iter()
+                .filter_map(|component| component.theme_use.first)
+                .map(unsupported),
+        );
+        if diagnostics.len() == previous {
+            diagnostics.push(unsupported(theme.span));
+        }
+    }
+    diagnostics
 }
 
 fn check_with(

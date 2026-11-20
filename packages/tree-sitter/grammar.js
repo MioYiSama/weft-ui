@@ -2,8 +2,8 @@
  * @file Tree-sitter grammar for Weft UI (`.weft`), following crates/parser/GRAMMAR.md.
  *
  * Used for syntax highlighting and structure in editors; the compiler has its
- * own parser. `import`, `model`, `event`, `component`, `type`, `style`, `state`,
- * `let` and `key` are contextual: tree-sitter only treats them as keywords where the grammar
+ * own parser. `import`, `model`, `event`, `component`, `type`, `style`, `theme`,
+ * `dark`, `state`, `let` and `key` are contextual: the grammar only treats them as keywords where it
  * expects them, so `model` still works as a parameter name.
  */
 
@@ -44,6 +44,9 @@ export default grammar({
 
   supertypes: $ => [$._expression, $._node, $._type],
 
+  // `dark` after a color starts its dark variant or an adjacent token named `dark`.
+  conflicts: $ => [[$.theme_color]],
+
   rules: {
     source_file: $ => repeat(choice(
       $.import,
@@ -52,6 +55,7 @@ export default grammar({
       $.component_declaration,
       $.type_alias,
       $.style_declaration,
+      $.theme_declaration,
     )),
 
     import: $ => seq('import', field('path', $.string)),
@@ -134,8 +138,24 @@ export default grammar({
         $.signed_number,
         $.true,
         $.false,
+        $.theme_reference,
       )),
     ),
+
+    theme_declaration: $ => seq('theme', '{', repeat(seq($.theme_entry, optional(','))), '}'),
+
+    theme_entry: $ => seq(
+      field('name', choice($.identifier, alias('dark', $.identifier))),
+      '=',
+      field('value', choice($.theme_color, $.integer, $.float, $.signed_number)),
+    ),
+
+    theme_color: $ => seq(
+      field('light', alias($._constant_string, $.string)),
+      optional(seq('dark', field('dark', alias($._constant_string, $.string)))),
+    ),
+
+    theme_reference: $ => seq('theme', '.', field('name', $.identifier)),
 
     signed_number: $ => seq('-', choice($.integer, $.float)),
 
@@ -222,6 +242,7 @@ export default grammar({
       $.parenthesized_expression,
       $.lambda,
       $.identifier,
+      $.theme_reference,
       $.integer,
       $.float,
       $.string,

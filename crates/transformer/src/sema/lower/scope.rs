@@ -36,6 +36,9 @@ pub(super) struct Local {
 
 impl Lowerer<'_, '_> {
     pub(super) fn declare(&mut self, name: &str, kind: LocalKind, span: Span) {
+        if crate::sema::theme::reserved(name, span, self.diags) {
+            return;
+        }
         if let Some(prev) = self.scope.iter().find(|l| l.name == name) {
             self.diags.push(
                 Diagnostic::error(

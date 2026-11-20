@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 import { PLATFORMS } from "@weft-ui/runtime/protocol";
 import weft, { type WeftOptions } from "@weft-ui/vite";
 import { Window } from "happy-dom";
-import { createBuilder } from "vite";
+import { chromium } from "playwright";
+import { createBuilder, preview } from "vite";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { launch } from "../src/miniprogram.ts";
 
@@ -147,6 +148,85 @@ test("an unset WEFT_PLATFORM builds the Web app into apps/web", async () => {
   expect(spans.map((span) => span.textContent)).toEqual(["You clicked!", "tinted", "Click me"]);
   expect(spans[1]!.getAttribute("style")).toMatch(/color:\s*transparent/);
   await window.happyDOM.close();
+});
+
+async function writeThemeFixture() {
+  await writeFile(join(root, "src/Palette.weft"), `theme { accent = "#0a84ff" dark "#409cff" }`);
+  await writeFile(join(root, "src/Styles.weft"), `
+import "./Palette.weft"
+style Accent { color = theme.accent }
+`);
+  await writeFile(join(root, "src/App.weft"), `
+import "./Styles.weft"
+model Model { tint: Color, unknown: Color }
+component App(model: Model) {
+  Text("accent", style = Accent)
+  Text("dynamic", color = model.tint)
+  Text("unknown", color = model.unknown)
+}
+`);
+  await writeFile(join(root, "src/index.ts"), `
+import { App } from "./App.weft";
+import { run } from "@weft-ui/platform";
+run(new App({ tint: "@accent", unknown: "@notRegistered" }));
+`);
+}
+
+test("Web theme colors follow light and dark appearance in a built app", async () => {
+  await writeThemeFixture();
+  await build("web");
+  const server = await preview({
+    root,
+    configFile: false,
+    logLevel: "silent",
+    build: { outDir: "apps/web" },
+    preview: { host: "127.0.0.1", port: 0 },
+  });
+  try {
+    const address = server.httpServer.address();
+    if (!address || typeof address === "string") throw new Error("preview server has no TCP address");
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      await page.emulateMedia({ colorScheme: "light" });
+      await page.goto(`http://127.0.0.1:${address.port}`);
+      for (const [colorScheme, expected] of [["light", "rgb(10, 132, 255)"], ["dark", "rgb(64, 156, 255)"]] as const) {
+        await page.emulateMedia({ colorScheme });
+        for (const text of ["accent", "dynamic"]) {
+          const color = await page.getByText(text, { exact: true }).evaluate((node) => getComputedStyle(node).color);
+          expect(color).toBe(expected);
+        }
+      }
+      const unknown = await page.getByText("unknown", { exact: true }).evaluate((node) => getComputedStyle(node).color);
+      expect(unknown).toBe("rgba(0, 0, 0, 0)");
+      expect(await page.locator("style[data-weft-theme]").count()).toBe(1);
+    } finally {
+      await browser.close();
+    }
+  } finally {
+    await server.close();
+  }
+}, 15_000);
+
+test("WeChat generates a theme stylesheet and resolves dynamic theme colors", async () => {
+  await writeThemeFixture();
+  await build("wechat");
+  const project = join(root, "apps/wechat");
+  const config: { darkmode?: boolean } = JSON.parse(await readFile(join(project, "app.json"), "utf8"));
+  expect(config.darkmode).toBe(true);
+  expect(await readFile(join(project, "weft/view.wxss"), "utf8")).toBe(
+    ":host{--weft-accent:#0a84ffff;}\n@media (prefers-color-scheme: dark){:host{--weft-accent:#409cffff;}}\n",
+  );
+  const program = launch(project, { wx: fakeWx() });
+  try {
+    await settle();
+    expect(program.view.texts()).toEqual(["accent", "dynamic", "unknown"]);
+    expect(program.view.all("text").map((node) => node.attrs.style)).toEqual([
+      "color:var(--weft-accent)", "color:var(--weft-accent)", "color:transparent",
+    ]);
+  } finally {
+    program.unload();
+  }
 });
 
 test("WEFT_PLATFORM=wechat generates a mini program project that runs", async () => {

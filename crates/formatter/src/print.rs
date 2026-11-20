@@ -1,6 +1,7 @@
 use weft_ui_ast::{
     Arg, AssignOp, Block, ComponentDecl, Expr, ExprKind, Field, File, Ident, Item, Lambda,
-    LambdaStmt, LetDecl, Node, NodeKind, Param, Span, StyleDecl, TypeExpr, TypeExprKind, UnaryOp,
+    LambdaStmt, LetDecl, Node, NodeKind, Param, Span, StyleDecl, ThemeDecl, ThemeValue, TypeExpr,
+    TypeExprKind, UnaryOp,
 };
 use weft_ui_parser::token::{Token, TokenKind};
 
@@ -294,6 +295,7 @@ impl<'src> Printer<'src, '_> {
                 self.ty(&alias.ty)
             }
             Item::Style(style) => self.style_decl(style),
+            Item::Theme(theme) => self.theme_decl(theme),
         }
     }
 
@@ -301,21 +303,64 @@ impl<'src> Printer<'src, '_> {
         self.token(TokenKind::Ident)?;
         self.doc.text(" ");
         self.ident(&style.name)?;
+        self.constant_entries(&style.entries, |printer, entry| {
+            printer.entry_name(&entry.name)?;
+            printer.expr(&entry.value)
+        })
+    }
+
+    fn theme_decl(&mut self, theme: &ThemeDecl) -> Printed {
+        self.token(TokenKind::Ident)?;
+        self.constant_entries(&theme.entries, |printer, entry| {
+            printer.entry_name(&entry.name)?;
+            match &entry.value {
+                ThemeValue::Color { dark, .. } => {
+                    printer.token(TokenKind::Str)?;
+                    if dark.is_some() {
+                        printer.operator_gap();
+                        printer.token(TokenKind::Ident)?;
+                        printer.operator_gap();
+                        printer.token(TokenKind::Str)?;
+                    }
+                    Ok(())
+                }
+                ThemeValue::Int(_) | ThemeValue::Float(_) => {
+                    if printer.at(TokenKind::Minus) {
+                        printer.token(TokenKind::Minus)?;
+                    }
+                    printer.token(match entry.value {
+                        ThemeValue::Int(_) => TokenKind::Int,
+                        _ => TokenKind::Float,
+                    })
+                }
+            }
+        })
+    }
+
+    fn entry_name(&mut self, name: &Ident) -> Printed {
+        self.ident(name)?;
+        self.operator_gap();
+        self.token(TokenKind::Eq)?;
+        self.operator_gap();
+        Ok(())
+    }
+
+    fn constant_entries<T>(
+        &mut self,
+        entries: &[T],
+        print: impl Fn(&mut Self, &T) -> Printed,
+    ) -> Printed {
         self.doc.text(" ");
         self.token(TokenKind::LBrace)?;
-        if style.entries.is_empty() && self.comment_before(self.current().span.start).is_none() {
+        if entries.is_empty() && self.comment_before(self.current().span.start).is_none() {
             return self.token(TokenKind::RBrace);
         }
         self.doc.indent();
         let mut gap = Gap::First;
-        for entry in &style.entries {
+        for entry in entries {
             self.boundary(Line::Hard, gap);
-            self.ident(&entry.name)?;
-            self.operator_gap();
-            self.token(TokenKind::Eq)?;
-            self.operator_gap();
-            self.expr(&entry.value)?;
-            // Style entries may be adjacent without a comma. Preserve the choice.
+            print(self, entry)?;
+            // Entries may be adjacent without a comma. Preserve the choice.
             if self.at(TokenKind::Comma) {
                 self.optional_separator(TokenKind::Comma);
                 self.doc.text(",");

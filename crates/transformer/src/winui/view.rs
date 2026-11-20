@@ -87,6 +87,7 @@ fn literal(value: &Constant) -> String {
         Constant::Int(v) => v.to_string(),
         Constant::Bool(v) => v.to_string(),
         Constant::String(s) => csharp::string(s),
+        Constant::Token(_) => unreachable!("platform support rejects theme tokens"),
         Constant::Color(c) => format!(
             "WeftColor.Rgba(0x{:02x}{:02x}{:02x}{:02x}u)",
             c.r, c.g, c.b, c.a

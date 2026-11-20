@@ -35,6 +35,118 @@ fn diagnostics(files: &[(&str, &str)]) -> Vec<String> {
 }
 
 #[test]
+fn themes_are_unique_and_theme_is_a_reserved_binding() {
+    let source = r##"theme { accent = "#fff" }
+theme {}
+component Param(theme: Int) {}
+component State() {
+  state theme = 0
+}
+component Let() {
+  let theme = 0
+}
+component Loop(values: Int[]) {
+  for (theme in values; key = 0) {}
+}
+component Lambda() {
+  Input("", onChange = { theme -> })
+}
+component Unknown() {
+  Text("x", color = theme.missing)
+}
+style Invalid { color = theme.other }
+"##;
+    assert_eq!(
+        diagnostics(&[("theme.weft", source)]),
+        [
+            "theme.weft:2:1: duplicate theme declaration",
+            "theme.weft:3:17: `theme` is reserved",
+            "theme.weft:5:9: `theme` is reserved",
+            "theme.weft:8:7: `theme` is reserved",
+            "theme.weft:11:8: `theme` is reserved",
+            "theme.weft:14:26: `theme` is reserved",
+            "theme.weft:17:27: unknown theme token `missing`",
+            "theme.weft:19:31: unknown theme token `other`",
+        ]
+    );
+}
+
+#[test]
+fn tokens_require_a_direct_import_and_styles_resolve_in_their_declaration() {
+    let invalid = r#"import "styles.weft"
+component Screen() { Text("x", color = theme.accent) }"#;
+    let valid = r#"import "styles.weft"
+component Screen() { Text("x", style = Accent) }"#;
+    let styles = r#"import "palette.weft"
+style Accent { color = theme.accent, size = theme.size }"#;
+    let palette = r##"theme { accent = "#fff", size = -4 }"##;
+    assert_eq!(
+        diagnostics(&[
+            ("app.weft", invalid),
+            ("styles.weft", styles),
+            ("palette.weft", palette)
+        ]),
+        ["app.weft:2:46: `theme.accent` is declared in `palette.weft`, which is not imported here"]
+    );
+    assert!(
+        diagnostics(&[
+            ("app.weft", valid),
+            ("styles.weft", styles),
+            ("palette.weft", palette)
+        ])
+        .is_empty()
+    );
+}
+
+#[test]
+fn color_is_a_distinct_scalar_with_validated_literals() {
+    let source = r##"theme { accent = "#fff" }
+component Example(tint: Color, input: String) {
+  let literal: Color = "blue"
+  let valid: Color = input
+  Text(theme.accent)
+  Text("${tint}")
+  if (tint == theme.accent) {}
+  Text("typed", color = if (true) "#fff" else "blue")
+}"##;
+    assert_eq!(
+        diagnostics(&[("color.weft", source)]),
+        [
+            "color.weft:3:24: invalid color `blue`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`",
+            "color.weft:5:8: mismatched types: expected `String`, found `Color`",
+            "color.weft:6:11: cannot interpolate a value of type `Color`",
+            "color.weft:7:7: cannot apply `==` to `Color` and `Color`",
+            "color.weft:8:47: invalid color `blue`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`",
+        ]
+    );
+
+    let source = r##"theme { accent = "#0a84ff" dark "#409cff" }
+type Tint = Color
+model Model { tint: Tint }
+event Pick(tint: Color)
+component Picker(onPick: Event<Color>) {
+  Button(onClick = { onPick(theme.accent) }) { Text("Pick") }
+}
+component Screen(model: Model) {
+  state tint: Color = "#123"
+  Text("custom", color = model.tint)
+  Picker(onPick = { value -> tint = value; Pick(tint) })
+}"##;
+    assert!(diagnostics(&[("color.weft", source)]).is_empty());
+}
+
+#[test]
+fn theme_colors_are_validated_in_both_appearances() {
+    assert_eq!(
+        diagnostics(&[("colors.weft", "theme { accent = \"light\" dark \"dark\" }")]),
+        [
+            "colors.weft:1:18: invalid color `light`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`",
+            "colors.weft:1:31: invalid color `dark`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`",
+        ]
+    );
+}
+
+#[test]
 fn styles_require_named_value_properties_and_built_in_elements() {
     let source = r#"style Bad { bogus = 7, value = "text", onClick = true }
 style Card { gap = 8 }
@@ -472,7 +584,7 @@ component C(color: String) {
 }
 
 #[test]
-fn colors_still_require_string_values() {
+fn color_properties_reject_numbers_and_booleans() {
     let src = r#"component C() {
   Column(background = 1) {
     Text("x", color = false)
@@ -481,8 +593,8 @@ fn colors_still_require_string_values() {
     assert_eq!(
         diagnostics(&[("c.weft", src)]),
         [
-            "c.weft:2:23: mismatched types: expected `String`, found `Int`",
-            "c.weft:3:23: mismatched types: expected `String`, found `Bool`",
+            "c.weft:2:23: mismatched types: expected `Color`, found `Int`",
+            "c.weft:3:23: mismatched types: expected `Color`, found `Bool`",
         ]
     );
 }

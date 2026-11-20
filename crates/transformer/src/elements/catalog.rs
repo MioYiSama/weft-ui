@@ -1,6 +1,7 @@
 // Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit.
 
 use super::{Children, Css, CssUnit, ElementSpec, FeatureSpec, PropKind, PropSpec, PropType};
+use crate::protocol::Platform;
 
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -323,11 +324,16 @@ pub(crate) const ELEMENTS: [ElementSpec; 7] = [
     },
 ];
 
-#[expect(dead_code, reason = "feature checks land in L6 and R7")]
 pub(crate) const FEATURES: [FeatureSpec; 2] = [
     FeatureSpec {
         name: "theme",
-        support: &[],
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
     },
     FeatureSpec {
         name: "assets",

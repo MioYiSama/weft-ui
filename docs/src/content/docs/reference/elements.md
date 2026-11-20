@@ -104,3 +104,7 @@ Displays an image from a URL.
 | `src` (positional) | `String` | Required | The image URL. | — |
 | `width` | `Int` | — | Sets the image width. | — |
 | `height` | `Int` | — | Sets the image height. | — |
+
+## Feature support
+
+- `theme`: Theme declarations and color tokens. Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.

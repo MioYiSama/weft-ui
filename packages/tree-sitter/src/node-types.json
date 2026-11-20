@@ -52,6 +52,10 @@
         "named": true
       },
       {
+        "type": "theme_reference",
+        "named": true
+      },
+      {
         "type": "true",
         "named": true
       },
@@ -1044,6 +1048,10 @@
           "named": true
         },
         {
+          "type": "theme_declaration",
+          "named": true
+        },
+        {
           "type": "type_alias",
           "named": true
         }
@@ -1179,7 +1187,106 @@
             "named": true
           },
           {
+            "type": "theme_reference",
+            "named": true
+          },
+          {
             "type": "true",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "theme_color",
+    "named": true,
+    "fields": {
+      "dark": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      },
+      "light": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "theme_declaration",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "theme_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "theme_entry",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "signed_number",
+            "named": true
+          },
+          {
+            "type": "theme_color",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "theme_reference",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
             "named": true
           }
         ]
@@ -1391,6 +1498,10 @@
     "named": false
   },
   {
+    "type": "dark",
+    "named": false
+  },
+  {
     "type": "else",
     "named": false
   },
@@ -1461,6 +1572,10 @@
   },
   {
     "type": "style",
+    "named": false
+  },
+  {
+    "type": "theme",
     "named": false
   },
   {

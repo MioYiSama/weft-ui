@@ -285,3 +285,40 @@ component Screen(style: String) {
           (argument (identifier))
           (argument (identifier) (identifier))
           (argument (identifier) (integer)))))))
+
+========================================
+Theme declarations and references
+========================================
+
+theme {
+  accent = "#0a84ff" dark "#409cff",
+  muted = "#6b7280"
+  dark = 8
+  scale = -1.25
+}
+style Accent { color = theme.accent }
+component Screen() {
+  Text("x", color = theme.accent, size = theme.dark)
+}
+
+----------------------------------------
+
+(source_file
+  (theme_declaration
+    (theme_entry (identifier) (theme_color (string) (string)))
+    (theme_entry (identifier) (theme_color (string)))
+    (theme_entry (identifier) (integer))
+    (theme_entry (identifier) (signed_number (float))))
+  (style_declaration
+    (identifier)
+    (style_entry (identifier) (theme_reference (identifier))))
+  (component_declaration
+    (identifier)
+    (parameters)
+    (component_body
+      (element
+        (element_name (identifier))
+        (arguments
+          (argument (string (string_content)))
+          (argument (identifier) (theme_reference (identifier)))
+          (argument (identifier) (theme_reference (identifier))))))))

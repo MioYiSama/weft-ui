@@ -38,19 +38,48 @@ pub enum Item {
     Component(ComponentDecl),
     TypeAlias(TypeAlias),
     Style(StyleDecl),
+    Theme(ThemeDecl),
 }
 
 impl Item {
+    /// The declared name, if this item introduces one into the module namespace.
     #[must_use]
-    pub fn name(&self) -> &Ident {
-        match self {
+    pub fn name(&self) -> Option<&Ident> {
+        Some(match self {
             Item::Model(m) => &m.name,
             Item::Event(e) => &e.name,
             Item::Component(c) => &c.name,
             Item::TypeAlias(alias) => &alias.name,
             Item::Style(style) => &style.name,
-        }
+            Item::Theme(_) => return None,
+        })
     }
+}
+
+/// Top-level declaration of the application's theme tokens.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ThemeDecl {
+    pub entries: Vec<ThemeEntry>,
+    pub span: Span,
+}
+
+/// `name = value` in a theme declaration.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ThemeEntry {
+    pub name: Ident,
+    pub value: ThemeValue,
+    pub span: Span,
+}
+
+/// A fixed number or a color with an optional dark appearance.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ThemeValue {
+    Color {
+        light: (String, Span),
+        dark: Option<(String, Span)>,
+    },
+    Int(i64),
+    Float(f64),
 }
 
 /// A named set of default properties for built-in elements.

@@ -25,6 +25,7 @@ pub fn expr(e: &Expr, env: Env) -> String {
         ExprKind::Bool(v) => v.to_string(),
         ExprKind::Null => "null".to_owned(),
         ExprKind::Str(s) => js::string(s),
+        ExprKind::Theme(name) => format!("\"@{name}\""),
         ExprKind::Interp(parts) => {
             if parts.is_empty() {
                 return "\"\"".to_owned();

@@ -4,6 +4,7 @@
 pub(crate) mod builtins;
 mod lower;
 pub(crate) mod record;
+mod theme;
 
 use std::cell::{Cell, OnceCell, RefCell};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -15,8 +16,8 @@ use weft_ui_ast::{Diagnostic, FileId, ParsedFile, ParsedProgram, SourceMap, Span
 use crate::deps;
 use crate::elements::{self, LIFECYCLE as CALL_HOOKS};
 use crate::ir::{
-    Component, ComponentId, Event, EventId, Field, Model, ModelId, Module, Param, ParamKind,
-    Program, Type, type_display,
+    Component, ComponentId, Event, EventId, Expr, Field, Model, ModelId, Module, Param, ParamKind,
+    Program, ThemeUse, Type, type_display,
 };
 use lower::{Instance, Lowerer};
 use record::{AliasSymbol, ProbeContext, RawCall, RawProbe, Recorder, StyleSymbol, Target};
@@ -24,7 +25,7 @@ use record::{AliasSymbol, ProbeContext, RawCall, RawProbe, Recorder, StyleSymbol
 /// Name of the slot parameter type.
 const CHILDREN: &str = "Children";
 const EVENT: &str = "Event";
-const PRIMITIVES: [&str; 4] = ["Int", "Float", "Bool", "String"];
+const PRIMITIVES: [&str; 5] = ["Int", "Float", "Bool", "String", "Color"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DeclKind {
@@ -60,12 +61,18 @@ struct Alias<'a> {
     ty: OnceCell<Type>,
 }
 
+struct Style<'a> {
+    declaration: &'a ast::StyleDecl,
+    values: Vec<(Expr, ThemeUse)>,
+}
+
 /// Program-wide declarations shared by every component being checked.
 pub(crate) struct Checker<'a> {
     sources: &'a SourceMap,
     decls: HashMap<String, Decl>,
     aliases: Vec<Alias<'a>>,
-    styles: Vec<&'a ast::StyleDecl>,
+    styles: Vec<Style<'a>>,
+    theme: Option<theme::Tokens<'a>>,
     /// Per file: the file itself plus its direct imports.
     visible: Vec<Vec<FileId>>,
     pub models: Vec<Model>,
@@ -234,6 +241,7 @@ impl Checker<'_> {
                 "Float" => Type::Float,
                 "Bool" => Type::Bool,
                 "String" => Type::String,
+                "Color" => Type::Color,
                 CHILDREN => {
                     diags.push(Diagnostic::error(
                         name.span,
@@ -385,6 +393,7 @@ fn check(
         decls: HashMap::new(),
         aliases: Vec::new(),
         styles: Vec::new(),
+        theme: None,
         visible: files
             .iter()
             .enumerate()
@@ -410,6 +419,27 @@ fn check(
             .collect();
         item_ids.push(ids);
     }
+    // Resolve style constants in their declaring modules, not where the styles are applied.
+    let style_values: Vec<_> = cx
+        .styles
+        .iter()
+        .map(|style| {
+            style
+                .declaration
+                .entries
+                .iter()
+                .map(|entry| {
+                    let mut lowerer = Lowerer::new(&cx, diags, entry.span.file, None, &[]);
+                    let value = lowerer.style_value(&entry.value);
+                    (value, lowerer.theme_use)
+                })
+                .collect()
+        })
+        .collect();
+    for (style, values) in cx.styles.iter_mut().zip(style_values) {
+        style.values = values;
+    }
+
     report_handler_name_clashes(&cx.events, diags);
     // Check even unused aliases, once each, in their declaring files.
     for (id, alias) in cx.aliases.iter().enumerate() {
@@ -452,11 +482,12 @@ fn check(
     let mut bodies = Vec::new();
     for (file, item, id) in items() {
         if let (ast::Item::Component(c), DeclKind::Component(id)) = (item, id) {
-            let params = signature(&cx, file, c, diags);
+            let (params, theme_use) = signature(&cx, file, c, diags);
             for (index, param) in params.iter().enumerate() {
                 cx.record(param.span, || Target::ComponentParam(id, index));
             }
             cx.components[id.index()].params = params;
+            cx.components[id.index()].theme_use = theme_use;
             bodies.push((file, c, id));
         }
     }
@@ -475,6 +506,7 @@ fn check(
         component.loops = body.loops;
         component.bindings = body.bindings;
         component.emits = body.emits;
+        component.theme_use.merge(body.theme_use);
         instances[id.index()] = body.instances;
     }
 
@@ -516,6 +548,7 @@ fn check(
         models: cx.models,
         events: cx.events,
         components: cx.components,
+        theme: cx.theme.map(|theme| theme.output),
     };
     if let Some(recorder) = &cx.recorder {
         let mut recorder = recorder.borrow_mut();
@@ -523,8 +556,8 @@ fn check(
             .styles
             .iter()
             .map(|style| StyleSymbol {
-                def: style.name.span,
-                declaration: style.span,
+                def: style.declaration.name.span,
+                declaration: style.declaration.span,
             })
             .collect();
         recorder.aliases = cx
@@ -549,7 +582,18 @@ fn declare<'a>(
     item: &'a ast::Item,
     diags: &mut Vec<Diagnostic>,
 ) -> Option<DeclKind> {
-    let name = item.name();
+    if let ast::Item::Theme(decl) = item {
+        if let Some(previous) = &cx.theme {
+            diags.push(
+                Diagnostic::error(decl.span, "duplicate theme declaration")
+                    .with_secondary(previous.output.span, "first declared here"),
+            );
+        } else {
+            cx.theme = Some(theme::Tokens::check(cx, decl, diags));
+        }
+        return None;
+    }
+    let name = item.name()?;
     let reserved = if elements::element(&name.name).is_some() {
         Some("a built-in element")
     } else if PRIMITIVES.contains(&name.name.as_str())
@@ -613,6 +657,7 @@ fn declare<'a>(
                 slots: Vec::new(),
                 emits: Vec::new(),
                 reachable_events: Vec::new(),
+                theme_use: ThemeUse::default(),
             });
             DeclKind::Component(ComponentId(offset(cx.components.len() - 1)))
         }
@@ -636,9 +681,13 @@ fn declare<'a>(
                 }
             }
             let id = cx.styles.len();
-            cx.styles.push(decl);
+            cx.styles.push(Style {
+                declaration: decl,
+                values: Vec::new(),
+            });
             DeclKind::Style(id)
         }
+        ast::Item::Theme(_) => unreachable!("theme declarations are checked separately"),
     };
     cx.record(name.span, || decl_target(kind));
     cx.decls.insert(
@@ -688,10 +737,14 @@ fn signature(
     file: FileId,
     decl: &ast::ComponentDecl,
     diags: &mut Vec<Diagnostic>,
-) -> Vec<Param> {
+) -> (Vec<Param>, ThemeUse) {
     let mut params: Vec<Param> = Vec::with_capacity(decl.params.len());
+    let mut theme_use = ThemeUse::default();
     for param in &decl.params {
         let name = &param.name;
+        if theme::reserved(&name.name, name.span, diags) {
+            continue;
+        }
         if let Some(prev) = params.iter().find(|p| p.name == name.name) {
             diags.push(
                 Diagnostic::error(name.span, format!("duplicate parameter `{}`", name.name))
@@ -752,7 +805,9 @@ fn signature(
         let default = match (&kind, &param.default) {
             (ParamKind::Value(ty), Some(default)) => {
                 let mut lowerer = Lowerer::new(cx, diags, file, None, &[]);
-                Some(lowerer.expr_as(default, ty))
+                let value = lowerer.expr_as(default, ty);
+                theme_use.merge(lowerer.theme_use);
+                Some(value)
             }
             _ => None,
         };
@@ -763,7 +818,7 @@ fn signature(
             span: name.span,
         });
     }
-    params
+    (params, theme_use)
 }
 
 /// Finds cycles in a directed graph given as adjacency lists of `(target, edge span)`.

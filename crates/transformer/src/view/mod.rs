@@ -38,6 +38,7 @@ impl TemplateId {
 /// Block templates of a whole app.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ViewLayout {
+    theme: Option<Vec<(String, Color, Color)>>,
     templates: Vec<Template>,
     /// Lookup from IR nodes to their place in the layout, by component.
     components: Vec<Vec<NodeMap>>,
@@ -110,6 +111,8 @@ pub enum Constant {
     String(String),
     /// A validated color, formatted as normalized lowercase hex.
     Color(Color),
+    /// A color token, serialized with its `@` prefix.
+    Token(String),
 }
 
 /// A native view property is read from a value slot or inlined as a constant.
@@ -214,6 +217,12 @@ enum Role {
 }
 
 impl ViewLayout {
+    /// Color tokens in declaration order with their light and dark colors.
+    #[must_use]
+    pub fn theme(&self) -> &[(String, Color, Color)] {
+        self.theme.as_deref().unwrap_or_default()
+    }
+
     #[must_use]
     pub fn templates(&self) -> &[Template] {
         &self.templates

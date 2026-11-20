@@ -191,6 +191,7 @@ impl Display for Argument<'_> {
                 Constant::Int(v) => v.fmt(f),
                 Constant::Bool(v) => v.fmt(f),
                 Constant::String(s) => swift::string(f, s),
+                Constant::Token(_) => unreachable!("platform support rejects theme tokens"),
                 Constant::Color(c) => write!(
                     f,
                     "Color(weftRGBA: 0x{:02x}{:02x}{:02x}{:02x})",

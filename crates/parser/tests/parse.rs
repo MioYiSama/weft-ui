@@ -9,7 +9,11 @@ const DEMO: &str = include_str!("../../transformer/tests/fixtures/TodoList.weft"
 fn demo_parses_without_diagnostics() {
     let (file, diags) = parse(FileId(0), DEMO);
     assert!(diags.is_empty(), "{diags:#?}");
-    let names: Vec<&str> = file.items.iter().map(|i| i.name().name.as_str()).collect();
+    let names: Vec<&str> = file
+        .items
+        .iter()
+        .map(|i| i.name().expect("named fixture item").name.as_str())
+        .collect();
     assert_eq!(
         names,
         ["Todo", "TodoListModel", "TextChanged", "Remove", "TodoList"]

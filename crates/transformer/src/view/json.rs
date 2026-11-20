@@ -23,6 +23,19 @@ impl ViewLayout {
             out.key("hash");
             out.string(&format!("{hash:016x}"));
         }
+        if let Some(colors) = &self.theme {
+            out.key("theme");
+            out.open('{');
+            for (name, light, dark) in colors {
+                out.key(name);
+                out.inline(&format!(
+                    "[\"{}\", \"{}\"]",
+                    light.rgba_hex(),
+                    dark.rgba_hex()
+                ));
+            }
+            out.close('}');
+        }
         out.key("templates");
         out.open('[');
         for template in &self.templates {
@@ -140,6 +153,7 @@ impl fmt::Display for Constant {
             Constant::Bool(v) => write!(f, "{v}"),
             Constant::String(s) => f.write_str(&quote(s)),
             Constant::Color(color) => write!(f, "\"{color}\""),
+            Constant::Token(name) => write!(f, "\"@{name}\""),
         }
     }
 }

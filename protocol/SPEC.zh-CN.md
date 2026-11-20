@@ -32,6 +32,7 @@ JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块�
 - **值槽** `values[i]`：节点的一个动态属性，`type` 是元素属性声明的类型：`Int` / `Bool` / `String` / `Color`。`Color` 槽的值是字符串，由平台解析（规则见[语法的内置元素与布局](../crates/parser/GRAMMAR.zh-CN.md#内置元素与布局)）；静态颜色已在编译期校验，`props` 里写成规范化的 `#rrggbb` 或 `#rrggbbaa`。受控属性（`Input.value`、`Checkbox.checked`）即使是常量也总是值槽。
 - **事件槽** `events[i]`：节点的一个事件属性，`payload` 是载荷类型（`null` 表示无载荷）。`Input` / `Checkbox` 总有 `onChange` 事件槽，`controls` 是它控制的值槽下标，其余事件为 `null`。生命周期属性（`onMount` / `onUnmount`）由 JS 处理，不进入布局。
 - **挂载点** `points[i]`：`branch`（`templates` 依次是各分支的模板）、`list`（`template` 是行体）、`instance`（`template` 是被实例化组件的组件体）或 `slot`（插槽内容由使用方提供，可以是任意 `slot` 种类的模板）。
+- **主题**：应用声明了主题时，顶层 `theme` 对象将颜色令牌名映射到 `[浅色, 深色]`。两项均为小写 `#rrggbbaa`；仅声明一种外观时两项相同。数值令牌已在编译期折叠，不写进布局。静态 `props` 中的令牌和动态 `Color` 值槽中的令牌都使用字符串 `"@name"`，由宿主按当前外观解析。
 - **哈希**：去掉 `hash` 字段后的 JSON 的 FNV-1a 64 位哈希，16 位十六进制。它同时写进 JS 逻辑（`App` 构造参数）和平台视图，sink 在 `open` 时比对，不一致直接报错。
 
 ## Scope
@@ -146,6 +147,8 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 插槽数据的 `t` 字段保存插槽内容的模板名。调用方为被调用组件的第一个 `Children` 参数使用 `{组件}-s{N}`，其他插槽用 `{组件}-s{N}_{p}`。这里的 `N` 是调用节点编号，不是接收方数据键里的插槽节点编号。
 
 `$e` 从 `currentTarget.dataset["e" + event.type]` 取处理器 id。`tap` 不带 payload，`input` 和 `change` 的 payload 为 `detail.value`。
+
+声明了主题时，`view.wxss` 在 `:host` 上定义令牌变量，并在深色媒体查询中覆盖其值。生成的视图表列出有效令牌名；引用这些令牌的动态 `Color` 值写成 `var(--weft-name)`。未知令牌显示为透明。
 
 `setData` 规则：
 

@@ -17,7 +17,7 @@ use crate::bridge::js::{self, Code};
 use crate::color::Color;
 use crate::elements::{Css, CssUnit, Element};
 use crate::ir::{Component, ComponentId, NodeId, NodeKind, Program, Prop, PropValue};
-use crate::style::{COLUMN_STYLE, ROW_STYLE};
+use crate::style::{COLUMN_STYLE, ROW_STYLE, theme_color};
 
 /// The DOM [`DomView`].
 #[derive(Debug, Clone, Copy)]
@@ -174,6 +174,9 @@ impl Gen {
                     Color::parse(s)
                         .expect("color literals were validated during semantic analysis")
                 )),
+                (Target::Style(name, CssUnit::Color), Literal::Token(token)) => {
+                    add_style(format_args!("{name}:{}", theme_color(token)));
+                }
                 (target, _) => unreachable!("literal of the wrong type for {target:?}"),
             }
         }

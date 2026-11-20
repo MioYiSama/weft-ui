@@ -12,7 +12,8 @@ use weft_ui_ast::span::offset;
 use weft_ui_ast::{Diagnostic, FileId, Span};
 
 use crate::ir::{
-    Binding, ComponentId, EventId, Loop, Node, NodeId, Param, ParamId, ParamKind, State, Type,
+    Binding, ComponentId, EventId, Loop, Node, NodeId, Param, ParamId, ParamKind, State, ThemeUse,
+    Type,
 };
 use crate::sema::Checker;
 
@@ -35,6 +36,7 @@ pub(crate) struct LoweredBody {
     pub bindings: Vec<Binding>,
     pub emits: Vec<EventId>,
     pub instances: Vec<Instance>,
+    pub theme_use: ThemeUse,
 }
 
 pub(crate) struct Lowerer<'cx, 'd> {
@@ -51,6 +53,7 @@ pub(crate) struct Lowerer<'cx, 'd> {
     scope: Vec<Local>,
     emits: BTreeSet<EventId>,
     instances: Vec<Instance>,
+    pub(super) theme_use: ThemeUse,
     /// Number of enclosing `if` / `for` nodes.
     guard_depth: u32,
 }
@@ -76,6 +79,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             scope: Vec::new(),
             emits: BTreeSet::new(),
             instances: Vec::new(),
+            theme_use: ThemeUse::default(),
             guard_depth: 0,
         }
     }
@@ -103,6 +107,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             bindings: self.bindings,
             emits: self.emits.into_iter().collect(),
             instances: self.instances,
+            theme_use: self.theme_use,
         }
     }
 

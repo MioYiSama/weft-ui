@@ -32,6 +32,7 @@ The headless renderer in `@weft-ui/runtime/testing` is the reference implementat
 - **Value slot** `values[i]`: A dynamic property of a node. `type` is the declared type of the element property: `Int` / `Bool` / `String` / `Color`. The value of a `Color` slot is a string parsed by the platform (see [Built-in elements and layout](../crates/parser/GRAMMAR.md#built-in-elements-and-layout) for the rules). Static colors are validated at compile time and written in `props` as normalized `#rrggbb` or `#rrggbbaa` values. Controlled properties (`Input.value`, `Checkbox.checked`) always use value slots, even when constant.
 - **Event slot** `events[i]`: An event property of a node. `payload` specifies the payload type (`null` means no payload). `Input` / `Checkbox` always have an `onChange` event slot. Its `controls` field is the index of the value slot it controls; for all other events, `controls` is `null`. JS handles lifecycle properties (`onMount` / `onUnmount`), which do not appear in the layout.
 - **Mount point** `points[i]`: `branch` (`templates` lists branch templates in order), `list` (`template` is the row body), `instance` (`template` is the body of the instantiated component), or `slot` (the caller supplies the slot content, which may be any template of kind `slot`).
+- **Theme**: When the app declares a theme, the top-level `theme` object maps color token names to `[light, dark]` pairs. Both colors use lowercase `#rrggbbaa`; a token with only one color repeats it. Numeric tokens are folded by the compiler and do not appear here. A token in a static `props` entry or a dynamic `Color` value slot uses the string `"@name"`; it is resolved according to the host's appearance.
 - **Hash**: The 64-bit FNV-1a hash of the JSON with the `hash` field removed, represented as 16 hexadecimal digits. It is written into both the JS logic (as an `App` constructor argument) and the platform view. The sink compares the hashes at `open` and reports an error if they differ.
 
 ## Scope
@@ -146,6 +147,8 @@ WXML renders only `{{key}}`. The `setData` paths are paths in the block data tre
 Slot data holds `t`, the slot content template name. In the calling component, that name is `{Component}-s{N}` for the callee's first `Children` parameter and `{Component}-s{N}_{p}` for any other slot. Here `N` is the call node ID, rather than the slot node ID used in the receiving component's data key.
 
 `$e` reads `currentTarget.dataset["e" + event.type]`. `tap` carries no payload; `input` and `change` carry `detail.value`.
+
+A themed app's `view.wxss` defines the token variables on `:host` and their dark media-query overrides. The generated view table lists the valid token names; dynamic `Color` values referencing them are written as `var(--weft-name)`. Unknown names render transparent.
 
 `setData` rules:
 

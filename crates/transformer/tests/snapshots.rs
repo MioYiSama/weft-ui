@@ -62,6 +62,12 @@ const LANGUAGE: Fixture = Fixture {
     natives: ALL_NATIVES,
 };
 
+const THEME: Fixture = Fixture {
+    name: "Theme",
+    source: include_str!("fixtures/Theme.weft"),
+    natives: &[],
+};
+
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
 fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
@@ -139,6 +145,11 @@ fn language() {
     check_fixture(&LANGUAGE);
 }
 
+#[test]
+fn theme() {
+    check_fixture(&THEME);
+}
+
 fn check_fixture(fixture: &Fixture) {
     let web = generated_files(fixture.compile(Platform::Web));
     check(fixture, Platform::Web, &web);
@@ -154,6 +165,41 @@ fn check_fixture(fixture: &Fixture) {
     check(fixture, Platform::Wechat, &wechat);
 
     check_native(fixture, &wechat, &layout);
+}
+
+#[test]
+fn web_imports_the_theme_declaration_even_when_the_token_folds_to_a_number() {
+    let mut loader = MemoryLoader::new();
+    loader.insert("Palette.weft", "theme { gap = 8 }");
+    loader.insert(
+        "App.weft",
+        "import \"./Palette.weft\"\ncomponent App() { Column(gap = theme.gap) }",
+    );
+    let output = compile_app(load(&["App.weft"], &mut loader), Platform::Web);
+    assert!(
+        output.compilation.diagnostics.is_empty(),
+        "{}",
+        output.compilation.render_diagnostics()
+    );
+    assert!(output.logic[0].code.contains("import \"./Palette.weft\";"));
+    assert!(output.logic[0].code.contains("gap:8px"));
+}
+
+#[test]
+fn changing_only_the_dark_color_updates_the_layout_hash() {
+    let compile = |source: &str| {
+        let mut loader = MemoryLoader::new();
+        loader.insert("Theme.weft", source);
+        let output = compile_app(load(&["Theme.weft"], &mut loader), Platform::Wechat);
+        output
+            .layout
+            .unwrap_or_else(|| panic!("{}", output.compilation.render_diagnostics()))
+    };
+    let layout = compile(THEME.source);
+    let alternate = compile(&THEME.source.replace("#409cff", "#123"));
+    assert_eq!(layout.templates(), alternate.templates());
+    assert_eq!(layout.theme().len(), 1);
+    assert_ne!(layout.hash(), alternate.hash());
 }
 
 #[test]

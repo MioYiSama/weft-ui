@@ -10,17 +10,19 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test } from "vitest";
+import { type AppLike, type Driver, type Script, buildFixture, headless, web, wechat } from "./harness.ts";
 import { script as board } from "../fixtures/board/script.ts";
 import { script as gallery } from "../fixtures/gallery/script.ts";
 import { script as language } from "../fixtures/language/script.ts";
+import { script as theme } from "../fixtures/theme/script.ts";
 import { script as todo } from "../fixtures/todo/script.ts";
-import { type AppLike, type Driver, type Script, buildFixture, headless, web, wechat } from "./harness.ts";
 
 const fixtures: [string, Script<AppLike>][] = [
   ["todo", todo as unknown as Script<AppLike>],
   ["board", board as unknown as Script<AppLike>],
   ["gallery", gallery as unknown as Script<AppLike>],
   ["language", language as unknown as Script<AppLike>],
+  ["theme", theme as unknown as Script<AppLike>],
 ];
 
 test.each(fixtures)("%s renders alike on every platform and matches its golden ops", async (name, script) => {

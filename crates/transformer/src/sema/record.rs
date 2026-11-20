@@ -55,6 +55,11 @@ pub(crate) enum Target {
     Type(String),
     TypeAlias(usize),
     Style(usize),
+    ThemeToken {
+        ty: Type,
+        def: Span,
+        declaration: Span,
+    },
 }
 
 #[derive(Debug)]

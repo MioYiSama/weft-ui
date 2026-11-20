@@ -16,6 +16,7 @@ import {
   currentEpoch,
   enqueue,
   restoreAfterFlush,
+  setThemeColors,
   watch,
 } from "./core.ts";
 
@@ -375,6 +376,29 @@ export class App extends AppBase {
 /* ------------------------------------------------------------------------ */
 /* DOM helpers used by generated code                                        */
 /* ------------------------------------------------------------------------ */
+
+/** Installs the generated theme once; CSS handles system appearance changes. */
+export function theme(tokens: Record<string, readonly [string, string]>): void {
+  const names = Object.keys(tokens);
+  if (names.length === 0) return;
+  if (typeof document === "undefined") {
+    setThemeColors(new Set(names));
+    return;
+  }
+  if (document.querySelector("style[data-weft-theme]")) return;
+  const style = document.createElement("style");
+  style.dataset.weftTheme = "";
+  let light = "";
+  let dark = "";
+  for (const name of names) {
+    const [lightColor, darkColor] = tokens[name]!;
+    light += `--weft-${name}:${lightColor};`;
+    dark += `--weft-${name}:${darkColor};`;
+  }
+  style.textContent = `:root{${light}}@media (prefers-color-scheme: dark){:root{${dark}}}`;
+  document.head.append(style);
+  setThemeColors(new Set(names));
+}
 
 /** Lazily parsed `<template>`; returns a fresh clone per call. */
 export function template(html: string): () => DocumentFragment {

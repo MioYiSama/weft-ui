@@ -15,6 +15,7 @@ mod elements;
 mod table;
 mod wxml;
 
+use crate::style;
 use crate::transform::{Context, OutputFile};
 
 /// Generates the WeChat mini program's view component and host page.
@@ -27,7 +28,7 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
     let program = cx.program;
     let layout = cx.layout.expect("the mini program view needs the layout");
     let templates = wxml::templates(program, layout);
-    vec![
+    let mut files = vec![
         OutputFile {
             path: "view.js".to_owned(),
             contents: format!(
@@ -68,5 +69,12 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
             path: "index.wxml".to_owned(),
             contents: "<weft-view id=\"weft\"/>\n".to_owned(),
         },
-    ]
+    ];
+    if program.theme.is_some() {
+        files.push(OutputFile {
+            path: "view.wxss".to_owned(),
+            contents: style::theme_styles(layout.theme()),
+        });
+    }
+    files
 }

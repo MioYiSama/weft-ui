@@ -39,6 +39,8 @@ export interface TemplateKeys {
 /** The generated table of an app. */
 export interface Layout {
   hash: string;
+  /** Names of tokens defined in the view stylesheet. */
+  theme?: readonly string[];
   templates: TemplateKeys[];
 }
 
@@ -75,6 +77,7 @@ interface Scope {
 export class WechatSink implements Sink {
   #view: View;
   #layout: Layout;
+  #theme: ReadonlySet<string> | null;
   #session: Session | null = null;
   #scopes = new Map<number, Scope>();
   #root: Scope | null = null;
@@ -89,6 +92,7 @@ export class WechatSink implements Sink {
   constructor(view: View, layout: Layout) {
     this.#view = view;
     this.#layout = layout;
+    this.#theme = layout.theme ? new Set(layout.theme) : null;
   }
 
   open(session: Session): void {
@@ -135,7 +139,7 @@ export class WechatSink implements Sink {
     const [key, unit] = scope.keys.v![slot];
     const next = unit === WechatUnit.Px ? `${value}px`
       : unit === WechatUnit.Bold ? (value ? "bold" : "normal")
-      : unit === WechatUnit.Color ? color(value as string)
+      : unit === WechatUnit.Color ? color(value as string, this.#theme)
       : value;
     if (sameValue(scope.o[key], next)) return;
     scope.o[key] = next;

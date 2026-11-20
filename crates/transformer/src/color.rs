@@ -44,6 +44,17 @@ impl Color {
         };
         Some(Self { r, g, b, a })
     }
+
+    /// Theme tables always carry all four RGBA channels, including opaque alpha.
+    pub(crate) fn rgba_hex(self) -> impl fmt::Display {
+        fmt::from_fn(move |out| {
+            write!(
+                out,
+                "#{:02x}{:02x}{:02x}{:02x}",
+                self.r, self.g, self.b, self.a
+            )
+        })
+    }
 }
 
 impl fmt::Display for Color {

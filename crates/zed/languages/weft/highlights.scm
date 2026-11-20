@@ -16,7 +16,7 @@
 
 (type_identifier) @type
 ((type_identifier) @type.builtin
-  (#any-of? @type.builtin "Int" "Float" "Bool" "String" "Children" "Event"))
+  (#any-of? @type.builtin "Int" "Float" "Bool" "String" "Color" "Children" "Event"))
 
 ; ---- nodes -----------------------------------------------------------------
 

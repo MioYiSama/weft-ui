@@ -1,0 +1,42 @@
+{
+  "hash": "7b435021593aec66",
+  "theme": {
+    "accent": ["#0a84ffff", "#409cffff"]
+  },
+  "templates": [
+    {
+      "label": "Badge",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {"value": "badge"}, "children": []}
+      ],
+      "values": [
+        {"node": 0, "prop": "color", "type": "Color"}
+      ],
+      "events": [],
+      "points": []
+    },
+    {
+      "label": "Theme",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {"gap": 8}, "children": [1, 2, 3, 4, 5]},
+        {"element": "Text", "props": {"value": "accent", "color": "@accent"}, "children": []},
+        {"element": "Text", "props": {"value": "styled", "color": "@accent"}, "children": []},
+        {"element": "Text", "props": {"value": "flag"}, "children": []},
+        {"element": "Text", "props": {}, "children": []},
+        {"point": 0}
+      ],
+      "values": [
+        {"node": 3, "prop": "color", "type": "Color"},
+        {"node": 4, "prop": "value", "type": "String"}
+      ],
+      "events": [],
+      "points": [
+        {"node": 5, "kind": "instance", "template": 0}
+      ]
+    }
+  ]
+}

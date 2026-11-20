@@ -1,0 +1,13 @@
+# mount
+create 1 1  # Theme
+set 1 0 "@accent"  # Text.color
+create 2 0  # Badge
+set 2 0 "@accent"  # Text.color
+attach 1 0 2
+attach 0 0 1
+
+# use a fixed color
+set 1 0 "#000000"  # Text.color
+
+# use the accent token again
+set 1 0 "@accent"  # Text.color

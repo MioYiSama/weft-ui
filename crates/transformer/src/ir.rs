@@ -9,6 +9,7 @@ use weft_ui_ast::span::offset;
 pub use weft_ui_ast::{AssignOp, BinaryOp, UnaryOp};
 use weft_ui_ast::{FileId, Span};
 
+use crate::color::Color;
 use crate::elements::Element;
 
 macro_rules! id_type {
@@ -55,6 +56,31 @@ pub struct Program {
     pub models: Vec<Model>,
     pub events: Vec<Event>,
     pub components: Vec<Component>,
+    /// The one theme declaration in the import closure, if present.
+    pub theme: Option<Theme>,
+}
+
+/// Resolved color tokens in declaration order. Numeric tokens are folded in the IR.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Theme {
+    pub span: Span,
+    pub colors: Vec<(String, Color, Color)>,
+}
+
+/// Records theme use before numeric tokens are folded and `let` bindings are inlined.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct ThemeUse {
+    pub first: Option<Span>,
+}
+
+impl ThemeUse {
+    pub fn merge(&mut self, other: Self) {
+        if let Some(span) = other.first
+            && self.first.is_none_or(|first| span.start < first.start)
+        {
+            self.first = Some(span);
+        }
+    }
 }
 
 impl Program {
@@ -137,6 +163,7 @@ pub enum Type {
     Float,
     Bool,
     String,
+    Color,
     /// A set of string literals in declaration order.
     Union(Vec<String>),
     Model(ModelId),
@@ -172,13 +199,18 @@ impl Type {
         matches!(self, Type::Int | Type::Float)
     }
 
-    /// `Int`, `Float`, `Bool`, `String`, or a string literal union.
+    /// `Int`, `Float`, `Bool`, `String`, `Color`, or a string literal union.
     #[must_use]
     pub fn is_scalar(&self) -> bool {
         matches!(
             self,
-            Type::Int | Type::Float | Type::Bool | Type::String | Type::Union(_)
+            Type::Int | Type::Float | Type::Bool | Type::String | Type::Color | Type::Union(_)
         )
+    }
+
+    /// Scalar values that may be compared or interpolated.
+    pub(crate) fn is_comparable_scalar(&self) -> bool {
+        self.is_scalar() && *self != Type::Color
     }
 }
 
@@ -206,6 +238,7 @@ impl fmt::Display for TypeDisplay<'_> {
             Type::Float => f.write_str("Float"),
             Type::Bool => f.write_str("Bool"),
             Type::String => f.write_str("String"),
+            Type::Color => f.write_str("Color"),
             Type::Union(members) => {
                 for (index, member) in members.iter().enumerate() {
                     if index != 0 {
@@ -253,6 +286,7 @@ pub struct Component {
     pub emits: Vec<EventId>,
     /// Events emitted by this component or any component it instantiates.
     pub reachable_events: Vec<EventId>,
+    pub(crate) theme_use: ThemeUse,
 }
 
 impl Component {
@@ -497,6 +531,8 @@ pub enum ExprKind {
     Bool(bool),
     Null,
     Str(String),
+    /// A named color token, resolved by the host using its current appearance.
+    Theme(String),
     Interp(Vec<InterpPart>),
     Param(ParamId),
     State(StateId),

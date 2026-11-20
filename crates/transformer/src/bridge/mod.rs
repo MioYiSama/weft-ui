@@ -268,12 +268,27 @@ fn code(program: &Program, links: &Links<'_>, runtime: &str) -> String {
             .or_default()
             .extend(symbols.iter().map(|s| format!("{}$c", s.name(program))));
     }
+    let theme = program
+        .theme
+        .as_ref()
+        .filter(|_| matches!(links.mode, Mode::Dom(_)));
+    if let Some(theme) = theme
+        && theme.span.file != entry.file
+        && entry
+            .components
+            .iter()
+            .any(|&id| program.component(id).theme_use.first.is_some())
+    {
+        // Styles can carry tokens from their own imports without declaring runtime symbols.
+        imports.entry(theme.span.file).or_default();
+    }
     for (file, names) in imports {
-        out.line(format!(
-            "import {{ {} }} from {};",
-            names.join(", "),
-            links.specifier(links.module(file))
-        ));
+        let path = links.specifier(program.module(file));
+        if names.is_empty() {
+            out.line(format!("import {path};"));
+        } else {
+            out.line(format!("import {{ {} }} from {path};", names.join(", ")));
+        }
     }
     // Events have no runtime value.
     let reexports = links.foreign().filter(|s| !matches!(s, Symbol::Event(_)));
@@ -284,6 +299,19 @@ fn code(program: &Program, links: &Links<'_>, runtime: &str) -> String {
             names.join(", "),
             links.specifier(links.module(file))
         ));
+    }
+
+    if let Some(theme) = theme.filter(|theme| theme.span.file == entry.file) {
+        out.open("$.theme({");
+        for (name, light, dark) in &theme.colors {
+            // A computed key also treats `__proto__` as an ordinary token.
+            out.line(format!(
+                "[\"{name}\"]: [\"{}\", \"{}\"],",
+                light.rgba_hex(),
+                dark.rgba_hex()
+            ));
+        }
+        out.close("});");
     }
 
     let mut converters = host::Converters::default();

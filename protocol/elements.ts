@@ -269,7 +269,6 @@ pub(crate) const ELEMENTS: [ElementSpec; ${elements.length}] = [
 ${specs}
 ];
 
-#[expect(dead_code, reason = "feature checks land in L6 and R7")]
 pub(crate) const FEATURES: [FeatureSpec; ${Object.keys(features).length}] = [
 ${featureSpecs}
 ];

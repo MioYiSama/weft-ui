@@ -23,6 +23,7 @@ You only need the rows of the platforms you change. A change to the compiler or 
 
 ```sh
 pnpm install
+pnpm --filter showcase exec playwright install chromium # theme browser test and Web screenshots
 pnpm build                       # compiler WASM and package builds
 native/apple/build-core.sh       # macOS: WeftCore.xcframework, for swift test and the Apple apps
 native/android/build-core.sh     # libweft.so for every ABI; WEFT_ANDROID_ABIS="x86_64" for a subset

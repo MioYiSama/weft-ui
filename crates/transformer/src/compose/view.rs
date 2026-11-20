@@ -193,6 +193,7 @@ impl Display for KotlinProp<'_> {
                 Constant::Int(v) => write!(f, "{v}f"),
                 Constant::Bool(v) => v.fmt(f),
                 Constant::String(s) => kotlin::string(f, s),
+                Constant::Token(_) => unreachable!("platform support rejects theme tokens"),
                 Constant::Color(c) => {
                     write!(f, "Color(0x{:02x}{:02x}{:02x}{:02x}L)", c.a, c.r, c.g, c.b)
                 }

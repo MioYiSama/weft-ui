@@ -142,6 +142,30 @@ component C(let: String) {
 }
 
 #[test]
+fn theme_entries_and_style_tokens() {
+    golden(
+        r##"theme{ accent="#0a84ff"/* night */dark"#409cff", gap=8 scale= -1.25 }
+style Accent{color=theme . accent}
+component App(){ Text("accent",style=Accent) }"##,
+        r##"theme {
+    accent = "#0a84ff" /* night */ dark "#409cff",
+    gap = 8
+    scale = -1.25
+}
+
+style Accent {
+    color = theme.accent
+}
+
+component App() {
+    Text("accent", style = Accent)
+}
+"##,
+        Options::default(),
+    );
+}
+
+#[test]
 fn nodes_expressions_and_parentheses() {
     golden(
         r#"component C(){

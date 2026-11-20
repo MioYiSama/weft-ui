@@ -5,7 +5,8 @@ use weft_ui_ast::{
     Arg, Assign, AssignOp, BinaryOp, Block, CallStmt, ComponentDecl, Diagnostic, ElementNode,
     EventDecl, Expr, ExprKind, Field, File, FileId, ForNode, Ident, IfBranch, IfNode, Import, Item,
     Lambda, LambdaStmt, LetDecl, ModelDecl, Node, NodeKind, Param, SlotFill, Span, StateDecl,
-    StrPart, StyleDecl, StyleEntry, TypeAlias, TypeExpr, TypeExprKind, UnaryOp,
+    StrPart, StyleDecl, StyleEntry, ThemeDecl, ThemeEntry, ThemeValue, TypeAlias, TypeExpr,
+    TypeExprKind, UnaryOp,
 };
 
 use crate::lexer::{lex, scan_interpolation};
@@ -54,6 +55,7 @@ enum ItemKeyword {
     Component,
     TypeAlias,
     Style,
+    Theme,
 }
 
 struct Parser<'src> {
@@ -137,12 +139,13 @@ impl<'src> Parser<'src> {
             "component" => ItemKeyword::Component,
             "type" => ItemKeyword::TypeAlias,
             "style" => ItemKeyword::Style,
+            "theme" => ItemKeyword::Theme,
             _ => return None,
         };
-        let next = if keyword == ItemKeyword::Import {
-            TokenKind::Str
-        } else {
-            TokenKind::Ident
+        let next = match keyword {
+            ItemKeyword::Import => TokenKind::Str,
+            ItemKeyword::Theme => TokenKind::LBrace,
+            _ => TokenKind::Ident,
         };
         (self.peek_at(1) == next).then_some(keyword)
     }
@@ -157,6 +160,9 @@ impl<'src> Parser<'src> {
                 self.peek_at(2) == TokenKind::LBrace
                     && self.peek_at(3) == TokenKind::Ident
                     && self.peek_at(4) == TokenKind::Eq
+            }
+            Some(ItemKeyword::Theme) => {
+                self.peek_at(2) == TokenKind::Ident && self.peek_at(3) == TokenKind::Eq
             }
             Some(_) => true,
             None => false,
@@ -315,10 +321,11 @@ impl<'src> Parser<'src> {
                     items.extend(self.type_alias().map(Item::TypeAlias));
                 }
                 Some(ItemKeyword::Style) => items.extend(self.style().map(Item::Style)),
+                Some(ItemKeyword::Theme) => items.push(Item::Theme(self.theme())),
                 None if self.at(TokenKind::Eof) => break,
                 None => {
                     self.error_expected(
-                        "`model`, `event`, `component`, `type`, `style` or `import`",
+                        "`model`, `event`, `component`, `type`, `style`, `theme` or `import`",
                     );
                     while self.item_keyword().is_none() && !self.at(TokenKind::Eof) {
                         self.skip_balanced();
@@ -378,9 +385,28 @@ impl<'src> Parser<'src> {
         let start = self.bump().span;
         let name = self.ident("style name")?;
         self.expect(TokenKind::LBrace)?;
+        let entries = self.constant_entries(Self::style_entry);
+        Some(StyleDecl {
+            name,
+            entries,
+            span: self.span_from(start),
+        })
+    }
+
+    fn theme(&mut self) -> ThemeDecl {
+        let start = self.bump().span;
+        self.bump(); // `item_keyword` checked for `{`.
+        let entries = self.constant_entries(Self::theme_entry);
+        ThemeDecl {
+            entries,
+            span: self.span_from(start),
+        }
+    }
+
+    fn constant_entries<T>(&mut self, entry: fn(&mut Self) -> Option<T>) -> Vec<T> {
         let mut entries = Vec::new();
         while !matches!(self.peek(), TokenKind::RBrace | TokenKind::Eof) && !self.at_item_start() {
-            if let Some(entry) = self.style_entry() {
+            if let Some(entry) = entry(self) {
                 entries.push(entry);
             } else {
                 loop {
@@ -395,10 +421,72 @@ impl<'src> Parser<'src> {
             self.eat(TokenKind::Comma);
         }
         self.expect(TokenKind::RBrace);
-        Some(StyleDecl {
+        entries
+    }
+
+    fn theme_entry(&mut self) -> Option<ThemeEntry> {
+        let name = self.ident("theme token name")?;
+        self.expect(TokenKind::Eq)?;
+        let value = if let Some(light) = self.at(TokenKind::Str).then(|| self.bump()) {
+            let literal = |parser: &mut Self, token: Token| {
+                let text = parser
+                    .literal_string(token.span, "theme colors cannot contain interpolation")?;
+                Some((text, token.span))
+            };
+            let light = literal(self, light)?;
+            let dark = if self.at(TokenKind::Ident)
+                && self.text_of(self.token().span) == "dark"
+                && self.peek_at(1) != TokenKind::Eq
+            {
+                self.bump();
+                let token = self.expect(TokenKind::Str)?;
+                Some(literal(self, token)?)
+            } else {
+                None
+            };
+            ThemeValue::Color { light, dark }
+        } else {
+            let start = self.token().span;
+            let negative = self.eat(TokenKind::Minus);
+            let token = self.token();
+            match token.kind {
+                TokenKind::Int => {
+                    self.bump();
+                    let text = self.text_of(token.span);
+                    let number = if negative {
+                        text.parse::<i128>()
+                            .ok()
+                            .and_then(|magnitude| i64::try_from(-magnitude).ok())
+                    } else {
+                        text.parse::<i64>().ok()
+                    };
+                    let Some(number) = number else {
+                        self.error(
+                            self.span_from(start),
+                            "integer literal is out of range for `Int`",
+                        );
+                        return None;
+                    };
+                    ThemeValue::Int(number)
+                }
+                TokenKind::Float => {
+                    self.bump();
+                    let number = self
+                        .text_of(token.span)
+                        .parse::<f64>()
+                        .expect("lexer only produces valid float literals");
+                    ThemeValue::Float(if negative { -number } else { number })
+                }
+                _ => {
+                    self.error_expected("theme color or number");
+                    return None;
+                }
+            }
+        };
+        Some(ThemeEntry {
+            span: self.span_from(name.span),
             name,
-            entries,
-            span: self.span_from(start),
+            value,
         })
     }
 
@@ -417,7 +505,8 @@ impl<'src> Parser<'src> {
         if !matches!(
             head,
             (T::Str | T::Int | T::Float | T::True | T::False, _) | (T::Minus, T::Int | T::Float)
-        ) {
+        ) && !(head == (T::Ident, T::Dot) && self.text_of(start.span) == "theme")
+        {
             self.error(start.span, EXPECT_LITERAL);
             return None;
         }
@@ -425,6 +514,11 @@ impl<'src> Parser<'src> {
         let literal = match &value.kind {
             ExprKind::Int(_) | ExprKind::Float(_) | ExprKind::Bool(_) => true,
             ExprKind::Str(parts) => matches!(parts.as_slice(), [] | [StrPart::Lit(_)]),
+            ExprKind::Field {
+                base, safe: false, ..
+            } => {
+                matches!(&base.kind, ExprKind::Ident(name) if name == "theme")
+            }
             ExprKind::Unary {
                 op: UnaryOp::Neg,
                 expr,
@@ -1275,7 +1369,11 @@ mod tests {
         let src =
             "model A { x: Int y: Int }\nevent E(\ncomponent C() { Text(1 +) }\nmodel B { z: }";
         let (file, diags) = parse(FileId(0), src);
-        let names: Vec<_> = file.items.iter().map(|i| i.name().name.as_str()).collect();
+        let names: Vec<_> = file
+            .items
+            .iter()
+            .map(|i| i.name().expect("named fixture item").name.as_str())
+            .collect();
         assert_eq!(names, ["A", "E", "C", "B"]);
         assert_eq!(diags.len(), 4, "{diags:#?}");
     }

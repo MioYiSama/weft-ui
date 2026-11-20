@@ -17,9 +17,17 @@ use crate::server::Server;
 /// Cannot clash with user code: `.weft` names don't start with `__weft`.
 const PROBE: &str = "__weft_complete__";
 
-const TOP_LEVEL_KEYWORDS: [&str; 6] = ["import", "model", "event", "component", "type", "style"];
+const TOP_LEVEL_KEYWORDS: [&str; 7] = [
+    "import",
+    "model",
+    "event",
+    "component",
+    "type",
+    "style",
+    "theme",
+];
 const NODE_KEYWORDS: [&str; 4] = ["if", "for", "state", "let"];
-const VALUE_KEYWORDS: [&str; 4] = ["true", "false", "null", "if"];
+const VALUE_KEYWORDS: [&str; 5] = ["true", "false", "null", "if", "theme"];
 
 pub(crate) fn complete(server: &Server, params: CompletionParams) -> Option<CompletionResponse> {
     let position = params.text_document_position;
@@ -109,7 +117,7 @@ fn kind(symbol: &Symbol) -> CompletionItemKind {
     match symbol.kind {
         SymbolKind::Model => CompletionItemKind::STRUCT,
         SymbolKind::Event => CompletionItemKind::EVENT,
-        SymbolKind::Style => CompletionItemKind::CONSTANT,
+        SymbolKind::Style | SymbolKind::ThemeToken => CompletionItemKind::CONSTANT,
         SymbolKind::Component | SymbolKind::Element => CompletionItemKind::CLASS,
         SymbolKind::Field => CompletionItemKind::FIELD,
         SymbolKind::Param

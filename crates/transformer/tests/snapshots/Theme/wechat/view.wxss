@@ -1,0 +1,2 @@
+:host{--weft-accent:#0a84ffff;}
+@media (prefers-color-scheme: dark){:host{--weft-accent:#409cffff;}}

@@ -281,6 +281,7 @@ pub fn instance_watches(program: &Program, comp: &Component, consts: &mut Consts
 /// A constant property value that can be written into static markup.
 pub enum Literal<'e> {
     Str(&'e str),
+    Token(&'e str),
     Int(i64),
     Bool(bool),
 }
@@ -288,6 +289,7 @@ pub enum Literal<'e> {
 pub fn literal(e: &Expr) -> Option<Literal<'_>> {
     match &e.kind {
         ExprKind::Str(s) => Some(Literal::Str(s)),
+        ExprKind::Theme(name) => Some(Literal::Token(name)),
         ExprKind::Int(v) => Some(Literal::Int(*v)),
         ExprKind::Bool(v) => Some(Literal::Bool(*v)),
         ExprKind::Coerce { expr, .. } => literal(expr),

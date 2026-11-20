@@ -197,7 +197,7 @@ pub(crate) fn ts_type(program: &Program, ty: &Type) -> String {
     match ty {
         Type::Int | Type::Float => "number".to_owned(),
         Type::Bool => "boolean".to_owned(),
-        Type::String => "string".to_owned(),
+        Type::String | Type::Color => "string".to_owned(),
         Type::Union(members) => {
             let mut out = String::new();
             for (index, member) in members.iter().enumerate() {

@@ -96,6 +96,8 @@ class Element {
   GtkWidget *widget() const { return widget_; }
   virtual void reapply_colors() {}
 
+  void set_opacity(double opacity);
+  void set_hidden(bool hidden);
   void set_width(double width);
   void set_height(double height);
   void set_min_width(double min_width);
@@ -168,8 +170,29 @@ class Region {
   Scope *scope_ = nullptr;
 };
 
+/// An element whose WeftWidget paints its own decoration.
+class Decorated : public Element {
+ public:
+  void set_background(Color color);
+  void set_radius(double radius);
+  void set_border(double border);
+  void set_border_color(Color color);
+  void set_shadow(Shadow shadow);
+  void set_clip(bool clip);
+  void reapply_colors() override;
+
+ protected:
+  explicit Decorated(GtkWidget *widget) : Element(widget) {}
+
+ private:
+  void resolve_border_color();
+
+  Color background_ = Color::rgba(0);
+  std::optional<Color> border_color_;
+};
+
 /// Element with schema padding, which may live inside a scroll viewport.
-class Padded : public Element {
+class Padded : public Decorated {
  public:
   void set_padding(double padding);
   void set_padding_x(double padding_x);
@@ -196,12 +219,9 @@ class Linear final : public Padded {
   void set_gap(double gap);
   void set_align(CrossAlign align);
   void set_justify(Justify justify);
-  void set_background(Color color);
-  void reapply_colors() override;
 
  private:
   Region children_;
-  Color background_ = Color::rgba(0);
 };
 
 /// `Stack`: overlays children in paint order.
@@ -228,6 +248,7 @@ class Scroll final : public Padded {
   Scroll(Axis direction, GtkWidget *content);
 
   Axis direction_;
+  GtkScrolledWindow *scroll_;
   GtkWidget *content_;
   Region children_;
 };
@@ -327,7 +348,7 @@ class Checkbox final : public Element {
 /// downloaded once per process. With one fixed side the other follows the
 /// aspect ratio, with both the image fills them, and with neither it keeps
 /// its own size (one image pixel per logical pixel).
-class Image final : public Element {
+class Image final : public Decorated {
  public:
   Image();
 
@@ -337,6 +358,8 @@ class Image final : public Element {
 
  private:
   void update_fit();
+
+  GtkPicture *picture_;
 };
 
 /// One template instance of the view protocol. The generated views subclass

@@ -26,16 +26,25 @@ struct WidgetLayout {
   std::optional<double> spacer_size;
 };
 
+struct WidgetStyle {
+  GdkRGBA background{};
+  GdkRGBA border_color{};
+  double radius = 0;
+  double border = 0;
+  Shadow shadow = Shadow::None;
+  bool clip = false;
+};
+
 WidgetLayout &attach_layout(GtkWidget *widget);
+WidgetStyle &widget_style(GtkWidget *widget);
+GtkWidget *widget_new(GtkWidget *child = nullptr);
 GtkWidget *linear_new(Axis axis, CrossAlign align = CrossAlign::Start, bool scrolling = false);
 GtkWidget *overlay_new();
-GtkWidget *spacer_new();
 void container_set_gap(GtkWidget *widget, double gap);
 void container_set_align(GtkWidget *widget, CrossAlign align);
 void container_set_justify(GtkWidget *widget, Justify justify);
 void container_set_alignment(GtkWidget *widget, Alignment alignment);
 void container_set_padding(GtkWidget *widget, Edge edge, double value);
-void container_set_background(GtkWidget *widget, const GdkRGBA &color);
 void container_on_allocate(GtkWidget *widget, void (*callback)(GtkWidget *));
 
 }  // namespace weft

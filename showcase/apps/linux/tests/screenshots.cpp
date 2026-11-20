@@ -7,6 +7,8 @@
 #include <string>
 #include <string_view>
 
+#include "appearance.hpp"
+
 namespace {
 
 [[noreturn]] void fail(const std::string &message) {
@@ -55,7 +57,7 @@ int main(int argc, char **argv) {
     auto delimiter = page.find(':');
     std::string id(page.substr(0, delimiter));
     bool dark = page.substr(delimiter + 1) == "dark";
-    g_object_set(gtk_settings_get_default(), "gtk-application-prefer-dark-theme", dark, nullptr);
+    weft::Appearance::set_test_dark(dark);
 
     auto *window = gtk_window_new();
     auto *root = weft::start_app();

@@ -35,17 +35,19 @@ struct WeftStackLayout { WeftLinearLayout parent_instance; };
 struct WeftStackLayoutClass { WeftLinearLayoutClass parent_class; };
 G_DEFINE_TYPE(WeftStackLayout, weft_stack_layout, weft_linear_layout_get_type())
 
-struct WeftLinear {
+struct WeftWidget {
   GtkWidget parent_instance;
-  GdkRGBA background;
-  void (*on_allocate)(GtkWidget *);
+  WidgetStyle style;
 };
-struct WeftLinearClass { GtkWidgetClass parent_class; };
-G_DEFINE_TYPE(WeftLinear, weft_linear, GTK_TYPE_WIDGET)
-
-struct WeftWidget { GtkWidget parent_instance; };
 struct WeftWidgetClass { GtkWidgetClass parent_class; };
 G_DEFINE_TYPE(WeftWidget, weft_widget, GTK_TYPE_WIDGET)
+
+struct WeftLinear {
+  WeftWidget parent_instance;
+  void (*on_allocate)(GtkWidget *);
+};
+struct WeftLinearClass { WeftWidgetClass parent_class; };
+G_DEFINE_TYPE(WeftLinear, weft_linear, weft_widget_get_type())
 
 namespace {
 
@@ -57,6 +59,14 @@ const WidgetLayout *widget_layout(GtkWidget *widget) {
 
 bool is_container(GtkWidget *widget) {
   return G_TYPE_CHECK_INSTANCE_TYPE(widget, weft_linear_get_type());
+}
+
+bool is_weft_widget(GtkWidget *widget) {
+  return G_TYPE_CHECK_INSTANCE_TYPE(widget, weft_widget_get_type());
+}
+
+Insets inset_border(Insets padding, double border) {
+  return {padding.top + border, padding.right + border, padding.bottom + border, padding.left + border};
 }
 
 LayoutState &state(GtkLayoutManager *manager) { return reinterpret_cast<WeftLinearLayout *>(manager)->state; }
@@ -115,7 +125,7 @@ Size run(GtkLayoutManager *manager, GtkWidget *widget, Proposal proposal) {
                         data && data->size.height.has_value(), data && data->spacer,
                         data ? data->spacer_size : std::nullopt, {}});
   }
-  const auto padding = box.padding.resolve();
+  const auto padding = inset_border(box.padding.resolve(), widget_style(widget).border);
   if (box.overlay) return stack(box.alignment, padding, proposal, children);
   // A viewport gives its child a finite allocation even on the scrolling
   // axis. Keep that axis unbounded for the algorithm so grow stays intrinsic.
@@ -127,13 +137,20 @@ Size run(GtkLayoutManager *manager, GtkWidget *widget, Proposal proposal) {
 Size measure_widget(const void *pointer, Proposal proposal) {
   auto *widget = const_cast<GtkWidget *>(static_cast<const GtkWidget *>(pointer));
   const auto *data = widget_layout(widget);
-  if (!data && !is_container(widget)) return measure_native(widget, proposal);
-  const auto padding = data && data->padding_widget ? state(data->padding_widget).padding.resolve() : Insets{};
+  const bool container = is_container(widget);
+  const bool hosted = container || is_weft_widget(widget);
+  const double border = hosted ? widget_style(widget).border : 0;
+  const auto padding = inset_border(data && data->padding_widget ? state(data->padding_widget).padding.resolve()
+                                                                 : Insets{}, border);
   const auto measure = [&](Proposal bounds) {
     if (bounds.width.is_exact() && bounds.height.is_exact()) return Size{bounds.width.value, bounds.height.value};
-    if (!is_container(widget)) return measure_native(widget, bounds);
-    auto *manager = gtk_widget_get_layout_manager(widget);
-    return run(manager, widget, bounds);
+    if (container) return run(gtk_widget_get_layout_manager(widget), widget, bounds);
+    if (!hosted) return measure_native(widget, bounds);
+    const double inset = border * 2;
+    auto *child = gtk_widget_get_first_child(widget);
+    if (!child) return Size{bounds.width.fit(inset), bounds.height.fit(inset)};
+    const auto inner = measure_native(child, {bounds.width.inset(inset), bounds.height.inset(inset)});
+    return Size{bounds.width.fit(inner.width + inset), bounds.height.fit(inner.height + inset)};
   };
   if (!data) return measure(proposal);
   const auto bounds = data->size.propose(proposal, padding);
@@ -169,7 +186,7 @@ void measure(GtkLayoutManager *manager, GtkWidget *widget, GtkOrientation orient
   const auto *data = widget_layout(widget);
   const bool scroll_extent = box.scroll_axis == (x ? Axis::Horizontal : Axis::Vertical);
   const auto &size = data ? data->size : Rules{};
-  const auto padding = box.padding.resolve();
+  const auto padding = inset_border(box.padding.resolve(), widget_style(widget).border);
   const double min_padding = x ? padding.horizontal() : padding.vertical();
   const auto min_size = x ? size.min_width : size.min_height;
   const auto fixed = x ? size.width : size.height;
@@ -201,18 +218,70 @@ void finalize_layout(GObject *object) {
   G_OBJECT_CLASS(weft_linear_layout_parent_class)->finalize(object);
 }
 
+GtkSizeRequestMode widget_request_mode(GtkWidget *widget) {
+  auto *child = gtk_widget_get_first_child(widget);
+  return child ? gtk_widget_get_request_mode(child) : GTK_SIZE_REQUEST_CONSTANT_SIZE;
+}
+
+void widget_measure(GtkWidget *widget, GtkOrientation orientation, int for_size, int *minimum, int *natural,
+                    int *minimum_baseline, int *natural_baseline) {
+  const bool x = orientation == GTK_ORIENTATION_HORIZONTAL;
+  const auto constraint = for_size < 0 ? Length{} : Length::exact(for_size);
+  const auto size = measure_widget(widget, x ? Proposal{{}, constraint} : Proposal{constraint, {}});
+  *natural = pixels(x ? size.width : size.height);
+  *minimum = std::min(*natural, pixels(widget_style(widget).border * 2));
+  *minimum_baseline = *natural_baseline = -1;
+}
+
+void widget_allocate(GtkWidget *widget, int width, int height, int) {
+  auto *child = gtk_widget_get_first_child(widget);
+  if (!child) return;
+  const double border = widget_style(widget).border;
+  const int x = pixels(std::min(border, width / 2.0)), y = pixels(std::min(border, height / 2.0));
+  GtkAllocation inner{x, y, std::max(0, width - 2 * x), std::max(0, height - 2 * y)};
+  gtk_widget_size_allocate(child, &inner, -1);
+}
+
 void snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
-  const auto &color = reinterpret_cast<WeftLinear *>(widget)->background;
-  if (color.alpha > 0) {
+  const auto &style = widget_style(widget);
+  const bool border = style.border > 0 && style.border_color.alpha > 0;
+  if (style.shadow != Shadow::None || style.background.alpha > 0 || border || style.clip) {
     const auto bounds = GRAPHENE_RECT_INIT(0, 0, float(gtk_widget_get_width(widget)), float(gtk_widget_get_height(widget)));
-    gtk_snapshot_append_color(snapshot, &color, &bounds);
+    GskRoundedRect outline;
+    gsk_rounded_rect_init_from_rect(&outline, &bounds, float(style.radius));
+    const auto shadow = [&](float y, float blur, float alpha) {
+      const GdkRGBA color{0, 0, 0, alpha};
+      gtk_snapshot_append_outset_shadow(snapshot, &outline, &color, 0, y, 0, blur);
+    };
+    switch (style.shadow) {
+      case Shadow::None: break;
+      case Shadow::Small: shadow(1, 3, 31 / 255.0f); break;
+      case Shadow::Medium: shadow(4, 12, 38 / 255.0f); break;
+      case Shadow::Large: shadow(12, 32, 46 / 255.0f); break;
+    }
+    if (style.background.alpha > 0) {
+      gtk_snapshot_push_rounded_clip(snapshot, &outline);
+      gtk_snapshot_append_color(snapshot, &style.background, &bounds);
+      gtk_snapshot_pop(snapshot);
+    }
+    const float thickness = style.border;
+    if (border) {
+      const float widths[]{thickness, thickness, thickness, thickness};
+      const GdkRGBA colors[]{style.border_color, style.border_color, style.border_color, style.border_color};
+      gtk_snapshot_append_border(snapshot, &outline, widths, colors);
+    }
+    if (style.clip) {
+      gsk_rounded_rect_shrink(&outline, thickness, thickness, thickness, thickness);
+      gtk_snapshot_push_rounded_clip(snapshot, &outline);
+    }
   }
-  GTK_WIDGET_CLASS(weft_linear_parent_class)->snapshot(widget, snapshot);
+  GTK_WIDGET_CLASS(weft_widget_parent_class)->snapshot(widget, snapshot);
+  if (style.clip) gtk_snapshot_pop(snapshot);
 }
 
 void dispose(GObject *object) {
   while (auto *child = gtk_widget_get_first_child(GTK_WIDGET(object))) gtk_widget_unparent(child);
-  G_OBJECT_CLASS(weft_linear_parent_class)->dispose(object);
+  G_OBJECT_CLASS(weft_widget_parent_class)->dispose(object);
 }
 
 GtkWidget *container_new(GType manager_type) {
@@ -242,14 +311,19 @@ static void weft_stack_layout_class_init(WeftStackLayoutClass *) {}
 
 static void weft_linear_init(WeftLinear *) {}
 static void weft_linear_class_init(WeftLinearClass *klass) {
-  G_OBJECT_CLASS(klass)->dispose = dispose;
-  auto *widget = GTK_WIDGET_CLASS(klass);
-  widget->snapshot = snapshot;
-  gtk_widget_class_set_css_name(widget, "weft-linear");
+  gtk_widget_class_set_css_name(GTK_WIDGET_CLASS(klass), "weft-linear");
 }
 
-static void weft_widget_init(WeftWidget *) {}
-static void weft_widget_class_init(WeftWidgetClass *) {}
+static void weft_widget_init(WeftWidget *self) { std::construct_at(&self->style); }
+static void weft_widget_class_init(WeftWidgetClass *klass) {
+  G_OBJECT_CLASS(klass)->dispose = dispose;
+  auto *widget = GTK_WIDGET_CLASS(klass);
+  widget->get_request_mode = widget_request_mode;
+  widget->measure = widget_measure;
+  widget->size_allocate = widget_allocate;
+  widget->snapshot = snapshot;
+  gtk_widget_class_set_css_name(widget, "weft-widget");
+}
 
 namespace weft {
 
@@ -279,7 +353,14 @@ GtkWidget *linear_new(Axis axis, CrossAlign align, bool scrolling) {
 }
 
 GtkWidget *overlay_new() { return container_new(weft_stack_layout_get_type()); }
-GtkWidget *spacer_new() { return GTK_WIDGET(g_object_new(weft_widget_get_type(), nullptr)); }
+
+WidgetStyle &widget_style(GtkWidget *widget) { return reinterpret_cast<WeftWidget *>(widget)->style; }
+
+GtkWidget *widget_new(GtkWidget *child) {
+  auto *widget = GTK_WIDGET(g_object_new(weft_widget_get_type(), nullptr));
+  if (child) gtk_widget_set_parent(child, widget);
+  return widget;
+}
 
 void container_set_gap(GtkWidget *widget, double gap) {
   state(widget).linear.gap = std::max(0.0, gap);
@@ -300,10 +381,6 @@ void container_set_alignment(GtkWidget *widget, Alignment alignment) {
 void container_set_padding(GtkWidget *widget, Edge edge, double value) {
   state(widget).padding.set(edge, std::max(0.0, value));
   gtk_widget_queue_resize(widget);
-}
-void container_set_background(GtkWidget *widget, const GdkRGBA &color) {
-  reinterpret_cast<WeftLinear *>(widget)->background = color;
-  gtk_widget_queue_draw(widget);
 }
 
 void container_on_allocate(GtkWidget *widget, void (*callback)(GtkWidget *)) {

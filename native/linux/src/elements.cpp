@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "appearance.hpp"
 #include "container.hpp"
 #include "texture_cache.hpp"
 #include "weft/gtk.hpp"
@@ -50,6 +51,9 @@ Element::~Element() {
   g_signal_handlers_disconnect_by_data(widget_, this);
   g_object_unref(widget_);
 }
+
+void Element::set_opacity(double opacity) { gtk_widget_set_opacity(widget_, std::clamp(opacity, 0.0, 1.0)); }
+void Element::set_hidden(bool hidden) { gtk_widget_set_visible(widget_, !hidden); }
 
 void Element::set_width(double width) {
   layout_.size.width = width;
@@ -107,7 +111,54 @@ void Element::set_margin_bottom(double margin_bottom) { set_margin_edge(Edge::Bo
 void Element::set_margin_start(double margin_start) { set_margin_edge(Edge::Start, margin_start); }
 void Element::set_margin_end(double margin_end) { set_margin_edge(Edge::End, margin_end); }
 
-Padded::Padded(GtkWidget *widget, GtkWidget *content) : Element(widget) {
+void Decorated::set_background(Color color) {
+  background_ = color;
+  widget_style(widget()).background = color.resolve();
+  gtk_widget_queue_draw(widget());
+}
+
+void Decorated::set_radius(double radius) {
+  widget_style(widget()).radius = std::max(0.0, radius);
+  gtk_widget_queue_draw(widget());
+}
+
+void Decorated::set_border(double border) {
+  widget_style(widget()).border = std::max(0.0, border);
+  resolve_border_color();
+  gtk_widget_queue_resize(widget());
+  gtk_widget_queue_draw(widget());
+}
+
+void Decorated::set_border_color(Color color) {
+  border_color_ = color;
+  resolve_border_color();
+  gtk_widget_queue_draw(widget());
+}
+
+void Decorated::set_shadow(Shadow shadow) {
+  widget_style(widget()).shadow = shadow;
+  gtk_widget_queue_draw(widget());
+}
+
+void Decorated::set_clip(bool clip) {
+  widget_style(widget()).clip = clip;
+  gtk_widget_queue_draw(widget());
+}
+
+void Decorated::resolve_border_color() {
+  const auto color = border_color_.value_or(Color::rgba(dark() ? 0xffffff26u : 0x0000001fu));
+  widget_style(widget()).border_color = color.resolve();
+}
+
+void Decorated::reapply_colors() {
+  const bool background_changes = background_.is_token();
+  const bool border_changes = widget_style(widget()).border > 0 && (!border_color_ || border_color_->is_token());
+  if (background_changes) widget_style(widget()).background = background_.resolve();
+  if (border_changes) resolve_border_color();
+  if (background_changes || border_changes) gtk_widget_queue_draw(widget());
+}
+
+Padded::Padded(GtkWidget *widget, GtkWidget *content) : Decorated(widget) {
   layout().padding_widget = content ? content : widget;
 }
 
@@ -127,13 +178,6 @@ Linear::Linear(Axis axis, CrossAlign align) : Padded(linear_new(axis, align)), c
 void Linear::set_gap(double gap) { container_set_gap(widget(), gap); }
 void Linear::set_align(CrossAlign align) { container_set_align(widget(), align); }
 void Linear::set_justify(Justify justify) { container_set_justify(widget(), justify); }
-void Linear::set_background(Color color) {
-  background_ = color;
-  container_set_background(widget(), color.resolve());
-}
-void Linear::reapply_colors() {
-  if (background_.is_token()) container_set_background(widget(), background_.resolve());
-}
 
 Stack::Stack() : Padded(overlay_new()), children_(widget()) {}
 void Stack::set_alignment(Alignment alignment) { container_set_alignment(widget(), alignment); }
@@ -141,11 +185,11 @@ void Stack::set_alignment(Alignment alignment) { container_set_alignment(widget(
 Scroll::Scroll(Axis direction) : Scroll(direction, linear_new(direction, CrossAlign::Start, true)) {}
 
 Scroll::Scroll(Axis direction, GtkWidget *content)
-    : Padded(gtk_scrolled_window_new(), content), direction_(direction), content_(content), children_(content) {
-  auto *scroll = GTK_SCROLLED_WINDOW(widget());
-  gtk_scrolled_window_set_propagate_natural_width(scroll, true);
-  gtk_scrolled_window_set_propagate_natural_height(scroll, true);
-  gtk_scrolled_window_set_child(scroll, content_);
+    : Padded(widget_new(gtk_scrolled_window_new()), content), direction_(direction),
+      scroll_(GTK_SCROLLED_WINDOW(gtk_widget_get_first_child(widget()))), content_(content), children_(content) {
+  gtk_scrolled_window_set_propagate_natural_width(scroll_, true);
+  gtk_scrolled_window_set_propagate_natural_height(scroll_, true);
+  gtk_scrolled_window_set_child(scroll_, content_);
   set_indicators(true);
   layout().grow = 1;
   layout().fill = true;
@@ -156,11 +200,11 @@ void Scroll::set_align(CrossAlign align) { container_set_align(content_, align);
 void Scroll::set_indicators(bool indicators) {
   const auto active = indicators ? GTK_POLICY_AUTOMATIC : GTK_POLICY_EXTERNAL;
   const bool horizontal = direction_ == Axis::Horizontal;
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(widget()), horizontal ? active : GTK_POLICY_NEVER,
+  gtk_scrolled_window_set_policy(scroll_, horizontal ? active : GTK_POLICY_NEVER,
                                  horizontal ? GTK_POLICY_NEVER : active);
 }
 
-Spacer::Spacer() : Element(spacer_new()) { layout().spacer = true; }
+Spacer::Spacer() : Element(widget_new()) { layout().spacer = true; }
 void Spacer::set_size(double size) {
   layout().spacer_size = std::max(0.0, size);
   gtk_widget_queue_resize(widget());
@@ -183,6 +227,7 @@ void Text::set_color(Color color) {
 }
 
 void Text::reapply_colors() {
+  Decorated::reapply_colors();
   if (color_ && color_->is_token()) restyle();
 }
 
@@ -348,22 +393,21 @@ void loaded(Load *load, GBytes *bytes, GError *error) {
 
 }  // namespace
 
-Image::Image() : Element(gtk_picture_new()) {
-  gtk_picture_set_can_shrink(GTK_PICTURE(widget()), true);
+Image::Image() : Decorated(widget_new(gtk_picture_new())), picture_(GTK_PICTURE(gtk_widget_get_first_child(widget()))) {
+  gtk_picture_set_can_shrink(picture_, true);
 }
 
 void Image::set_src(std::string_view src) {
-  auto *picture = GTK_PICTURE(widget());
   std::string source(src);
-  g_object_set_data_full(G_OBJECT(picture), "weft-src", g_strdup(source.c_str()), g_free);
+  g_object_set_data_full(G_OBJECT(picture_), "weft-src", g_strdup(source.c_str()), g_free);
   if (auto *cached = textures().find(source)) {
-    gtk_picture_set_paintable(picture, GDK_PAINTABLE(cached));
+    gtk_picture_set_paintable(picture_, GDK_PAINTABLE(cached));
     return;
   }
-  gtk_picture_set_paintable(picture, nullptr);
+  gtk_picture_set_paintable(picture_, nullptr);
   if (source.empty()) return;
   auto *load = new Load{{}, source};
-  g_weak_ref_init(&load->picture, picture);
+  g_weak_ref_init(&load->picture, picture_);
   if (g_str_has_prefix(source.c_str(), "http:") || g_str_has_prefix(source.c_str(), "https:")) {
     SoupMessage *message = soup_message_new(SOUP_METHOD_GET, source.c_str());
     if (!message) {
@@ -411,8 +455,7 @@ void Image::set_height(double height) {
 
 void Image::update_fit() {
   const auto &size = layout().size;
-  gtk_picture_set_content_fit(GTK_PICTURE(widget()), size.width && size.height ? GTK_CONTENT_FIT_FILL
-                                                                              : GTK_CONTENT_FIT_CONTAIN);
+  gtk_picture_set_content_fit(picture_, size.width && size.height ? GTK_CONTENT_FIT_FILL : GTK_CONTENT_FIT_CONTAIN);
 }
 
 }  // namespace weft

@@ -16,4 +16,6 @@ weft_app(ui_tests)
 add_test(NAME ui COMMAND ui_tests)
 
 add_executable(screenshots tests/screenshots.cpp)
+get_target_property(weft_linux_source weft_linux SOURCE_DIR)
+target_include_directories(screenshots PRIVATE "${weft_linux_source}/src")
 weft_app(screenshots)

@@ -13,6 +13,9 @@ class Appearance {
   Appearance &operator=(const Appearance &) = delete;
   ~Appearance();
 
+  /// Drives the same appearance change as the portal in the screenshot harness.
+  static void set_test_dark(bool dark);
+
  private:
   struct Portal;
   static Portal &portal();

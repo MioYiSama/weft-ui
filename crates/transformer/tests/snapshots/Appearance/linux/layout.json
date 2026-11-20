@@ -1,0 +1,43 @@
+{
+  "hash": "e7efdea4345db2e9",
+  "templates": [
+    {
+      "label": "Appearance",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {"width": 260, "opacity": 0.9, "padding": 12, "background": "#f7f8f9", "radius": 16, "border": 1, "shadow": "small", "clip": false, "gap": 8}, "children": [1, 3, 5, 7, 9, 10]},
+        {"element": "Row", "props": {}, "children": [2]},
+        {"element": "Text", "props": {"padding": 6, "background": "#f4c989", "radius": 4, "value": "Label"}, "children": []},
+        {"element": "Stack", "props": {"width": 160, "height": 80, "background": "#daf1ef", "radius": 12, "border": 2, "borderColor": "#4c888a", "shadow": "medium", "clip": true}, "children": [4]},
+        {"element": "Image", "props": {"width": 240, "height": 96, "opacity": 0.8, "radius": 6, "src": "wide.png"}, "children": []},
+        {"element": "Scroll", "props": {"height": 64, "radius": 8, "border": 1, "shadow": "large"}, "children": [6]},
+        {"element": "Text", "props": {"height": 96, "value": "Scroll"}, "children": []},
+        {"element": "Button", "props": {}, "children": [8]},
+        {"element": "Text", "props": {"value": "Action"}, "children": []},
+        {"element": "Input", "props": {}, "children": []},
+        {"element": "Checkbox", "props": {"hidden": true}, "children": []}
+      ],
+      "values": [
+        {"node": 1, "prop": "opacity", "type": "Float"},
+        {"node": 1, "prop": "hidden", "type": "Bool"},
+        {"node": 1, "prop": "background", "type": "Color"},
+        {"node": 1, "prop": "radius", "type": "Int"},
+        {"node": 1, "prop": "border", "type": "Int"},
+        {"node": 1, "prop": "borderColor", "type": "Color"},
+        {"node": 1, "prop": "shadow", "type": "String"},
+        {"node": 1, "prop": "clip", "type": "Bool"},
+        {"node": 5, "prop": "clip", "type": "Bool"},
+        {"node": 7, "prop": "hidden", "type": "Bool"},
+        {"node": 9, "prop": "opacity", "type": "Float"},
+        {"node": 9, "prop": "value", "type": "String"},
+        {"node": 10, "prop": "checked", "type": "Bool"}
+      ],
+      "events": [
+        {"node": 9, "event": "onChange", "payload": "String", "controls": 11},
+        {"node": 10, "event": "onChange", "payload": "Bool", "controls": 12}
+      ],
+      "points": []
+    }
+  ]
+}

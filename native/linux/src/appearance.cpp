@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <optional>
 #include <vector>
 
 namespace weft {
@@ -41,8 +42,14 @@ struct Appearance::Portal {
   GDBusConnection *connection = nullptr;
   guint subscription = 0;
   std::vector<Appearance *> observers;
+  std::optional<bool> test_dark;
 
   void start() {
+    if (test_dark) {
+      dark_preferred = *test_dark;
+      apply_gtk_preference(dark_preferred);
+      return;
+    }
     connection = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
     if (connection) {
       subscription = g_dbus_connection_signal_subscribe(
@@ -55,9 +62,8 @@ struct Appearance::Portal {
             GVariant *value;
             g_variant_get(params, "(&s&sv)", nullptr, &setting, &value);
             g_autoptr(GVariant) owned = value;
-            if (std::strcmp(setting, kColorScheme) == 0) {
-              static_cast<Portal *>(data)->update(prefers_dark(owned));
-            }
+            auto &portal = *static_cast<Portal *>(data);
+            if (!portal.test_dark && std::strcmp(setting, kColorScheme) == 0) portal.update(prefers_dark(owned));
           }, this, nullptr);
       g_autoptr(GVariant) result = g_dbus_connection_call_sync(
           connection, kPortal, kPortalPath, kPortalSettings, "Read", g_variant_new("(ss)", kAppearance, kColorScheme),
@@ -100,6 +106,12 @@ Appearance::~Appearance() {
   auto &state = portal();
   std::erase(state.observers, this);
   if (state.observers.empty()) state.stop();
+}
+
+void Appearance::set_test_dark(bool dark) {
+  auto &state = portal();
+  state.test_dark = dark;
+  state.update(dark);
 }
 
 bool dark() { return dark_preferred; }

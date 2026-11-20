@@ -133,6 +133,7 @@ fn union_type(element: Element, prop: &str) -> Option<&'static str> {
         (Element::Column | Element::Row, "justify") => Some("Justify"),
         (Element::Stack, "alignment") => Some("Alignment"),
         (Element::Scroll, "direction") => Some("Axis"),
+        (_, "shadow") => Some("Shadow"),
         _ => None,
     }
 }

@@ -6,8 +6,7 @@ import SwiftUI
 // being composed by an input method is not reported, so it is never rolled
 // back mid-composition; the committed text is.
 
-/// Width of an `Input`, which has no width property (CSS inputs default to
-/// about 20 characters).
+/// Intrinsic width of an `Input` (CSS inputs default to about 20 characters).
 private let inputWidth: CGFloat = 200
 
 #if os(macOS)
@@ -18,6 +17,7 @@ public struct WeftInput: NSViewRepresentable {
     let text: String
     let placeholder: String?
     let edit: @MainActor (String) -> String?
+    private var sizing = WeftSizing()
 
     public init(text: String, placeholder: String?, edit: @escaping @MainActor (String) -> String?) {
         self.text = text
@@ -48,7 +48,7 @@ public struct WeftInput: NSViewRepresentable {
     }
 
     public func sizeThatFits(_ proposal: ProposedViewSize, nsView field: NSTextField, context: Context) -> CGSize? {
-        CGSize(width: inputWidth, height: field.intrinsicContentSize.height)
+        sizing.nativeSize(proposal, ideal: CGSize(width: inputWidth, height: field.intrinsicContentSize.height))
     }
 
     static func composing(_ field: NSTextField) -> Bool {
@@ -122,6 +122,7 @@ public struct WeftInput: UIViewRepresentable {
     let text: String
     let placeholder: String?
     let edit: @MainActor (String) -> String?
+    private var sizing = WeftSizing()
 
     public init(text: String, placeholder: String?, edit: @escaping @MainActor (String) -> String?) {
         self.text = text
@@ -151,7 +152,7 @@ public struct WeftInput: UIViewRepresentable {
     }
 
     public func sizeThatFits(_ proposal: ProposedViewSize, uiView field: UITextField, context: Context) -> CGSize? {
-        CGSize(width: inputWidth, height: field.intrinsicContentSize.height)
+        sizing.nativeSize(proposal, ideal: CGSize(width: inputWidth, height: field.intrinsicContentSize.height))
     }
 
     @MainActor

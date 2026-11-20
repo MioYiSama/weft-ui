@@ -60,13 +60,19 @@ private struct V0: View {
     let s: S0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            WeftInput(text: s.v0, placeholder: nil) { s.dispatch(0, .string($0)) ? nil : s.v0 }
-            Button {
-                _ = s.dispatch(1)
-            } label: {
-                HStack(spacing: 0) {
-                    Text(verbatim: s.v1)
+        weftLinear(axis: .vertical, gap: 0, align: .start, justify: .start) {
+            weftLeaf {
+                WeftInput(text: s.v0, placeholder: nil) { s.dispatch(0, .string($0)) ? nil : s.v0 }
+            }
+            weftLeaf {
+                Button {
+                    _ = s.dispatch(1)
+                } label: {
+                    weftButtonLabel {
+                        weftLeaf {
+                            Text(verbatim: s.v1)
+                        }
+                    }
                 }
             }
             switch s.p0 {
@@ -120,13 +126,19 @@ private struct V2: View {
     let s: S2
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            Text(verbatim: s.v0)
-            Button {
-                _ = s.dispatch(0)
-            } label: {
-                HStack(spacing: 0) {
-                    Text(verbatim: "x")
+        weftLinear(axis: .horizontal, gap: 0, align: .start, justify: .start) {
+            weftLeaf {
+                Text(verbatim: s.v0)
+            }
+            weftLeaf {
+                Button {
+                    _ = s.dispatch(0)
+                } label: {
+                    weftButtonLabel {
+                        weftLeaf {
+                            Text(verbatim: "x")
+                        }
+                    }
                 }
             }
         }

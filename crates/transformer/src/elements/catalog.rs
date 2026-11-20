@@ -4,7 +4,6 @@ use super::{
     Children, Css, CssTarget, CssUnit, CustomCss, ElementSpec, FeatureSpec, PropKind, PropSpec,
     PropType,
 };
-use crate::protocol::Platform;
 
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -298,13 +297,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(2),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minWidth",
@@ -314,13 +307,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(3),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxWidth",
@@ -330,13 +317,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(4),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minHeight",
@@ -346,13 +327,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(5),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxHeight",
@@ -362,13 +337,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(6),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "fill",
@@ -378,13 +347,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(7),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "aspectRatio",
@@ -394,13 +357,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(8),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "margin",
@@ -410,13 +367,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(9),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginX",
@@ -426,13 +377,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(10),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginY",
@@ -442,13 +387,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(11),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginTop",
@@ -458,13 +397,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(12),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginBottom",
@@ -474,13 +407,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(13),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginStart",
@@ -490,13 +417,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(14),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginEnd",
@@ -506,13 +427,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(15),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "padding",
@@ -532,13 +447,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingY",
@@ -548,13 +457,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(18),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingTop",
@@ -564,13 +467,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(19),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingBottom",
@@ -580,13 +477,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(20),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingStart",
@@ -596,13 +487,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(21),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingEnd",
@@ -612,13 +497,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(22),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "background",
@@ -648,13 +527,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(25),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "justify",
@@ -664,13 +537,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(26),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
 ];
 
@@ -683,13 +550,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(0),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "height",
@@ -699,13 +560,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(1),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "grow",
@@ -715,13 +570,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(2),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minWidth",
@@ -731,13 +580,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(3),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxWidth",
@@ -747,13 +590,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(4),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minHeight",
@@ -763,13 +600,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(5),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxHeight",
@@ -779,13 +610,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(6),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "fill",
@@ -795,13 +620,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(7),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "aspectRatio",
@@ -811,13 +630,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(8),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "margin",
@@ -827,13 +640,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(9),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginX",
@@ -843,13 +650,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(10),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginY",
@@ -859,13 +660,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(11),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginTop",
@@ -875,13 +670,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(12),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginBottom",
@@ -891,13 +680,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(13),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginStart",
@@ -907,13 +690,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(14),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginEnd",
@@ -923,13 +700,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(15),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "padding",
@@ -939,13 +710,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingX",
@@ -955,13 +720,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingY",
@@ -971,13 +730,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(18),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingTop",
@@ -987,13 +740,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(19),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingBottom",
@@ -1003,13 +750,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(20),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingStart",
@@ -1019,13 +760,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(21),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingEnd",
@@ -1035,13 +770,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(22),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "value",
@@ -1094,13 +823,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(0),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "height",
@@ -1110,13 +833,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(1),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "grow",
@@ -1126,13 +843,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(2),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minWidth",
@@ -1142,13 +853,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(3),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxWidth",
@@ -1158,13 +863,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(4),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minHeight",
@@ -1174,13 +873,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(5),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxHeight",
@@ -1190,13 +883,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(6),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "fill",
@@ -1206,13 +893,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(7),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "aspectRatio",
@@ -1222,13 +903,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(8),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "margin",
@@ -1238,13 +913,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(9),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginX",
@@ -1254,13 +923,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(10),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginY",
@@ -1270,13 +933,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(11),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginTop",
@@ -1286,13 +943,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(12),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginBottom",
@@ -1302,13 +953,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(13),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginStart",
@@ -1318,13 +963,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(14),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginEnd",
@@ -1334,13 +973,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(15),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "onClick",
@@ -1373,13 +1006,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(0),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "height",
@@ -1389,13 +1016,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(1),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "grow",
@@ -1405,13 +1026,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(2),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minWidth",
@@ -1421,13 +1036,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(3),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxWidth",
@@ -1437,13 +1046,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(4),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minHeight",
@@ -1453,13 +1056,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(5),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxHeight",
@@ -1469,13 +1066,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(6),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "fill",
@@ -1485,13 +1076,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(7),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "aspectRatio",
@@ -1501,13 +1086,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(8),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "margin",
@@ -1517,13 +1096,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(9),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginX",
@@ -1533,13 +1106,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(10),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginY",
@@ -1549,13 +1116,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(11),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginTop",
@@ -1565,13 +1126,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(12),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginBottom",
@@ -1581,13 +1136,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(13),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginStart",
@@ -1597,13 +1146,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(14),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginEnd",
@@ -1613,13 +1156,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(15),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "value",
@@ -1674,13 +1211,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(0),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "height",
@@ -1690,13 +1221,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(1),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "grow",
@@ -1706,13 +1231,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(2),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minWidth",
@@ -1722,13 +1241,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(3),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxWidth",
@@ -1738,13 +1251,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(4),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minHeight",
@@ -1754,13 +1261,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(5),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxHeight",
@@ -1770,13 +1271,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(6),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "fill",
@@ -1786,13 +1281,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(7),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "aspectRatio",
@@ -1802,13 +1291,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(8),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "margin",
@@ -1818,13 +1301,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(9),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginX",
@@ -1834,13 +1311,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(10),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginY",
@@ -1850,13 +1321,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(11),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginTop",
@@ -1866,13 +1331,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(12),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginBottom",
@@ -1882,13 +1341,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(13),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginStart",
@@ -1898,13 +1351,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(14),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginEnd",
@@ -1914,13 +1361,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(15),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "checked",
@@ -1985,13 +1426,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(2),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minWidth",
@@ -2001,13 +1436,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(3),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxWidth",
@@ -2017,13 +1446,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(4),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minHeight",
@@ -2033,13 +1456,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(5),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxHeight",
@@ -2049,13 +1466,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(6),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "fill",
@@ -2065,13 +1476,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(7),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "aspectRatio",
@@ -2081,13 +1486,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(8),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "margin",
@@ -2097,13 +1496,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(9),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginX",
@@ -2113,13 +1506,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(10),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginY",
@@ -2129,13 +1516,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(11),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginTop",
@@ -2145,13 +1526,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(12),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginBottom",
@@ -2161,13 +1536,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(13),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginStart",
@@ -2177,13 +1546,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(14),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginEnd",
@@ -2193,13 +1556,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(15),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "src",
@@ -2222,13 +1579,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(0),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "height",
@@ -2238,13 +1589,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(1),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "grow",
@@ -2254,13 +1599,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(2),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minWidth",
@@ -2270,13 +1609,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(3),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxWidth",
@@ -2286,13 +1619,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(4),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minHeight",
@@ -2302,13 +1629,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(5),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxHeight",
@@ -2318,13 +1639,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(6),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "fill",
@@ -2334,13 +1649,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(7),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "aspectRatio",
@@ -2350,13 +1659,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(8),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "margin",
@@ -2366,13 +1669,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(9),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginX",
@@ -2382,13 +1679,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(10),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginY",
@@ -2398,13 +1689,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(11),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginTop",
@@ -2414,13 +1699,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(12),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginBottom",
@@ -2430,13 +1709,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(13),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginStart",
@@ -2446,13 +1719,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(14),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginEnd",
@@ -2462,13 +1729,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(15),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "padding",
@@ -2478,13 +1739,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingX",
@@ -2494,13 +1749,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingY",
@@ -2510,13 +1759,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(18),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingTop",
@@ -2526,13 +1769,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(19),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingBottom",
@@ -2542,13 +1779,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(20),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingStart",
@@ -2558,13 +1789,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(21),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingEnd",
@@ -2574,13 +1799,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(22),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "alignment",
@@ -2603,13 +1822,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(0),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "height",
@@ -2619,13 +1832,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(1),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "grow",
@@ -2635,13 +1842,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(2),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minWidth",
@@ -2651,13 +1852,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(3),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxWidth",
@@ -2667,13 +1862,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(4),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "minHeight",
@@ -2683,13 +1872,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(5),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxHeight",
@@ -2699,13 +1882,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(6),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "fill",
@@ -2715,13 +1892,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(7),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "aspectRatio",
@@ -2731,13 +1902,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(8),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "margin",
@@ -2747,13 +1912,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(9),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginX",
@@ -2763,13 +1922,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(10),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginY",
@@ -2779,13 +1932,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(11),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginTop",
@@ -2795,13 +1942,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(12),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginBottom",
@@ -2811,13 +1952,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(13),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginStart",
@@ -2827,13 +1962,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(14),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "marginEnd",
@@ -2843,13 +1972,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(15),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "padding",
@@ -2859,13 +1982,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingX",
@@ -2875,13 +1992,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingY",
@@ -2891,13 +2002,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(18),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingTop",
@@ -2907,13 +2012,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(19),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingBottom",
@@ -2923,13 +2022,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(20),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingStart",
@@ -2939,13 +2032,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(21),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "paddingEnd",
@@ -2955,13 +2042,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(22),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "direction",
@@ -3087,13 +2168,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
         children: Children::Any,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::Scroll,
@@ -3102,13 +2177,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
         children: Children::Any,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::Spacer,
@@ -3117,13 +2186,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
         children: Children::None,
         parents: &[Element::Column, Element::Row, Element::Scroll],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
 ];
 

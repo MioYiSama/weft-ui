@@ -53,8 +53,10 @@ private struct V0: View {
     let s: S0
 
     var body: some View {
-        Text(verbatim: "badge")
-        .weftText(color: s.v0, size: nil, bold: nil)
+        weftLeaf {
+            Text(verbatim: "badge")
+            .weftText(color: s.v0, size: nil, bold: nil)
+        }
     }
 }
 
@@ -89,14 +91,22 @@ private struct V1: View {
     let s: S1
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(verbatim: "accent")
-            .weftText(color: WeftColor.token("accent"), size: nil, bold: nil)
-            Text(verbatim: "styled")
-            .weftText(color: WeftColor.token("accent"), size: nil, bold: nil)
-            Text(verbatim: "flag")
-            .weftText(color: s.v0, size: nil, bold: nil)
-            Text(verbatim: s.v1)
+        weftLinear(axis: .vertical, gap: 8, align: .start, justify: .start) {
+            weftLeaf {
+                Text(verbatim: "accent")
+                .weftText(color: WeftColor.token("accent"), size: nil, bold: nil)
+            }
+            weftLeaf {
+                Text(verbatim: "styled")
+                .weftText(color: WeftColor.token("accent"), size: nil, bold: nil)
+            }
+            weftLeaf {
+                Text(verbatim: "flag")
+                .weftText(color: s.v0, size: nil, bold: nil)
+            }
+            weftLeaf {
+                Text(verbatim: s.v1)
+            }
             if let c = s.p0 { V0(s: c) }
         }
     }

@@ -59,13 +59,17 @@ private struct V0: View {
     let s: S0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        weftLinear(axis: .vertical, gap: 0, align: .start, justify: .start) {
             if let c = s.p0 { c.view.id(c.id) }
-            Button {
-                _ = s.dispatch(0)
-            } label: {
-                HStack(spacing: 0) {
-                    Text(verbatim: s.v0)
+            weftLeaf {
+                Button {
+                    _ = s.dispatch(0)
+                } label: {
+                    weftButtonLabel {
+                        weftLeaf {
+                            Text(verbatim: s.v0)
+                        }
+                    }
                 }
             }
         }
@@ -130,20 +134,31 @@ private struct V1: View {
     let s: S1
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(verbatim: "Gallery")
-            .weftText(color: WeftColor.rgba(0x224466ff), size: 20, bold: true)
-            HStack(alignment: .top, spacing: s.v4) {
-                WeftCheckbox(checked: s.v5) { s.dispatch(0, .bool($0)) ? nil : s.v5 }
-                WeftImage(src: s.v6, width: 32, height: 32)
-                Text(verbatim: "Preview")
-                .weftText(color: s.v7, size: s.v8, bold: s.v9)
+        weftLinear(axis: .vertical, gap: 8, align: .start, justify: .start, padding: .init(padding: 12)) {
+            weftLeaf {
+                Text(verbatim: "Gallery")
+                .weftText(color: WeftColor.rgba(0x224466ff), size: 20, bold: true)
             }
-            .weftBox(padding: s.v2, width: s.v0, height: s.v1, background: s.v3)
-            WeftInput(text: s.v10, placeholder: "Caption") { s.dispatch(1, .string($0)) ? nil : s.v10 }
+            weftLinear(axis: .horizontal, gap: s.v4, align: .start, justify: .start, padding: .init(padding: s.v2)) {
+                weftLeaf {
+                    WeftCheckbox(checked: s.v5) { s.dispatch(0, .bool($0)) ? nil : s.v5 }
+                }
+                WeftImage(src: s.v6)
+                .weftFrame(width: 32, height: 32)
+                weftLeaf {
+                    Text(verbatim: "Preview")
+                    .weftText(color: s.v7, size: s.v8, bold: s.v9)
+                }
+            }
+            .background(s.v3.resolved)
+            .weftFrame(width: s.v0, height: s.v1)
+            weftLeaf {
+                WeftInput(text: s.v10, placeholder: "Caption") { s.dispatch(1, .string($0)) ? nil : s.v10 }
+            }
             if let c = s.p0 { V0(s: c) }
         }
-        .weftBox(padding: 12, width: 320, height: 280, background: WeftColor.rgba(0xeeeeffff))
+        .background(WeftColor.rgba(0xeeeeffff).resolved)
+        .weftFrame(width: 320, height: 280)
     }
 }
 
@@ -175,7 +190,9 @@ private struct V2: View {
     let s: S2
 
     var body: some View {
-        Text(verbatim: s.v0)
+        weftLeaf {
+            Text(verbatim: s.v0)
+        }
         switch s.p0 {
         case let c as S3: V3(s: c).id(c.id)
         default: EmptyView()
@@ -226,6 +243,8 @@ private struct V4: View {
     let s: S4
 
     var body: some View {
-        Text(verbatim: s.v0)
+        weftLeaf {
+            Text(verbatim: s.v0)
+        }
     }
 }

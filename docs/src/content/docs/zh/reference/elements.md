@@ -17,31 +17,31 @@ title: 内置元素
 | --- | --- | --- | --- | --- |
 | `width` | `Int` | — | 设置内容盒的宽度。 | — |
 | `height` | `Int` | — | 设置内容盒的高度。 | — |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
 | `padding` | `Int` | `0` | 设置四边的内边距。 | — |
-| `paddingX` | `Int` | `0` | 设置左右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingY` | `Int` | `0` | 设置上下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingTop` | `Int` | `0` | 设置上内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingBottom` | `Int` | `0` | 设置下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
+| `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
+| `paddingTop` | `Int` | `0` | 设置上内边距。 | — |
+| `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
+| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
+| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
 | `background` | `Color` | — | 设置背景色。 | — |
 | `gap` | `Int` | `0` | 设置相邻子节点之间的距离。 | — |
-| `align` | `CrossAlign` | `"start"` | 设置子元素在水平交叉轴上的位置。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `justify` | `Justify` | `"start"` | 分配纵向主轴上的剩余空间。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `align` | `CrossAlign` | `"start"` | 设置子元素在水平交叉轴上的位置。 | — |
+| `justify` | `Justify` | `"start"` | 分配纵向主轴上的剩余空间。 | — |
 
 ## Row
 
@@ -53,31 +53,31 @@ title: 内置元素
 | --- | --- | --- | --- | --- |
 | `width` | `Int` | — | 设置内容盒的宽度。 | — |
 | `height` | `Int` | — | 设置内容盒的高度。 | — |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
 | `padding` | `Int` | `0` | 设置四边的内边距。 | — |
-| `paddingX` | `Int` | `0` | 设置左右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingY` | `Int` | `0` | 设置上下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingTop` | `Int` | `0` | 设置上内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingBottom` | `Int` | `0` | 设置下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
+| `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
+| `paddingTop` | `Int` | `0` | 设置上内边距。 | — |
+| `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
+| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
+| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
 | `background` | `Color` | — | 设置背景色。 | — |
 | `gap` | `Int` | `0` | 设置相邻子节点之间的距离。 | — |
-| `align` | `CrossAlign` | `"start"` | 设置子元素在纵向交叉轴上的位置。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `justify` | `Justify` | `"start"` | 分配横向主轴上的剩余空间。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `align` | `CrossAlign` | `"start"` | 设置子元素在纵向交叉轴上的位置。 | — |
+| `justify` | `Justify` | `"start"` | 分配横向主轴上的剩余空间。 | — |
 
 ## Text
 
@@ -87,29 +87,29 @@ title: 内置元素
 
 | 属性 | 类型 | 默认值 | 说明 | 平台例外 |
 | --- | --- | --- | --- | --- |
-| `width` | `Int` | — | 设置内容盒的宽度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `height` | `Int` | — | 设置内容盒的高度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `padding` | `Int` | `0` | 设置四边的内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingX` | `Int` | `0` | 设置左右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingY` | `Int` | `0` | 设置上下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingTop` | `Int` | `0` | 设置上内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingBottom` | `Int` | `0` | 设置下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `width` | `Int` | — | 设置内容盒的宽度。 | — |
+| `height` | `Int` | — | 设置内容盒的高度。 | — |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `padding` | `Int` | `0` | 设置四边的内边距。 | — |
+| `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
+| `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
+| `paddingTop` | `Int` | `0` | 设置上内边距。 | — |
+| `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
+| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
+| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
 | `value` (位置参数) | `String` | 必填 | 要显示的文本。 | — |
 | `color` | `Color` | — | 设置文字颜色。 | — |
 | `size` | `Int` | — | 用逻辑像素设置字号。 | — |
@@ -123,22 +123,22 @@ title: 内置元素
 
 | 属性 | 类型 | 默认值 | 说明 | 平台例外 |
 | --- | --- | --- | --- | --- |
-| `width` | `Int` | — | 设置内容盒的宽度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `height` | `Int` | — | 设置内容盒的高度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `width` | `Int` | — | 设置内容盒的宽度。 | — |
+| `height` | `Int` | — | 设置内容盒的高度。 | — |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
 | `disabled` | `Bool` | — | 禁用按钮。 | — |
 
 | 事件 | 载荷 | 说明 | 平台例外 |
@@ -153,22 +153,22 @@ title: 内置元素
 
 | 属性 | 类型 | 默认值 | 说明 | 平台例外 |
 | --- | --- | --- | --- | --- |
-| `width` | `Int` | — | 设置内容盒的宽度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `height` | `Int` | — | 设置内容盒的高度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `width` | `Int` | — | 设置内容盒的宽度。 | — |
+| `height` | `Int` | — | 设置内容盒的高度。 | — |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
 | `value` (位置参数) | `String` | 必填 | 当前输入的文本。 | — |
 | `placeholder` | `String` | — | 输入框为空时显示提示文字。 | — |
 | `disabled` | `Bool` | — | 禁用输入框。 | — |
@@ -185,22 +185,22 @@ title: 内置元素
 
 | 属性 | 类型 | 默认值 | 说明 | 平台例外 |
 | --- | --- | --- | --- | --- |
-| `width` | `Int` | — | 设置内容盒的宽度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `height` | `Int` | — | 设置内容盒的高度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `width` | `Int` | — | 设置内容盒的宽度。 | — |
+| `height` | `Int` | — | 设置内容盒的高度。 | — |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
 | `checked` (位置参数) | `Bool` | 必填 | 当前的选中状态。 | — |
 | `disabled` | `Bool` | — | 禁用复选框。 | — |
 
@@ -218,90 +218,86 @@ title: 内置元素
 | --- | --- | --- | --- | --- |
 | `width` | `Int` | — | 设置内容盒的宽度。 | — |
 | `height` | `Int` | — | 设置内容盒的高度。 | — |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
 | `src` (位置参数) | `String` | 必填 | 图片的 URL。 | — |
 
 ## Stack
 
 按声明顺序叠放子元素。
 
-**平台例外:** 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux`.
-
 **子节点:** 不限.
 
 | 属性 | 类型 | 默认值 | 说明 | 平台例外 |
 | --- | --- | --- | --- | --- |
-| `width` | `Int` | — | 设置内容盒的宽度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `height` | `Int` | — | 设置内容盒的高度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `padding` | `Int` | `0` | 设置四边的内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingX` | `Int` | `0` | 设置左右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingY` | `Int` | `0` | 设置上下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingTop` | `Int` | `0` | 设置上内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingBottom` | `Int` | `0` | 设置下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `width` | `Int` | — | 设置内容盒的宽度。 | — |
+| `height` | `Int` | — | 设置内容盒的高度。 | — |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `padding` | `Int` | `0` | 设置四边的内边距。 | — |
+| `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
+| `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
+| `paddingTop` | `Int` | `0` | 设置上内边距。 | — |
+| `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
+| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
+| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
 | `alignment` | `Alignment` | `"topStart"` | 设置子元素在堆叠容器两个轴上的位置。 | — |
 
 ## Scroll
 
 线性排列子元素，并可沿主轴滚动。
 
-**平台例外:** 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux`.
-
 **子节点:** 不限.
 
 | 属性 | 类型 | 默认值 | 说明 | 平台例外 |
 | --- | --- | --- | --- | --- |
-| `width` | `Int` | — | 设置内容盒的宽度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `height` | `Int` | — | 设置内容盒的高度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minWidth` | `Int` | — | 设置内容宽度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `minHeight` | `Int` | — | 设置内容高度的下限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `maxHeight` | `Int` | — | 设置内容高度的上限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `margin` | `Int` | `0` | 设置四边的外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginX` | `Int` | `0` | 设置左右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginY` | `Int` | `0` | 设置上下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginTop` | `Int` | `0` | 设置上外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginBottom` | `Int` | `0` | 设置下外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `padding` | `Int` | `0` | 设置四边的内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingX` | `Int` | `0` | 设置左右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingY` | `Int` | `0` | 设置上下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingTop` | `Int` | `0` | 设置上内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingBottom` | `Int` | `0` | 设置下内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `width` | `Int` | — | 设置内容盒的宽度。 | — |
+| `height` | `Int` | — | 设置内容盒的高度。 | — |
+| `grow` | `Float` | `0` | 设置子元素在线性容器主轴上分得剩余空间的比例。 | — |
+| `minWidth` | `Int` | — | 设置内容宽度的下限。 | — |
+| `maxWidth` | `Int` | — | 设置内容宽度的上限。 | — |
+| `minHeight` | `Int` | — | 设置内容高度的下限。 | — |
+| `maxHeight` | `Int` | — | 设置内容高度的上限。 | — |
+| `fill` | `Bool` | `false` | 在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。 | — |
+| `aspectRatio` | `Float` | — | 在由一边推算另一边时指定宽高比。 | — |
+| `margin` | `Int` | `0` | 设置四边的外边距。 | — |
+| `marginX` | `Int` | `0` | 设置左右外边距。 | — |
+| `marginY` | `Int` | `0` | 设置上下外边距。 | — |
+| `marginTop` | `Int` | `0` | 设置上外边距。 | — |
+| `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
+| `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
+| `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `padding` | `Int` | `0` | 设置四边的内边距。 | — |
+| `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
+| `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
+| `paddingTop` | `Int` | `0` | 设置上内边距。 | — |
+| `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
+| `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
+| `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
 | `direction` | `Axis` | `"vertical"` | 在编译时选择滚动轴。 | — |
 | `gap` | `Int` | `0` | 设置相邻子节点之间的距离。 | — |
 | `align` | `CrossAlign` | `"start"` | 设置子元素在非滚动交叉轴上的位置。 | — |
@@ -310,8 +306,6 @@ title: 内置元素
 ## Spacer
 
 占用父容器主轴空间，不绘制内容。
-
-**平台例外:** 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux`.
 
 **子节点:** 无.
 

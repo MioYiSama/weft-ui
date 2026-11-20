@@ -65,7 +65,7 @@ Column(width = 240, padding = 12, gap = 8) {
 
 For overlapping children, use `Stack`: later children appear on top, and `alignment` places them within the stack. A child with `fill = true` covers both axes without determining the stack's natural size. The root doesn't scroll. Use `Scroll` for a scrolling region; it defaults to vertical, and `direction = "horizontal"` changes the axis.
 
-The new layout features are currently available on Web and in WeChat mini programs. See the [built-in element reference](/reference/elements/) for the support status of each element and property.
+The layout features are available on every target platform. See the [built-in element reference](/reference/elements/) for the support status of each element and property.
 
 You can supply the required value for `Text`, `Input`, `Checkbox`, or `Image` as the first positional argument. Lengths, including text `size`, are `Int` values in logical pixels, with no unit suffix. These map to pt on iOS and macOS, dp on Android, DIP on Windows, CSS px on the web, and `px` (not `rpx`) in mini programs. Layout semantics are shared where supported, but controls can look different across platforms.
 

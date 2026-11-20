@@ -65,7 +65,7 @@ Column(width = 240, padding = 12, gap = 8) {
 
 用 `Stack` 叠放子节点，后写的显示在上层，`alignment` 决定它们的位置。带 `fill = true` 的子节点在两个方向上撑满容器，但不影响 `Stack` 的自然尺寸。根节点不滚动；需要滚动时使用 `Scroll`。它默认纵向滚动，设 `direction = "horizontal"` 可改为横向。
 
-新增的布局功能目前支持 Web 和微信小程序。各元素及属性的平台支持情况见[内置元素参考](/zh/reference/elements/)。
+布局功能在所有目标平台上都可用。各元素及属性的平台支持情况见[内置元素参考](/zh/reference/elements/)。
 
 `Text`、`Input`、`Checkbox` 和 `Image` 的必填值都可以作为第一个位置参数。长度（包括字号 `size`）用逻辑像素计量，直接写 `Int`，不加单位后缀。它对应 iOS 和 macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px，以及小程序的 `px`（不是 `rpx`）。布局功能的语义在支持它的平台上一致，控件外观可能不同。
 

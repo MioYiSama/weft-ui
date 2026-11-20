@@ -926,11 +926,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | L6.g | ☑ | 9cc25cf | C-linux、C-ui、`conformance.theme` 通过；容器没有 XDG 设置门户，只验证了浅色截图与两套配色的单元测试 |
 | T1 | ☑ | f282243 | 截图待维护者确认（`hello`：web、ios、android、wechat）；C-shot 差异 0.000%，小程序 0.006%；macOS、Windows、Linux 截图已查看；小程序 AppID 放在忽略的 `project.private.config.json` |
 | T2 | ⏸ | 91d3a60 | actionlint 通过；等待维护者推送并手动触发一次 nightly（对外操作需确认） |
-| R1.w | ☑ | （本提交） | 截图待维护者确认（`layout`：web、wechat）；32 个 Chromium 布局样例通过；`gallery.ops` 与 `Gallery` 原生快照因成员顺序变化（见执行中发现）；C-apps 全部 7 个平台有差异，已重新录制基线 |
-| R1.a | ☐ | | |
-| R1.d | ☐ | | |
-| R1.n | ☐ | | |
-| R1.g | ☐ | | |
+| R1.w | ☑ | a08fb6e | 截图待维护者确认（`layout`：web、wechat）；32 个 Chromium 布局样例通过；`gallery.ops` 与 `Gallery` 原生快照因成员顺序变化（见执行中发现）；C-apps 全部 7 个平台有差异，已重新录制基线 |
+| R1.a | ☑ | （本提交） | 截图待维护者确认（`layout`：ios）；C-apple 8 项含 32 个布局样例；iOS、macOS 的 C-ui 通过；macOS 截图已查看；含本批共用的 schema、夹具、`pages.json` 与指南改动 |
+| R1.d | ☑ | b7f8b0f | 截图待维护者确认（`layout`：android）；C-android 12 项含 32 个布局样例；C-ui 通过；截图回归 0.000% |
+| R1.n | ☑ | 1db9a6b | C-windows（core 18、WinUI 9，含 32 个布局样例）、C-ui 通过；Windows 截图已查看；已有 Windows 快照未变 |
+| R1.g | ☑ | 7f2d2e3 | C-linux 4 组含 32 个布局样例、C-ui 通过；Linux 截图已查看；已有 GTK 快照仅把 `Column`/`Row` 的包装从 `Stack` 改名为 `Linear` |
 | R1.z | ☐ | | |
 | R2.w | ☐ | | |
 | R2.a | ☐ | | |
@@ -984,3 +984,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [L6.g] 容器的 XFCE 会话没有 `org.freedesktop.portal.Desktop`（`ServiceUnknown`），无法实测深浅色切换；按规范 §4 回退为浅色，两套配色由单元测试覆盖。结论：不处理（容器环境限制）
 - [R1.w] 组成员排在元素自有成员之前（规范 §1）改变了 `Gallery` 中 `Row` 动态样式的槽位顺序，`gallery.ops` 随之变化，与「conformance 黄金文件不变」的预期不符；`Image` 的 `width`、`height` 移到 `src` 之前，使 example 5 个原生平台的布局哈希、`layout.json` 与生成代码变化。结论：接受（顺序由 schema 决定，不另设线路顺序），已重新生成 `gallery.ops` 与快照
 - [R1.w] `protocol/weft.css` 与规范的文本有出入：`.w-stack` 用单格 grid 加 `position:relative`，`fill` 子元素用 `.w-in-stack.w-fill{position:absolute;inset:0}`；`grow` 另加类 `.w-grow{flex-basis:0%!important}`（百分比基准在主轴尺寸不定时退回内容尺寸）；`.w-spacer` 加 `width:0;height:0`；`.w-text{display:inline-block}`；小程序的 `scroll-view` 不把 `gap` 应用到子节点，改由内部的 `.w-scroll-content-v|h` 承担 `gap` 与 `align`；另有 `.w-wx` 修正小程序按钮与输入框的默认样式。这些都由 `tests/layout/web.test.ts` 的 32 个样例约束。结论：接受
+- [R1.a–R1.g] 四个原生布局子任务同样共用 schema 的 `support` 行、`LAYOUT.natives` 与 `showcase/pages.json` 的 `pending`，按 g → d → n → a 提交，共享的启用改动随 R1.a 提交；views 指南中「布局只支持 Web 与小程序」的说明由编排者在本批结束时统一改写。三个 `memberSupport` 空条目仍留在 schema 中，留给 X1 清理。结论：接受
+- [R1.a] 当前 SDK 中 SwiftUI `Layout` 要求 `Sendable`，生成的 Swift 联合枚举因此加上 `Sendable`（`protocol/elements.ts` 仅改 Swift 模板）。macOS 的 XCUITest 曾因系统要求认证「Enable UI Automation」而超时，维护者授权后 C-ui 与 `shot:macos` 通过。结论：接受
+- [R1.n] WinUI 在 arrange 阶段重新 measure 子元素会抛出 `LayoutCycleException`，改为复用 measure 阶段的结果；截图模式使用更高的窗口以显示整页。结论：接受
+- [R1.a–R1.g] C-apps：example 在 ios、macos、android、linux 的生成代码改用新的布局容器；windows 生成代码与 web、wechat 产物不变。已重新录制基线。结论：接受

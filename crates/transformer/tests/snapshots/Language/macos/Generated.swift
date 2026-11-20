@@ -59,7 +59,9 @@ private struct V0: View {
     let s: S0
 
     var body: some View {
-        Text(verbatim: s.v0)
+        weftLeaf {
+            Text(verbatim: s.v0)
+        }
     }
 }
 
@@ -83,27 +85,41 @@ private struct V1: View {
     let s: S1
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            Text(verbatim: s.v0)
-            Button {
-                _ = s.dispatch(0)
-            } label: {
-                HStack(spacing: 0) {
-                    Text(verbatim: "1")
+        weftLinear(axis: .horizontal, gap: 0, align: .start, justify: .start) {
+            weftLeaf {
+                Text(verbatim: s.v0)
+            }
+            weftLeaf {
+                Button {
+                    _ = s.dispatch(0)
+                } label: {
+                    weftButtonLabel {
+                        weftLeaf {
+                            Text(verbatim: "1")
+                        }
+                    }
                 }
             }
-            Button {
-                _ = s.dispatch(1)
-            } label: {
-                HStack(spacing: 0) {
-                    Text(verbatim: "2")
+            weftLeaf {
+                Button {
+                    _ = s.dispatch(1)
+                } label: {
+                    weftButtonLabel {
+                        weftLeaf {
+                            Text(verbatim: "2")
+                        }
+                    }
                 }
             }
-            Button {
-                _ = s.dispatch(2)
-            } label: {
-                HStack(spacing: 0) {
-                    Text(verbatim: "Repeat")
+            weftLeaf {
+                Button {
+                    _ = s.dispatch(2)
+                } label: {
+                    weftButtonLabel {
+                        weftLeaf {
+                            Text(verbatim: "Repeat")
+                        }
+                    }
                 }
             }
         }
@@ -156,7 +172,7 @@ private struct V3: View {
     let s: S3
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        weftLinear(axis: .vertical, gap: 0, align: .start, justify: .start) {
             if let c = s.p0 { c.view.id(c.id) }
             if let c = s.p1 { c.view.id(c.id) }
             if let c = s.p2 { c.view.id(c.id) }
@@ -206,8 +222,10 @@ private struct V4: View {
     let s: S4
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(verbatim: s.v0)
+        weftLinear(axis: .vertical, gap: 0, align: .start, justify: .start) {
+            weftLeaf {
+                Text(verbatim: s.v0)
+            }
             if let c = s.p0 { V0(s: c) }
             if let c = s.p1 { V1(s: c) }
             if let c = s.p2 { V1(s: c) }
@@ -216,8 +234,10 @@ private struct V4: View {
             if let c = s.p5 { V3(s: c) }
             if let c = s.p6 { V3(s: c) }
             ForEach(s.p7) { c in V10(s: c) }
-            Text(verbatim: "note")
-            .weftText(color: WeftColor.rgba(0x6b7280ff), size: 14, bold: nil)
+            weftLeaf {
+                Text(verbatim: "note")
+                .weftText(color: WeftColor.rgba(0x6b7280ff), size: 14, bold: nil)
+            }
         }
     }
 }
@@ -242,7 +262,9 @@ private struct V5: View {
     let s: S5
 
     var body: some View {
-        Text(verbatim: s.v0)
+        weftLeaf {
+            Text(verbatim: s.v0)
+        }
     }
 }
 
@@ -266,7 +288,9 @@ private struct V6: View {
     let s: S6
 
     var body: some View {
-        Text(verbatim: s.v0)
+        weftLeaf {
+            Text(verbatim: s.v0)
+        }
     }
 }
 
@@ -290,7 +314,9 @@ private struct V7: View {
     let s: S7
 
     var body: some View {
-        Text(verbatim: s.v0)
+        weftLeaf {
+            Text(verbatim: s.v0)
+        }
     }
 }
 
@@ -319,7 +345,9 @@ private struct V9: View {
     let s: S9
 
     var body: some View {
-        Text(verbatim: "Footer only")
+        weftLeaf {
+            Text(verbatim: "Footer only")
+        }
     }
 }
 
@@ -351,7 +379,9 @@ private struct V10: View {
     let s: S10
 
     var body: some View {
-        Text(verbatim: s.v0)
+        weftLeaf {
+            Text(verbatim: s.v0)
+        }
         switch s.p0 {
         case let c as S11: V11(s: c).id(c.id)
         case let c as S12: V12(s: c).id(c.id)
@@ -371,7 +401,9 @@ private struct V11: View {
     let s: S11
 
     var body: some View {
-        Text(verbatim: "image")
+        weftLeaf {
+            Text(verbatim: "image")
+        }
     }
 }
 
@@ -386,6 +418,8 @@ private struct V12: View {
     let s: S12
 
     var body: some View {
-        Text(verbatim: "text")
+        weftLeaf {
+            Text(verbatim: "text")
+        }
     }
 }

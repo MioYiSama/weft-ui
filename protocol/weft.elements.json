@@ -9,85 +9,69 @@
     "layout": [
       {
         "name": "width", "type": "Int", "css": { "property": "width", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the width of the content box.", "zh": "设置内容盒的宽度。" }
       },
       {
         "name": "height", "type": "Int", "css": { "property": "height", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the height of the content box.", "zh": "设置内容盒的高度。" }
       },
       {
         "name": "grow", "type": "Float", "default": 0, "css": { "unit": "custom", "custom": "grow" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the share of remaining main-axis space for a child in a linear container.", "zh": "设置子元素在线性容器主轴上分得剩余空间的比例。" }
       },
       {
         "name": "minWidth", "type": "Int", "css": { "property": "min-width", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the minimum content width.", "zh": "设置内容宽度的下限。" }
       },
       {
         "name": "maxWidth", "type": "Int", "css": { "property": "max-width", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the maximum content width.", "zh": "设置内容宽度的上限。" }
       },
       {
         "name": "minHeight", "type": "Int", "css": { "property": "min-height", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the minimum content height.", "zh": "设置内容高度的下限。" }
       },
       {
         "name": "maxHeight", "type": "Int", "css": { "property": "max-height", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the maximum content height.", "zh": "设置内容高度的上限。" }
       },
       {
         "name": "fill", "type": "Bool", "default": false, "css": { "unit": "custom", "custom": "fill" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Fills the cross axis in a linear container or both axes in a Stack.", "zh": "在线性容器中撑满交叉轴，或在 Stack 中撑满两个轴。" }
       },
       {
         "name": "aspectRatio", "type": "Float", "css": { "property": "aspect-ratio", "unit": "number" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets width divided by height when one dimension determines the other.", "zh": "在由一边推算另一边时指定宽高比。" }
       },
       {
         "name": "margin", "type": "Int", "default": 0,
         "css": { "properties": ["margin-top", "margin-right", "margin-bottom", "margin-left"], "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the outer spacing on all four sides.", "zh": "设置四边的外边距。" }
       },
       {
         "name": "marginX", "type": "Int", "default": 0,
         "css": { "properties": ["margin-left", "margin-right"], "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the outer spacing on the left and right.", "zh": "设置左右外边距。" }
       },
       {
         "name": "marginY", "type": "Int", "default": 0,
         "css": { "properties": ["margin-top", "margin-bottom"], "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the outer spacing on the top and bottom.", "zh": "设置上下外边距。" }
       },
       {
         "name": "marginTop", "type": "Int", "default": 0, "css": { "property": "margin-top", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the top margin.", "zh": "设置上外边距。" }
       },
       {
         "name": "marginBottom", "type": "Int", "default": 0, "css": { "property": "margin-bottom", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the bottom margin.", "zh": "设置下外边距。" }
       },
       {
         "name": "marginStart", "type": "Int", "default": 0, "css": { "property": "margin-left", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the left margin in left-to-right layout.", "zh": "设置从左到右布局中的左外边距。" }
       },
       {
         "name": "marginEnd", "type": "Int", "default": 0, "css": { "property": "margin-right", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the right margin in left-to-right layout.", "zh": "设置从左到右布局中的右外边距。" }
       }
     ],
@@ -95,39 +79,32 @@
       {
         "name": "padding", "type": "Int", "default": 0,
         "css": { "properties": ["padding-top", "padding-right", "padding-bottom", "padding-left"], "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the inset on all four sides.", "zh": "设置四边的内边距。" }
       },
       {
         "name": "paddingX", "type": "Int", "default": 0,
         "css": { "properties": ["padding-left", "padding-right"], "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the left and right insets.", "zh": "设置左右内边距。" }
       },
       {
         "name": "paddingY", "type": "Int", "default": 0,
         "css": { "properties": ["padding-top", "padding-bottom"], "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the top and bottom insets.", "zh": "设置上下内边距。" }
       },
       {
         "name": "paddingTop", "type": "Int", "default": 0, "css": { "property": "padding-top", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the top inset.", "zh": "设置上内边距。" }
       },
       {
         "name": "paddingBottom", "type": "Int", "default": 0, "css": { "property": "padding-bottom", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the bottom inset.", "zh": "设置下内边距。" }
       },
       {
         "name": "paddingStart", "type": "Int", "default": 0, "css": { "property": "padding-left", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the left inset in left-to-right layout.", "zh": "设置从左到右布局中的左内边距。" }
       },
       {
         "name": "paddingEnd", "type": "Int", "default": 0, "css": { "property": "padding-right", "unit": "px" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
         "doc": { "en": "Sets the right inset in left-to-right layout.", "zh": "设置从左到右布局中的右内边距。" }
       }
     ]
@@ -159,13 +136,11 @@
         {
           "name": "align", "type": "CrossAlign", "default": "start",
           "css": { "property": "align-items", "unit": "keyword", "keywords": { "start": "flex-start", "end": "flex-end" } },
-          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
           "doc": { "en": "Positions children on the horizontal cross axis.", "zh": "设置子元素在水平交叉轴上的位置。" }
         },
         {
           "name": "justify", "type": "Justify", "default": "start",
           "css": { "property": "justify-content", "unit": "keyword", "keywords": { "start": "flex-start", "end": "flex-end", "spaceBetween": "space-between", "spaceAround": "space-around", "spaceEvenly": "space-evenly" } },
-          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
           "doc": { "en": "Distributes remaining space on the vertical main axis.", "zh": "分配纵向主轴上的剩余空间。" }
         }
       ]
@@ -188,13 +163,11 @@
         {
           "name": "align", "type": "CrossAlign", "default": "start",
           "css": { "property": "align-items", "unit": "keyword", "keywords": { "start": "flex-start", "end": "flex-end" } },
-          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
           "doc": { "en": "Positions children on the vertical cross axis.", "zh": "设置子元素在纵向交叉轴上的位置。" }
         },
         {
           "name": "justify", "type": "Justify", "default": "start",
           "css": { "property": "justify-content", "unit": "keyword", "keywords": { "start": "flex-start", "end": "flex-end", "spaceBetween": "space-between", "spaceAround": "space-around", "spaceEvenly": "space-evenly" } },
-          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
           "doc": { "en": "Distributes remaining space on the horizontal main axis.", "zh": "分配横向主轴上的剩余空间。" }
         }
       ]
@@ -325,7 +298,6 @@
       "name": "Stack",
       "doc": { "en": "Overlays children in declaration order.", "zh": "按声明顺序叠放子元素。" },
       "groups": ["layout", "padding"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "children": "any",
       "members": [
         {
@@ -343,7 +315,6 @@
       "name": "Scroll",
       "doc": { "en": "Lays out children linearly and scrolls along its main axis.", "zh": "线性排列子元素，并可沿主轴滚动。" },
       "groups": ["layout", "padding"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "children": "any",
       "members": [
         {
@@ -369,7 +340,6 @@
     {
       "name": "Spacer",
       "doc": { "en": "Occupies space on its parent's main axis without rendering content.", "zh": "占用父容器主轴空间，不绘制内容。" },
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "parents": ["Column", "Row", "Scroll"],
       "members": [
         {

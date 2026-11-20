@@ -426,7 +426,7 @@ export const CSS = ${quote(sheet)};
 
 function nativeUnions(unions: Record<string, string[]>): Record<string, string> {
   const entries = Object.entries(unions);
-  const swift = entries.map(([name, values]) => `public enum Weft${name}: String {
+  const swift = entries.map(([name, values]) => `public enum Weft${name}: String, Sendable {
 ${values.map((value) => `    case ${value}`).join("\n")}
 
     public init(weft: String) {

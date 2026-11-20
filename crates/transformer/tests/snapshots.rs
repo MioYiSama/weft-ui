@@ -77,7 +77,13 @@ const THEME: Fixture = Fixture {
 const LAYOUT: Fixture = Fixture {
     name: "Layout",
     source: include_str!("fixtures/Layout.weft"),
-    natives: &[],
+    natives: &[
+        Platform::Ios,
+        Platform::Macos,
+        Platform::Android,
+        Platform::Windows,
+        Platform::Linux,
+    ],
 };
 
 /// Every generated file of the app, as the platform's output directory would

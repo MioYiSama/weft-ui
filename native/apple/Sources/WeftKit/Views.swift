@@ -15,7 +15,7 @@ public struct WeftRoot: View {
         GeometryReader { geometry in
             let environment = windowEnvironment(geometry)
             ScrollView(.vertical) {
-                Group {
+                weftLinear(axis: .vertical) {
                     if let failure = session.failure {
                         Text(verbatim: failure)
                             .foregroundStyle(.red)
@@ -26,6 +26,7 @@ public struct WeftRoot: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
+            .environment(\.layoutDirection, .leftToRight)
             .onChange(of: environment, initial: true) { _, updated in
                 session.update(environment: updated)
             }
@@ -48,14 +49,6 @@ public struct WeftRoot: View {
 }
 
 extension View {
-    /// Layout properties of `Column` and `Row`: a fixed content size, then
-    /// padding around it, then the background behind both, as CSS boxes do.
-    public func weftBox(padding: CGFloat?, width: CGFloat?, height: CGFloat?, background: WeftColor?) -> some View {
-        frame(width: width, height: height, alignment: .topLeading)
-            .padding(padding ?? 0)
-            .background(background?.resolved ?? .clear)
-    }
-
     /// Style properties of `Text`; unset ones keep the platform's defaults.
     public func weftText(color: WeftColor?, size: CGFloat?, bold: Bool?) -> some View {
         foregroundStyle(color?.resolved ?? .primary)
@@ -69,27 +62,24 @@ extension View {
 /// its own size.
 public struct WeftImage: View {
     private let src: String
-    private let width: CGFloat?
-    private let height: CGFloat?
+    private var sizing = WeftSizing()
 
-    public init(src: String, width: CGFloat?, height: CGFloat?) {
-        self.src = src
-        self.width = width
-        self.height = height
-    }
+    public init(src: String) { self.src = src }
 
     public var body: some View {
-        AsyncImage(url: URL(string: src)) { phase in
-            if let image = phase.image {
-                switch (width, height) {
-                case (nil, nil): image
-                case (.some, .some): image.resizable()
-                default: image.resizable().aspectRatio(contentMode: .fit)
+        let axes = sizing.exactAxes
+        let width = sizing.frame.width != nil || axes.width
+        let height = sizing.frame.height != nil || axes.height
+        weftLeaf {
+            AsyncImage(url: URL(string: src)) { phase in
+                if let image = phase.image {
+                    switch (width, height) {
+                    case (false, false): image
+                    case (true, true): image.resizable()
+                    default: image.resizable().aspectRatio(contentMode: .fit)
+                    }
                 }
-            } else {
-                Color.clear.frame(width: width ?? 0, height: height ?? 0)
             }
         }
-        .frame(width: width, height: height)
     }
 }

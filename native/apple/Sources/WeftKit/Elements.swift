@@ -2,7 +2,7 @@
 
 import Foundation
 
-public enum WeftCrossAlign: String {
+public enum WeftCrossAlign: String, Sendable {
     case start
     case center
     case end
@@ -20,7 +20,7 @@ public enum WeftCrossAlign: String {
     }
 }
 
-public enum WeftJustify: String {
+public enum WeftJustify: String, Sendable {
     case start
     case center
     case end
@@ -40,7 +40,7 @@ public enum WeftJustify: String {
     }
 }
 
-public enum WeftAlignment: String {
+public enum WeftAlignment: String, Sendable {
     case topStart
     case top
     case topEnd
@@ -63,7 +63,7 @@ public enum WeftAlignment: String {
     }
 }
 
-public enum WeftAxis: String {
+public enum WeftAxis: String, Sendable {
     case vertical
     case horizontal
 

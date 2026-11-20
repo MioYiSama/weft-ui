@@ -4,11 +4,14 @@ import Testing
 
 private typealias JSONObject = [String: Any]
 
-private func corpus(_ file: String) throws -> JSONObject {
+func corpusData(_ file: String) throws -> Data {
     var root = URL(fileURLWithPath: #filePath)
     for _ in 0..<5 { root.deleteLastPathComponent() }
-    let url = root.appendingPathComponent("protocol/corpus/\(file).json")
-    return try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? JSONObject)
+    return try Data(contentsOf: root.appendingPathComponent("protocol/corpus/\(file).json"))
+}
+
+private func corpus(_ file: String) throws -> JSONObject {
+    try #require(JSONSerialization.jsonObject(with: corpusData(file)) as? JSONObject)
 }
 
 private func hexBytes(_ test: JSONObject) throws -> [UInt8] {

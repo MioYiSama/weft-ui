@@ -131,8 +131,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
         out.writer
             .line(format_args!("/// {}.{}", element.name(), value.prop));
         let declaration = match value.ty {
-            ValueType::Int => "CGFloat = 0",
-            ValueType::Float => unreachable!("platform support rejects Float properties"),
+            ValueType::Int | ValueType::Float => "CGFloat = 0",
             ValueType::Bool => "Bool = false",
             ValueType::String => "String = \"\"",
             ValueType::Color => "WeftColor = .clear",
@@ -153,8 +152,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
         out.writer.line("switch slot {");
         for (slot, value) in template.values.iter().enumerate() {
             let accessor = match value.ty {
-                ValueType::Int => "length",
-                ValueType::Float => unreachable!("platform support rejects Float properties"),
+                ValueType::Int | ValueType::Float => "length",
                 ValueType::Bool => "bool",
                 ValueType::String => "string",
                 ValueType::Color => "color",

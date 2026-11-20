@@ -59,28 +59,24 @@ export class OpWriter implements Ops {
   }
 
   set(scope: number, slot: number, value: Value): void {
+    this.#op(Opcode.Set, 9);
+    this.#u32(scope);
+    this.#u32(slot);
     if (typeof value === "string") {
-      // UTF-8 needs at most three bytes per UTF-16 code unit.
-      this.#op(Opcode.Set, 13 + value.length * 3);
-      this.#u32(scope);
-      this.#u32(slot);
       this.#bytes[this.#length++] = ValueTag.String;
-      const start = this.#length + 4;
-      const { written } = this.#encoder.encodeInto(value, this.#bytes.subarray(start));
-      this.#u32(written);
-      this.#length += written;
+      this.#string(value);
     } else if (typeof value === "number") {
-      this.#op(Opcode.Set, 17);
-      this.#u32(scope);
-      this.#u32(slot);
       this.#bytes[this.#length++] = ValueTag.Number;
+      this.#reserve(8);
       this.#view.setFloat64(this.#length, value, true);
       this.#length += 8;
-    } else {
-      this.#op(Opcode.Set, 9);
-      this.#u32(scope);
-      this.#u32(slot);
+    } else if (typeof value === "boolean") {
       this.#bytes[this.#length++] = value ? ValueTag.True : ValueTag.False;
+    } else {
+      this.#bytes[this.#length++] = ValueTag.Strings;
+      this.#reserve(4);
+      this.#u32(value.length);
+      for (const text of value) this.#string(text);
     }
   }
 
@@ -124,6 +120,14 @@ export class OpWriter implements Ops {
     this.#view = new DataView(bytes.buffer);
   }
 
+  #string(value: string): void {
+    // UTF-8 needs at most three bytes per UTF-16 code unit.
+    this.#reserve(4 + value.length * 3);
+    const { written } = this.#encoder.encodeInto(value, this.#bytes.subarray(this.#length + 4));
+    this.#u32(written);
+    this.#length += written;
+  }
+
   #u32(value: number): void {
     this.#view.setUint32(this.#length, value, true);
     this.#length += 4;
@@ -136,7 +140,7 @@ export class OpWriter implements Ops {
  */
 export function decode(batch: Uint8Array): Op[] {
   const view = new DataView(batch.buffer, batch.byteOffset, batch.byteLength);
-  const decoder = new TextDecoder("utf-8", { fatal: true });
+  const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
   let at = 0;
   const need = (size: number) => {
     if (at + size > batch.length) throw new OpsError("truncated", `weft ops: truncated batch at byte ${at}`);
@@ -150,6 +154,17 @@ export function decode(batch: Uint8Array): Op[] {
     const value = view.getUint32(at, true);
     at += 4;
     return value;
+  };
+  const string = () => {
+    const length = u32();
+    need(length);
+    try {
+      const text = decoder.decode(batch.subarray(at, at + length));
+      at += length;
+      return text;
+    } catch {
+      throw new OpsError("utf8", `weft ops: invalid UTF-8 string at byte ${at}`);
+    }
   };
   const version = u8();
   if (version !== VERSION) throw new OpsError("version", `weft ops: unsupported version ${version}`);
@@ -172,14 +187,13 @@ export function decode(batch: Uint8Array): Op[] {
           value = view.getFloat64(at, true);
           at += 8;
         } else if (tag === ValueTag.String) {
-          const length = u32();
-          need(length);
-          try {
-            value = decoder.decode(batch.subarray(at, at + length));
-          } catch {
-            throw new OpsError("utf8", `weft ops: invalid UTF-8 string at byte ${at}`);
-          }
-          at += length;
+          value = string();
+        } else if (tag === ValueTag.Strings) {
+          const count = u32();
+          need(count * 4); // Each string has at least its u32 length.
+          const strings: string[] = [];
+          for (let i = 0; i < count; i++) strings.push(string());
+          value = strings;
         } else {
           throw new OpsError("tag", `weft ops: unknown value tag ${tag} at byte ${at - 1}`);
         }
@@ -208,9 +222,9 @@ export function decode(batch: Uint8Array): Op[] {
   return ops;
 }
 
-/** The text form of a value: `true` / `false`, a JS number, or a JSON string. */
+/** The text form of a value: a boolean, JS number, JSON string, or JSON string array. */
 export function formatValue(value: Value): string {
-  return typeof value === "string" ? JSON.stringify(value) : String(value);
+  return typeof value === "number" || typeof value === "boolean" ? String(value) : JSON.stringify(value);
 }
 
 /** The text form of an op, e.g. `set 3 0 "milk"` or `rows 2 0 [4 5]`. */

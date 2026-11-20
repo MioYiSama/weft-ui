@@ -34,7 +34,13 @@ export * from "./core.ts";
 /* ------------------------------------------------------------------------ */
 
 /** Value of a value slot; the slot's layout type says how to read a number. */
-export type Value = number | boolean | string;
+export type Value = number | boolean | string | readonly string[];
+
+/** Compares slot values, including separately evaluated lists with equal contents. */
+export function sameValue(a: unknown, b: unknown): boolean {
+  return a === b || (Array.isArray(a) && Array.isArray(b) && a.length === b.length
+    && a.every((item, i) => item === b[i]));
+}
 
 /** The view protocol ops, in the order the logic layer emits them. */
 export interface Ops {
@@ -120,7 +126,7 @@ export class Block {
 
   /** Writes a value slot; only changes are sent. */
   set(slot: number, value: Value): void {
-    if (this.v[slot] === value) return;
+    if (sameValue(this.v[slot], value)) return;
     this.v[slot] = value;
     this.app.$sink!.set(this.id, slot, value);
   }

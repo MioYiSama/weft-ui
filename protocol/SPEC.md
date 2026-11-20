@@ -61,9 +61,9 @@ Guarantees:
 
 Only one message goes in the opposite direction: `Session.dispatch(scope, slot, payload) → boolean`. `slot` is the event slot index, and the event slot determines the type of `payload`. JS runs the handler and flushes synchronously, so the sink receives any ops caused by the event before the call returns. The return value indicates whether a controlled edit was accepted. It is `true` if the event slot has no `controls`, the scope has been destroyed, or the current value of the controlled value slot equals the payload. On `false`, the view restores the control to the current value of the controlled value slot (any value rewritten by the host has already arrived via `set`). Events for destroyed or unknown scopes are ignored and return `true`.
 
-## Binary encoding (version 1)
+## Binary encoding (version 2)
 
-A batch of ops is a byte sequence: the first byte is the version number `1`, followed by consecutive ops. All integers are little-endian u32 values.
+A batch of ops is a byte sequence: the first byte is the version number `2`, followed by consecutive ops. All integers are little-endian u32 values.
 
 | opcode | op       | Fields                             |
 | ------ | -------- | ---------------------------------- |
@@ -73,7 +73,7 @@ A batch of ops is a byte sequence: the first byte is the version number `1`, fol
 | 4      | `rows`   | scope, point, count, child × count |
 | 5      | `attach` | scope, point, child                |
 
-Each value starts with a u8 tag: `0` for false, `1` for true, `2` for a number (little-endian f64, including values in `Int` slots), or `3` for a string (u32 byte length followed by UTF-8). On the JS side, `OpWriter` (`src/ops.ts` in `@weft-ui/runtime`) reuses the same buffer. The bytes of a batch are valid only until the next write.
+Each value starts with a u8 tag: `0` for false, `1` for true, `2` for a number (little-endian f64, including values in `Int` slots), `3` for a string (u32 byte length followed by UTF-8), or `4` for an array of strings (u32 string count followed by that many strings, each with its own u32 byte length and UTF-8 bytes, without a tag). On the JS side, `OpWriter` (`src/ops.ts` in `@weft-ui/runtime`) reuses the same buffer. The bytes of a batch are valid only until the next write.
 
 The version, opcodes, value tags and decoding error kinds, together with the WeChat style units, the platform names and the platform call modules, are defined once in [`protocol/weft.protocol.json`](weft.protocol.json). `pnpm gen:protocol` (`protocol/generate.ts`) generates the constants for TypeScript, Rust, C++, Swift, Kotlin and C# from it, and `pnpm test` fails when a generated file is out of date.
 
@@ -106,7 +106,7 @@ The shared corpus in [`protocol/corpus/`](corpus/) lists encoded batches with th
 
 ## Text form
 
-Debug dumps and golden files use one op per line, with strings and booleans written as JSON:
+Debug dumps and golden files use one op per line, with strings, string arrays and booleans written as JSON:
 
 ```
 create 3 2
@@ -177,7 +177,7 @@ The kernel also injects `setTimeout` / `setInterval` / `clearTimeout` / `clearIn
 
 ### Event payloads
 
-The `payload` in `weft_runtime_dispatch(rt, scope, slot, payload, len)` is a value in the [binary encoding](#binary-encoding-version-1) (tag byte followed by data). Pass an empty payload for an event with no payload. The return value is that of `Session.dispatch`.
+The `payload` in `weft_runtime_dispatch(rt, scope, slot, payload, len)` is a value in the [binary encoding](#binary-encoding-version-2) (tag byte followed by data). String arrays are only used for view values, never as event payloads. Pass an empty payload for an event with no payload. The return value is that of `Session.dispatch`.
 
 ### Platform calls
 

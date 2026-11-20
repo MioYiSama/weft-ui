@@ -11,6 +11,11 @@ sealed class WeftValue {
 
     data class Text(val value: String) : WeftValue()
 
+    data class Strings(val value: List<String>) : WeftValue()
+
+    /** The value of a `Strings` slot. */
+    val strings: List<String> get() = (this as? Strings)?.value ?: emptyList()
+
     /** The value of a `String` slot. */
     val string: String get() = (this as? Text)?.value ?: ""
 
@@ -27,7 +32,7 @@ sealed class WeftValue {
             Color.Transparent
         }
 
-    /** The binary encoding: a tag byte and the data. */
+    /** The binary encoding of an event payload: a tag byte and the data. */
     internal fun encode(): ByteArray = when (this) {
         is Bool -> byteArrayOf((if (value) ValueTag.TRUE else ValueTag.FALSE).toByte())
         is Number -> ByteArray(9).also { bytes ->
@@ -43,6 +48,7 @@ sealed class WeftValue {
                 write(utf8)
             }.toByteArray()
         }
+        is Strings -> error("weft: string lists are not event payloads")
     }
 }
 

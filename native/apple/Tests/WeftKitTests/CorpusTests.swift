@@ -28,6 +28,7 @@ private func expectedValue(_ json: Any?) throws -> WeftValue {
     let value = try #require(json as? JSONObject)
     if let bool = value["bool"] as? Bool { return .bool(bool) }
     if let number = value["number"] as? Double { return .number(number) }
+    if let strings = value["strings"] as? [String] { return .strings(strings) }
     return .string(try #require(value["string"] as? String))
 }
 
@@ -86,13 +87,19 @@ private func decode(_ bytes: [UInt8]) throws -> [Op] {
     #expect(createdScopes.isEmpty)
 }
 
-@Test func encodesValuesCorpus() throws {
+@Test func handlesValuesCorpus() throws {
     let corpus = try corpus("values")
     for test in try #require(corpus["cases"] as? [JSONObject]) {
         let name = try #require(test["name"] as? String)
-        var bytes: [UInt8] = []
-        try expectedValue(test["value"]).encode(into: &bytes)
-        #expect(try bytes == hexBytes(test), "\(name)")
+        let value = try expectedValue(test["value"])
+        if case .strings = value {
+            let batch: [UInt8] = [WeftProtocol.version, OpCode.set.rawValue, 0, 0, 0, 0, 0, 0, 0, 0]
+            #expect(try decode(batch + hexBytes(test)) == [.set(scope: 0, slot: 0, value: value)], "\(name)")
+        } else {
+            var bytes: [UInt8] = []
+            value.encode(into: &bytes)
+            #expect(try bytes == hexBytes(test), "\(name)")
+        }
     }
 }
 

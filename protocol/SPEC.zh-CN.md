@@ -61,9 +61,9 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 
 反方向只有一种消息：`Session.dispatch(scope, slot, payload) → boolean`，`slot` 是事件槽下标，`payload` 的类型由事件槽决定。JS 同步执行处理函数并 flush，所以返回前 sink 已经收到这次事件引起的 ops。返回值表示受控编辑是否被接受：事件槽没有 `controls`、scope 已销毁、或者被控值槽的当前值等于载荷时为 `true`。返回 `false` 时视图把控件恢复成被控值槽的当前值（宿主改写过的值已经通过 `set` 到达）。已销毁或未知 scope 的事件被忽略并返回 `true`。
 
-## 二进制编码（版本 1）
+## 二进制编码（版本 2）
 
-一批 ops 是一段字节：第一个字节是版本号 `1`，之后是连续的 op。整数都是 u32 小端。
+一批 ops 是一段字节：第一个字节是版本号 `2`，之后是连续的 op。整数都是 u32 小端。
 
 | opcode | op       | 字段                                       |
 | ------ | -------- | ------------------------------------------ |
@@ -73,7 +73,7 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 | 4      | `rows`   | scope, point, count, child × count         |
 | 5      | `attach` | scope, point, child                        |
 
-值以一个 u8 标签开头：`0` false、`1` true、`2` 数字（f64 小端，`Int` 槽的值也按 f64 传）、`3` 字符串（u32 字节长度 + UTF-8）。JS 侧的 `OpWriter`（`@weft-ui/runtime` 的 `src/ops.ts`）复用同一块缓冲，每批的字节只在下一次写入前有效。
+值以一个 u8 标签开头：`0` false、`1` true、`2` 数字（f64 小端，`Int` 槽的值也按 f64 传）、`3` 字符串（u32 字节长度 + UTF-8），或 `4` 字符串数组（u32 元素数，后接对应数量的字符串，每个字符串为 u32 字节长度加 UTF-8 字节，不带标签）。JS 侧的 `OpWriter`（`@weft-ui/runtime` 的 `src/ops.ts`）复用同一块缓冲，每批的字节只在下一次写入前有效。
 
 版本号、opcode、值标签和解码错误种类，以及 WeChat 样式单位、平台名和平台调用模块，都只在 [`protocol/weft.protocol.json`](weft.protocol.json) 中定义一次。`pnpm gen:protocol`（`protocol/generate.ts`）据此生成 TypeScript、Rust、C++、Swift、Kotlin 和 C# 的常量；生成文件过期时 `pnpm test` 会失败。
 
@@ -106,7 +106,7 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 
 ## 文本形式
 
-调试 dump 和黄金文件使用的一行一个 op 的形式，字符串和布尔值按 JSON 书写：
+调试 dump 和黄金文件使用的一行一个 op 的形式，字符串、字符串数组和布尔值按 JSON 书写：
 
 ```
 create 3 2
@@ -177,7 +177,7 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 
 ### 事件载荷
 
-`weft_runtime_dispatch(rt, scope, slot, payload, len)` 的 `payload` 是一个按[二进制编码](#二进制编码版本-1)的值（标签字节加数据），无载荷的事件传空。返回值即 `Session.dispatch` 的返回值。
+`weft_runtime_dispatch(rt, scope, slot, payload, len)` 的 `payload` 是一个按[二进制编码](#二进制编码版本-2)的值（标签字节加数据）。字符串数组只用作视图值，不能作为事件载荷。无载荷的事件传空。返回值即 `Session.dispatch` 的返回值。
 
 ### 平台调用
 

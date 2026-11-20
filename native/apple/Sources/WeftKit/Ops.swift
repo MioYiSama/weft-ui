@@ -26,7 +26,7 @@ enum OpError: Error, Equatable {
     }
 }
 
-/// Decodes one batch of ops in the binary encoding (version 1).
+/// Decodes one batch of ops in the binary encoding.
 struct OpReader {
     private let bytes: UnsafeRawBufferPointer
     private var offset = 1
@@ -91,10 +91,21 @@ struct OpReader {
         case .true: return .bool(true)
         case .number: return .number(Double(bitPattern: UInt64(littleEndian: try take(8).loadUnaligned(as: UInt64.self))))
         case .string:
-            let payload = try take(Int(try u32()))
-            let invalid = transcode(payload.makeIterator(), from: UTF8.self, to: UTF8.self, stoppingOnError: true) { _ in }
-            guard !invalid else { throw .utf8 }
-            return .string(String(decoding: payload, as: UTF8.self))
+            return .string(try string())
+        case .strings:
+            let count = Int(try u32())
+            guard count <= (bytes.count - offset) / 4 else { throw .truncated }
+            var strings: [String] = []
+            strings.reserveCapacity(count)
+            for _ in 0..<count { strings.append(try string()) }
+            return .strings(strings)
         }
+    }
+
+    private mutating func string() throws(OpError) -> String {
+        let payload = try take(Int(try u32()))
+        let invalid = transcode(payload.makeIterator(), from: UTF8.self, to: UTF8.self, stoppingOnError: true) { _ in }
+        guard !invalid else { throw .utf8 }
+        return String(decoding: payload, as: UTF8.self)
     }
 }

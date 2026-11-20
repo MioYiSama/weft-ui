@@ -1,7 +1,7 @@
 // Generated from protocol/weft.protocol.json by protocol/generate.ts; do not edit.
 
 /** Protocol version written as the first byte of every batch. */
-export const VERSION = 1;
+export const VERSION = 2;
 
 export const Opcode = {
   Create: 1,
@@ -16,6 +16,7 @@ export const ValueTag = {
   True: 1,
   Number: 2,
   String: 3,
+  Strings: 4,
 } as const;
 
 export type OpErrorKind = "truncated" | "version" | "opcode" | "tag" | "utf8";

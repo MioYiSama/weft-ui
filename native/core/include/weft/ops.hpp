@@ -1,12 +1,13 @@
 // Decoder and text form of view protocol ops
 // (protocol/SPEC.md, "Binary encoding"), for C++ shells and
-// the kernel's tests. Strings and row lists point into the batch, which is
-// only valid during `weft_host.commit`.
+// the kernel's tests. Strings, string lists and row lists borrow the batch,
+// which is only valid during `weft_host.commit`.
 
 #pragma once
 
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -17,8 +18,38 @@
 
 namespace weft::ops {
 
+/// A validated string list borrowing the length-prefixed strings from the batch.
+struct StringList {
+  const uint8_t *data;
+  uint32_t count;
+
+  class Iterator {
+   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = std::string_view;
+    using difference_type = std::ptrdiff_t;
+
+    Iterator() = default;
+    value_type operator*() const;
+    Iterator &operator++();
+    Iterator operator++(int);
+    bool operator==(const Iterator &) const = default;
+
+   private:
+    friend struct StringList;
+    Iterator(const uint8_t *data, uint32_t count) : at_(count ? data : nullptr), remaining_(count) {}
+
+    const uint8_t *at_ = nullptr;
+    uint32_t remaining_ = 0;
+  };
+
+  Iterator begin() const { return Iterator(data, count); }
+  Iterator end() const { return {}; }
+  bool operator==(const StringList &other) const;
+};
+
 /// A slot value; `Int` slots carry a double like every number.
-using Value = std::variant<bool, double, std::string_view>;
+using Value = std::variant<bool, double, std::string_view, StringList>;
 
 /// A malformed batch or value.
 class Error : public std::runtime_error {
@@ -69,7 +100,7 @@ class Reader {
 };
 
 /// Decodes the whole batch, throwing `Error` if any op is malformed.
-/// The result borrows the input buffer for strings and `rows` children and
+/// The result borrows the input buffer for strings, string lists and `rows` children and
 /// is valid only while the buffer remains alive.
 std::vector<Op> read_all(const uint8_t *data, size_t len);
 
@@ -79,7 +110,7 @@ Value read_value(const uint8_t *&at, const uint8_t *end);
 /// Appends the encoding of `value` (a tag byte and its data) to `out`.
 void encode_value(const Value &value, std::string &out);
 
-/// `true` / `false`, the number as JavaScript prints it, or a JSON string.
+/// A boolean, the number as JavaScript prints it, a JSON string, or a JSON string array.
 std::string format_value(const Value &value);
 
 /// The one-line text form, e.g. `set 3 0 "milk"` or `rows 2 0 [4 5]`.

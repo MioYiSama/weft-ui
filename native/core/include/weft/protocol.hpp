@@ -7,7 +7,7 @@
 
 namespace weft::protocol {
 
-inline constexpr std::uint8_t kVersion = 1;
+inline constexpr std::uint8_t kVersion = 2;
 
 enum class Code : std::uint8_t {
   Create = 1,
@@ -22,6 +22,7 @@ enum class Tag : std::uint8_t {
   True = 1,
   Number = 2,
   String = 3,
+  Strings = 4,
 };
 
 inline constexpr std::string_view kFetchModule = "fetch";

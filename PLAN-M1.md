@@ -911,7 +911,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | B0 | ☑ | — | clippy 0；tsc：runtime 0、platform 0、vite 16、content-mapper 0、tests 56（`--runExternalCode`）；C-core、C-apple、C-android、C-windows、C-linux 通过 |
 | S1 | ☑ | b19de6b | 快照、黄金文件、C-apps 不变；clippy 0 |
 | S2 | ☑ | e13bdf0 | 仅小程序快照与 example 小程序产物变化，已重新录制 C-apps 基线；原生 conformance 驱动同步转发事件名 |
-| S3 | ☑ | （本提交） | 无产物变化；临时禁用 Linux 的 `Image` 时构建报 `` `Image` is not supported on linux `` |
+| S3 | ☑ | 58ccbc3 | 无产物变化；临时禁用 Linux 的 `Image` 时构建报 `` `Image` is not supported on linux `` |
 | P1 | ☐ | | |
 | P2 | ☐ | | |
 | L1 | ☐ | | |

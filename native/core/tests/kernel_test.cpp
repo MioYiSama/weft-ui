@@ -281,6 +281,8 @@ void session() {
   // A malformed payload is reported and ignored.
   CHECK(send({9}));
   CHECK(shell.logged(WEFT_LOG_ERROR, "unknown value tag 9"));
+  CHECK(send({static_cast<uint8_t>(weft::protocol::Tag::Strings), 0, 0, 0, 0}));
+  CHECK(shell.logged(WEFT_LOG_ERROR, "string lists are not event payloads"));
   CHECK(send(payload("close")));
   CHECK(send(payload("after close")));
   CHECK_EQ(shell.lines(), (std::vector<std::string>{
@@ -414,6 +416,20 @@ weft::ops::Value corpus_value(const json::Value &value) {
   return std::string_view(value["string"].string());
 }
 
+void check_value(const weft::ops::Value &value, const json::Value &want) {
+  if (want.has("strings")) {
+    auto *list = std::get_if<weft::ops::StringList>(&value);
+    auto &strings = want["strings"].array();
+    CHECK(list != nullptr);
+    CHECK_EQ(size_t(list->count), strings.size());
+    size_t i = 0;
+    for (auto text : *list) CHECK(text == strings[i++].string());
+    CHECK_EQ(i, strings.size());
+  } else {
+    CHECK(value == corpus_value(want));
+  }
+}
+
 const char *kind_name(weft::ops::Error::Kind kind) {
   using Kind = weft::ops::Error::Kind;
   switch (kind) {
@@ -448,7 +464,7 @@ void check_op(const std::string &name, const weft::ops::Op &op, const json::Valu
       break;
     case Code::Set:
       CHECK_EQ(op.index, want["slot"].u32());
-      CHECK(op.value == corpus_value(want["value"]));
+      check_value(op.value, want["value"]);
       break;
     case Code::Branch:
     case Code::Attach:
@@ -477,6 +493,10 @@ void corpus() {
       auto &want = c["ops"].array();
       CHECK_EQ(name + " " + std::to_string(ops.size()), name + " " + std::to_string(want.size()));
       for (size_t i = 0; i < ops.size(); i++) check_op(name, ops[i], want[i]);
+      if (c.has("text")) {
+        CHECK_EQ(ops.size(), size_t(1));
+        CHECK_EQ(weft::ops::format(ops[0]), c["text"].string());
+      }
     } else {
       std::string kind = "none";
       try {
@@ -492,12 +512,13 @@ void corpus() {
   for (auto &c : values_corpus["cases"].array()) {
     const std::string &name = c["name"].string();
     auto bytes = hex_bytes(c["hex"].string());
-    auto want = corpus_value(c["value"]);
     const uint8_t *at = bytes.data();
-    CHECK(weft::ops::read_value(at, bytes.data() + bytes.size()) == want);
+    auto value = weft::ops::read_value(at, bytes.data() + bytes.size());
+    const auto &want = c["value"];
+    check_value(value, want);
     CHECK(at == bytes.data() + bytes.size());
     std::string encoded;
-    weft::ops::encode_value(want, encoded);
+    weft::ops::encode_value(want.has("strings") ? value : corpus_value(want), encoded);
     CHECK_EQ(name + " " + encoded, name + " " + std::string(bytes.begin(), bytes.end()));
   }
 }

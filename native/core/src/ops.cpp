@@ -1,5 +1,6 @@
 #include "weft/ops.hpp"
 
+#include <algorithm>
 #include <bit>
 #include <charconv>
 #include <cmath>
@@ -106,11 +107,9 @@ std::string js_number(double value) {
   return out;
 }
 
-/// JSON.stringify of a string.
-std::string json_string(std::string_view text) {
+/// Appends the JSON.stringify form of a string.
+void append_json_string(std::string_view text, std::string &out) {
   static constexpr char kHex[] = "0123456789abcdef";
-  std::string out;
-  out.reserve(text.size() + 2);
   out += '"';
   for (char c : text) {
     switch (c) {
@@ -132,10 +131,37 @@ std::string json_string(std::string_view text) {
     }
   }
   out += '"';
-  return out;
+}
+
+std::string_view take_string(const uint8_t *&at, const uint8_t *end) {
+  uint32_t len = take_u32(at, end);
+  need(at, end, len);
+  std::string_view text(reinterpret_cast<const char *>(at), len);
+  if (!valid_utf8(text)) throw Error(Error::Kind::Utf8, "weft ops: invalid UTF-8 in a string value");
+  at += len;
+  return text;
 }
 
 }  // namespace
+
+std::string_view StringList::Iterator::operator*() const {
+  return {reinterpret_cast<const char *>(at_ + 4), load_u32(at_)};
+}
+
+StringList::Iterator &StringList::Iterator::operator++() {
+  at_ = --remaining_ ? at_ + 4 + load_u32(at_) : nullptr;
+  return *this;
+}
+
+StringList::Iterator StringList::Iterator::operator++(int) {
+  auto previous = *this;
+  ++*this;
+  return previous;
+}
+
+bool StringList::operator==(const StringList &other) const {
+  return count == other.count && (data == other.data || std::ranges::equal(*this, other));
+}
 
 uint32_t Op::row(uint32_t i) const { return load_u32(rows + size_t(i) * 4); }
 
@@ -201,13 +227,14 @@ Value read_value(const uint8_t *&at, const uint8_t *end) {
       at += 8;
       return std::bit_cast<double>(bits);
     }
-    case protocol::Tag::String: {
-      uint32_t len = take_u32(at, end);
-      need(at, end, len);
-      std::string_view text(reinterpret_cast<const char *>(at), len);
-      if (!valid_utf8(text)) throw Error(Error::Kind::Utf8, "weft ops: invalid UTF-8 in a string value");
-      at += len;
-      return text;
+    case protocol::Tag::String:
+      return take_string(at, end);
+    case protocol::Tag::Strings: {
+      uint32_t count = take_u32(at, end);
+      if (count > size_t(end - at) / 4) throw Error(Error::Kind::Truncated, "weft ops: truncated batch");
+      StringList strings{at, count};
+      for (uint32_t i = 0; i < count; i++) take_string(at, end);
+      return strings;
     }
     default:
       throw Error(Error::Kind::Tag, "weft ops: unknown value tag " + std::to_string(tag));
@@ -222,18 +249,38 @@ void encode_value(const Value &value, std::string &out) {
     auto bits = std::bit_cast<uint64_t>(*number);
     put_u32(uint32_t(bits), out);
     put_u32(uint32_t(bits >> 32), out);
-  } else {
-    auto text = std::get<std::string_view>(value);
+  } else if (auto *text = std::get_if<std::string_view>(&value)) {
     out.push_back(char(protocol::Tag::String));
-    put_u32(uint32_t(text.size()), out);
-    out.append(text);
+    put_u32(uint32_t(text->size()), out);
+    out.append(*text);
+  } else {
+    const auto &strings = std::get<StringList>(value);
+    out.push_back(char(protocol::Tag::Strings));
+    put_u32(strings.count, out);
+    if (strings.count != 0) {
+      auto end = strings.data;
+      for (uint32_t i = 0; i < strings.count; i++) end += 4 + size_t(load_u32(end));
+      out.append(reinterpret_cast<const char *>(strings.data), size_t(end - strings.data));
+    }
   }
 }
 
 std::string format_value(const Value &value) {
   if (auto *flag = std::get_if<bool>(&value)) return *flag ? "true" : "false";
   if (auto *number = std::get_if<double>(&value)) return js_number(*number);
-  return json_string(std::get<std::string_view>(value));
+  std::string out;
+  if (auto *text = std::get_if<std::string_view>(&value)) {
+    out.reserve(text->size() + 2);
+    append_json_string(*text, out);
+  } else {
+    out += '[';
+    for (auto text : std::get<StringList>(value)) {
+      if (out.size() > 1) out += ',';
+      append_json_string(text, out);
+    }
+    out += ']';
+  }
+  return out;
 }
 
 std::string format(const Op &op) {

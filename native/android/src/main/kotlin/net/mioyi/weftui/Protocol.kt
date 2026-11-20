@@ -3,7 +3,7 @@
 package net.mioyi.weftui
 
 internal object WeftProtocol {
-    const val VERSION = 1
+    const val VERSION = 2
 
     const val FETCH_MODULE = "fetch"
     const val FETCH_REQUEST = "request"
@@ -26,6 +26,7 @@ internal object ValueTag {
     const val TRUE = 1
     const val NUMBER = 2
     const val STRING = 3
+    const val STRINGS = 4
 }
 
 internal object OpErrorKind {

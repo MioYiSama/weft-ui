@@ -1,16 +1,18 @@
 // The shared protocol corpus (protocol/corpus) against the JS encoder and decoder.
 import { readFileSync } from "node:fs";
-import { describe, expect, test } from "vitest";
-import type { Value } from "@weft-ui/runtime/remote";
-import { type Op, OpWriter, OpsError, decode } from "../../packages/runtime/src/ops.ts";
+import { describe, expect, test, vi } from "vitest";
+import { App, Instance, flushSync, type Value } from "@weft-ui/runtime/remote";
+import { WechatSink } from "@weft-ui/runtime/wechat";
+import { type Op, OpWriter, OpsError, decode, formatOp } from "../../packages/runtime/src/ops.ts";
 
-type CorpusValue = { bool: boolean } | { number: number } | { string: string };
+type CorpusValue = { bool: boolean } | { number: number } | { string: string } | { strings: string[] };
 type CorpusOp = Exclude<Op, { op: "set" }> | { op: "set"; scope: number; slot: number; value: CorpusValue };
 interface OpsCase {
   name: string;
   hex: string;
   ops?: CorpusOp[];
   error?: OpsError["kind"];
+  text?: string;
 }
 interface ValueCase {
   name: string;
@@ -27,7 +29,7 @@ function bytes(hex: string): Uint8Array {
 }
 
 function value(value: CorpusValue): Value {
-  return "bool" in value ? value.bool : "number" in value ? value.number : value.string;
+  return "bool" in value ? value.bool : "number" in value ? value.number : "string" in value ? value.string : value.strings;
 }
 
 const { cases: opsCases } = corpus<{ cases: OpsCase[] }>("ops.json");
@@ -37,7 +39,9 @@ const valid = opsCases.filter((c) => c.ops !== undefined);
 describe("ops", () => {
   test.each(opsCases.map((c) => [c.name, c] as const))("decodes %s", (_, c) => {
     if (c.ops) {
-      expect(decode(bytes(c.hex))).toEqual(c.ops.map((o) => (o.op === "set" ? { ...o, value: value(o.value) } : o)));
+      const ops = decode(bytes(c.hex));
+      expect(ops).toEqual(c.ops.map((o) => (o.op === "set" ? { ...o, value: value(o.value) } : o)));
+      if (c.text !== undefined) expect(ops.map(formatOp).join("\n")).toBe(c.text);
     } else {
       let error: unknown;
       try {
@@ -79,5 +83,46 @@ test.each(valueCases.map((c) => [c.name, c] as const))("encodes the value %s", (
   const writer = new OpWriter();
   writer.set(0, 0, value(c.value));
   // Version, opcode and the scope and slot u32s precede the value.
-  expect(writer.take()?.subarray(10)).toEqual(bytes(c.hex));
+  const batch = writer.take()!;
+  expect(batch.subarray(10)).toEqual(bytes(c.hex));
+  expect(decode(batch)).toEqual([{ op: "set", scope: 0, slot: 0, value: value(c.value) }]);
+});
+
+test("keeps U+FEFF at the start of a string member", () => {
+  const value = ["\ufeffa"];
+  const writer = new OpWriter();
+  writer.set(0, 0, value);
+  expect(decode(writer.take()!)).toEqual([{ op: "set", scope: 0, slot: 0, value }]);
+});
+
+test("does not resend equal string lists to mini programs", () => {
+  const updates: Record<string, unknown>[] = [];
+  const sink = new WechatSink({ setData: (data) => updates.push(data) }, {
+    hash: "list",
+    templates: [{ n: "root", v: [["value", 0]] }],
+  });
+  const app = new App((app, args, children, depth) => new Instance(app, 0, 0, depth, args, children), [], "list");
+  app.mount(sink);
+  try {
+    flushSync();
+    updates.length = 0;
+    const root = app.$scopes.get(1)!;
+    const set = vi.spyOn(sink, "set");
+    root.set(0, ["a", "b"]);
+    root.set(0, ["a", "b"]);
+    expect(set).toHaveBeenCalledTimes(1);
+    sink.commit();
+    expect(updates).toEqual([{ "r.value": ["a", "b"] }]);
+
+    updates.length = 0;
+    sink.set(root.id, 0, ["a", "b"]);
+    sink.commit();
+    expect(updates).toEqual([]);
+
+    root.set(0, ["b", "a"]);
+    sink.commit();
+    expect(updates).toEqual([{ "r.value": ["b", "a"] }]);
+  } finally {
+    app.unmount();
+  }
 });

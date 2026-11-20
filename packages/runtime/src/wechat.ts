@@ -14,7 +14,7 @@
 
 import { color } from "./core.ts";
 import { WechatUnit } from "./protocol.ts";
-import type { Session, Sink, Value } from "./remote.ts";
+import { sameValue, type Session, type Sink, type Value } from "./remote.ts";
 
 type Data = Record<string, unknown>;
 
@@ -133,10 +133,12 @@ export class WechatSink implements Sink {
   set(id: number, slot: number, value: Value): void {
     const scope = this.#scope(id);
     const [key, unit] = scope.keys.v![slot];
-    scope.o[key] = unit === WechatUnit.Px ? `${value}px`
+    const next = unit === WechatUnit.Px ? `${value}px`
       : unit === WechatUnit.Bold ? (value ? "bold" : "normal")
       : unit === WechatUnit.Color ? color(value as string)
       : value;
+    if (sameValue(scope.o[key], next)) return;
+    scope.o[key] = next;
     if (!scope.fresh) this.#pend(scope, key);
   }
 

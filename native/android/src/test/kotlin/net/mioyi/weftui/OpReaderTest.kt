@@ -21,7 +21,7 @@ class OpReaderTest {
 
     @Test
     fun anEmptyBatchHasNoOps() {
-        assertNull(OpReader(ByteBuffer.wrap(byteArrayOf(1))).next())
+        assertNull(OpReader(ByteBuffer.wrap(byteArrayOf(WeftProtocol.VERSION.toByte()))).next())
     }
 
     @Test

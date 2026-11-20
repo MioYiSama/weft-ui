@@ -4,7 +4,7 @@ namespace Weft.WinUI.Protocol;
 
 internal static class WeftProtocol
 {
-    internal const byte Version = 1;
+    internal const byte Version = 2;
 
     internal const string FetchModule = "fetch";
     internal const string FetchRequest = "request";
@@ -29,6 +29,7 @@ internal enum ValueTag : byte
     True = 1,
     Number = 2,
     String = 3,
+    Strings = 4,
 }
 
 internal static class OpErrorKind

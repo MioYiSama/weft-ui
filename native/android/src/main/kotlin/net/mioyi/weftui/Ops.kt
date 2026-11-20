@@ -33,7 +33,7 @@ internal sealed interface Op {
 internal class OpException(val kind: String, message: String = kind) : Exception(message)
 
 /**
- * Decodes one batch of ops in the binary encoding (version 1). Reads [bytes]
+ * Decodes one batch of ops in the binary encoding. Reads [bytes]
  * from its position to its limit; decoded ops outlive the buffer.
  */
 internal class OpReader(bytes: ByteBuffer) {
@@ -79,6 +79,11 @@ internal class OpReader(bytes: ByteBuffer) {
         ValueTag.TRUE -> WeftValue.Bool(true)
         ValueTag.NUMBER -> WeftValue.Number(bytes.double)
         ValueTag.STRING -> WeftValue.Text(text())
+        ValueTag.STRINGS -> {
+            val count = bytes.int.toUInt().toLong()
+            if (count > bytes.remaining() / 4) throw OpException("truncated")
+            WeftValue.Strings(List(count.toInt()) { text() })
+        }
         else -> throw OpException("tag", "tag $tag")
     }
 

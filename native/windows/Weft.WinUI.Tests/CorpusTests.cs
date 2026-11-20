@@ -35,14 +35,26 @@ public sealed class CorpusTests
     }
 
     [TestMethod]
-    public void EncodesValues()
+    public void HandlesValues()
     {
         using var corpus = Load("values.json");
         foreach (var row in corpus.RootElement.GetProperty("cases").EnumerateArray())
         {
-            var actual = new List<byte>();
-            Value(row.GetProperty("value")).Encode(actual);
-            Assert.IsTrue(Hex(row).SequenceEqual(actual), Name(row));
+            var json = row.GetProperty("value");
+            var value = Value(json);
+            if (json.TryGetProperty("strings", out _))
+            {
+                byte[] batch = [WeftProtocol.Version, (byte)OpCode.Set, 0, 0, 0, 0, 0, 0, 0, 0, .. Hex(row)];
+                var ops = new List<Op>();
+                OpReader.ReadAll(batch, ops);
+                Assert.AreEqual(new Op(OpCode.Set, 0, 0, 0, value, null), ops.Single(), Name(row));
+            }
+            else
+            {
+                var actual = new List<byte>();
+                value.Encode(actual);
+                Assert.IsTrue(Hex(row).SequenceEqual(actual), Name(row));
+            }
         }
     }
 
@@ -105,6 +117,8 @@ public sealed class CorpusTests
     {
         if (value.TryGetProperty("bool", out var boolean)) return WeftValue.Of(boolean.GetBoolean());
         if (value.TryGetProperty("number", out var number)) return WeftValue.Of(number.GetDouble());
+        if (value.TryGetProperty("strings", out var strings))
+            return WeftValue.Of(strings.EnumerateArray().Select(item => item.GetString()!).ToArray());
         return WeftValue.Of(value.GetProperty("string").GetString()!);
     }
 

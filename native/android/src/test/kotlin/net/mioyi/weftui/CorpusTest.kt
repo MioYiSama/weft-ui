@@ -30,9 +30,16 @@ class CorpusTest {
     }
 
     @Test
-    fun encodesValues() {
+    fun handlesValues() {
         load("values.json").getJSONArray("cases").forEachObject { case ->
-            assertArrayEquals(case.getString("name"), case.bytes(), value(case.getJSONObject("value")).encode())
+            val name = case.getString("name")
+            val value = value(case.getJSONObject("value"))
+            if (value is WeftValue.Strings) {
+                val header = byteArrayOf(WeftProtocol.VERSION.toByte(), OpCode.SET.toByte(), 0, 0, 0, 0, 0, 0, 0, 0)
+                assertEquals(name, listOf(Op.Set(0, 0, value)), OpReader.readAll(ByteBuffer.wrap(header + case.bytes())))
+            } else {
+                assertArrayEquals(name, case.bytes(), value.encode())
+            }
         }
     }
 
@@ -78,6 +85,10 @@ class CorpusTest {
         json.has("bool") -> WeftValue.Bool(json.getBoolean("bool"))
         json.has("number") -> WeftValue.Number(json.getDouble("number"))
         json.has("string") -> WeftValue.Text(json.getString("string"))
+        json.has("strings") -> {
+            val strings = json.getJSONArray("strings")
+            WeftValue.Strings(List(strings.length()) { strings.getString(it) })
+        }
         else -> error("Unknown corpus value: $json")
     }
 

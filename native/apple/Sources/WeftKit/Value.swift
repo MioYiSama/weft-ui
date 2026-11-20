@@ -5,10 +5,16 @@ public enum WeftValue: Equatable, Sendable {
     case bool(Bool)
     case number(Double)
     case string(String)
+    case strings([String])
 
     /// The value of a `String` slot.
     public var string: String {
         if case .string(let value) = self { value } else { "" }
+    }
+
+    /// The value of a `Strings` slot.
+    public var strings: [String] {
+        if case .strings(let value) = self { value } else { [] }
     }
 
     /// The value of a `Bool` slot.
@@ -30,7 +36,7 @@ public enum WeftValue: Equatable, Sendable {
         return .clear
     }
 
-    /// Appends the binary encoding: a tag byte and the data.
+    /// Appends the binary encoding of an event payload: a tag byte and the data.
     func encode(into bytes: inout [UInt8]) {
         switch self {
         case .bool(let value):
@@ -43,6 +49,8 @@ public enum WeftValue: Equatable, Sendable {
             let utf8 = Array(value.utf8)
             withUnsafeBytes(of: UInt32(utf8.count).littleEndian) { bytes.append(contentsOf: $0) }
             bytes.append(contentsOf: utf8)
+        case .strings:
+            preconditionFailure("weft: string lists are not event payloads")
         }
     }
 }

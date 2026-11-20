@@ -412,6 +412,10 @@ bool weft_runtime_dispatch(weft_runtime *rt, uint32_t scope, uint32_t handler,
     try {
       const uint8_t *at = payload;
       value = weft::ops::read_value(at, payload + len);
+      if (std::holds_alternative<weft::ops::StringList>(*value)) {
+        log(*rt, WEFT_LOG_ERROR, "weft: string lists are not event payloads");
+        return true;
+      }
       if (at != payload + len) {
         log(*rt, WEFT_LOG_ERROR, "weft: trailing bytes after the payload");
         return true;

@@ -21,7 +21,7 @@ internal sealed class OpException(string message, string? kind = null) : Excepti
     public string? Kind { get; } = kind;
 }
 
-/// <summary>Decodes one batch of ops in the binary encoding (version 1).</summary>
+/// <summary>Decodes one batch of ops in the binary encoding.</summary>
 internal ref struct OpReader
 {
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
@@ -101,18 +101,29 @@ internal ref struct OpReader
             ValueTag.False => WeftValue.Of(false),
             ValueTag.True => WeftValue.Of(true),
             ValueTag.Number => WeftValue.Of(BinaryPrimitives.ReadDoubleLittleEndian(Take(8))),
-            ValueTag.String => ReadString(),
+            ValueTag.String => WeftValue.Of(ReadString()),
+            ValueTag.Strings => ReadStrings(),
             _ => throw new OpException($"unknown value tag {tag}", "tag"),
         };
     }
 
-    private WeftValue ReadString()
+    private WeftValue ReadStrings()
+    {
+        var count = U32();
+        if (count > (uint)(bytes.Length - offset) / 4) throw new OpException("truncated batch", "truncated");
+        if (count == 0) return WeftValue.Of(Array.Empty<string>());
+        var strings = new string[(int)count];
+        for (var i = 0; i < strings.Length; i++) strings[i] = ReadString();
+        return WeftValue.Of(strings);
+    }
+
+    private string ReadString()
     {
         var length = U32();
         var utf8 = Take(length);
         try
         {
-            return WeftValue.Of(StrictUtf8.GetString(utf8));
+            return StrictUtf8.GetString(utf8);
         }
         catch (DecoderFallbackException error)
         {

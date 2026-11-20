@@ -488,6 +488,129 @@ fn type_alias_cycles_report_the_reference_that_closes_the_cycle() {
 }
 
 #[test]
+fn layout_reports_misplaced_spacers_and_invalid_property_values() {
+    let src = r#"model M { x: "vertical" | "horizontal" }
+component C(model: M) {
+  Scroll(direction = model.x)
+  Text("x") { Spacer() }
+  Stack { Spacer() }
+  Row(align = "middle")
+}"#;
+    assert_eq!(
+        diagnostics(&[("layout.weft", src)]),
+        [
+            "layout.weft:3:22: `Scroll.direction` must be a constant",
+            "layout.weft:4:15: `Spacer` must be a direct child of `Column`, `Row` or `Scroll`",
+            "layout.weft:5:11: `Spacer` must be a direct child of `Column`, `Row` or `Scroll`",
+            r#"layout.weft:6:15: `"middle"` is not a member of `"start" | "center" | "end" | "stretch"`"#,
+        ]
+    );
+}
+
+#[test]
+fn layout_constant_and_parent_checks_do_not_cross_dynamic_blocks() {
+    let src = r#"type Axis = "vertical" | "horizontal"
+component Wrapper(content: Children) { Row { content } }
+component C(axis: Axis, axes: Axis[]) {
+  state local: Axis = "vertical"
+  let aliased = axis
+  Spacer()
+  Scroll(direction = aliased)
+  Scroll(direction = local)
+  Column {
+    if (true) { Spacer() }
+    for (item in axes; key = item) {
+      Spacer()
+      Scroll(direction = item)
+    }
+    Wrapper { Spacer() }
+  }
+}"#;
+    let compilation = compile(&[("layout.weft", src)]);
+    let actual: Vec<_> = compilation
+        .diagnostics
+        .iter()
+        .map(|d| d.message.as_str())
+        .collect();
+    let parent = "`Spacer` must be a direct child of `Column`, `Row` or `Scroll`";
+    let constant = "`Scroll.direction` must be a constant";
+    assert_eq!(
+        actual,
+        [parent, constant, constant, parent, parent, constant, parent]
+    );
+}
+
+#[test]
+fn layout_stores_float_and_union_properties_in_their_wire_types() {
+    use weft_ui_transformer::view::{Constant, ValueType, ViewLayout, ViewNodeKind};
+
+    let src = r#"type Axis = "vertical" | "horizontal"
+component C(amount: Float, align: "center" | "end") {
+  let unset: Axis? = null
+  let axis: Axis = if (!false) "horizontal" else "vertical"
+  Scroll(direction = unset ?? axis) {
+    Row(grow = amount, align = align) {
+      Text("int", grow = 2)
+      Text("float", aspectRatio = 1.5)
+      Text("negative", grow = -0.5)
+      Spacer()
+    }
+  }
+}"#;
+    let compilation = compile(&[("layout.weft", src)]);
+    assert!(
+        compilation.diagnostics.is_empty(),
+        "{}",
+        compilation.render_diagnostics()
+    );
+    let layout = ViewLayout::new(compilation.program.as_ref().expect("layout props compile"));
+    let template = &layout.templates()[0];
+    let slots: Vec<_> = template
+        .values
+        .iter()
+        .map(|slot| (slot.prop, slot.ty))
+        .collect();
+    assert_eq!(
+        slots,
+        [("grow", ValueType::Float), ("align", ValueType::String)]
+    );
+    let constants: Vec<_> = template
+        .nodes
+        .iter()
+        .filter_map(|node| match &node.kind {
+            ViewNodeKind::Element { props, .. } => Some(props),
+            ViewNodeKind::Point(_) => None,
+        })
+        .flatten()
+        .filter(|prop| prop.name != "value")
+        .map(|prop| (prop.name, &prop.value))
+        .collect();
+    assert_eq!(
+        constants,
+        [
+            ("direction", &Constant::String("horizontal".into())),
+            ("grow", &Constant::Float(2.0)),
+            ("aspectRatio", &Constant::Float(1.5)),
+            ("grow", &Constant::Float(-0.5)),
+        ]
+    );
+    let json = layout.to_json();
+    assert!(json.contains("\"type\": \"Float\""));
+    assert!(json.contains("\"grow\": 2.0"));
+    assert!(json.contains("\"aspectRatio\": 1.5"));
+    assert!(json.contains("\"direction\": \"horizontal\""));
+}
+
+#[test]
+fn layout_rejects_nonfinite_float_literals_before_serializing() {
+    let src = "component C() { Row(grow = -1e999) }";
+    assert_eq!(
+        diagnostics(&[("layout.weft", src)]),
+        ["layout.weft:1:28: floating-point literal is out of range for `Float`"]
+    );
+}
+
+#[test]
 fn color_literals_accept_hex_formats() {
     let src = r##"
 component C() {

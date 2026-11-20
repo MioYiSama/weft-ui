@@ -1,0 +1,57 @@
+type Cross = "start" | "center" | "end" | "stretch"
+type Main = "start" | "spaceAround" | "spaceEvenly"
+type Place = "topStart" | "center" | "bottomEnd"
+
+model LayoutModel {
+  width: Int,
+  inset: Int,
+  gap: Int,
+  grow: Float,
+  ratio: Float,
+  fill: Bool,
+  align: Cross,
+  justify: Main,
+  alignment: Place,
+  indicators: Bool,
+  spacer: Int,
+  labels: String[],
+}
+
+component Overlay(content: Children) {
+  Stack(alignment = "center") { content }
+}
+
+component Layout(model: LayoutModel) {
+  Column(width = 320, height = 540, minWidth = 160, maxWidth = 480, minHeight = 240, maxHeight = 640,
+         margin = 12, marginX = 10, padding = 16, paddingX = 14,
+         gap = 8, align = "stretch", justify = "spaceBetween") {
+    Row(width = model.width, margin = model.inset, marginY = 6, marginBottom = 4,
+        padding = 6, paddingY = model.inset, paddingTop = 5,
+        gap = model.gap, align = model.align, justify = model.justify) {
+      Row(grow = model.grow, fill = model.fill, aspectRatio = model.ratio, minWidth = 12) {
+        Text("fluid", marginTop = 1, marginBottom = 2, marginStart = 3, marginEnd = 4,
+             paddingTop = 2, paddingBottom = 3, paddingStart = 4, paddingEnd = 5)
+      }
+      Spacer(size = model.spacer)
+      Text("fixed", grow = 2, fill = true, aspectRatio = 1.5, marginStart = model.inset, paddingY = 8)
+    }
+    Stack(alignment = "bottomEnd", width = 128, height = 64) {
+      Image("square.png", width = 32, height = 32)
+      if (model.fill) { Text("overlay", fill = true) }
+    }
+    Stack(alignment = model.alignment) {
+      Overlay { Text("projected") }
+    }
+    Scroll(gap = 4, align = "center", indicators = model.indicators) {
+      Text("vertical")
+      Spacer()
+      for (label in model.labels; key = label) { Text(label) }
+    }
+    Scroll(direction = "horizontal", indicators = false, gap = model.gap, align = model.align) {
+      Spacer(size = 16)
+      Button(width = 80) { Text("horizontal") }
+      Input("", minWidth = model.width)
+      Checkbox(false, fill = model.fill)
+    }
+  }
+}

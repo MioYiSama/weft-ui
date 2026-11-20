@@ -39,6 +39,7 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                     format!("[this](bool v) {{ return dispatch({slot}, v); }}")
                 }
                 Element::Text | Element::Image => String::new(),
+                _ => unreachable!("platform support rejects unsupported elements"),
             };
             let made = format!("make<weft::{}>({args})", wrapper(*element));
             let member = member(template, index);
@@ -99,6 +100,7 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Input => "Input",
         Element::Checkbox => "Checkbox",
         Element::Image => "Image",
+        _ => unreachable!("platform support rejects unsupported elements"),
     }
 }
 
@@ -117,6 +119,7 @@ pub(crate) fn setter(name: &str) -> String {
 fn literal(value: &Constant) -> String {
     match value {
         Constant::Int(v) => v.to_string(),
+        Constant::Float(_) => unreachable!("platform support rejects Float properties"),
         Constant::Bool(v) => v.to_string(),
         Constant::String(s) => cpp::string(s),
         Constant::Token(name) => format!("weft::Color::token({})", cpp::string(name)),

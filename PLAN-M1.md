@@ -919,14 +919,14 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | L3 | ☑ | 3212932 | 三个驱动的宿主事件日志均含 `Rated`；C-core 17/17；C-apps 无差异 |
 | L4 | ☑ | 0179814 | `Gallery` 仅生成的 JS 变化（`TodoList` 没有组件调用，不变）；C-apps 仅各平台打包 JS 变化，已重新录制基线；未改原生壳 |
 | L5 | ☑ | 33ab6a9 | `Text("note")` 的 `size` 为 14；`language.ops` 不变；C-apps 无差异 |
-| L6.w | ☑ | （本提交） | 新增 `Theme` web、wechat 快照与 `theme.ops`；Chromium 深浅色测试通过；C-apps 仅 web、wechat 打包 JS 变化，已重新录制基线 |
-| L6.a | ☐ | | |
-| L6.d | ☐ | | |
-| L6.n | ☐ | | |
-| L6.g | ☐ | | |
+| L6.w | ☑ | 32b6a8d | 新增 `Theme` web、wechat 快照与 `theme.ops`；Chromium 深浅色测试通过；C-apps 仅 web、wechat 打包 JS 变化，已重新录制基线 |
+| L6.a | ☑ | ce9597c | C-apple、iOS 与 macOS 的 C-ui 通过；模拟器与 macOS 切换外观时颜色原地更新；含四个原生平台共用的 schema、夹具与 `pending.json` 改动（见执行中发现） |
+| L6.d | ☑ | 9995cf5 | C-android、C-ui 通过；`cmd uimode night yes/no` 时静态与动态 token 颜色随之变化 |
+| L6.n | ☑ | cda2926 | C-windows、C-ui 通过；虚拟机内切换应用主题时颜色、默认控件与页面背景随之变化 |
+| L6.g | ☑ | 9cc25cf | C-linux、C-ui、`conformance.theme` 通过；容器没有 XDG 设置门户，只验证了浅色截图与两套配色的单元测试 |
 | T1 | ☑ | f282243 | 截图待维护者确认（`hello`：web、ios、android、wechat）；C-shot 差异 0.000%，小程序 0.006%；macOS、Windows、Linux 截图已查看；小程序 AppID 放在忽略的 `project.private.config.json` |
 | T2 | ⏸ | 91d3a60 | actionlint 通过；等待维护者推送并手动触发一次 nightly（对外操作需确认） |
-| R1.w | ☐ | | |
+| R1.w | ☑ | （本提交） | 截图待维护者确认（`layout`：web、wechat）；32 个 Chromium 布局样例通过；`gallery.ops` 与 `Gallery` 原生快照因成员顺序变化（见执行中发现）；C-apps 全部 7 个平台有差异，已重新录制基线 |
 | R1.a | ☐ | | |
 | R1.d | ☐ | | |
 | R1.n | ☐ | | |
@@ -980,3 +980,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [L3] 规范 §7 允许 `Event<Color>`，但 `Color` 类型在 L6.w 才引入；L3 的 payload 检查复用 `Type::is_scalar()`，L6.w 加入 `Type::Color` 时需让它计入标量。结论：在 L6.w 中完成
 - [L5] 验收写快照里的颜色常量为 `#6b7280ff`；实际原生快照为 `0x6b7280ff`，Web 与布局 JSON 沿用现有的不透明颜色简写 `#6b7280`。`theme.x` 作为样式值留给 L6.w 解析。结论：不处理（沿用现有颜色输出约定）
 - [L6.w] 「预期变化」没有列出 example 产物，但 Web 与小程序 runtime 的颜色转换支持 `@name` 后，两者的打包 JS 随之变化；5 个原生平台逐字节不变。结论：接受（runtime 变化的必然结果），已重新录制 C-apps 基线
+- [L6.a–L6.g] 四个原生子任务并行时都改动了同一行 schema（`features.theme.support`）、`THEME.natives` 与生成的 `catalog.rs`，无法逐个拆出自洽的中间状态；按 d → g → n → a 的顺序提交，前三个提交只含各自平台的后端、壳与快照，共享的启用改动（schema、`natives`、`pending.json`、主题指南的平台说明）随最后的 L6.a 提交。每个提交都能构建，L6.a 提交在独立工作树里通过了 C-rust。另外 R1.w 与之同时进行，半成品让共享工作区暂时无法编译，四个子任务都在独立检出里生成快照与运行检查。结论：接受
+- [L6.g] 容器的 XFCE 会话没有 `org.freedesktop.portal.Desktop`（`ServiceUnknown`），无法实测深浅色切换；按规范 §4 回退为浅色，两套配色由单元测试覆盖。结论：不处理（容器环境限制）
+- [R1.w] 组成员排在元素自有成员之前（规范 §1）改变了 `Gallery` 中 `Row` 动态样式的槽位顺序，`gallery.ops` 随之变化，与「conformance 黄金文件不变」的预期不符；`Image` 的 `width`、`height` 移到 `src` 之前，使 example 5 个原生平台的布局哈希、`layout.json` 与生成代码变化。结论：接受（顺序由 schema 决定，不另设线路顺序），已重新生成 `gallery.ops` 与快照
+- [R1.w] `protocol/weft.css` 与规范的文本有出入：`.w-stack` 用单格 grid 加 `position:relative`，`fill` 子元素用 `.w-in-stack.w-fill{position:absolute;inset:0}`；`grow` 另加类 `.w-grow{flex-basis:0%!important}`（百分比基准在主轴尺寸不定时退回内容尺寸）；`.w-spacer` 加 `width:0;height:0`；`.w-text{display:inline-block}`；小程序的 `scroll-view` 不把 `gap` 应用到子节点，改由内部的 `.w-scroll-content-v|h` 承担 `gap` 与 `align`；另有 `.w-wx` 修正小程序按钮与输入框的默认样式。这些都由 `tests/layout/web.test.ts` 的 32 个样例约束。结论：接受

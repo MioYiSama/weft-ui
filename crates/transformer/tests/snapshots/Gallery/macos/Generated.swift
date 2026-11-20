@@ -6,7 +6,7 @@ import WeftKit
 /// The app's kernel session, started on first use with the bundle of this package.
 @MainActor private let session = WeftSession(
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
-    layoutHash: 0x1e5786a8ee33fbbd,
+    layoutHash: 0xa003534a93be9333,
     make: makeScope
 )
 
@@ -75,16 +75,16 @@ private struct V0: View {
 // MARK: - 1 Gallery
 
 @Observable private final class S1: WeftScope {
-    /// Row.padding
-    var v0: CGFloat = 0
-    /// Row.gap
-    var v1: CGFloat = 0
     /// Row.width
-    var v2: CGFloat = 0
+    var v0: CGFloat = 0
     /// Row.height
-    var v3: CGFloat = 0
+    var v1: CGFloat = 0
+    /// Row.padding
+    var v2: CGFloat = 0
     /// Row.background
-    var v4: WeftColor = .clear
+    var v3: WeftColor = .clear
+    /// Row.gap
+    var v4: CGFloat = 0
     /// Checkbox.checked
     var v5: Bool = false
     /// Image.src
@@ -104,8 +104,8 @@ private struct V0: View {
         case 0: v0 = value.length
         case 1: v1 = value.length
         case 2: v2 = value.length
-        case 3: v3 = value.length
-        case 4: v4 = value.color
+        case 3: v3 = value.color
+        case 4: v4 = value.length
         case 5: v5 = value.bool
         case 6: v6 = value.string
         case 7: v7 = value.color
@@ -133,13 +133,13 @@ private struct V1: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(verbatim: "Gallery")
             .weftText(color: WeftColor.rgba(0x224466ff), size: 20, bold: true)
-            HStack(alignment: .top, spacing: s.v1) {
+            HStack(alignment: .top, spacing: s.v4) {
                 WeftCheckbox(checked: s.v5) { s.dispatch(0, .bool($0)) ? nil : s.v5 }
                 WeftImage(src: s.v6, width: 32, height: 32)
                 Text(verbatim: "Preview")
                 .weftText(color: s.v7, size: s.v8, bold: s.v9)
             }
-            .weftBox(padding: s.v0, width: s.v2, height: s.v3, background: s.v4)
+            .weftBox(padding: s.v2, width: s.v0, height: s.v1, background: s.v3)
             WeftInput(text: s.v10, placeholder: "Caption") { s.dispatch(1, .string($0)) ? nil : s.v10 }
             if let c = s.p0 { V0(s: c) }
         }

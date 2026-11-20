@@ -388,38 +388,6 @@ export class AppBase {
 /* Expression helpers used by generated code                                 */
 /* ------------------------------------------------------------------------ */
 
-export function px(value: number): string {
-  return `${value}px`;
-}
-
-const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
-let webThemeColors: ReadonlySet<string> | null = null;
-
-/** Sets the token names declared by the Web theme stylesheet. */
-export function setThemeColors(colors: ReadonlySet<string>): void {
-  webThemeColors = colors;
-}
-
-/**
- * Dynamic value of a `Color` property: `#RGB`, `#RRGGBB`, `#RRGGBBAA` or a theme token.
- * Anything else renders transparent, with a warning in dev builds.
- */
-export function color(value: string, tokens: ReadonlySet<string> | null = webThemeColors): string {
-  if (HEX_COLOR.test(value)) return value;
-  const token = typeof value === "string" && value[0] === "@";
-  if (token && tokens !== null) {
-    const name = value.slice(1);
-    if (tokens.has(name)) return `var(--weft-${name})`;
-  }
-  // Vite replaces `import.meta.env` statically, so it must be read in place; it is absent outside Vite.
-  if ((import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
-    console.warn(token
-      ? `weft: unknown theme token ${JSON.stringify(value.slice(1))}`
-      : `weft: invalid color ${JSON.stringify(value)}, expected #RGB, #RRGGBB or #RRGGBBAA`);
-  }
-  return "transparent";
-}
-
 export function str(value: unknown): string {
   return String(value);
 }

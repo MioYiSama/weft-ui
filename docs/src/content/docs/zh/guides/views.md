@@ -42,20 +42,32 @@ component TodoRow(todo: Todo, showRemove: Bool = true) {
 
 ## 排列元素
 
-`Column` 将子节点纵向排列，`Row` 将子节点横向排列。两者都从主轴起点依次排列，子节点在交叉轴上对齐起点，不会拉伸。`gap` 是相邻子节点之间的距离，`padding` 是四边相同的内边距。用 `width` 或 `height` 固定相应尺寸；不写时由内容决定。
+`Column` 将子节点纵向排列，`Row` 将子节点横向排列。排列方向是主轴，垂直于主轴的方向是交叉轴。用 `justify` 分配主轴上的剩余空间，用 `align` 设置交叉轴对齐方式，两者默认为 `"start"`。`gap` 在相邻子节点之间留出间距，子节点的 `margin` 另计。
 
-例如，可以把这些节点写在组件体内：
+给子节点设置 `grow = 1`，可让它分得一份主轴剩余空间；设置 `fill = true`，则可让它撑满交叉轴。`Spacer()` 和 `grow = 1` 一样分配剩余空间，`Spacer(size = 8)` 则留出固定的空隙。`Spacer` 只能直接放在 `Column`、`Row` 或 `Scroll` 中。
 
 ```weft
-Row(gap = 8, padding = 12, background = "#EEF2FF") {
-  Image("https://avatars.githubusercontent.com/u/69631?s=64", width = 32, height = 32)
-  Text("Tasks", size = 20, bold = true, color = "#1E3A8A")
+Column(width = 240, padding = 12, gap = 8) {
+  Row(fill = true, align = "center") {
+    Text("待办事项", size = 20, bold = true)
+    Spacer()
+    Text("3 项未完成")
+  }
+  Scroll(height = 64, grow = 0, gap = 8) {
+    Text("取钥匙")
+    Text("发送图纸")
+    Text("打包样品")
+  }
 }
 ```
 
-各元素的属性、事件和平台支持情况见[内置元素参考](/zh/reference/elements/)。
+`width` 和 `height` 设置内容盒的尺寸，`padding` 在内容盒周围留出内边距，`margin` 在元素外留出外边距。`paddingTop` 等单边属性优先于 `paddingY` 和 `padding`。用 `minWidth`、`maxWidth`、`minHeight` 和 `maxHeight` 限制尺寸范围。`aspectRatio` 根据一个方向的尺寸推导另一个方向的尺寸；宽高都固定时不生效。
 
-`Text`、`Input`、`Checkbox` 和 `Image` 的必填值都可以作为第一个位置参数，如上例所示。长度（包括字号 `size`）用逻辑像素计量，直接写 `Int`，不加单位后缀。它对应 iOS 和 macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px，以及小程序的 `px`（不是 `rpx`）。各平台的布局语义一致，控件外观可能不同。
+用 `Stack` 叠放子节点，后写的显示在上层，`alignment` 决定它们的位置。带 `fill = true` 的子节点在两个方向上撑满容器，但不影响 `Stack` 的自然尺寸。根节点不滚动；需要滚动时使用 `Scroll`。它默认纵向滚动，设 `direction = "horizontal"` 可改为横向。
+
+新增的布局功能目前支持 Web 和微信小程序。各元素及属性的平台支持情况见[内置元素参考](/zh/reference/elements/)。
+
+`Text`、`Input`、`Checkbox` 和 `Image` 的必填值都可以作为第一个位置参数。长度（包括字号 `size`）用逻辑像素计量，直接写 `Int`，不加单位后缀。它对应 iOS 和 macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px，以及小程序的 `px`（不是 `rpx`）。布局功能的语义在支持它的平台上一致，控件外观可能不同。
 
 `Text.color`、`Row.background` 等颜色属性接收 `#RGB`、`#RRGGBB` 或 `#RRGGBBAA` 格式的字符串。非法颜色字面量会在编译时报错；非法的动态颜色值按透明处理，并在开发构建中发出警告。
 

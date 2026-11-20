@@ -41,6 +41,7 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                     format!("v => Dispatch({slot}, WeftValue.Of(v))")
                 }
                 Element::Text | Element::Image => String::new(),
+                _ => unreachable!("platform support rejects unsupported elements"),
             };
             out.writer.line(format_args!(
                 "{declaration}n{index} = new {}({args});",
@@ -80,6 +81,7 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Input => "WeftInput",
         Element::Checkbox => "WeftCheckbox",
         Element::Image => "WeftImage",
+        _ => unreachable!("platform support rejects unsupported elements"),
     }
 }
 
@@ -93,6 +95,7 @@ pub(crate) fn property(name: &str) -> String {
 fn literal(value: &Constant) -> String {
     match value {
         Constant::Int(v) => v.to_string(),
+        Constant::Float(_) => unreachable!("platform support rejects Float properties"),
         Constant::Bool(v) => v.to_string(),
         Constant::String(s) => csharp::string(s),
         Constant::Token(name) => format!("WeftColor.Token({})", csharp::string(name)),

@@ -402,9 +402,18 @@ function interpolate(text: string, scope: Scope): string {
 }
 
 function expression(expr: string, scope: Scope): unknown {
-  if (expr.startsWith("...")) return path(expr.slice(3), scope);
-  const comparison = /^(.+?)\s*===\s*(-?\d+)$/.exec(expr);
-  if (comparison) return path(comparison[1], scope) === Number(comparison[2]);
+  // Template data spreads the scope and can pass an extra layout class.
+  const spread = /^\.\.\.([^,]+)(?:,\s*(\w+):\s*(.+))?$/.exec(expr);
+  if (spread) {
+    const data = path(spread[1].trim(), scope);
+    return spread[2] ? { ...(data as Data), [spread[2]]: expression(spread[3], scope) } : data;
+  }
+  const conditional = /^(.+?)\s*\?\s*('[^']*')\s*:\s*('[^']*')$/.exec(expr);
+  if (conditional) return expression(expression(conditional[1], scope) ? conditional[2] : conditional[3], scope);
+  const comparison = /^(.+?)\s*===\s*(-?\d+|'[^']*')$/.exec(expr);
+  if (comparison) return path(comparison[1], scope) === expression(comparison[2], scope);
+  if (expr.startsWith("'") && expr.endsWith("'")) return expr.slice(1, -1);
+  if (/^-?\d+$/.test(expr)) return Number(expr);
   if (expr === "true" || expr === "false") return expr === "true";
   return path(expr, scope);
 }

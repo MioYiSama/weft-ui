@@ -150,6 +150,7 @@ impl fmt::Display for Constant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Constant::Int(v) => write!(f, "{v}"),
+            Constant::Float(v) => write!(f, "{v:?}"),
             Constant::Bool(v) => write!(f, "{v}"),
             Constant::String(s) => f.write_str(&quote(s)),
             Constant::Color(color) => write!(f, "\"{color}\""),

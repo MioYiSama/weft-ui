@@ -37,16 +37,16 @@ const $s0 = 0;
 const $s1 = [0, 1, 2, 3, 4, 5, 6];
 const $s2 = 7;
 const $s3 = [0, 1, 2];
-const $t0 = $.template("<span></span>");
-const $t1 = $.template("<div style=\"display:flex;flex-direction:row;align-items:flex-start\"><span></span><button type=\"button\"><span>1</span></button><button type=\"button\"><span>2</span></button><button type=\"button\"><span>Repeat</span></button></div>");
+const $t0 = $.template("<span class=\"w-text\"></span>");
+const $t1 = $.template("<div class=\"w-row\"><span class=\"w-text\"></span><button type=\"button\" class=\"w-button\"><span class=\"w-text\">1</span></button><button type=\"button\" class=\"w-button\"><span class=\"w-text\">2</span></button><button type=\"button\" class=\"w-button\"><span class=\"w-text\">Repeat</span></button></div>");
 const $t2 = $.template("<!----><!---->");
-const $t3 = $.template("<div style=\"display:flex;flex-direction:column;align-items:flex-start\"><!----><!----><!----></div>");
-const $t4 = $.template("<div style=\"display:flex;flex-direction:column;align-items:flex-start\"><span></span><!----><!----><!----><!----><!----><!----><!----><!----><span style=\"color:#6b7280;font-size:14px\">note</span></div>");
+const $t3 = $.template("<div class=\"w-column\"><!----><!----><!----></div>");
+const $t4 = $.template("<div class=\"w-column\"><span class=\"w-text\"></span><!----><!----><!----><!----><!----><!----><!----><!----><span class=\"w-text\" style=\"color:#6b7280;font-size:14px\">note</span></div>");
 const $t5 = $.template("<!---->");
-const $t6 = $.template("<span>Footer only</span>");
-const $t7 = $.template("<span></span><!---->");
-const $t8 = $.template("<span>image</span>");
-const $t9 = $.template("<span>text</span>");
+const $t6 = $.template("<span class=\"w-text\">Footer only</span>");
+const $t7 = $.template("<span class=\"w-text\"></span><!---->");
+const $t8 = $.template("<span class=\"w-text\">image</span>");
+const $t9 = $.template("<span class=\"w-text\">text</span>");
 
 export function ModeLabel$c(app, args, children, depth) {
   const c = new $.Instance(app, 1, depth, args, children);

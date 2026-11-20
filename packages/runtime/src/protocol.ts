@@ -21,12 +21,6 @@ export const ValueTag = {
 
 export type OpErrorKind = "truncated" | "version" | "opcode" | "tag" | "utf8";
 
-export const WechatUnit = {
-  Px: 1,
-  Bold: 2,
-  Color: 3,
-} as const;
-
 export const PLATFORMS = ["web", "wechat", "ios", "macos", "android", "windows", "linux"] as const;
 export const NATIVE_PLATFORMS = ["ios", "macos", "android", "windows", "linux"] as const;
 export const APPLE_PLATFORMS = ["ios", "macos"] as const;

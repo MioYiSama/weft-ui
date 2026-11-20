@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, readdir, rename, rm, stat, symlink, writeFile
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CSS } from "@weft-ui/runtime/elements";
 import { PLATFORMS } from "@weft-ui/runtime/protocol";
 import weft, { type WeftOptions } from "@weft-ui/vite";
 import { Window } from "happy-dom";
@@ -215,7 +216,7 @@ test("WeChat generates a theme stylesheet and resolves dynamic theme colors", as
   const config: { darkmode?: boolean } = JSON.parse(await readFile(join(project, "app.json"), "utf8"));
   expect(config.darkmode).toBe(true);
   expect(await readFile(join(project, "weft/view.wxss"), "utf8")).toBe(
-    ":host{--weft-accent:#0a84ffff;}\n@media (prefers-color-scheme: dark){:host{--weft-accent:#409cffff;}}\n",
+    `${CSS}:host{--weft-accent:#0a84ffff;}\n@media (prefers-color-scheme: dark){:host{--weft-accent:#409cffff;}}\n`,
   );
   const program = launch(project, { wx: fakeWx() });
   try {
@@ -234,7 +235,7 @@ test("WEFT_PLATFORM=wechat generates a mini program project that runs", async ()
   const project = join(root, "apps/wechat");
   expect((await readdir(project)).sort()).toEqual([".gitignore", "app.js", "app.json", "project.config.json", "weft"]);
   expect((await readdir(join(project, "weft"))).sort())
-    .toEqual(["index.js", "index.json", "index.wxml", "js", "view.js", "view.json", "view.wxml"]);
+    .toEqual(["index.js", "index.json", "index.wxml", "js", "view.js", "view.json", "view.wxml", "view.wxss"]);
   expect(await readdir(join(project, "weft/js"))).toEqual(["index.js"]);
   expect(JSON.parse(await readFile(join(project, "app.json"), "utf8")).window.navigationBarTitleText).toBe("Test \"App\"");
   expect(existsSync(join(root, "apps/web"))).toBe(false);
@@ -256,6 +257,94 @@ test("WEFT_PLATFORM=wechat generates a mini program project that runs", async ()
   const relaunched = launch(project, { wx });
   await settle();
   expect(relaunched.view.texts()[0]).toBe("You clicked!");
+});
+
+test("WeChat carries layout context through branches, rows, components and slots", async () => {
+  await writeFile(join(root, "src/App.weft"), `
+model Model { inset: Int, labels: String[] }
+component Leaf(label: String) {
+  Text(label)
+}
+component Relay(label: String) {
+  Leaf(label)
+}
+component Slot(body: Children) {
+  body
+}
+component App(model: Model) {
+  state filled = true
+  Stack(padding = 2, paddingX = model.inset, paddingStart = 7) {
+    Text("direct", fill = true)
+    if (filled) { Relay("branch") }
+    for (label in model.labels; key = label) {
+      Text(label, fill = filled)
+    }
+    Slot { Relay("slot") }
+    Column { Relay("ordinary") }
+  }
+  Scroll(direction = "horizontal", indicators = filled, gap = model.inset, align = "end") {
+    Relay("horizontal")
+    Spacer(size = 12)
+    Spacer()
+  }
+  Scroll { Text("vertical") }
+  Row {
+    Text("static-grow", grow = 1.5)
+    Text("dynamic-grow", grow = if (filled) 2.0 else 0.0, minWidth = 9)
+  }
+  Scroll(indicators = false, grow = 0, fill = false) {}
+  Button(onClick = { filled = !filled }) { Text("toggle") }
+}
+`);
+  await writeFile(join(root, "src/index.ts"), `
+import { App } from "./App.weft";
+import { run } from "@weft-ui/platform";
+run(new App({ inset: 5, labels: ["loop"] }));
+`);
+  await build("wechat");
+  const project = join(root, "apps/wechat");
+  expect(await readFile(join(project, "weft/view.wxss"), "utf8")).toBe(CSS);
+  const program = launch(project, { wx: fakeWx() });
+  try {
+    await settle();
+    const { view } = program;
+    const textNodes = () => Object.fromEntries(view.all("text").map((node) => [String(node.children[0]), node] as const));
+    const initial = textNodes();
+    expect(Object.fromEntries(Object.entries(initial).map(([label, node]) => [label, node.attrs.class]))).toEqual({
+      direct: "w-text w-in-stack w-fill", branch: "w-text w-in-stack", loop: "w-text w-in-stack w-fill",
+      slot: "w-text w-in-stack", ordinary: "w-text", horizontal: "w-text w-in-scroll",
+      vertical: "w-text w-in-scroll", toggle: "w-text", "static-grow": "w-text w-grow", "dynamic-grow": "w-text w-grow",
+    });
+    expect(initial["dynamic-grow"]?.attrs.style).toBe("flex:2 1 0px;min-width:0;min-height:0;min-width:9px");
+    expect(view.all("view").find((node) => node.attrs.class === "w-stack")?.attrs.style).toBe(
+      "padding-top:2px;padding-right:2px;padding-bottom:2px;padding-left:2px;padding-left:5px;padding-right:5px;padding-left:7px",
+    );
+    expect(view.all("view").filter((node) => node.attrs.class === "w-spacer w-in-scroll").map((node) => node.attrs.style))
+      .toEqual(["flex:0 0 12px", undefined]);
+    const [horizontal, vertical, hiddenIndicators] = view.all("scroll-view");
+    expect(horizontal?.attrs).toMatchObject({
+      class: "w-scroll-h w-grow w-fill", "enable-flex": "", enhanced: "", "show-scrollbar": true,
+    });
+    expect(horizontal?.attrs).toHaveProperty("scroll-x");
+    expect(horizontal?.attrs).not.toHaveProperty("scroll-y");
+    expect(horizontal?.attrs).not.toHaveProperty("style");
+    expect(view.all("view").find((node) => node.attrs.class === "w-scroll-content-h")?.attrs.style)
+      .toBe("gap:5px;align-items:flex-end");
+    expect(vertical?.attrs).toMatchObject({ class: "w-scroll-v w-grow w-fill", "show-scrollbar": true });
+    expect(vertical?.attrs).toHaveProperty("scroll-y");
+    expect(hiddenIndicators?.attrs).toMatchObject({ class: "w-scroll-v", "show-scrollbar": false });
+
+    view.tap(view.all("button")[0]!);
+    await settle();
+    const updated = textNodes();
+    expect(updated).not.toHaveProperty("branch");
+    expect(updated.loop?.attrs.class).toBe("w-text w-in-stack");
+    expect(updated["dynamic-grow"]?.attrs.class).toBe("w-text");
+    expect(updated["dynamic-grow"]?.attrs.style).toBe("flex:0 1 auto;min-width:9px");
+    expect(view.all("scroll-view")[0]?.attrs["show-scrollbar"]).toBe(false);
+  } finally {
+    program.unload();
+  }
 });
 
 test("WeChat builds a JavaScript entry into a custom apps directory", async () => {

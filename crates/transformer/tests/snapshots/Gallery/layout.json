@@ -1,5 +1,5 @@
 {
-  "hash": "1e5786a8ee33fbbd",
+  "hash": "a003534a93be9333",
   "templates": [
     {
       "label": "Panel",
@@ -26,7 +26,7 @@
       "kind": "component",
       "roots": [0],
       "nodes": [
-        {"element": "Column", "props": {"padding": 12, "gap": 8, "width": 320, "height": 280, "background": "#eeeeff"}, "children": [1, 2, 6, 7]},
+        {"element": "Column", "props": {"width": 320, "height": 280, "padding": 12, "background": "#eeeeff", "gap": 8}, "children": [1, 2, 6, 7]},
         {"element": "Text", "props": {"value": "Gallery", "color": "#224466", "size": 20, "bold": true}, "children": []},
         {"element": "Row", "props": {}, "children": [3, 4, 5]},
         {"element": "Checkbox", "props": {}, "children": []},
@@ -36,11 +36,11 @@
         {"point": 0}
       ],
       "values": [
-        {"node": 2, "prop": "padding", "type": "Int"},
-        {"node": 2, "prop": "gap", "type": "Int"},
         {"node": 2, "prop": "width", "type": "Int"},
         {"node": 2, "prop": "height", "type": "Int"},
+        {"node": 2, "prop": "padding", "type": "Int"},
         {"node": 2, "prop": "background", "type": "Color"},
+        {"node": 2, "prop": "gap", "type": "Int"},
         {"node": 3, "prop": "checked", "type": "Bool"},
         {"node": 4, "prop": "src", "type": "String"},
         {"node": 5, "prop": "color", "type": "Color"},

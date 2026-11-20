@@ -74,6 +74,12 @@ const THEME: Fixture = Fixture {
     ],
 };
 
+const LAYOUT: Fixture = Fixture {
+    name: "Layout",
+    source: include_str!("fixtures/Layout.weft"),
+    natives: &[],
+};
+
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
 fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
@@ -156,6 +162,11 @@ fn theme() {
     check_fixture(&THEME);
 }
 
+#[test]
+fn layout() {
+    check_fixture(&LAYOUT);
+}
+
 fn check_fixture(fixture: &Fixture) {
     let web = generated_files(fixture.compile(Platform::Web));
     check(fixture, Platform::Web, &web);
@@ -222,6 +233,7 @@ component C(color: String) {
 "##;
     let mut loader = MemoryLoader::new();
     loader.insert("ui/C.weft", src);
+    let mut css_indices = None;
     for platform in [Platform::Web, Platform::Wechat] {
         let output = compile_app(load(&["ui/C.weft"], &mut loader), platform);
         assert!(
@@ -231,10 +243,24 @@ component C(color: String) {
         );
         let code = &output.logic[0].code;
         if platform == Platform::Web {
-            assert_eq!(code.matches("$.color(").count(), 4);
+            assert_eq!(code.matches("$.style(").count(), 4);
             assert!(code.contains("background:#aabbcc"));
             assert!(code.contains("color:#12345680"));
-            assert_eq!(code.matches("align-items:flex-start").count(), 2);
+            assert_eq!(code.matches("w-column").count(), 1);
+            assert_eq!(code.matches("w-row").count(), 1);
+            let index_for = |node| {
+                let (_, binding) = code
+                    .split_once(&format!("$.style({node}, "))
+                    .expect("dynamic color has a CSS binding");
+                let (index, _) = binding.split_once(',').expect("binding has a CSS index");
+                index.parse::<usize>().expect("CSS index is numeric")
+            };
+            let indices = [index_for("n3"), index_for("n0")];
+            assert_ne!(
+                indices[0], indices[1],
+                "background and color map differently"
+            );
+            css_indices = Some(indices);
             continue;
         }
         assert!(code.starts_with("import * as $ from \"@weft-ui/runtime/remote\";"));
@@ -251,20 +277,24 @@ component C(color: String) {
                 "index.wxml",
                 "view.js",
                 "view.json",
-                "view.wxml"
+                "view.wxml",
+                "view.wxss"
             ]
         );
         assert!(files["view.js"].starts_with("Component(getApp().weft.view({\n"));
         assert!(files["view.js"].ends_with("}));\n"));
-        assert_eq!(files["view.js"].matches(", 3]").count(), 2);
+        let [background, color] = css_indices.expect("the Web bindings were checked first");
+        assert!(files["view.js"].contains(&format!(
+            "v: [[\"n3_0\", {background}], [\"n0_1\", {color}]]"
+        )));
         assert!(!files["view.js"].contains("import "));
         assert!(!files["view.js"].contains("require("));
         assert!(files["view.wxml"].contains("background:#aabbcc"));
         assert!(files["view.wxml"].contains("color:#12345680"));
-        assert_eq!(
-            files["view.wxml"].matches("align-items:flex-start").count(),
-            2
-        );
+        assert_eq!(files["view.wxml"].matches("w-column").count(), 1);
+        assert_eq!(files["view.wxml"].matches("w-row").count(), 1);
+        assert!(files["view.wxss"].contains(".w-column{"));
+        assert!(files["view.wxss"].contains(".w-row{"));
         assert!(
             files["index.js"].contains("getApp().weft.mount(this.selectComponent(\"#weft\"));")
         );

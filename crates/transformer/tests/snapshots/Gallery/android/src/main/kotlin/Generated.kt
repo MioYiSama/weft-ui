@@ -14,7 +14,7 @@ import net.mioyi.weftui.*
 /** Root view of the app: starts the kernel with the bundle and renders the root component. */
 @Composable
 fun WeftApp() {
-    WeftRoot(layoutHash = 0x1e5786a8ee33fbbduL, make = ::makeScope)
+    WeftRoot(layoutHash = 0xa003534a93be9333uL, make = ::makeScope)
 }
 
 /** Scope of a `create` op. */
@@ -63,16 +63,16 @@ private fun V0(s: S0) {
 // 1 Gallery
 
 private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
-    /** Row.padding */
-    var v0 by mutableFloatStateOf(0f)
-    /** Row.gap */
-    var v1 by mutableFloatStateOf(0f)
     /** Row.width */
-    var v2 by mutableFloatStateOf(0f)
+    var v0 by mutableFloatStateOf(0f)
     /** Row.height */
-    var v3 by mutableFloatStateOf(0f)
+    var v1 by mutableFloatStateOf(0f)
+    /** Row.padding */
+    var v2 by mutableFloatStateOf(0f)
     /** Row.background */
-    var v4 by mutableStateOf(WeftColor.Transparent)
+    var v3 by mutableStateOf(WeftColor.Transparent)
+    /** Row.gap */
+    var v4 by mutableFloatStateOf(0f)
     /** Checkbox.checked */
     var v5 by mutableStateOf(false)
     /** Image.src */
@@ -92,8 +92,8 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
             0 -> v0 = value.length
             1 -> v1 = value.length
             2 -> v2 = value.length
-            3 -> v3 = value.length
-            4 -> v4 = value.color
+            3 -> v3 = value.color
+            4 -> v4 = value.length
             5 -> v5 = value.bool
             6 -> v6 = value.string
             7 -> v7 = value.color
@@ -117,7 +117,7 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 private fun V1(s: S1) {
     WeftColumn(gap = 8f, padding = 12f, width = 320f, height = 280f, background = WeftColor.Fixed(Color(0xffeeeeffL))) {
         WeftText("Gallery", color = WeftColor.Fixed(Color(0xff224466L)), size = 20f, bold = true)
-        WeftRow(gap = s.v1, padding = s.v0, width = s.v2, height = s.v3, background = s.v4) {
+        WeftRow(gap = s.v4, padding = s.v2, width = s.v0, height = s.v1, background = s.v3) {
             WeftCheckbox(s.v5) { s.dispatch(0, WeftValue.Bool(it)) }
             WeftImage(s.v6, width = 32f, height = 32f)
             WeftText("Preview", color = s.v7, size = s.v8, bold = s.v9)

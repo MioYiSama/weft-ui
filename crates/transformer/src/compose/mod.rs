@@ -117,6 +117,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
             .line(format_args!("/** {}.{} */", element.name(), value.prop));
         let state = match value.ty {
             ValueType::Int => "mutableFloatStateOf(0f)",
+            ValueType::Float => unreachable!("platform support rejects Float properties"),
             ValueType::Bool => "mutableStateOf(false)",
             ValueType::String => "mutableStateOf(\"\")",
             ValueType::Color => "mutableStateOf(WeftColor.Transparent)",
@@ -145,6 +146,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
         for (slot, value) in template.values.iter().enumerate() {
             let accessor = match value.ty {
                 ValueType::Int => "length",
+                ValueType::Float => unreachable!("platform support rejects Float properties"),
                 ValueType::Bool => "bool",
                 ValueType::String => "string",
                 ValueType::Color => "color",

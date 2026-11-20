@@ -1,6 +1,6 @@
 // Naming map (schema keys are lower-case):
-// - TypeScript: Opcode.Create, ValueTag.False, WechatUnit.Px; OpErrorKind is a string union.
-// - Rust: Platform::Ios, wechat_unit::PX.
+// - TypeScript: Opcode.Create, ValueTag.False; OpErrorKind is a string union.
+// - Rust: Platform::Ios.
 // - C++: weft::protocol::{kVersion, Code::Create, Tag::False, kFetchModule, kFetchRequest}.
 // - Swift: OpCode.create, ValueTag.false, OpErrorKind.utf8; WeftProtocol.version,
 //   WeftProtocol.fetchModule and WeftProtocol.fetchRequest.
@@ -18,7 +18,6 @@ interface Schema {
   opcodes: Record<string, number>;
   valueTags: Record<string, number>;
   errorKinds: string[];
-  wechatUnits: Record<string, number>;
   platforms: { name: string; native?: boolean; apple?: boolean }[];
   platformModules: Record<string, string[]>;
 }
@@ -32,7 +31,7 @@ const check = mode === "--check";
 const root = new URL("../", import.meta.url);
 const header = "// Generated from protocol/weft.protocol.json by protocol/generate.ts; do not edit.\n";
 const schema: Schema = JSON.parse(readFileSync(new URL("weft.protocol.json", import.meta.url), "utf8"));
-const { version, opcodes, valueTags, errorKinds, wechatUnits, platforms, platformModules } = schema;
+const { version, opcodes, valueTags, errorKinds, platforms, platformModules } = schema;
 
 const quote = (text: string): string => JSON.stringify(text);
 const pascal = (key: string): string => key[0].toUpperCase() + key.slice(1);
@@ -63,8 +62,6 @@ ${tsConstants("ValueTag", valueTags)}
 
 export type OpErrorKind = ${errorKinds.map(quote).join(" | ")};
 
-${tsConstants("WechatUnit", wechatUnits)}
-
 export const PLATFORMS = [${literals(names(platforms))}] as const;
 export const NATIVE_PLATFORMS = [${literals(names(platforms.filter(platform => platform.native)))}] as const;
 export const APPLE_PLATFORMS = [${literals(names(platforms.filter(platform => platform.apple)))}] as const;
@@ -89,7 +86,7 @@ function rustMatches(flag: "native" | "apple"): string {
 }
 
 function rust(): string {
-  return `//! Target names and WeChat style unit codes shared with the runtime.
+  return `//! Target names shared with the runtime.
 
 /// Target platform; the string form matches \`WEFT_PLATFORM\`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -122,11 +119,6 @@ ${rustMatches("native")}
     pub fn is_apple(self) -> bool {
 ${rustMatches("apple")}
     }
-}
-
-/// Codes of the conversions in the WeChat sink's style unit table.
-pub(crate) mod wechat_unit {
-${Object.entries(wechatUnits).map(([key, code]) => `    pub(crate) const ${key.toUpperCase()}: u8 = ${code};`).join("\n")}
 }
 `;
 }

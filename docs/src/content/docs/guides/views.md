@@ -42,20 +42,32 @@ Call a component by name. Positional arguments follow parameter declaration orde
 
 ## Build a layout
 
-Use `Column` to stack children vertically and `Row` to place them side by side. Both start at the beginning of the main axis and align children to the start of the cross axis without stretching them. `gap` adds space between neighboring children; `padding` adds the same inset on all four sides. Set `width` or `height` for a fixed dimension; otherwise the content determines the size.
+Use `Column` to arrange children vertically and `Row` to arrange them horizontally. Use `justify` to distribute leftover space along that main axis and `align` to position children across it. Both default to `"start"`. `gap` adds space between neighboring children; each child's `margin` adds to that gap.
 
-For example, these nodes can go inside a component body:
+Give a child `grow = 1` to share the remaining main-axis space, or `fill = true` to stretch it across the other axis. A `Spacer()` takes a share like `grow = 1`; `Spacer(size = 8)` leaves a fixed gap instead. Place spacers directly inside a `Column`, `Row`, or `Scroll`.
 
 ```weft
-Row(gap = 8, padding = 12, background = "#EEF2FF") {
-  Image("https://avatars.githubusercontent.com/u/69631?s=64", width = 32, height = 32)
-  Text("Tasks", size = 20, bold = true, color = "#1E3A8A")
+Column(width = 240, padding = 12, gap = 8) {
+  Row(fill = true, align = "center") {
+    Text("Tasks", size = 20, bold = true)
+    Spacer()
+    Text("3 open")
+  }
+  Scroll(height = 64, grow = 0, gap = 8) {
+    Text("Pick up keys")
+    Text("Send drawings")
+    Text("Pack samples")
+  }
 }
 ```
 
-See the [built-in element reference](/reference/elements/) for each element’s properties, events, and platform support.
+`width` and `height` size the content box; `padding` adds space inside the element around that box, and `margin` adds space outside. A side-specific value such as `paddingTop` overrides `paddingY` and `padding`. Use `minWidth`, `maxWidth`, `minHeight`, and `maxHeight` to set bounds. `aspectRatio` derives one dimension from the other; two fixed dimensions take precedence.
 
-The required value for `Text`, `Input`, `Checkbox`, or `Image` can be the first positional argument, as shown above. Lengths, including text `size`, are `Int` values in logical pixels, with no unit suffix. These map to pt on iOS and macOS, dp on Android, DIP on Windows, CSS px on the web, and `px` (not `rpx`) in mini programs. Layout semantics are shared, but controls can look different across platforms.
+For overlapping children, use `Stack`: later children appear on top, and `alignment` places them within the stack. A child with `fill = true` covers both axes without determining the stack's natural size. The root doesn't scroll. Use `Scroll` for a scrolling region; it defaults to vertical, and `direction = "horizontal"` changes the axis.
+
+The new layout features are currently available on Web and in WeChat mini programs. See the [built-in element reference](/reference/elements/) for the support status of each element and property.
+
+You can supply the required value for `Text`, `Input`, `Checkbox`, or `Image` as the first positional argument. Lengths, including text `size`, are `Int` values in logical pixels, with no unit suffix. These map to pt on iOS and macOS, dp on Android, DIP on Windows, CSS px on the web, and `px` (not `rpx`) in mini programs. Layout semantics are shared where supported, but controls can look different across platforms.
 
 Colors such as `Text.color` or `Row.background` are strings in `#RGB`, `#RRGGBB`, or `#RRGGBBAA` form. Invalid literals are compile errors. Invalid dynamic colors render as transparent and warn in development builds.
 

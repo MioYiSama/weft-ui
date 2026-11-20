@@ -153,6 +153,7 @@ fn scope(out: &mut Code, index: usize, template: &Template, has_theme: bool) {
         for (slot, value) in template.values.iter().enumerate() {
             let accessor = match value.ty {
                 ValueType::Int => "Number",
+                ValueType::Float => unreachable!("platform support rejects Float properties"),
                 ValueType::Bool => "Bool",
                 ValueType::String => "String",
                 ValueType::Color => "Color",
@@ -202,10 +203,9 @@ mod tests {
         for expected in [
             "var n0 = new WeftStack(vertical: true);",
             "n0.Padding = 4;",
-            "n0.Gap = 2;",
             "n0.Width = 100;",
             "n0.Height = 80;",
-            "n0.Background = WeftColor.Rgba(0xaabbccffu);\n        Roots.Add(n0.Element);",
+            "n0.Background = WeftColor.Rgba(0xaabbccffu);\n        n0.Gap = 2;\n        Roots.Add(n0.Element);",
             "var n1 = new WeftStack(vertical: false);",
             "n2.Value = \"hello\";",
             "n2.Color = WeftColor.Rgba(0x12345680u);",

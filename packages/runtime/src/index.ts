@@ -16,9 +16,11 @@ import {
   currentEpoch,
   enqueue,
   restoreAfterFlush,
-  setThemeColors,
   watch,
 } from "./core.ts";
+import { declarations } from "./css.ts";
+import { CSS, CSS_PROPS } from "./elements.ts";
+import type { Value } from "./remote.ts";
 
 export * from "./core.ts";
 
@@ -27,6 +29,14 @@ export * from "./core.ts";
 /* ------------------------------------------------------------------------ */
 
 const noop = (): void => {};
+
+function layoutContext(parent: Node | null): string {
+  if (parent?.nodeType !== 1) return "";
+  const classes = (parent as Element).classList;
+  if (classes.contains("w-stack")) return "w-in-stack";
+  if (classes.contains("w-scroll-v") || classes.contains("w-scroll-h")) return "w-in-scroll";
+  return "";
+}
 
 /**
  * A range of sibling DOM nodes created from one template. `first` is always a
@@ -55,13 +65,29 @@ export class Block {
 
   mount(parent: Node, anchor: Node | null): void {
     if (this.frag) {
+      const context = layoutContext(parent);
+      if (context) {
+        // Nested blocks can already be mounted in this fragment. Its entire
+        // top-level range acquires the same context when inserted.
+        for (let child = this.frag.firstElementChild; child; child = child.nextElementSibling) {
+          child.classList.add(context);
+        }
+      }
       parent.insertBefore(this.frag, anchor);
       this.frag = null;
       return;
     }
+    const previous = this.first.parentNode;
+    const oldContext = previous === parent ? "" : layoutContext(previous);
+    const context = previous === parent ? "" : layoutContext(parent);
     let node = this.first;
     for (;;) {
       const next = node.nextSibling;
+      if (oldContext !== context && node.nodeType === 1) {
+        const classes = (node as Element).classList;
+        if (oldContext) classes.remove(oldContext);
+        if (context) classes.add(context);
+      }
       parent.insertBefore(node, anchor);
       if (node === this.last) break;
       node = next!;
@@ -360,6 +386,13 @@ export class App extends AppBase {
 
   mount(target: Node): void {
     if (this.#root) throw new Error("weft: component is already mounted");
+    const doc = target.ownerDocument ?? (target as Document);
+    if (!doc.querySelector("style[data-weft]")) {
+      const base = doc.createElement("style");
+      base.dataset.weft = "";
+      base.textContent = `${CSS}\n:root{color-scheme:light dark}`;
+      doc.head.append(base);
+    }
     const root = this.#create(this, this.$args, [], 0);
     root.mount(target, null);
     this.#root = root;
@@ -377,12 +410,68 @@ export class App extends AppBase {
 /* DOM helpers used by generated code                                        */
 /* ------------------------------------------------------------------------ */
 
+let webThemeColors: ReadonlySet<string> | null = null;
+
+/** Applies a generated CSS mapping, optionally restricted to winning declarations. */
+export function style(node: HTMLElement, index: number, value: Value, mask = -1): void {
+  const css = CSS_PROPS[index]!;
+  const output = declarations(css, value, webThemeColors);
+  const inline = node.style;
+  if (css.unit === "custom") {
+    switch (css.custom) {
+      case "fill":
+        node.classList.toggle("w-fill", value === true);
+        break;
+      case "grow": {
+        const grows = typeof value === "number" && Number.isFinite(value) && value > 0;
+        node.classList.toggle("w-grow", grows);
+        if (!grows) {
+          // Positive grow adds minimums unless explicit constraints own them.
+          if ((mask & 0b010) !== 0) inline.removeProperty("min-width");
+          if ((mask & 0b100) !== 0) inline.removeProperty("min-height");
+        }
+        break;
+      }
+      case "hidden":
+        if (!output) inline.removeProperty("display");
+        break;
+      case "maxLines":
+        if (!output) {
+          inline.removeProperty("display");
+          inline.removeProperty("-webkit-box-orient");
+          inline.removeProperty("-webkit-line-clamp");
+          inline.removeProperty("overflow");
+        }
+        break;
+    }
+  } else if (css.unit === "keyword" && !output) {
+    if (css.properties) {
+      for (const property of css.properties) inline.removeProperty(property);
+    } else {
+      inline.removeProperty(css.property);
+    }
+  }
+
+  let start = 0;
+  let bit = 1;
+  while (start < output.length) {
+    const colon = output.indexOf(":", start);
+    const separator = output.indexOf(";", colon + 1);
+    const end = separator < 0 ? output.length : separator;
+    if ((mask & bit) !== 0) {
+      inline.setProperty(output.slice(start, colon), output.slice(colon + 1, end));
+    }
+    start = end + 1;
+    bit <<= 1;
+  }
+}
+
 /** Installs the generated theme once; CSS handles system appearance changes. */
 export function theme(tokens: Record<string, readonly [string, string]>): void {
   const names = Object.keys(tokens);
   if (names.length === 0) return;
   if (typeof document === "undefined") {
-    setThemeColors(new Set(names));
+    webThemeColors = new Set(names);
     return;
   }
   if (document.querySelector("style[data-weft-theme]")) return;
@@ -397,7 +486,7 @@ export function theme(tokens: Record<string, readonly [string, string]>): void {
   }
   style.textContent = `:root{${light}}@media (prefers-color-scheme: dark){:root{${dark}}}`;
   document.head.append(style);
-  setThemeColors(new Set(names));
+  webThemeColors = new Set(names);
 }
 
 /** Lazily parsed `<template>`; returns a fresh clone per call. */

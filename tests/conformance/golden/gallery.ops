@@ -1,10 +1,10 @@
 # mount
 create 1 1  # Gallery
-set 1 0 4  # Row.padding
-set 1 1 6  # Row.gap
-set 1 2 240  # Row.width
-set 1 3 60  # Row.height
-set 1 4 "#ace"  # Row.background
+set 1 0 240  # Row.width
+set 1 1 60  # Row.height
+set 1 2 4  # Row.padding
+set 1 3 "#ace"  # Row.background
+set 1 4 6  # Row.gap
 set 1 5 false  # Checkbox.checked
 set 1 6 "https://example.test/gallery/day.png"  # Image.src
 set 1 7 "#135"  # Text.color
@@ -33,11 +33,11 @@ branch 3 0 4
 set 1 6 "https://example.test/gallery/night.png"  # Image.src
 
 # change all bound styles
-set 1 0 8  # Row.padding
-set 1 1 10  # Row.gap
-set 1 2 280  # Row.width
-set 1 3 80  # Row.height
-set 1 4 "#246"  # Row.background
+set 1 0 280  # Row.width
+set 1 1 80  # Row.height
+set 1 2 8  # Row.padding
+set 1 3 "#246"  # Row.background
+set 1 4 10  # Row.gap
 set 1 7 "#fff"  # Text.color
 set 1 8 18  # Text.size
 set 1 9 true  # Text.bold

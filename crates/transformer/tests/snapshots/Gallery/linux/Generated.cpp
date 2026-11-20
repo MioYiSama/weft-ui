@@ -10,7 +10,7 @@ using namespace std::literals;
 namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
-constexpr uint64_t kLayoutHash = 0x1e5786a8ee33fbbdull;
+constexpr uint64_t kLayoutHash = 0xa003534a93be9333ull;
 
 // 0 Panel
 
@@ -43,11 +43,11 @@ class S1 final : public weft::Scope {
  public:
   S1(uint32_t id, weft::Session &session) : Scope(id, session, 1) {
     auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
-    n0.set_padding(12);
-    n0.set_gap(8);
     n0.set_width(320);
     n0.set_height(280);
+    n0.set_padding(12);
     n0.set_background(weft::Color::rgba(0xeeeeffffu));
+    n0.set_gap(8);
     roots().add(n0);
     auto &n1 = make<weft::Text>();
     n1.set_value("Gallery"sv);
@@ -74,11 +74,11 @@ class S1 final : public weft::Scope {
 
   void apply(uint32_t slot, const weft::ops::Value &value) override {
     switch (slot) {
-      case 0: n2_->set_padding(weft::number(value)); break;
-      case 1: n2_->set_gap(weft::number(value)); break;
-      case 2: n2_->set_width(weft::number(value)); break;
-      case 3: n2_->set_height(weft::number(value)); break;
-      case 4: n2_->set_background(weft::color(value)); break;
+      case 0: n2_->set_width(weft::number(value)); break;
+      case 1: n2_->set_height(weft::number(value)); break;
+      case 2: n2_->set_padding(weft::number(value)); break;
+      case 3: n2_->set_background(weft::color(value)); break;
+      case 4: n2_->set_gap(weft::number(value)); break;
       case 5: n3_->set_checked(weft::boolean(value)); break;
       case 6: n4_->set_src(weft::string(value)); break;
       case 7: n5_->set_color(weft::color(value)); break;
@@ -89,11 +89,11 @@ class S1 final : public weft::Scope {
   }
 
  private:
-  // Row.padding
-  // Row.gap
   // Row.width
   // Row.height
+  // Row.padding
   // Row.background
+  // Row.gap
   weft::Stack *n2_;
   // Checkbox.checked
   weft::Checkbox *n3_;

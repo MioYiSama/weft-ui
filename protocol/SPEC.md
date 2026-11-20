@@ -76,9 +76,9 @@ A batch of ops is a byte sequence: the first byte is the version number `2`, fol
 
 Each value starts with a u8 tag: `0` for false, `1` for true, `2` for a number (little-endian f64, including values in `Int` slots), `3` for a string (u32 byte length followed by UTF-8), or `4` for an array of strings (u32 string count followed by that many strings, each with its own u32 byte length and UTF-8 bytes, without a tag). On the JS side, `OpWriter` (`src/ops.ts` in `@weft-ui/runtime`) reuses the same buffer. The bytes of a batch are valid only until the next write.
 
-The version, opcodes, value tags and decoding error kinds, together with the WeChat style units, the platform names and the platform call modules, are defined once in [`protocol/weft.protocol.json`](weft.protocol.json). `pnpm gen:protocol` (`protocol/generate.ts`) generates the constants for TypeScript, Rust, C++, Swift, Kotlin and C# from it, and `pnpm test` fails when a generated file is out of date.
+The version, opcodes, value tags and decoding error kinds, together with the platform names and the platform call modules, are defined once in [`protocol/weft.protocol.json`](weft.protocol.json). `pnpm gen:protocol` (`protocol/generate.ts`) generates the constants for TypeScript, Rust, C++, Swift, Kotlin and C# from it, and `pnpm test` fails when a generated file is out of date.
 
-Built-in elements are defined separately in [`protocol/weft.elements.json`](weft.elements.json). The same command generates the Rust compiler catalog and the TypeScript catalog exported as `@weft-ui/runtime/elements`. Keep members in order: a property's index feeds into its mini program data key.
+Built-in elements are defined separately in [`protocol/weft.elements.json`](weft.elements.json). The same command generates the Rust and TypeScript catalogs, native enums for built-in string unions, and the base stylesheet constants from [`protocol/weft.css`](weft.css). Keep members in order: a property's index feeds into its mini program data key. The catalogs share an ordered `CSS_PROPS` table of distinct CSS mappings, in first-use order.
 
 ## Decoding errors
 
@@ -148,7 +148,9 @@ Slot data holds `t`, the slot content template name. In the calling component, t
 
 `$e` reads `currentTarget.dataset["e" + event.type]`. `tap` carries no payload; `input` and `change` carry `detail.value`.
 
-A themed app's `view.wxss` defines the token variables on `:host` and their dark media-query overrides. The generated view table lists the valid token names; dynamic `Color` values referencing them are written as `var(--weft-name)`. Unknown names render transparent.
+Each value slot in the generated view table is `[key]` for a raw value or `[key, cssIndex]` for a style. The sink converts a styled value into a complete declaration string with `CSS_PROPS[cssIndex]`. The template joins static and dynamic declarations in schema member order, so declarations for a more specific padding or margin edge follow and override broader ones.
+
+`view.wxss` always includes the base stylesheet. A themed app also defines token variables on `:host` and their dark media-query overrides. The generated view table lists the valid token names; dynamic `Color` values referencing them are written as `var(--weft-name)`. Unknown names render transparent.
 
 `setData` rules:
 

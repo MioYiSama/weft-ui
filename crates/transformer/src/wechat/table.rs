@@ -8,7 +8,7 @@
 //! | `n`   | WXML template rendering a component body as the view's root     |
 //! | `t`   | WXML template of slot content, stored in the scope's data as `t` |
 //! | `i`   | branch index of an `if` branch template                        |
-//! | `v`   | `[key, unit]` per value slot; unit `1` appends `px`, `2` maps a flag to `font-weight`, `3` validates a color |
+//! | `v`   | `[key]` for a raw value slot or `[key, cssIndex]` for CSS declarations |
 //! | `e`   | `[key, controlled value slot or -1]` per event slot; the key holds the handler id |
 //! | `p`   | key per mount point; `[indexKey, dataKey]` for branches         |
 //! | `d`   | constants that cannot be inlined into WXML, by key             |
@@ -19,7 +19,7 @@ use crate::bridge::js::{self, Code};
 use crate::ir::{NodeKind, Program, Prop};
 use crate::view::{PointKind, Template, TemplateKind, ViewLayout, ViewNodeKind};
 
-use super::elements::{Target, event_key, inline, target, value_key};
+use super::elements::{Target, event_key, needs_data, target, value_key};
 use super::wxml::{slot_key, slot_template};
 
 /// The table object literal passed to the view runtime.
@@ -85,11 +85,11 @@ fn entry(program: &Program, template: &Template) -> String {
             .map(|slot| {
                 let (props, (element, source)) = props_of(slot.node);
                 let key = value_key(source, index_of(props, slot.prop));
-                let unit = match target(element, slot.prop) {
-                    Target::Style(_, unit) => unit.code(),
-                    _ => 0,
-                };
-                format!("[\"{key}\", {unit}]")
+                if let Target::Style(index) = target(element, slot.prop) {
+                    format!("[\"{key}\", {index}]")
+                } else {
+                    format!("[\"{key}\"]")
+                }
             })
             .collect();
         fields.push(format!("v: [{}]", values.join(", ")));
@@ -138,7 +138,7 @@ fn entry(program: &Program, template: &Template) -> String {
         };
         let local = u32::try_from(local).expect("node indices fit in u32");
         for prop in props {
-            if inline(target(*element, prop.name), &prop.value).is_some() {
+            if !needs_data(target(*element, prop.name), &prop.value) {
                 continue;
             }
             let (ir_props, (_, source)) = props_of(local);

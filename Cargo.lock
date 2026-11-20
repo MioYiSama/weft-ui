@@ -638,6 +638,7 @@ dependencies = [
 name = "weft-ui-transformer"
 version = "0.0.0"
 dependencies = [
+ "serde_json",
  "weft-ui-ast",
  "weft-ui-parser",
 ]

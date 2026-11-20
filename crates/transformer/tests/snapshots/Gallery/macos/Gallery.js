@@ -60,7 +60,7 @@ export function Panel$c(app, args, children, depth) {
 }
 
 export class Panel extends $.App {
-  constructor() { super(Panel$c, [undefined], "1e5786a8ee33fbbd"); }
+  constructor() { super(Panel$c, [undefined], "a003534a93be9333"); }
 }
 
 export function Gallery$c(app, args, children, depth) {
@@ -68,11 +68,11 @@ export function Gallery$c(app, args, children, depth) {
   c.pw[0] = $.watch($s1, c, args[0]);
   c.s[0] = "Weft";
   c.sw[0] = $.watch($s2, c, c.s[0]);
-  c.set(0, c.p[0].$v[0].$v[0]);
-  c.set(1, c.p[0].$v[0].$v[1]);
-  c.set(2, c.p[0].$v[0].$v[2]);
-  c.set(3, c.p[0].$v[0].$v[3]);
-  c.set(4, c.p[0].$v[0].$v[4]);
+  c.set(0, c.p[0].$v[0].$v[2]);
+  c.set(1, c.p[0].$v[0].$v[3]);
+  c.set(2, c.p[0].$v[0].$v[0]);
+  c.set(3, c.p[0].$v[0].$v[4]);
+  c.set(4, c.p[0].$v[0].$v[1]);
   c.set(5, c.p[0].$v[1]);
   c.on(0, ($a) => { c.app.$emit("Checked", { value: $a }); }, 5);
   c.set(6, c.p[0].$v[2]);
@@ -123,11 +123,11 @@ export function Gallery$c(app, args, children, depth) {
   const k10 = Panel$c(c.app, [undefined], [s10], c.depth + 1);
   c.attach(0, k10);
   c.u = () => {
-    if (c.d[0] & 1) c.set(0, c.p[0].$v[0].$v[0]);
-    if (c.d[0] & 2) c.set(1, c.p[0].$v[0].$v[1]);
-    if (c.d[0] & 4) c.set(2, c.p[0].$v[0].$v[2]);
-    if (c.d[0] & 8) c.set(3, c.p[0].$v[0].$v[3]);
-    if (c.d[0] & 16) c.set(4, c.p[0].$v[0].$v[4]);
+    if (c.d[0] & 4) c.set(0, c.p[0].$v[0].$v[2]);
+    if (c.d[0] & 8) c.set(1, c.p[0].$v[0].$v[3]);
+    if (c.d[0] & 1) c.set(2, c.p[0].$v[0].$v[0]);
+    if (c.d[0] & 16) c.set(3, c.p[0].$v[0].$v[4]);
+    if (c.d[0] & 2) c.set(4, c.p[0].$v[0].$v[1]);
     if (c.d[0] & 256) c.set(5, c.p[0].$v[1]);
     if (c.d[0] & 512) c.set(6, c.p[0].$v[2]);
     if (c.d[0] & 32) c.set(7, c.p[0].$v[0].$v[5]);
@@ -143,6 +143,6 @@ export function Gallery$c(app, args, children, depth) {
 }
 
 export class Gallery extends $.App {
-  constructor(p0) { super(Gallery$c, [GalleryModel.from(p0)], "1e5786a8ee33fbbd"); }
+  constructor(p0) { super(Gallery$c, [GalleryModel.from(p0)], "a003534a93be9333"); }
   onChecked(h) { return this.$on("Checked", h); }
 }

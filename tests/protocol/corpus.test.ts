@@ -99,7 +99,7 @@ test("does not resend equal string lists to mini programs", () => {
   const updates: Record<string, unknown>[] = [];
   const sink = new WechatSink({ setData: (data) => updates.push(data) }, {
     hash: "list",
-    templates: [{ n: "root", v: [["value", 0]] }],
+    templates: [{ n: "root", v: [["value"]] }],
   });
   const app = new App((app, args, children, depth) => new Instance(app, 0, 0, depth, args, children), [], "list");
   app.mount(sink);

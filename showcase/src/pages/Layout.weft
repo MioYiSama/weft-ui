@@ -1,0 +1,91 @@
+type LayoutJustify = "start" | "center" | "end" | "spaceBetween" | "spaceAround" | "spaceEvenly"
+type LayoutAlignment = "topStart" | "top" | "topEnd" | "start" | "center" | "end" | "bottomStart" | "bottom" | "bottomEnd"
+
+style LayoutHeading { size = 16, bold = true, color = "#172E3B" }
+style LayoutLabel { size = 14, color = "#274454" }
+
+component JustifyBand(mode: LayoutJustify) {
+    Row(height = 24, fill = true, gap = 8, align = "center") {
+        Text(mode, width = 112, style = LayoutLabel)
+        Row(grow = 1, height = 20, gap = 4, align = "center", justify = mode, background = "#E8EFF1") {
+            Row(width = 18, height = 8, background = "#17324D")
+            Row(width = 22, height = 12, background = "#176551")
+            Row(width = 26, height = 8, background = "#73AA96")
+        }
+    }
+}
+
+component AlignmentTile(placement: LayoutAlignment) {
+    Row(grow = 1, padding = 4, background = "#DEE8E9") {
+        Stack(height = 32, grow = 1, alignment = placement) {
+            Row(fill = true, background = "#E8EFF1")
+            Row(width = 10, height = 10, background = "#176551")
+        }
+    }
+}
+
+component Layout() {
+    Column(fill = true, maxWidth = 480, padding = 16, gap = 12, background = "#F7F9F8") {
+        Text("Layout", size = 28, bold = true, color = "#172E3B")
+        Column(fill = true, gap = 4) {
+            Text("Main-axis distribution", style = LayoutHeading)
+            Column(height = 200, fill = true, justify = "spaceBetween") {
+                JustifyBand("start")
+                JustifyBand("center")
+                JustifyBand("end")
+                JustifyBand("spaceBetween")
+                JustifyBand("spaceAround")
+                JustifyBand("spaceEvenly")
+            }
+        }
+        Column(fill = true, gap = 8) {
+            Text("Growth and fill", style = LayoutHeading)
+            Row(fill = true, height = 32, gap = 4, align = "stretch") {
+                Row(grow = 2, align = "center", justify = "center", background = "#17324D") {
+                    Text("grow 2", size = 14, color = "#FFFFFF")
+                }
+                Row(grow = 1, align = "center", justify = "center", background = "#176551") {
+                    Text("grow 1", size = 14, color = "#FFFFFF")
+                }
+            }
+            Row(fill = true, gap = 8, align = "center") {
+                Text("Fill with a 2:1 aspect ratio", style = LayoutLabel)
+                Spacer()
+                Column(width = 112) {
+                    Row(fill = true, aspectRatio = 2, align = "center", justify = "center", background = "#CCE5DC") {
+                        Text("2:1", style = LayoutLabel)
+                    }
+                }
+            }
+        }
+        Column(fill = true, gap = 4) {
+            Text("Stack alignment", style = LayoutHeading)
+            Row(fill = true, gap = 4) {
+                AlignmentTile("topStart")
+                AlignmentTile("top")
+                AlignmentTile("topEnd")
+            }
+            Row(fill = true, gap = 4) {
+                AlignmentTile("start")
+                AlignmentTile("center")
+                AlignmentTile("end")
+            }
+            Row(fill = true, gap = 4) {
+                AlignmentTile("bottomStart")
+                AlignmentTile("bottom")
+                AlignmentTile("bottomEnd")
+            }
+        }
+        Column(fill = true, gap = 4) {
+            Text("Horizontal scroll", style = LayoutHeading)
+            Scroll(direction = "horizontal", fill = true, grow = 0, height = 48, gap = 8) {
+                Row(width = 72, height = 32, background = "#17324D")
+                Row(width = 72, height = 32, background = "#176551")
+                Row(width = 72, height = 32, background = "#73AA96")
+                Row(width = 72, height = 32, background = "#17324D")
+                Row(width = 72, height = 32, background = "#176551")
+                Row(width = 72, height = 32, background = "#73AA96")
+            }
+        }
+    }
+}

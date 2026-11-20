@@ -199,6 +199,9 @@ Call        = IDENT "(" ArgList? ")" ;
 | `Input` | `value` | `onChange(String)` | 无 |
 | `Checkbox` | `checked` | `onChange(Bool)` | 无 |
 | `Image` | `src` | — | 无 |
+| `Stack` | — | — | 不限 |
+| `Scroll` | — | — | 不限 |
+| `Spacer` | — | — | 无 |
 
 完整的属性、事件及各平台的支持情况见[元素参考](https://weftui.mioyi.net/zh/reference/elements/)。
 <!-- elements:end -->
@@ -206,8 +209,15 @@ Call        = IDENT "(" ArgList? ")" ;
 所有元素另有 `onMount` / `onUnmount`。
 
 - **长度**：`Int`，单位是逻辑像素：iOS / macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px；小程序用 `px`，不用 `rpx`。
-- **`Column` / `Row`**：子元素沿主轴（`Column` 纵向、`Row` 横向）从起点依次排列，交叉轴对齐起点，不拉伸、不自动撑满；`gap` 是相邻子元素的间距，`padding` 是四边相同的内边距，语义同 CSS。平台默认值不同时由后端显式设置，例如 Web 和小程序写 `align-items:flex-start`，SwiftUI 写 `VStack(alignment: .leading)`。
-- **`width` / `height`**：固定尺寸；不写时由内容决定。
+- **盒模型**：`width`、`height` 及对应的 `min*`、`max*` 限制作用于内容盒，内容盒外依次是内边距、元素的边框（如果有）和外边距。`padding` 设置四边，`paddingX` 设置左右，`paddingY` 设置上下，单边属性覆盖前两种写法。`margin` 按相同规则处理。边距属性中的 `Start` 和 `End` 分别指左边和右边。
+- **`Column` / `Row`**：子元素沿主轴依次排列，`Column` 的主轴为纵向，`Row` 为横向。`gap` 是相邻子元素的间距，子元素的外边距另计。`justify` 分配主轴剩余空间，`align` 决定交叉轴对齐方式，两者默认都是 `"start"`。设 `align = "stretch"` 时，没有固定交叉轴尺寸的子元素会撑满容器的交叉轴内容尺寸。
+- **`grow`**：在 `Column`、`Row` 或 `Scroll` 中，主轴剩余空间按 `grow` 的比例分给 `grow > 0` 的子元素，不计这些子元素在主轴上的自然尺寸。主轴无界时按自然尺寸测量。其他父元素忽略 `grow`。
+- **`fill`**：在 `Column`、`Row` 或 `Scroll` 中撑满交叉轴，在 `Stack` 中撑满两个方向，在根上撑满可用窗口宽度。固定的 `width` 或 `height` 在对应轴上优先于 `fill`。线性布局中要占满主轴剩余空间，应使用 `grow`。
+- **`aspectRatio`**：宽度由固定值、`fill`、交叉轴拉伸或横向的 `grow` 确定且高度未固定时，以宽度除以比例得到高度；否则，若只有高度确定，就以高度乘以比例得到宽度。宽高都固定时忽略比例。
+- **`Spacer`**：只能作为 `Column`、`Row` 或 `Scroll` 的直接子元素。设置 `size` 时在主轴占用固定长度，不设置则相当于 `grow = 1`。交叉轴尺寸为零。
+- **`Stack`**：子元素按顺序叠放，后写的在上层。未指定固定尺寸时，内容尺寸取不带 `fill` 的子元素（含外边距）在各轴上的最大尺寸。`alignment` 决定子元素在内容盒里的位置。带 `fill` 的子元素撑满两个方向，不计入 `Stack` 的自然尺寸。
+- **`Scroll`**：按 `direction` 像 `Column` 或 `Row` 一样排列内容，支持 `gap`、`align`。`direction` 必须是常量，默认为 `"vertical"`。内容只能沿滚动轴超出并滚动。未显式设置时，`grow` 为 `1`，`fill` 为 `true`。`indicators = false` 隐藏滚动条。
+- **根节点与溢出**：根组件的顶层节点像 `Column` 的子元素一样排列，内容盒为窗口减去安全区。根不滚动。除 `Scroll` 的滚动方向外，如果子元素的自然尺寸超过可用主轴空间，平台可能压缩子元素或让它们溢出，不要依赖其中一种行为。
 - **颜色**：`Color` 属性接受 `theme.accent` 等 `Color` 值，也接受 `#RGB`、`#RRGGBB` 或 `#RRGGBBAA`（十六进制，大小写不限）。颜色字面量在编译期校验并以 RGBA 写入视图布局。动态值中的无效颜色和未知令牌显示为透明，开发构建还会发出警告。
 - **`Image`**：`src` 是图片 URL，没有内置网络图片控件的平台由内核下载。
 

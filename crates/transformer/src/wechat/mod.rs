@@ -5,8 +5,8 @@
 //! with bare `@weft-ui/runtime/remote` imports for Vite to resolve and bundle.
 //!
 //! The view layer ([`transform`]) generates files relative to the app's
-//! `weft/` directory: `view.js`, `view.json`, and `view.wxml` define one
-//! component containing every app template and the sink's layout table.
+//! `weft/` directory: the `view.*` files define one component containing
+//! every app template, the sink's layout table, and the shared stylesheet.
 //! `index.js`, `index.json`, and `index.wxml` define the page hosting it.
 //! The component and page use `getApp().weft`, registered by the bundled
 //! `@weft-ui/platform` entry, without importing logic or runtime files.
@@ -15,6 +15,7 @@ mod elements;
 mod table;
 mod wxml;
 
+use crate::elements::CSS;
 use crate::style;
 use crate::transform::{Context, OutputFile};
 
@@ -28,7 +29,7 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
     let program = cx.program;
     let layout = cx.layout.expect("the mini program view needs the layout");
     let templates = wxml::templates(program, layout);
-    let mut files = vec![
+    vec![
         OutputFile {
             path: "view.js".to_owned(),
             contents: format!(
@@ -43,8 +44,12 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
         OutputFile {
             path: "view.wxml".to_owned(),
             contents: format!(
-                "{templates}<block wx:if=\"{{{{t}}}}\"><template is=\"{{{{t}}}}\" data=\"{{{{...r}}}}\"/></block>\n"
+                "{templates}<block wx:if=\"{{{{t}}}}\"><template is=\"{{{{t}}}}\" data=\"{{{{...r, wParent: ''}}}}\"/></block>\n"
             ),
+        },
+        OutputFile {
+            path: "view.wxss".to_owned(),
+            contents: format!("{CSS}{}", style::theme_styles(layout.theme())),
         },
         OutputFile {
             path: "index.js".to_owned(),
@@ -69,12 +74,5 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
             path: "index.wxml".to_owned(),
             contents: "<weft-view id=\"weft\"/>\n".to_owned(),
         },
-    ];
-    if program.theme.is_some() {
-        files.push(OutputFile {
-            path: "view.wxss".to_owned(),
-            contents: style::theme_styles(layout.theme()),
-        });
-    }
-    files
+    ]
 }

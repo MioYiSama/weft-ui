@@ -135,6 +135,7 @@ impl Body<'_> {
                     optional(prop("height")),
                 ));
             }
+            _ => unreachable!("platform support rejects unsupported elements"),
         }
         if let Some(disabled) = prop("disabled")
             && !matches!(disabled, PropSource::Constant(Constant::Bool(false)))
@@ -189,6 +190,7 @@ impl Display for Argument<'_> {
             Self::Property(PropSource::Slot(slot)) => write!(f, "s.v{slot}"),
             Self::Property(PropSource::Constant(value)) => match value {
                 Constant::Int(v) => v.fmt(f),
+                Constant::Float(_) => unreachable!("platform support rejects Float properties"),
                 Constant::Bool(v) => v.fmt(f),
                 Constant::String(s) => swift::string(f, s),
                 Constant::Token(name) => {

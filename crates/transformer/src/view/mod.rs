@@ -19,6 +19,8 @@
 mod build;
 mod json;
 
+pub(crate) use build::{Literal, constant, literal};
+
 use crate::color::Color;
 use crate::elements::Element;
 use crate::ir::{ComponentId, NodeId, ParamId};
@@ -104,9 +106,10 @@ pub struct StaticProp {
     pub value: Constant,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Constant {
     Int(i64),
+    Float(f64),
     Bool(bool),
     String(String),
     /// A validated color, formatted as normalized lowercase hex.
@@ -116,7 +119,7 @@ pub enum Constant {
 }
 
 /// A native view property is read from a value slot or inlined as a constant.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PropSource<'t> {
     /// Index into [`Template::values`].
     Slot(usize),
@@ -128,6 +131,7 @@ pub enum PropSource<'t> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ValueType {
     Int,
+    Float,
     Bool,
     String,
     Color,
@@ -138,6 +142,7 @@ impl ValueType {
     pub fn as_str(self) -> &'static str {
         match self {
             ValueType::Int => "Int",
+            ValueType::Float => "Float",
             ValueType::Bool => "Bool",
             ValueType::String => "String",
             ValueType::Color => "Color",
@@ -443,6 +448,7 @@ mod tests {
             kind: PropKind::Handler { payload: None },
             positional: false,
             required: false,
+            constant: false,
             css: None,
             controlled_by: None,
             support: &[],
@@ -461,6 +467,8 @@ mod tests {
                 },
             ],
             children: Children::Any,
+            parents: &[],
+            content: None,
             support: &[],
         };
         let mut template = Template {

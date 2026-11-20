@@ -119,6 +119,7 @@ impl Body<'_> {
                 out.writer.end_line("");
                 return;
             }
+            _ => unreachable!("platform support rejects unsupported elements"),
         }
         out.open_after(" {");
         for &child in children {
@@ -191,6 +192,7 @@ impl Display for KotlinProp<'_> {
             PropSource::Slot(slot) => write!(f, "s.v{slot}"),
             PropSource::Constant(value) => match value {
                 Constant::Int(v) => write!(f, "{v}f"),
+                Constant::Float(_) => unreachable!("platform support rejects Float properties"),
                 Constant::Bool(v) => v.fmt(f),
                 Constant::String(s) => kotlin::string(f, s),
                 Constant::Token(name) => {

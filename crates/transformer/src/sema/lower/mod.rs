@@ -98,7 +98,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             self.state(state);
         }
         self.let_declarations(&decl.lets);
-        let roots = self.nodes(&decl.body);
+        let roots = self.nodes(&decl.body, None);
         LoweredBody {
             states: self.states,
             nodes: self.nodes,

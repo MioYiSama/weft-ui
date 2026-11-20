@@ -3,10 +3,10 @@
 mod catalog;
 
 pub use catalog::Element;
-pub(crate) use catalog::{ELEMENTS, FEATURES, Level};
+pub(crate) use catalog::{CSS, CSS_PROPS, ELEMENTS, FEATURES, Level};
 
 use crate::ir::Type;
-use crate::protocol::{Platform, wechat_unit};
+use crate::protocol::Platform;
 
 #[derive(Debug)]
 pub(crate) struct FeatureSpec {
@@ -18,18 +18,24 @@ pub(crate) struct FeatureSpec {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PropType {
     Int,
+    Float,
     Bool,
     String,
     Color,
+    Union(&'static [&'static str]),
 }
 
 impl PropType {
     pub(crate) fn to_type(self) -> Type {
         match self {
-            PropType::Int => Type::Int,
-            PropType::Bool => Type::Bool,
-            PropType::String => Type::String,
-            PropType::Color => Type::Color,
+            Self::Int => Type::Int,
+            Self::Float => Type::Float,
+            Self::Bool => Type::Bool,
+            Self::String => Type::String,
+            Self::Color => Type::Color,
+            Self::Union(values) => {
+                Type::Union(values.iter().map(|value| (*value).to_owned()).collect())
+            }
         }
     }
 }
@@ -46,28 +52,54 @@ pub(crate) enum PropKind {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct Css {
-    pub property: &'static str,
-    pub unit: CssUnit,
+pub(crate) struct Css<'a> {
+    pub properties: &'a [&'a str],
+    pub unit: CssUnit<'a>,
+    #[expect(dead_code, reason = "the inner-node target is first used by Progress")]
+    pub target: CssTarget,
 }
 
 /// Conversion of a property value to CSS.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CssUnit {
+pub(crate) enum CssUnit<'a> {
     Px,
+    Number,
     Color,
-    Bold,
+    #[cfg_attr(not(test), expect(dead_code, reason = "first used by Progress"))]
+    Percent,
+    Keyword(&'a [(&'a str, &'a str)]),
+    Custom(CustomCss),
 }
 
-impl CssUnit {
-    /// Conversion code used by the WeChat sink.
-    pub(crate) fn code(self) -> u8 {
-        match self {
-            Self::Px => wechat_unit::PX,
-            Self::Color => wechat_unit::COLOR,
-            Self::Bold => wechat_unit::BOLD,
-        }
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CssTarget {
+    Node,
+    #[cfg_attr(not(test), expect(dead_code, reason = "first used by Progress"))]
+    Inner,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CustomCss {
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "first used by appearance props")
+    )]
+    Hidden,
+    #[cfg_attr(not(test), expect(dead_code, reason = "first used by text styling"))]
+    MaxLines,
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "first used by appearance props")
+    )]
+    Shadow,
+    Grow,
+    Fill,
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "first used by appearance props")
+    )]
+    Border,
+    Spacer,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -76,7 +108,8 @@ pub(crate) struct PropSpec {
     pub kind: PropKind,
     pub positional: bool,
     pub required: bool,
-    pub css: Option<Css>,
+    pub constant: bool,
+    pub css: Option<usize>,
     pub controlled_by: Option<&'static str>,
     pub support: &'static [(Platform, Level)],
 }
@@ -103,6 +136,7 @@ pub(crate) const LIFECYCLE: [PropSpec; 2] = [
         kind: PropKind::Lifecycle,
         positional: false,
         required: false,
+        constant: false,
         css: None,
         controlled_by: None,
         support: &[],
@@ -112,6 +146,7 @@ pub(crate) const LIFECYCLE: [PropSpec; 2] = [
         kind: PropKind::Lifecycle,
         positional: false,
         required: false,
+        constant: false,
         css: None,
         controlled_by: None,
         support: &[],
@@ -122,10 +157,7 @@ pub(crate) const LIFECYCLE: [PropSpec; 2] = [
 pub(crate) enum Children {
     Any,
     None,
-    #[expect(
-        dead_code,
-        reason = "no built-in element restricts child element types yet"
-    )]
+    #[allow(dead_code, reason = "the catalog may not restrict child element types")]
     Only(&'static [Element]),
 }
 
@@ -135,6 +167,8 @@ pub(crate) struct ElementSpec {
     pub name: &'static str,
     pub props: &'static [PropSpec],
     pub children: Children,
+    pub parents: &'static [Element],
+    pub content: Option<&'static str>,
     pub support: &'static [(Platform, Level)],
 }
 

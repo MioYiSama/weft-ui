@@ -6,17 +6,18 @@ use weft_ui_ast::{Diagnostic, Span};
 
 use crate::deps;
 use crate::elements::{
-    self, Children, ELEMENTS as BUILTIN_ELEMENTS, ElementSpec, LIFECYCLE as CALL_HOOKS, PropKind,
+    self, Children, ELEMENTS as BUILTIN_ELEMENTS, Element, ElementSpec, LIFECYCLE as CALL_HOOKS,
+    PropKind,
 };
 use crate::ir::{
-    Arg, ArgValue, Binding, BindingId, BindingKind, Branch, ComponentId, Dep, Expr, Loop, LoopId,
-    Node, NodeId, NodeKind, Param, ParamId, ParamKind, Prop, PropValue, SlotFill, Type, first_slot,
-    slot_params,
+    Arg, ArgValue, Binding, BindingId, BindingKind, Branch, ComponentId, Dep, Expr, ExprKind, Loop,
+    LoopId, Node, NodeId, NodeKind, Param, ParamId, ParamKind, Prop, PropValue, SlotFill, Type,
+    UnaryOp, first_slot, slot_params,
 };
 use crate::sema::record::{ProbeContext, RawCall, Target};
 use crate::sema::{DeclKind, Style, article};
 
-use super::expr::error_expr;
+use super::expr::{constant_kind, error_expr};
 use super::scope::LocalKind;
 use super::{Instance, Lowerer};
 
@@ -55,14 +56,14 @@ impl<'cx> Lowerer<'cx, '_> {
         id
     }
 
-    pub(super) fn nodes(&mut self, nodes: &[ast::Node]) -> Vec<NodeId> {
-        nodes.iter().filter_map(|n| self.node(n)).collect()
+    pub(super) fn nodes(&mut self, nodes: &[ast::Node], parent: Option<Element>) -> Vec<NodeId> {
+        nodes.iter().filter_map(|n| self.node(n, parent)).collect()
     }
 
     fn block(&mut self, block: &ast::Block) -> Vec<NodeId> {
         let scope_len = self.scope.len();
         self.let_declarations(&block.lets);
-        let ids = self.nodes(&block.nodes);
+        let ids = self.nodes(&block.nodes, None);
         self.scope.truncate(scope_len);
         ids
     }
@@ -74,9 +75,9 @@ impl<'cx> Lowerer<'cx, '_> {
         ids
     }
 
-    fn node(&mut self, node: &ast::Node) -> Option<NodeId> {
+    fn node(&mut self, node: &ast::Node, parent: Option<Element>) -> Option<NodeId> {
         match &node.kind {
-            ast::NodeKind::Element(e) => self.element(e, node.span),
+            ast::NodeKind::Element(e) => self.element(e, node.span, parent),
             ast::NodeKind::If(i) => Some(self.if_node(i, node.span)),
             ast::NodeKind::For(f) => Some(self.for_node(f, node.span)),
             ast::NodeKind::SlotFill(fill) => {
@@ -93,7 +94,12 @@ impl<'cx> Lowerer<'cx, '_> {
         }
     }
 
-    fn element(&mut self, e: &ast::ElementNode, span: Span) -> Option<NodeId> {
+    fn element(
+        &mut self,
+        e: &ast::ElementNode,
+        span: Span,
+        parent: Option<Element>,
+    ) -> Option<NodeId> {
         let first = e.path.first()?;
         if e.path.len() > 1 {
             let name: Vec<&str> = e.path.iter().map(|i| i.name.as_str()).collect();
@@ -135,6 +141,7 @@ impl<'cx> Lowerer<'cx, '_> {
         }
         if let Some(spec) = elements::element(name) {
             self.cx.record(first.span, || Target::Element(spec));
+            self.check_parent(spec, parent, first.span);
             return Some(self.builtin_element(spec, e, span));
         }
         match self.cx.global(self.file, name, first.span, self.diags) {
@@ -160,12 +167,20 @@ impl<'cx> Lowerer<'cx, '_> {
         span: Span,
     ) -> NodeId {
         let props_spec: Vec<_> = spec.props.iter().chain(&CALL_HOOKS).collect();
+        let has_children = e
+            .children
+            .as_ref()
+            .is_some_and(|block| !block.nodes.is_empty());
         let slots: Vec<ArgSlot<'_>> = props_spec
             .iter()
             .map(|p| ArgSlot {
                 name: p.name,
                 positional: p.positional,
-                required: p.required,
+                required: if spec.content == Some(p.name) {
+                    !has_children
+                } else {
+                    p.required
+                },
             })
             .chain([ArgSlot {
                 name: STYLE,
@@ -207,6 +222,7 @@ impl<'cx> Lowerer<'cx, '_> {
                         self.theme_use.merge(usage);
                     }
                     let expr = self.coerce_to(expr, &prop.prop_type().to_type());
+                    let expr = self.check_float_literal(expr);
                     props.push(Prop {
                         name: prop.name,
                         value: PropValue::Expr(expr),
@@ -216,11 +232,37 @@ impl<'cx> Lowerer<'cx, '_> {
                 }
                 continue;
             };
+            if has_children && spec.content == Some(prop.name) {
+                self.error(
+                    arg.span,
+                    format!(
+                        "`{}` takes either `{}` or children, not both",
+                        spec.name, prop.name
+                    ),
+                );
+            }
             let (value, binding) = match prop.kind {
                 PropKind::Value(ty) => {
                     let expr = self.expr_as(&arg.value, &ty.to_type());
-                    let binding = self.bind(BindingKind::Prop(prop.name), expr_deps(&expr));
-                    (PropValue::Expr(expr), binding)
+                    let expr = self.check_float_literal(expr);
+                    let deps = expr_deps(&expr);
+                    if prop.constant && !expr.ty.has_error() {
+                        let Expr { kind, ty, span } = expr;
+                        let expr = match deps.is_empty().then(|| constant_kind(kind)).flatten() {
+                            Some(kind) => Expr { kind, ty, span },
+                            None => {
+                                self.error(
+                                    span,
+                                    format!("`{}.{}` must be a constant", spec.name, prop.name),
+                                );
+                                error_expr(span)
+                            }
+                        };
+                        (PropValue::Expr(expr), None)
+                    } else {
+                        let binding = self.bind(BindingKind::Prop(prop.name), deps);
+                        (PropValue::Expr(expr), binding)
+                    }
                 }
                 PropKind::Handler { payload } => {
                     let payload = payload.map(|ty| ty.to_type());
@@ -254,25 +296,10 @@ impl<'cx> Lowerer<'cx, '_> {
         }
         let own = first_binding..self.bindings.len();
 
-        let children = match &e.children {
-            Some(block) if spec.children == Children::None => {
-                self.error(
-                    block.span,
-                    format!("`{}` does not accept children", spec.name),
-                );
-                Vec::new()
-            }
-            Some(block) => {
-                for decl in &block.lets {
-                    self.error(
-                        decl.span,
-                        "`let` cannot be declared directly inside a built-in element",
-                    );
-                }
-                self.block(block)
-            }
-            None => Vec::new(),
-        };
+        let children = e
+            .children
+            .as_ref()
+            .map_or_else(Vec::new, |block| self.builtin_children(spec, block));
         self.push_node(
             NodeKind::Element {
                 element: spec.element,
@@ -282,6 +309,110 @@ impl<'cx> Lowerer<'cx, '_> {
             span,
             own,
         )
+    }
+
+    fn check_float_literal(&mut self, expr: Expr) -> Expr {
+        if expr.ty == Type::Float {
+            let mut literal = &expr;
+            while let ExprKind::Unary {
+                op: UnaryOp::Neg,
+                expr,
+            } = &literal.kind
+            {
+                literal = expr;
+            }
+            if matches!(literal.kind, ExprKind::Float(value) if !value.is_finite()) {
+                self.error(
+                    expr.span,
+                    "floating-point literal is out of range for `Float`",
+                );
+                return error_expr(expr.span);
+            }
+        }
+        expr
+    }
+
+    /// Returns whether `spec` can appear immediately under this built-in parent.
+    fn check_parent(&mut self, spec: &ElementSpec, parent: Option<Element>, span: Span) -> bool {
+        if spec.parents.is_empty() || parent.is_some_and(|parent| spec.parents.contains(&parent)) {
+            return true;
+        }
+        self.error(
+            span,
+            format!(
+                "`{}` must be a direct child of {}",
+                spec.name,
+                element_list(spec.parents)
+            ),
+        );
+        false
+    }
+
+    fn direct_builtin(&self, node: &ast::Node) -> Option<(&'static ElementSpec, Span)> {
+        let ast::NodeKind::Element(element) = &node.kind else {
+            return None;
+        };
+        let [name] = element.path.as_slice() else {
+            return None;
+        };
+        if self.local(&name.name).is_some() {
+            return None;
+        }
+        Some((elements::element(&name.name)?, name.span))
+    }
+
+    fn builtin_children(&mut self, spec: &ElementSpec, block: &ast::Block) -> Vec<NodeId> {
+        let parent = Some(spec.element);
+        if spec.children == Children::None {
+            // Still diagnose explicitly misplaced elements in a rejected block.
+            let mut leaf_error = block.nodes.is_empty() || !block.lets.is_empty();
+            for node in &block.nodes {
+                match self.direct_builtin(node) {
+                    Some((child, span)) => leaf_error |= self.check_parent(child, parent, span),
+                    None => leaf_error = true,
+                }
+            }
+            if leaf_error {
+                self.error(
+                    block.span,
+                    format!("`{}` does not accept children", spec.name),
+                );
+            }
+            return Vec::new();
+        }
+        for decl in &block.lets {
+            self.error(
+                decl.span,
+                "`let` cannot be declared directly inside a built-in element",
+            );
+        }
+        let scope_len = self.scope.len();
+        self.let_declarations(&block.lets);
+        let children = block
+            .nodes
+            .iter()
+            .filter_map(|node| {
+                if let Children::Only(allowed) = spec.children
+                    && !matches!(node.kind, ast::NodeKind::Error)
+                    && !self
+                        .direct_builtin(node)
+                        .is_some_and(|(child, _)| allowed.contains(&child.element))
+                {
+                    self.error(
+                        node.span,
+                        format!(
+                            "`{}` only accepts {} as children",
+                            spec.name,
+                            element_list(allowed)
+                        ),
+                    );
+                    return None;
+                }
+                self.node(node, parent)
+            })
+            .collect();
+        self.scope.truncate(scope_len);
+        children
     }
 
     fn element_style(
@@ -458,7 +589,7 @@ impl<'cx> Lowerer<'cx, '_> {
         let mut default_children = Vec::new();
         for node in &block.nodes {
             let ast::NodeKind::SlotFill(fill) = &node.kind else {
-                default_children.extend(self.node(node));
+                default_children.extend(self.node(node, None));
                 continue;
             };
             let name = &fill.name.name;
@@ -705,6 +836,28 @@ fn args_span(e: &ast::ElementNode, span: Span) -> Span {
     let start = e.path.last().map_or(span.start, |p| p.span.end);
     let end = e.children.as_ref().map_or(span.end, |b| b.span.start);
     Span::new(span.file, start, end.max(start))
+}
+
+fn element_list(elements: &[Element]) -> String {
+    let Some((last, others)) = elements.split_last() else {
+        return "no elements".to_owned();
+    };
+    let mut list = String::new();
+    for (index, &element) in others.iter().enumerate() {
+        if index != 0 {
+            list.push_str(", ");
+        }
+        list.push('`');
+        list.push_str(element.name());
+        list.push('`');
+    }
+    if !others.is_empty() {
+        list.push_str(" or ");
+    }
+    list.push('`');
+    list.push_str(last.name());
+    list.push('`');
+    list
 }
 
 fn expr_deps(expr: &Expr) -> Vec<Dep> {

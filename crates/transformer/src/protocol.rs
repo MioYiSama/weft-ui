@@ -1,5 +1,5 @@
 // Generated from protocol/weft.protocol.json by protocol/generate.ts; do not edit.
-//! Target names and WeChat style unit codes shared with the runtime.
+//! Target names shared with the runtime.
 
 /// Target platform; the string form matches `WEFT_PLATFORM`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -53,11 +53,4 @@ impl Platform {
     pub fn is_apple(self) -> bool {
         matches!(self, Self::Ios | Self::Macos)
     }
-}
-
-/// Codes of the conversions in the WeChat sink's style unit table.
-pub(crate) mod wechat_unit {
-    pub(crate) const PX: u8 = 1;
-    pub(crate) const BOLD: u8 = 2;
-    pub(crate) const COLOR: u8 = 3;
 }

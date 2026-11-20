@@ -17,8 +17,8 @@
 
 use std::fmt;
 
-use crate::elements::{Css, CssUnit, Element};
-use crate::ir::{ComponentId, NodeId, Prop, PropValue};
+use crate::elements::Element;
+use crate::ir::{ComponentId, NodeId, Prop};
 use crate::view::{Constant, ViewLayout, ViewNodeKind};
 
 /// How a property value reaches the view.
@@ -29,20 +29,36 @@ pub(crate) enum Target {
     Attr(&'static str),
     /// Boolean attribute; WXML treats every non-empty string as true, so
     /// values are always written as expressions.
-    Flag(&'static str),
-    Style(&'static str, CssUnit),
+    Flag {
+        name: &'static str,
+        default: bool,
+    },
+    Style(usize),
+    /// A constant selecting the scroll axis and base class.
+    Direction,
 }
 
 pub(crate) fn target(element: Element, prop: &str) -> Target {
     match (element, prop) {
         (Element::Text, "value") => Target::Text,
         (Element::Input, "value") => Target::Attr("value"),
-        (Element::Checkbox, "checked") => Target::Flag("checked"),
-        (_, "disabled") => Target::Flag("disabled"),
+        (Element::Checkbox, "checked") => Target::Flag {
+            name: "checked",
+            default: false,
+        },
+        (_, "disabled") => Target::Flag {
+            name: "disabled",
+            default: false,
+        },
         (_, "placeholder") => Target::Attr("placeholder"),
         (_, "src") => Target::Attr("src"),
+        (Element::Scroll, "direction") => Target::Direction,
+        (Element::Scroll, "indicators") => Target::Flag {
+            name: "show-scrollbar",
+            default: true,
+        },
         (element, prop) => match element.spec().prop(prop).and_then(|spec| spec.css) {
-            Some(Css { property, unit }) => Target::Style(property, unit),
+            Some(index) => Target::Style(index),
             None => unreachable!("`{}` has no property `{prop}`", element.name()),
         },
     }
@@ -64,16 +80,17 @@ pub(crate) fn event_key(node: NodeId, index: usize) -> impl fmt::Display {
 }
 
 /// Data key of property `index` of element `node`.
-pub(crate) fn value_key(node: NodeId, index: usize) -> String {
-    format!("n{}_{index}", node.0)
+pub(crate) fn value_key(node: NodeId, index: usize) -> impl fmt::Display {
+    fmt::from_fn(move |f| write!(f, "n{}_{index}", node.0))
 }
 
 /// Where the view reads a property from.
-pub(crate) enum Value {
+#[derive(Clone, Copy)]
+pub(crate) enum Value<'a> {
     /// Constant written into the markup.
-    Inline(String),
+    Inline(&'a Constant),
     /// Key in the scope's data.
-    Data(String),
+    Data,
 }
 
 /// Whether a string can appear verbatim in WXML text or attribute values.
@@ -86,39 +103,22 @@ fn markup_safe(s: &str) -> bool {
             .any(|c| matches!(c, '<' | '>' | '&' | '"' | '\'' | '{' | '}') || c.is_control())
 }
 
-/// Markup text of a constant, or `None` if it must be sent as data.
-pub(crate) fn inline(target: Target, constant: &Constant) -> Option<String> {
-    match (target, constant) {
-        (Target::Text | Target::Attr(_), Constant::String(s)) => markup_safe(s).then(|| s.clone()),
-        (Target::Style(_, CssUnit::Color), Constant::Color(color)) => Some(color.to_string()),
-        (Target::Style(_, CssUnit::Color), Constant::Token(name)) => {
-            Some(crate::style::theme_color(name).to_string())
-        }
-        (Target::Flag(_), Constant::Bool(b)) => Some(b.to_string()),
-        (Target::Style(_, CssUnit::Px), Constant::Int(v)) => Some(format!("{v}px")),
-        (Target::Style(_, CssUnit::Bold), Constant::Bool(b)) => {
-            Some(if *b { "bold" } else { "normal" }.to_owned())
-        }
-        (target, _) => unreachable!("constant of the wrong type for {target:?}"),
-    }
+/// Constants whose text has to be sent through data instead of markup.
+pub(crate) fn needs_data(target: Target, constant: &Constant) -> bool {
+    matches!((target, constant), (Target::Text | Target::Attr(_), Constant::String(s)) if !markup_safe(s))
 }
 
-/// How property `index` of element node `node` appears in the view; `None`
-/// for handlers.
-pub(crate) fn prop_value(
-    layout: &ViewLayout,
+/// How property `index` of element node `node` appears in the view.
+pub(crate) fn prop_value<'a>(
+    layout: &'a ViewLayout,
     component: ComponentId,
-    element: Element,
     node: NodeId,
     index: usize,
     prop: &Prop,
-) -> Option<Value> {
-    if let PropValue::Handler(_) = prop.value {
-        return None;
-    }
-    let key = value_key(node, index);
+    target: Target,
+) -> Value<'a> {
     if layout.value_slot(component, node, index).is_some() {
-        return Some(Value::Data(key));
+        return Value::Data;
     }
     let (template, local) = layout.location(component, node);
     let ViewNodeKind::Element { props, .. } = &layout.template(template).nodes[local as usize].kind
@@ -130,8 +130,9 @@ pub(crate) fn prop_value(
         .find(|p| p.name == prop.name)
         .expect("properties without a value slot are static")
         .value;
-    Some(match inline(target(element, prop.name), constant) {
-        Some(text) => Value::Inline(text),
-        None => Value::Data(key),
-    })
+    if needs_data(target, constant) {
+        Value::Data
+    } else {
+        Value::Inline(constant)
+    }
 }

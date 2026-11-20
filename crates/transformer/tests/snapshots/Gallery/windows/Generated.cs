@@ -10,7 +10,7 @@ namespace Weft.Generated;
 public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
-    public const ulong LayoutHash = 0x1e5786a8ee33fbbdUL;
+    public const ulong LayoutHash = 0xa003534a93be9333UL;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
     public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);
@@ -58,11 +58,11 @@ file sealed class S0 : WeftScope
 
 file sealed class S1 : WeftScope
 {
-    // Row.padding
-    // Row.gap
     // Row.width
     // Row.height
+    // Row.padding
     // Row.background
+    // Row.gap
     private readonly WeftStack n2;
     // Checkbox.checked
     private readonly WeftCheckbox n3;
@@ -78,11 +78,11 @@ file sealed class S1 : WeftScope
     public S1(uint id, WeftSession session) : base(id, session, points: 1)
     {
         var n0 = new WeftStack(vertical: true);
-        n0.Padding = 12;
-        n0.Gap = 8;
         n0.Width = 320;
         n0.Height = 280;
+        n0.Padding = 12;
         n0.Background = WeftColor.Rgba(0xeeeeffffu);
+        n0.Gap = 8;
         Roots.Add(n0.Element);
         var n1 = new WeftText();
         n1.Value = "Gallery";
@@ -111,11 +111,11 @@ file sealed class S1 : WeftScope
     {
         switch (slot)
         {
-            case 0: n2.Padding = value.Number; break;
-            case 1: n2.Gap = value.Number; break;
-            case 2: n2.Width = value.Number; break;
-            case 3: n2.Height = value.Number; break;
-            case 4: n2.Background = value.Color; break;
+            case 0: n2.Width = value.Number; break;
+            case 1: n2.Height = value.Number; break;
+            case 2: n2.Padding = value.Number; break;
+            case 3: n2.Background = value.Color; break;
+            case 4: n2.Gap = value.Number; break;
             case 5: n3.Checked = value.Bool; break;
             case 6: n4.Src = value.String; break;
             case 7: n5.Color = value.Color; break;

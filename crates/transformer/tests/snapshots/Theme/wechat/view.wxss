@@ -1,2 +1,21 @@
+.w-column{display:flex;flex-direction:column;align-items:flex-start}
+.w-row{display:flex;flex-direction:row;align-items:flex-start}
+.w-stack{display:grid;position:relative;grid-template:minmax(0,1fr)/minmax(0,1fr);place-items:start start}
+.w-in-stack{grid-area:1/1/2/2;position:relative}
+.w-in-stack.w-fill{position:absolute;inset:0}
+.w-scroll-v,.w-scroll-h{display:flex;align-items:flex-start;flex:1 1 0px;align-self:stretch;min-width:0;min-height:0}
+.w-scroll-v{flex-direction:column;overflow-x:hidden;overflow-y:auto}
+.w-scroll-h{flex-direction:row;overflow-x:auto;overflow-y:hidden}
+.w-in-scroll{flex-shrink:0}
+/* A percentage basis falls back to content when the main size is indefinite. */
+.w-grow{flex-basis:0%!important}
+.w-spacer{width:0;height:0;flex:1 1 0px}
+.w-text{display:inline-block}
+.w-button.w-wx{margin:0}
+.w-input.w-wx{border:1px solid #ccc;padding:4px 8px}
+/* The mini program scroll-view owns its viewport; its child owns the layout. */
+.w-scroll-content-v,.w-scroll-content-h{display:flex;align-items:flex-start;flex:none}
+.w-scroll-content-v{flex-direction:column;min-height:100%}
+.w-scroll-content-h{flex-direction:row;width:max-content;min-width:100%;height:100%}
 :host{--weft-accent:#0a84ffff;}
 @media (prefers-color-scheme: dark){:host{--weft-accent:#409cffff;}}

@@ -23,9 +23,9 @@ export class TodoListModel extends $.Model {
 const $c0 = $.arrayOf(Todo.from);
 const $s0 = [0, 1];
 const $s1 = 2;
-const $t0 = $.template("<div style=\"display:flex;flex-direction:column;align-items:flex-start\"><input><button type=\"button\"><span></span></button><!----></div>");
+const $t0 = $.template("<div class=\"w-column\"><input class=\"w-input\"><button type=\"button\" class=\"w-button\"><span class=\"w-text\"></span></button><!----></div>");
 const $t1 = $.template("<!----><!---->");
-const $t2 = $.template("<div style=\"display:flex;flex-direction:row;align-items:flex-start\"><span></span><button type=\"button\"><span>x</span></button></div>");
+const $t2 = $.template("<div class=\"w-row\"><span class=\"w-text\"></span><button type=\"button\" class=\"w-button\"><span class=\"w-text\">x</span></button></div>");
 
 export function TodoList$c(app, args, children, depth) {
   const c = new $.Instance(app, 1, depth, args, children);

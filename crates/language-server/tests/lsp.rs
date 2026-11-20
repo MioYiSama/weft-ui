@@ -183,7 +183,38 @@ fn editor_session() {
     let (line, col) = after(&typing, "Text(todo.name, s");
     let items = client.request("textDocument/completion", position(&uri, line, col));
     let labels = labels(&items);
-    assert_eq!(labels, ["size", "bold", "onMount", "onUnmount"]);
+    assert_eq!(
+        labels,
+        [
+            "width",
+            "height",
+            "grow",
+            "minWidth",
+            "maxWidth",
+            "minHeight",
+            "maxHeight",
+            "fill",
+            "aspectRatio",
+            "margin",
+            "marginX",
+            "marginY",
+            "marginTop",
+            "marginBottom",
+            "marginStart",
+            "marginEnd",
+            "padding",
+            "paddingX",
+            "paddingY",
+            "paddingTop",
+            "paddingBottom",
+            "paddingStart",
+            "paddingEnd",
+            "size",
+            "bold",
+            "onMount",
+            "onUnmount",
+        ]
+    );
     let size = items
         .as_array()
         .expect("items")

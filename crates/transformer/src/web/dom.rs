@@ -4,20 +4,19 @@
 //! update function that re-runs only the bindings whose dirty bits are set
 //! and walks into nested blocks only when bits they depend on are set.
 
-use std::fmt::{self, Display, Write};
+use std::fmt::{self, Display};
 
 use crate::bridge::DomView;
 use crate::bridge::blocks::{
-    Consts, Ctx, Literal, Parts, binding_cond, element_handler_body, instance_watches, literal,
-    words,
+    Consts, Ctx, Parts, binding_cond, element_handler_body, instance_watches, words,
 };
 use crate::bridge::expr::{Env, expr};
 use crate::bridge::flow::{Backend, ComponentIr, Flow};
 use crate::bridge::js::{self, Code};
-use crate::color::Color;
-use crate::elements::{Css, CssUnit, Element};
+use crate::elements::{CSS_PROPS, Css, CssUnit, CustomCss, Element, PropType};
 use crate::ir::{Component, ComponentId, NodeId, NodeKind, Program, Prop, PropValue};
-use crate::style::{COLUMN_STYLE, ROW_STYLE, theme_color};
+use crate::style::{self, Edge};
+use crate::view::{Constant, Literal, constant, literal};
 
 /// The DOM [`DomView`].
 #[derive(Debug, Clone, Copy)]
@@ -54,7 +53,8 @@ enum Target {
     Checked,
     Disabled,
     Attr(&'static str),
-    Style(&'static str, CssUnit),
+    Direction,
+    Style(usize, PropType),
 }
 
 fn target(element: Element, prop: &str) -> Target {
@@ -65,23 +65,114 @@ fn target(element: Element, prop: &str) -> Target {
         (_, "disabled") => Target::Disabled,
         (_, "placeholder") => Target::Attr("placeholder"),
         (_, "src") => Target::Attr("src"),
-        (element, prop) => match element.spec().prop(prop).and_then(|spec| spec.css) {
-            Some(Css { property, unit }) => Target::Style(property, unit),
-            None => unreachable!("`{}` has no property `{prop}`", element.name()),
-        },
+        (Element::Scroll, "direction") => Target::Direction,
+        (element, prop) => {
+            let spec = element
+                .spec()
+                .prop(prop)
+                .expect("the property was validated during semantic analysis");
+            Target::Style(
+                spec.css.expect("the property has a DOM CSS mapping"),
+                spec.prop_type(),
+            )
+        }
     }
 }
 
-/// Tag, fixed attributes and base style of an element.
-fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
+/// Tag, fixed attributes and base class of an element.
+fn tag(element: Element, props: &[Prop]) -> (&'static str, &'static str, &'static str) {
     match element {
-        Element::Column => ("div", "", COLUMN_STYLE),
-        Element::Row => ("div", "", ROW_STYLE),
-        Element::Text => ("span", "", ""),
-        Element::Button => ("button", " type=\"button\"", ""),
-        Element::Input => ("input", "", ""),
-        Element::Checkbox => ("input", " type=\"checkbox\"", ""),
-        Element::Image => ("img", "", ""),
+        Element::Column => ("div", "", "w-column"),
+        Element::Row => ("div", "", "w-row"),
+        Element::Stack => ("div", "", "w-stack"),
+        Element::Scroll => {
+            let horizontal = props.iter().any(|prop| {
+                let PropValue::Expr(value) = &prop.value else {
+                    return false;
+                };
+                prop.name == "direction"
+                    && matches!(literal(value), Some(Literal::Str("horizontal")))
+            });
+            (
+                "div",
+                "",
+                if horizontal {
+                    "w-scroll-h"
+                } else {
+                    "w-scroll-v"
+                },
+            )
+        }
+        Element::Spacer => ("div", "", "w-spacer"),
+        Element::Text => ("span", "", "w-text"),
+        Element::Button => ("button", " type=\"button\"", "w-button"),
+        Element::Input => ("input", "", "w-input"),
+        Element::Checkbox => ("input", " type=\"checkbox\"", "w-checkbox"),
+        Element::Image => ("img", "", "w-image"),
+    }
+}
+
+fn child_context(element: Element) -> &'static str {
+    match element {
+        Element::Stack => " w-in-stack",
+        Element::Scroll => " w-in-scroll",
+        _ => "",
+    }
+}
+
+/// Competing edge shorthands and synthetic flex minimums must not overwrite
+/// a more specific prop, even when they are updated at different times.
+struct StyleSources<'props> {
+    props: &'props [Prop],
+    margin: Option<[&'static str; 4]>,
+    padding: Option<[&'static str; 4]>,
+}
+
+impl<'props> StyleSources<'props> {
+    fn new(props: &'props [Prop]) -> Self {
+        Self {
+            props,
+            margin: None,
+            padding: None,
+        }
+    }
+
+    /// A bit per declaration in conversion order; `None` writes them all.
+    fn mask(&mut self, name: &str, css: Css<'_>) -> Option<u8> {
+        if css.unit == CssUnit::Custom(CustomCss::Grow) {
+            let mut mask = 0b111;
+            for prop in self.props {
+                match prop.name {
+                    "minWidth" => mask &= !0b010,
+                    "minHeight" => mask &= !0b100,
+                    _ => {}
+                }
+            }
+            return (mask != 0b111).then_some(mask);
+        }
+        let (family, sources) = if name.starts_with("margin") {
+            (Edge::Margin, &mut self.margin)
+        } else if name.starts_with("padding") {
+            (Edge::Padding, &mut self.padding)
+        } else {
+            return None;
+        };
+        let props = self.props;
+        let sources = sources.get_or_insert_with(|| {
+            style::edges(|name| props.iter().any(|prop| prop.name == name), family)
+        });
+        let mut mask = 0;
+        for (i, property) in css.properties.iter().enumerate() {
+            if family
+                .properties()
+                .iter()
+                .zip(sources.iter())
+                .any(|(edge, source)| edge == property && *source == name)
+            {
+                mask |= 1 << i;
+            }
+        }
+        (mask != (1 << css.properties.len()) - 1).then_some(mask)
     }
 }
 
@@ -91,40 +182,45 @@ fn is_void(element: Element) -> bool {
 
 /// Whether a property is written into the template instead of by code.
 /// Controlled values are always set by code so the runtime knows them.
-fn is_template_prop(element: Element, prop: &Prop) -> bool {
+fn template_literal(prop: &Prop, target: Target) -> Option<Literal<'_>> {
     let PropValue::Expr(value) = &prop.value else {
-        return false;
+        return None;
     };
-    prop.binding.is_none()
-        && literal(value).is_some()
-        && !matches!(target(element, prop.name), Target::Value | Target::Checked)
+    if prop.binding.is_some() || matches!(target, Target::Value | Target::Checked) {
+        return None;
+    }
+    literal(value)
 }
 
-fn apply(target: Target, node: &str, value: &str) -> String {
+fn apply(target: Target, mask: Option<u8>, node: &str, value: &str) -> String {
     match target {
         Target::Text => format!("{node}.textContent = {value};"),
         Target::Value => format!("$.value({node}, {value});"),
         Target::Checked => format!("$.checked({node}, {value});"),
         Target::Disabled => format!("{node}.disabled = {value};"),
         Target::Attr(name) => format!("{node}.setAttribute({}, {value});", js::string(name)),
-        Target::Style(name, CssUnit::Px) => format!(
-            "{node}.style.setProperty({}, $.px({value}));",
-            js::string(name)
-        ),
-        Target::Style(name, CssUnit::Color) => format!(
-            "{node}.style.setProperty({}, $.color({value}));",
-            js::string(name)
-        ),
-        Target::Style(_, CssUnit::Bold) => {
-            format!("{node}.style.fontWeight = {value} ? \"bold\" : \"\";")
-        }
+        Target::Direction => unreachable!("scroll direction was resolved statically"),
+        Target::Style(index, _) => match mask {
+            Some(mask) => format!("$.style({node}, {index}, {value}, {mask});"),
+            None => format!("$.style({node}, {index}, {value});"),
+        },
     }
+}
+
+fn append_style(out: &mut String, decl: &str) {
+    if decl.is_empty() {
+        return;
+    }
+    if !out.is_empty() {
+        out.push(';');
+    }
+    out.push_str(decl);
 }
 
 struct Gen;
 
 impl Gen {
-    fn html(comp: &Component, id: NodeId, out: &mut String) {
+    fn html(comp: &Component, id: NodeId, context: &str, out: &mut String) {
         let NodeKind::Element {
             element,
             props,
@@ -135,54 +231,78 @@ impl Gen {
             return;
         };
         let element = *element;
-        let (tag, fixed, base_style) = tag(element);
-        let mut style = base_style.to_owned();
-        let mut attrs = String::from(fixed);
+        let (tag, fixed, class) = tag(element, props);
+        let mut sources = StyleSources::new(props);
+        let mut style = String::new();
         let mut text = None;
-        for prop in props.iter().filter(|p| is_template_prop(element, p)) {
-            let PropValue::Expr(value) = &prop.value else {
+        let mut fill = element == Element::Scroll;
+        let mut grow = element == Element::Scroll;
+        out.push('<');
+        out.push_str(tag);
+        out.push_str(fixed);
+        for prop in props {
+            let PropValue::Expr(expr) = &prop.value else {
                 continue;
             };
-            let Some(value) = literal(value) else {
+            let target = target(element, prop.name);
+            let Some(value) = template_literal(prop, target) else {
                 continue;
             };
-            let mut add_style = |decl: std::fmt::Arguments<'_>| {
-                if !style.is_empty() {
-                    style.push(';');
-                }
-                style
-                    .write_fmt(decl)
-                    .expect("writing to String is infallible");
-            };
-            match (target(element, prop.name), value) {
+            match (target, value) {
                 (Target::Text, Literal::Str(s)) => text = Some(s),
-                (Target::Disabled, Literal::Bool(true)) => attrs.push_str(" disabled"),
-                (Target::Style(name, CssUnit::Bold), Literal::Bool(true)) => {
-                    add_style(format_args!("{name}:bold"));
-                }
-                (Target::Disabled | Target::Style(_, CssUnit::Bold), _) => {}
+                (Target::Disabled, Literal::Bool(true)) => out.push_str(" disabled"),
+                (Target::Disabled | Target::Direction, _) => {}
                 (Target::Attr(name), Literal::Str(s)) => {
-                    attrs.push_str(&format!(" {name}=\""));
-                    html_attr(s, &mut attrs);
-                    attrs.push('"');
+                    out.push(' ');
+                    out.push_str(name);
+                    out.push_str("=\"");
+                    html_attr(s, out);
+                    out.push('"');
                 }
-                (Target::Style(name, CssUnit::Px), Literal::Int(v)) => {
-                    add_style(format_args!("{name}:{v}px"));
-                }
-                (Target::Style(name, CssUnit::Color), Literal::Str(s)) => add_style(format_args!(
-                    "{name}:{}",
-                    Color::parse(s)
-                        .expect("color literals were validated during semantic analysis")
-                )),
-                (Target::Style(name, CssUnit::Color), Literal::Token(token)) => {
-                    add_style(format_args!("{name}:{}", theme_color(token)));
+                (Target::Style(index, ty), _) => {
+                    let css = CSS_PROPS[index];
+                    let mask = sources.mask(prop.name, css);
+                    if mask == Some(0) {
+                        continue;
+                    }
+                    let value = constant(expr, ty).expect("the property has a static value");
+                    match css.unit {
+                        CssUnit::Custom(CustomCss::Fill) => {
+                            fill = matches!(value, Constant::Bool(true));
+                        }
+                        CssUnit::Custom(CustomCss::Grow) => {
+                            grow = match value {
+                                Constant::Float(v) => v.is_finite() && v > 0.0,
+                                Constant::Int(v) => v > 0,
+                                _ => false,
+                            };
+                        }
+                        _ => {}
+                    }
+                    let declarations = style::declarations(css, &value);
+                    if let Some(mask) = mask {
+                        for (i, decl) in declarations.split(';').enumerate() {
+                            if mask & (1 << i) != 0 {
+                                append_style(&mut style, decl);
+                            }
+                        }
+                    } else {
+                        append_style(&mut style, &declarations);
+                    }
                 }
                 (target, _) => unreachable!("literal of the wrong type for {target:?}"),
             }
         }
-        out.push('<');
-        out.push_str(tag);
-        out.push_str(&attrs);
+        out.push_str(" class=\"");
+        out.push_str(class);
+        out.push_str(context);
+        if fill {
+            out.push_str(" w-fill");
+        }
+        if grow {
+            out.push_str(" w-grow");
+        }
+        out.push('"');
         if !style.is_empty() {
             out.push_str(" style=\"");
             html_attr(&style, out);
@@ -195,8 +315,9 @@ impl Gen {
         if let Some(text) = text {
             html_text(text, out);
         }
+        let context = child_context(element);
         for &child in children {
-            Self::html(comp, child, out);
+            Self::html(comp, child, context, out);
         }
         out.push_str("</");
         out.push_str(tag);
@@ -240,7 +361,7 @@ impl Backend for Gen {
             html.push_str("<!---->");
         }
         for &root in roots {
-            Self::html(comp, root, &mut html);
+            Self::html(comp, root, "", &mut html);
         }
         let template = consts.template(format!("$.template({})", js::string(&html)));
         out.line(format!("const f = {template}();"));
@@ -267,21 +388,28 @@ impl Backend for Gen {
         parts: &mut Parts,
     ) -> &'parent str {
         let n = format!("n{}", id.0);
+        let mut sources = StyleSources::new(props);
         let mut listened = false;
         for prop in props {
             match &prop.value {
                 PropValue::Expr(value) => {
-                    if is_template_prop(element, prop) {
+                    let target = target(element, prop.name);
+                    if template_literal(prop, target).is_some() {
                         continue;
                     }
-                    let target = target(element, prop.name);
-                    let value = expr(value, Env::default());
-                    parts.create.line(apply(target, &n, &value));
-                    if let Some(cond) = binding_cond(ir.comp, prop.binding) {
-                        parts
-                            .update
-                            .line(format!("if ({cond}) {}", apply(target, &n, &value)));
+                    let mask = match target {
+                        Target::Style(index, _) => sources.mask(prop.name, CSS_PROPS[index]),
+                        _ => None,
+                    };
+                    if mask == Some(0) {
+                        continue;
                     }
+                    let value = expr(value, Env::default());
+                    let statement = apply(target, mask, &n, &value);
+                    if let Some(cond) = binding_cond(ir.comp, prop.binding) {
+                        parts.update.line(format!("if ({cond}) {statement}"));
+                    }
+                    parts.create.line(statement);
                 }
                 PropValue::Handler(_) if matches!(prop.name, "onMount" | "onUnmount") => {}
                 PropValue::Handler(handler) => {

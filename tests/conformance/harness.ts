@@ -175,14 +175,38 @@ export function headless<A extends AppLike>(script: Script<A>, built: Built<A>):
   };
 }
 
+const CONTAINERS = {
+  "w-column": "Column",
+  "w-row": "Row",
+  "w-stack": "Stack",
+  "w-scroll-v": "Scroll",
+  "w-scroll-h": "Scroll",
+  "w-spacer": "Spacer",
+};
+
+function containerType(has: (name: string) => boolean): string {
+  for (const [name, type] of Object.entries(CONTAINERS)) {
+    if (has(name)) return type;
+  }
+  throw new Error("expected a Weft container class");
+}
+
 function wxClassify(e: WxElement | string): Classified<WxElement | string> | null {
   if (typeof e === "string") return null;
   const text = (node: WxElement | string): string =>
     typeof node === "string" ? node : node.children.map(text).join("");
   switch (e.tag) {
     case "view": {
-      const column = String(e.attrs.style).includes("flex-direction:column");
-      return { type: column ? "Column" : "Row", props: {}, children: e.children };
+      const classes = String(e.attrs.class).split(/\s+/);
+      const type = containerType((name) => classes.includes(name));
+      return { type, props: {}, children: e.children };
+    }
+    case "scroll-view": {
+      const content = e.children[0];
+      if (!content || typeof content === "string" || !String(content.attrs.class).startsWith("w-scroll-content-")) {
+        throw new Error("expected a Weft scroll content view");
+      }
+      return { type: "Scroll", props: {}, children: content.children };
     }
     case "text":
       return { type: "Text", props: { value: text(e) }, children: [] };
@@ -228,10 +252,8 @@ export async function wechat<A extends AppLike>(script: Script<A>, built: Built<
 function domClassify(e: Element): Classified<Element> {
   const children = [...e.children];
   switch (e.tagName) {
-    case "DIV": {
-      const column = (e as HTMLElement).style.flexDirection === "column";
-      return { type: column ? "Column" : "Row", props: {}, children };
-    }
+    case "DIV":
+      return { type: containerType((name) => e.classList.contains(name)), props: {}, children };
     case "SPAN":
       return { type: "Text", props: { value: e.textContent ?? "" }, children: [] };
     case "BUTTON":

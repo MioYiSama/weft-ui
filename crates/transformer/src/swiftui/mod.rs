@@ -132,6 +132,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
             .line(format_args!("/// {}.{}", element.name(), value.prop));
         let declaration = match value.ty {
             ValueType::Int => "CGFloat = 0",
+            ValueType::Float => unreachable!("platform support rejects Float properties"),
             ValueType::Bool => "Bool = false",
             ValueType::String => "String = \"\"",
             ValueType::Color => "WeftColor = .clear",
@@ -153,6 +154,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
         for (slot, value) in template.values.iter().enumerate() {
             let accessor = match value.ty {
                 ValueType::Int => "length",
+                ValueType::Float => unreachable!("platform support rejects Float properties"),
                 ValueType::Bool => "bool",
                 ValueType::String => "string",
                 ValueType::Color => "color",

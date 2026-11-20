@@ -199,6 +199,9 @@ The compiler rejects elements, properties, and events marked unsupported for the
 | `Input` | `value` | `onChange(String)` | None |
 | `Checkbox` | `checked` | `onChange(Bool)` | None |
 | `Image` | `src` | — | None |
+| `Stack` | — | — | Any |
+| `Scroll` | — | — | Any |
+| `Spacer` | — | — | None |
 
 See the [element reference](https://weftui.mioyi.net/reference/elements/) for full properties, events, and platform support.
 <!-- elements:end -->
@@ -206,8 +209,15 @@ See the [element reference](https://weftui.mioyi.net/reference/elements/) for fu
 All elements also have `onMount` / `onUnmount`.
 
 - **Lengths**: `Int`, measured in logical pixels: pt on iOS / macOS, dp on Android, DIP on Windows, and CSS px on the web. Mini programs use `px`, not `rpx`.
-- **`Column` / `Row`**: Children are laid out in order from the start of the main axis (vertical for `Column`, horizontal for `Row`). They align to the start of the cross axis, without stretching or automatically filling the available space. As in CSS, `gap` is the space between adjacent children, and `padding` is the same inset on all four sides. When platform defaults differ, the backend sets the alignment explicitly, for example `align-items:flex-start` on the web and in mini programs, and `VStack(alignment: .leading)` in SwiftUI.
-- **`width` / `height`**: Fixed dimensions. If omitted, the content determines the size.
+- **Box model**: `width`, `height`, and their `min*` / `max*` limits apply to the content box. Padding, any border, and margin surround it, in that order. `padding` sets all four edges, `paddingX` sets left and right, `paddingY` sets top and bottom, and a single-edge value overrides both. `margin` follows the same precedence. `Start` and `End` mean left and right, respectively, for edge properties.
+- **`Column` / `Row`**: Children are laid out in order along the main axis (vertical for `Column`, horizontal for `Row`). `gap` separates adjacent children in addition to their margins. `justify` distributes leftover main-axis space; `align` positions children across it. Both default to `"start"`. `align = "stretch"` stretches children with no fixed cross-axis dimension within the container's content box.
+- **`grow`**: In a `Column`, `Row`, or `Scroll`, children with positive `grow` share the remaining main-axis space in proportion to their weights, without counting their natural sizes on that axis. In an unbounded main axis they are measured at their natural size. Other parents ignore `grow`.
+- **`fill`**: Stretches a child along the cross axis in a `Column`, `Row`, or `Scroll`, along both axes in a `Stack`, or to the available window width at the root. A child's fixed `width` or `height` takes precedence on that axis. Use `grow`, not `fill`, for leftover main-axis space in linear layouts.
+- **`aspectRatio`**: If width is determined by a fixed width, `fill`, stretch, or horizontal growth, and height is not fixed, height is width divided by the ratio. Otherwise, if only height is determined, width is height multiplied by the ratio. If both dimensions are fixed, the ratio is ignored.
+- **`Spacer`**: A direct child of `Column`, `Row`, or `Scroll` only. It occupies `size` on the main axis when specified, otherwise it acts like `grow = 1`. Its cross-axis size is zero.
+- **`Stack`**: Children overlap in order, with later children above earlier ones. The content size is the maximum size of children without `fill`, including their margins, unless fixed dimensions specify otherwise. `alignment` positions the children in the content box. Children with `fill` stretch along both axes without contributing to the stack's natural size.
+- **`Scroll`**: Lays out content like a `Column` or `Row` with `gap` and `align`. `direction` is a constant and defaults to `"vertical"`. Content can overflow and scroll only along that axis. Unless set explicitly, `grow` is `1` and `fill` is `true`. `indicators = false` hides the scrollbars.
+- **Root and overflow**: Top-level nodes are arranged like children of a `Column` whose content box is the window minus its safe area. The root does not scroll. If natural child sizes exceed the available main-axis space outside a `Scroll`, platforms may compress or overflow them; don't rely on either behavior.
 - **Colors**: A `Color` property accepts a `Color` value such as `theme.accent`, or `#RGB`, `#RRGGBB`, or `#RRGGBBAA` (case-insensitive hexadecimal). Literals are validated at compile time and stored as RGBA in the view layout. Invalid dynamic colors and unknown runtime tokens are transparent, with a warning in development builds.
 - **`Image`**: `src` is an image URL. On platforms without a built-in control for remote images, the core downloads the image.
 

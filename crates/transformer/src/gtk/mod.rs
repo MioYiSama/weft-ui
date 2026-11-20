@@ -139,6 +139,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
     for (slot, value) in template.values.iter().enumerate() {
         let accessor = match value.ty {
             ValueType::Int => "number",
+            ValueType::Float => unreachable!("platform support rejects Float properties"),
             ValueType::Bool => "boolean",
             ValueType::String => "string",
             ValueType::Color => "color",
@@ -202,10 +203,9 @@ mod tests {
         for expected in [
             "auto &n0 = make<weft::Stack>(weft::Axis::Vertical);",
             "n0.set_padding(4);",
-            "n0.set_gap(2);",
             "n0.set_width(100);",
             "n0.set_height(80);",
-            "n0.set_background(weft::Color::rgba(0xaabbccffu));\n    roots().add(n0);",
+            "n0.set_background(weft::Color::rgba(0xaabbccffu));\n    n0.set_gap(2);\n    roots().add(n0);",
             "auto &n1 = make<weft::Stack>(weft::Axis::Horizontal);",
             "n2.set_value(\"hello\"sv);",
             "n2.set_color(weft::Color::rgba(0x12345680u));",

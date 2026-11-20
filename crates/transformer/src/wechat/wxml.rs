@@ -6,14 +6,16 @@
 //! rendered by a template of the calling component, chosen at run time
 //! through `t`, so all templates of the app live in one file.
 
-use std::fmt;
+use std::fmt::{self, Write as _};
 
-use crate::elements::Element;
-use crate::ir::{Component, ComponentId, NodeId, NodeKind, ParamId, Program, first_slot};
-use crate::style::{COLUMN_STYLE, ROW_STYLE};
-use crate::view::ViewLayout;
+use crate::elements::{CSS_PROPS, CssUnit, CustomCss, Element};
+use crate::ir::{
+    Component, ComponentId, NodeId, NodeKind, ParamId, Program, PropValue, first_slot,
+};
+use crate::style;
+use crate::view::{Constant, ViewLayout};
 
-use super::elements::{Target, Value, event_key, event_type, prop_value, target};
+use super::elements::{Target, Value, event_key, event_type, prop_value, target, value_key};
 
 fn slot_name(base: fmt::Arguments<'_>, callee: &Component, param: ParamId) -> String {
     if first_slot(&callee.params) == Some(param) {
@@ -57,7 +59,7 @@ pub(crate) fn templates(program: &Program, layout: &ViewLayout) -> String {
             slots: Vec::new(),
         };
         let mut body = String::new();
-        markup.nodes(&comp.roots, "", &mut body);
+        markup.nodes(&comp.roots, "", Parent::Inherited, &mut body);
         template(&comp.name, &body, &mut out);
         for (name, body) in markup.slots {
             template(&name, &body, &mut out);
@@ -74,22 +76,71 @@ fn template(name: &str, body: &str, out: &mut String) {
     out.push_str("</template>\n");
 }
 
-/// Tag, fixed attributes and base style of an element.
+/// Tag, base class and fixed attributes of an element.
 fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
     match element {
-        Element::Column => ("view", "", COLUMN_STYLE),
-        Element::Row => ("view", "", ROW_STYLE),
-        Element::Text => ("text", "", ""),
-        // Mini buttons are centered with auto margins by default.
-        Element::Button => ("button", " size=\"mini\"", "margin:0"),
-        Element::Input => ("input", "", "border:1px solid #ccc;padding:4px 8px"),
-        Element::Checkbox => ("switch", " type=\"checkbox\"", ""),
-        Element::Image => ("image", "", ""),
+        Element::Column => ("view", "w-column", ""),
+        Element::Row => ("view", "w-row", ""),
+        Element::Stack => ("view", "w-stack", ""),
+        Element::Scroll => (
+            "scroll-view",
+            "w-scroll-v",
+            " scroll-y enable-flex enhanced",
+        ),
+        Element::Spacer => ("view", "w-spacer", ""),
+        Element::Text => ("text", "w-text", ""),
+        Element::Button => ("button", "w-button w-wx", " size=\"mini\""),
+        Element::Input => ("input", "w-input w-wx", ""),
+        Element::Checkbox => ("switch", "w-checkbox", " type=\"checkbox\""),
+        Element::Image => ("image", "w-image", ""),
+    }
+}
+
+/// The parent element's layout class passes through zero-width WXML wrappers.
+#[derive(Clone, Copy)]
+enum Parent {
+    Ordinary,
+    Stack,
+    Scroll,
+    /// A reusable component or slot template receives its parent at the call site.
+    Inherited,
+}
+
+impl Parent {
+    fn of(element: Element) -> Self {
+        match element {
+            Element::Stack => Self::Stack,
+            Element::Scroll => Self::Scroll,
+            _ => Self::Ordinary,
+        }
+    }
+
+    fn class(self) -> &'static str {
+        match self {
+            Self::Ordinary => "",
+            Self::Stack => " w-in-stack",
+            Self::Scroll => " w-in-scroll",
+            Self::Inherited => "{{wParent}}",
+        }
+    }
+
+    fn argument(self) -> impl fmt::Display {
+        fmt::from_fn(move |out| match self {
+            Self::Inherited => out.write_str("wParent"),
+            _ => write!(out, "'{}'", self.class()),
+        })
     }
 }
 
 fn is_void(element: Element) -> bool {
     matches!(element, Element::Input | Element::Checkbox | Element::Image)
+}
+
+fn push_style(out: &mut String, part: impl fmt::Display) {
+    if !out.is_empty() {
+        out.push(';');
+    }
+    let _ = write!(out, "{part}");
 }
 
 struct Markup<'a> {
@@ -104,16 +155,16 @@ struct Markup<'a> {
 impl Markup<'_> {
     /// `prefix` leads from the template's data to the current block's data,
     /// e.g. `""`, `"b3."` or `"r0."`.
-    fn nodes(&mut self, ids: &[NodeId], prefix: &str, out: &mut String) {
+    fn nodes(&mut self, ids: &[NodeId], prefix: &str, parent: Parent, out: &mut String) {
         for &id in ids {
-            self.node(id, prefix, out);
+            self.node(id, prefix, parent, out);
         }
     }
 
-    fn node(&mut self, id: NodeId, prefix: &str, out: &mut String) {
+    fn node(&mut self, id: NodeId, prefix: &str, parent: Parent, out: &mut String) {
         let n = id.0;
         match &self.comp.node(id).kind {
-            NodeKind::Element { .. } => self.element(id, prefix, out),
+            NodeKind::Element { .. } => self.element(id, prefix, parent, out),
             NodeKind::If { branches, .. } => {
                 for (i, branch) in branches.iter().enumerate() {
                     let directive = match (i, &branch.cond) {
@@ -122,7 +173,7 @@ impl Markup<'_> {
                         (i, Some(_)) => format!("wx:elif=\"{{{{{prefix}i{n} === {i}}}}}\""),
                     };
                     out.push_str(&format!("<block {directive}>"));
-                    self.nodes(&branch.children, &format!("{prefix}b{n}."), out);
+                    self.nodes(&branch.children, &format!("{prefix}b{n}."), parent, out);
                     out.push_str("</block>");
                 }
             }
@@ -133,33 +184,37 @@ impl Markup<'_> {
                 out.push_str(&format!(
                     "<block wx:for=\"{{{{{prefix}l{n}}}}}\" wx:for-item=\"{row}\" wx:key=\"k\">"
                 ));
-                self.nodes(children, &format!("{row}."), out);
+                self.nodes(children, &format!("{row}."), parent, out);
                 out.push_str("</block>");
             }
             NodeKind::Component {
                 component, slots, ..
             } => {
                 let callee = &self.program.component(*component).name;
-                out.push_str(&format!(
-                    "<template is=\"{callee}\" data=\"{{{{...{prefix}c{n}}}}}\"/>"
-                ));
+                let arg = parent.argument();
+                let _ = write!(
+                    out,
+                    "<template is=\"{callee}\" data=\"{{{{...{prefix}c{n}, wParent: {arg}}}}}\"/>"
+                );
                 for fill in slots {
                     let mut body = String::new();
-                    self.nodes(&fill.children, "", &mut body);
+                    self.nodes(&fill.children, "", Parent::Inherited, &mut body);
                     self.slots
                         .push((slot_template(self.program, self.comp, id, fill.param), body));
                 }
             }
             NodeKind::Slot { param } => {
                 let y = format!("{prefix}{}", slot_key(self.comp, id, *param));
-                out.push_str(&format!(
-                    "<block wx:if=\"{{{{{y}}}}}\"><template is=\"{{{{{y}.t}}}}\" data=\"{{{{...{y}}}}}\"/></block>"
-                ));
+                let arg = parent.argument();
+                let _ = write!(
+                    out,
+                    "<block wx:if=\"{{{{{y}}}}}\"><template is=\"{{{{{y}.t}}}}\" data=\"{{{{...{y}, wParent: {arg}}}}}\"/></block>"
+                );
             }
         }
     }
 
-    fn element(&mut self, id: NodeId, prefix: &str, out: &mut String) {
+    fn element(&mut self, id: NodeId, prefix: &str, parent: Parent, out: &mut String) {
         let NodeKind::Element {
             element,
             props,
@@ -169,59 +224,165 @@ impl Markup<'_> {
             unreachable!("caller checked the node kind");
         };
         let element = *element;
-        let (tag, fixed, base_style) = tag(element);
-        let mut attrs = String::from(fixed);
-        let mut style: Vec<String> = Vec::new();
-        if !base_style.is_empty() {
-            style.push(base_style.to_owned());
-        }
-        let mut text = String::new();
+        let (tag, mut class, mut fixed) = tag(element);
+        let mut default_scrollbar = element == Element::Scroll;
+        let mut default_grow = element == Element::Scroll;
+        let mut default_fill = element == Element::Scroll;
+        let mut attrs = String::new();
+        let mut classes = String::new();
+        let mut style = String::new();
+        let mut scroll_content_style = String::new();
+        // Text values are emitted after the opening tag has been written.
+        let mut text = None;
         for (index, prop) in props.iter().enumerate() {
-            let Some(value) = prop_value(self.layout, self.id, element, id, index, prop) else {
+            if matches!(prop.value, PropValue::Handler(_)) {
                 continue;
-            };
-            let value = match value {
-                Value::Inline(text) => text,
-                Value::Data(key) => format!("{{{{{prefix}{key}}}}}"),
-            };
-            match target(element, prop.name) {
-                Target::Text => text = value,
-                Target::Attr(name) => attrs.push_str(&format!(" {name}=\"{value}\"")),
-                Target::Flag(_) if value == "false" => {}
-                Target::Flag(name) if value == "true" => {
-                    attrs.push_str(&format!(" {name}=\"{{{{true}}}}\""));
+            }
+            let target = target(element, prop.name);
+            let value = prop_value(self.layout, self.id, id, index, prop, target);
+            let key = value_key(id, index);
+            let binding = fmt::from_fn(|out| write!(out, "{{{{{prefix}{key}}}}}"));
+            match (target, value) {
+                (Target::Text, value) => text = Some((index, value)),
+                (Target::Attr(name), Value::Inline(Constant::String(s))) => {
+                    let _ = write!(attrs, " {name}=\"{s}\"");
                 }
-                Target::Flag(name) => attrs.push_str(&format!(" {name}=\"{value}\"")),
-                Target::Style(name, _) => {
-                    style.push(format!("{name}:{value}"));
+                (Target::Attr(name), Value::Data) => {
+                    let _ = write!(attrs, " {name}=\"{binding}\"");
                 }
+                (Target::Flag { name, default }, value) => {
+                    if default {
+                        default_scrollbar = false;
+                    }
+                    match value {
+                        Value::Inline(Constant::Bool(value)) if *value || default => {
+                            let _ = write!(attrs, " {name}=\"{{{{{value}}}}}\"");
+                        }
+                        Value::Inline(Constant::Bool(_)) => {}
+                        Value::Data => {
+                            let _ = write!(attrs, " {name}=\"{binding}\"");
+                        }
+                        Value::Inline(_) => unreachable!("{name} is a WXML flag"),
+                    }
+                }
+                (Target::Style(index), value) => {
+                    let css = CSS_PROPS[index];
+                    if css.unit == CssUnit::Custom(CustomCss::Grow) {
+                        default_grow = false;
+                    }
+                    if css.unit == CssUnit::Custom(CustomCss::Fill) {
+                        default_fill = false;
+                    }
+                    let style =
+                        if element == Element::Scroll && matches!(prop.name, "gap" | "align") {
+                            &mut scroll_content_style
+                        } else {
+                            &mut style
+                        };
+                    match value {
+                        Value::Inline(value) => {
+                            let declarations = style::declarations(css, value);
+                            if !declarations.is_empty() {
+                                push_style(style, declarations);
+                            }
+                        }
+                        Value::Data => push_style(style, binding),
+                    }
+                    // A dynamic declaration also supplies the value for its layout class.
+                    match (css.unit, value) {
+                        (CssUnit::Custom(CustomCss::Fill), Value::Inline(Constant::Bool(true))) => {
+                            classes.push_str(" w-fill");
+                        }
+                        (CssUnit::Custom(CustomCss::Grow), Value::Inline(Constant::Int(v)))
+                            if *v > 0 =>
+                        {
+                            classes.push_str(" w-grow");
+                        }
+                        (CssUnit::Custom(CustomCss::Grow), Value::Inline(Constant::Float(v)))
+                            if v.is_finite() && *v > 0.0 =>
+                        {
+                            classes.push_str(" w-grow");
+                        }
+                        (CssUnit::Custom(CustomCss::Fill), Value::Data) => {
+                            let filled = style::declarations(css, &Constant::Bool(true));
+                            let _ = write!(
+                                classes,
+                                "{{{{{prefix}{key} === '{filled}' ? ' w-fill' : ''}}}}"
+                            );
+                        }
+                        (CssUnit::Custom(CustomCss::Grow), Value::Data) => {
+                            let no_grow = style::declarations(css, &Constant::Float(0.0));
+                            let _ = write!(
+                                classes,
+                                "{{{{{prefix}{key} === '{no_grow}' ? '' : ' w-grow'}}}}"
+                            );
+                        }
+                        _ => {}
+                    }
+                }
+                (Target::Direction, Value::Inline(Constant::String(axis)))
+                    if axis == "vertical" => {}
+                (Target::Direction, Value::Inline(Constant::String(axis)))
+                    if axis == "horizontal" =>
+                {
+                    class = "w-scroll-h";
+                    fixed = " scroll-x enable-flex enhanced";
+                }
+                _ => unreachable!("invalid WXML property {}.{}", element.name(), prop.name),
             }
         }
+        if default_scrollbar {
+            attrs.push_str(" show-scrollbar=\"{{true}}\"");
+        }
+        if default_grow {
+            classes.push_str(" w-grow");
+        }
+        if default_fill {
+            classes.push_str(" w-fill");
+        }
+        let _ = write!(
+            out,
+            "<{tag} class=\"{class}{}{classes}\"{fixed}{attrs}",
+            parent.class()
+        );
         let (template, local) = self.layout.location(self.id, id);
         for (k, (_, event)) in self.layout.template(template).events(local).enumerate() {
             let kind = event_type(element, event.event);
             let key = event_key(id, k);
-            attrs.push_str(&format!(
+            let _ = write!(
+                out,
                 " bind{kind}=\"$e\" data-e{kind}=\"{{{{{prefix}{key}}}}}\""
-            ));
+            );
         }
-        out.push('<');
-        out.push_str(tag);
-        out.push_str(&attrs);
         if !style.is_empty() {
-            out.push_str(" style=\"");
-            out.push_str(&style.join(";"));
-            out.push('"');
+            let _ = write!(out, " style=\"{style}\"");
         }
         if is_void(element) {
             out.push_str("/>");
             return;
         }
         out.push('>');
-        out.push_str(&text);
-        self.nodes(children, prefix, out);
-        out.push_str("</");
-        out.push_str(tag);
-        out.push('>');
+        match text {
+            Some((_, Value::Inline(Constant::String(text)))) => out.push_str(text),
+            Some((_, Value::Inline(_))) => unreachable!("Text.value is a string"),
+            Some((index, Value::Data)) => {
+                let key = value_key(id, index);
+                let _ = write!(out, "{{{{{prefix}{key}}}}}");
+            }
+            None => {}
+        }
+        if element == Element::Scroll {
+            let axis = if class == "w-scroll-h" { 'h' } else { 'v' };
+            let _ = write!(out, "<view class=\"w-scroll-content-{axis}\"");
+            if !scroll_content_style.is_empty() {
+                let _ = write!(out, " style=\"{scroll_content_style}\"");
+            }
+            out.push('>');
+        }
+        self.nodes(children, prefix, Parent::of(element), out);
+        if element == Element::Scroll {
+            out.push_str("</view>");
+        }
+        let _ = write!(out, "</{tag}>");
     }
 }

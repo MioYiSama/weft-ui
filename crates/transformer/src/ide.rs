@@ -14,7 +14,7 @@ use std::fmt;
 
 use weft_ui_ast::{Diagnostic, FileId, ParsedProgram, SourceMap, Span};
 
-use crate::elements::{Children, ElementSpec, PropKind, PropSpec, PropType};
+use crate::elements::{Children, ElementSpec, PropKind, PropSpec};
 use crate::ir::{ComponentId, ParamKind, Program, Type, type_display};
 use crate::sema;
 use crate::sema::builtins::{MemberKind, MemberSig};
@@ -211,23 +211,22 @@ fn type_symbol(name: String) -> Symbol {
     }
 }
 
-fn prop_type_name(ty: PropType) -> &'static str {
-    match ty {
-        PropType::Int => "Int",
-        PropType::Bool => "Bool",
-        PropType::String => "String",
-        PropType::Color => "Color",
-    }
-}
-
 fn prop_signature(prop: &PropSpec) -> String {
     match prop.kind {
-        PropKind::Value(ty) => format!("{}: {}", prop.name, prop_type_name(ty)),
+        PropKind::Value(ty) => format!(
+            "{}: {}",
+            prop.name,
+            type_display(&ty.to_type(), &[], "unknown")
+        ),
         PropKind::Handler { payload: None } | PropKind::Lifecycle => {
             format!("{}: event", prop.name)
         }
         PropKind::Handler { payload: Some(ty) } => {
-            format!("{}: event({})", prop.name, prop_type_name(ty))
+            format!(
+                "{}: event({})",
+                prop.name,
+                type_display(&ty.to_type(), &[], "unknown")
+            )
         }
     }
 }
@@ -246,7 +245,13 @@ fn prop_symbol(element: Option<&ElementSpec>, prop: &PropSpec) -> Symbol {
 }
 
 fn element_symbol(spec: &ElementSpec) -> Symbol {
-    let props: Vec<String> = spec.props.iter().map(prop_signature).collect();
+    let props: Vec<String> = spec
+        .props
+        .iter()
+        .filter(|prop| prop.positional)
+        .chain(spec.props.iter().filter(|prop| !prop.positional))
+        .map(prop_signature)
+        .collect();
     let children = if spec.children == Children::None {
         ""
     } else {
@@ -639,7 +644,37 @@ component Example(kind: Kind) { Text(kind) }"#;
         let names: Vec<&str> = call.params.iter().map(|p| p.name.as_str()).collect();
         assert_eq!(
             names,
-            ["value", "color", "size", "bold", "onMount", "onUnmount"]
+            [
+                "width",
+                "height",
+                "grow",
+                "minWidth",
+                "maxWidth",
+                "minHeight",
+                "maxHeight",
+                "fill",
+                "aspectRatio",
+                "margin",
+                "marginX",
+                "marginY",
+                "marginTop",
+                "marginBottom",
+                "marginStart",
+                "marginEnd",
+                "padding",
+                "paddingX",
+                "paddingY",
+                "paddingTop",
+                "paddingBottom",
+                "paddingStart",
+                "paddingEnd",
+                "value",
+                "color",
+                "size",
+                "bold",
+                "onMount",
+                "onUnmount",
+            ]
         );
         assert_eq!(call.given, ["value", "color"]);
     }

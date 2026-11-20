@@ -1,7 +1,8 @@
 use crate::color::Color;
 use crate::elements::{ElementSpec, PropKind, PropType};
 use crate::ir::{
-    Component, ComponentId, Expr, ExprKind, NodeId, NodeKind, Program, Prop, PropValue, first_slot,
+    Coercion, Component, ComponentId, Expr, ExprKind, NodeId, NodeKind, Program, Prop, PropValue,
+    UnaryOp, first_slot,
 };
 
 use super::json::fnv1a;
@@ -64,8 +65,9 @@ impl ValueType {
     fn of(ty: PropType) -> Self {
         match ty {
             PropType::Int => ValueType::Int,
+            PropType::Float => ValueType::Float,
             PropType::Bool => ValueType::Bool,
-            PropType::String => ValueType::String,
+            PropType::String | PropType::Union(_) => ValueType::String,
             PropType::Color => ValueType::Color,
         }
     }
@@ -76,18 +78,52 @@ fn offset(index: usize) -> u32 {
     u32::try_from(index).expect("layout indices fit in u32")
 }
 
-fn constant(expr: &Expr, ty: PropType) -> Option<Constant> {
+/// A property literal borrowing any text from the IR.
+pub(crate) enum Literal<'e> {
+    Str(&'e str),
+    Token(&'e str),
+    Int(i64),
+    Float(f64),
+    Bool(bool),
+}
+
+/// Detects values that can be inserted into static markup without evaluating JavaScript.
+pub(crate) fn literal(expr: &Expr) -> Option<Literal<'_>> {
     match &expr.kind {
-        ExprKind::Str(s) if ty == PropType::Color => Some(Constant::Color(
-            Color::parse(s).expect("color literals were validated during semantic analysis"),
-        )),
-        ExprKind::Str(s) => Some(Constant::String(s.clone())),
-        ExprKind::Theme(name) => Some(Constant::Token(name.clone())),
-        ExprKind::Int(v) => Some(Constant::Int(*v)),
-        ExprKind::Bool(v) => Some(Constant::Bool(*v)),
-        ExprKind::Coerce { expr, .. } => constant(expr, ty),
+        ExprKind::Str(s) => Some(Literal::Str(s)),
+        ExprKind::Theme(name) => Some(Literal::Token(name)),
+        ExprKind::Int(v) => Some(Literal::Int(*v)),
+        ExprKind::Float(v) => Some(Literal::Float(*v)),
+        ExprKind::Bool(v) => Some(Literal::Bool(*v)),
+        ExprKind::Coerce { coercion, expr } => match (coercion, literal(expr)?) {
+            (Coercion::IntToFloat, Literal::Int(v)) => Some(Literal::Float(v as f64)),
+            (Coercion::WrapOptional, value) => Some(value),
+            _ => None,
+        },
+        ExprKind::Unary {
+            op: UnaryOp::Neg,
+            expr,
+        } => match literal(expr)? {
+            Literal::Int(v) => v.checked_neg().map(Literal::Int),
+            Literal::Float(v) => Some(Literal::Float(-v)),
+            _ => None,
+        },
         _ => None,
     }
+}
+
+/// Extracts a static property value for a platform view template.
+pub(crate) fn constant(expr: &Expr, ty: PropType) -> Option<Constant> {
+    Some(match literal(expr)? {
+        Literal::Str(s) if ty == PropType::Color => Constant::Color(
+            Color::parse(s).expect("color literals were validated during semantic analysis"),
+        ),
+        Literal::Str(s) => Constant::String(s.to_owned()),
+        Literal::Token(name) => Constant::Token(name.to_owned()),
+        Literal::Int(v) => Constant::Int(v),
+        Literal::Float(v) => Constant::Float(v),
+        Literal::Bool(v) => Constant::Bool(v),
+    })
 }
 
 /// Allocates the control event first, then other handlers in IR property order.

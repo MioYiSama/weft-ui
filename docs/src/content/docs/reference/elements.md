@@ -15,11 +15,33 @@ Stacks children vertically.
 
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
-| `padding` | `Int` | — | Sets the same inset on all four sides. | — |
-| `gap` | `Int` | — | Adds space between neighboring children. | — |
-| `width` | `Int` | — | Sets a fixed width instead of sizing to the content. | — |
-| `height` | `Int` | — | Sets a fixed height instead of sizing to the content. | — |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `padding` | `Int` | `0` | Sets the inset on all four sides. | — |
+| `paddingX` | `Int` | `0` | Sets the left and right insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingY` | `Int` | `0` | Sets the top and bottom insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingTop` | `Int` | `0` | Sets the top inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingBottom` | `Int` | `0` | Sets the bottom inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 | `background` | `Color` | — | Sets the background color. | — |
+| `gap` | `Int` | `0` | Adds space between neighboring children. | — |
+| `align` | `CrossAlign` | `"start"` | Positions children on the horizontal cross axis. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `justify` | `Justify` | `"start"` | Distributes remaining space on the vertical main axis. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 
 ## Row
 
@@ -29,11 +51,33 @@ Places children side by side.
 
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
-| `padding` | `Int` | — | Sets the same inset on all four sides. | — |
-| `gap` | `Int` | — | Adds space between neighboring children. | — |
-| `width` | `Int` | — | Sets a fixed width instead of sizing to the content. | — |
-| `height` | `Int` | — | Sets a fixed height instead of sizing to the content. | — |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `padding` | `Int` | `0` | Sets the inset on all four sides. | — |
+| `paddingX` | `Int` | `0` | Sets the left and right insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingY` | `Int` | `0` | Sets the top and bottom insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingTop` | `Int` | `0` | Sets the top inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingBottom` | `Int` | `0` | Sets the bottom inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 | `background` | `Color` | — | Sets the background color. | — |
+| `gap` | `Int` | `0` | Adds space between neighboring children. | — |
+| `align` | `CrossAlign` | `"start"` | Positions children on the vertical cross axis. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `justify` | `Justify` | `"start"` | Distributes remaining space on the horizontal main axis. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 
 ## Text
 
@@ -43,6 +87,29 @@ Displays text.
 
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `height` | `Int` | — | Sets the height of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `padding` | `Int` | `0` | Sets the inset on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingX` | `Int` | `0` | Sets the left and right insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingY` | `Int` | `0` | Sets the top and bottom insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingTop` | `Int` | `0` | Sets the top inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingBottom` | `Int` | `0` | Sets the bottom inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 | `value` (positional) | `String` | Required | The text to display. | — |
 | `color` | `Color` | — | Sets the text color. | — |
 | `size` | `Int` | — | Sets the font size in logical pixels. | — |
@@ -56,6 +123,22 @@ Renders a clickable control with child nodes for its content.
 
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `height` | `Int` | — | Sets the height of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 | `disabled` | `Bool` | — | Disables the button. | — |
 
 | Event | Payload | Description | Platform exceptions |
@@ -70,6 +153,22 @@ Displays an editable text field.
 
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `height` | `Int` | — | Sets the height of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 | `value` (positional) | `String` | Required | The current text. | — |
 | `placeholder` | `String` | — | Shows a hint when the field is empty. | — |
 | `disabled` | `Bool` | — | Disables the input field. | — |
@@ -86,6 +185,22 @@ Displays a checkable control.
 
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `height` | `Int` | — | Sets the height of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 | `checked` (positional) | `Bool` | Required | The current checked state. | — |
 | `disabled` | `Bool` | — | Disables the checkbox. | — |
 
@@ -101,6 +216,107 @@ Displays an image from a URL.
 
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 | `src` (positional) | `String` | Required | The image URL. | — |
-| `width` | `Int` | — | Sets the image width. | — |
-| `height` | `Int` | — | Sets the image height. | — |
+
+## Stack
+
+Overlays children in declaration order.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** Any.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `height` | `Int` | — | Sets the height of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `padding` | `Int` | `0` | Sets the inset on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingX` | `Int` | `0` | Sets the left and right insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingY` | `Int` | `0` | Sets the top and bottom insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingTop` | `Int` | `0` | Sets the top inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingBottom` | `Int` | `0` | Sets the bottom inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `alignment` | `Alignment` | `"topStart"` | Positions children along both axes of the stack. | — |
+
+## Scroll
+
+Lays out children linearly and scrolls along its main axis.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** Any.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `height` | `Int` | — | Sets the height of the content box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minWidth` | `Int` | — | Sets the minimum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `minHeight` | `Int` | — | Sets the minimum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginTop` | `Int` | `0` | Sets the top margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `padding` | `Int` | `0` | Sets the inset on all four sides. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingX` | `Int` | `0` | Sets the left and right insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingY` | `Int` | `0` | Sets the top and bottom insets. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingTop` | `Int` | `0` | Sets the top inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingBottom` | `Int` | `0` | Sets the bottom inset. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `direction` | `Axis` | `"vertical"` | Selects the scrolling axis at compile time. | — |
+| `gap` | `Int` | `0` | Adds space between neighboring children. | — |
+| `align` | `CrossAlign` | `"start"` | Positions children on the non-scrolling cross axis. | — |
+| `indicators` | `Bool` | `true` | Controls whether scrollbars are shown. | — |
+
+## Spacer
+
+Occupies space on its parent's main axis without rendering content.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** None.
+
+Must be a direct child of: `Column`, `Row`, `Scroll`.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `size` | `Int` | — | Reserves a fixed length; if omitted, shares the remaining space. | — |

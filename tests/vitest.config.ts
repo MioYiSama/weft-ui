@@ -7,4 +7,6 @@ import weft from "@weft-ui/vite";
 // the native `URL` used for `file:` paths.
 export default defineConfig({
   plugins: [weft()],
+  // A .weft transform also depends on the current compiler WASM, not just its source file.
+  test: { fsModuleCache: false },
 });

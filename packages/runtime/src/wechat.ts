@@ -12,8 +12,8 @@
  * `(scope, event slot)`.
  */
 
-import { color } from "./core.ts";
-import { WechatUnit } from "./protocol.ts";
+import { declarations } from "./css.ts";
+import { CSS_PROPS } from "./elements.ts";
 import { sameValue, type Session, type Sink, type Value } from "./remote.ts";
 
 type Data = Record<string, unknown>;
@@ -26,8 +26,8 @@ export interface TemplateKeys {
   t?: string;
   /** Branch index of an `if` branch template. */
   i?: number;
-  /** `[key, unit]` per value slot: `1` appends `px`, `2` maps a flag to `font-weight`, `3` converts a color. */
-  v?: [string, number][];
+  /** `[key]` for a raw value slot or `[key, cssIndex]` for CSS declarations. */
+  v?: [key: string, cssIndex?: number][];
   /** `[key, controlled value slot or -1]` per event slot. */
   e?: [string, number][];
   /** Key per mount point; `[indexKey, dataKey]` for branches. */
@@ -136,11 +136,8 @@ export class WechatSink implements Sink {
 
   set(id: number, slot: number, value: Value): void {
     const scope = this.#scope(id);
-    const [key, unit] = scope.keys.v![slot];
-    const next = unit === WechatUnit.Px ? `${value}px`
-      : unit === WechatUnit.Bold ? (value ? "bold" : "normal")
-      : unit === WechatUnit.Color ? color(value as string, this.#theme)
-      : value;
+    const [key, cssIndex] = scope.keys.v![slot];
+    const next = cssIndex === undefined ? value : declarations(CSS_PROPS[cssIndex], value, this.#theme);
     if (sameValue(scope.o[key], next)) return;
     scope.o[key] = next;
     if (!scope.fresh) this.#pend(scope, key);

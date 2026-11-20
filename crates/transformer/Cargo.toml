@@ -10,4 +10,5 @@ description = "Semantic analysis and platform backends for Weft UI"
 weft-ui-ast = { workspace = true }
 
 [dev-dependencies]
+serde_json = { workspace = true }
 weft-ui-parser = { workspace = true }

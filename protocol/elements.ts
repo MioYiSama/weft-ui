@@ -4,7 +4,16 @@ type Doc = { en: string; zh: string };
 type Locale = keyof Doc;
 type Member = Prop | Event;
 type Children = "any" | "none" | string[];
-type CssUnit = "px" | "color" | "bold";
+type CssUnit = "px" | "number" | "color" | "percent" | "keyword" | "custom";
+
+interface Css {
+  unit: CssUnit;
+  property?: string;
+  properties?: string[];
+  keywords?: Record<string, string>;
+  custom?: string;
+  target?: "inner";
+}
 type Level = "no" | "ignored";
 type Support = Record<string, Level>;
 type Platforms = ReadonlyMap<string, string>;
@@ -20,8 +29,9 @@ interface Prop extends Feature {
   positional?: boolean;
   required?: boolean;
   controlledBy?: string;
+  constant?: boolean;
   default?: unknown;
-  css?: { property: string; unit: CssUnit };
+  css?: Css;
   event?: never;
 }
 
@@ -35,6 +45,7 @@ interface Element extends Feature {
   name: string;
   groups?: string[];
   members?: Member[];
+  memberSupport?: Record<string, Support>;
   children?: Children;
   parents?: string[];
   content?: string;
@@ -58,10 +69,13 @@ interface LocatedMember {
 }
 
 const header = "// Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit.\n";
-const propTypes = { Int: true, Bool: true, String: true, Color: true };
-const payloadTypes = { Int: true, Bool: true, String: true };
-const cssUnits: Record<CssUnit, string> = { px: "Px", color: "Color", bold: "Bold" };
+const propTypes = { Int: true, Float: true, Bool: true, String: true, Color: true };
+const payloadTypes = { Int: true, Float: true, Bool: true, String: true };
+const rustUnits = { px: "Px", number: "Number", color: "Color", percent: "Percent" };
+const rustCustom = { hidden: "Hidden", maxLines: "MaxLines", shadow: "Shadow", grow: "Grow", fill: "Fill", border: "Border", spacer: "Spacer" };
 const quote = JSON.stringify;
+const pascal = (value: string): string => value[0].toUpperCase() + value.slice(1);
+const snake = (value: string): string => value.replace(/(?!^)[A-Z]/g, (letter) => `_${letter}`).toLowerCase();
 
 function invalid(path: string, message: string): never {
   throw new Error(`protocol/weft.elements.json: ${path}: ${message}`);
@@ -89,6 +103,32 @@ function validateSupport(support: Support | undefined, path: string, platforms: 
   }
 }
 
+function validateCss(css: Css, path: string): void {
+  if (css.unit !== "custom" && css.unit !== "keyword" && !Object.hasOwn(rustUnits, css.unit)) {
+    invalid(`${path}.unit`, `unknown CSS unit ${quote(css.unit)}`);
+  }
+  if (css.target !== undefined && css.target !== "inner") invalid(`${path}.target`, "expected \"inner\"");
+  if (css.unit === "custom") {
+    if (css.custom === undefined || !Object.hasOwn(rustCustom, css.custom)) {
+      invalid(`${path}.custom`, `unknown custom CSS conversion ${quote(css.custom)}`);
+    }
+    if (css.property !== undefined || css.properties !== undefined) invalid(path, "a custom conversion sets its own CSS properties");
+  } else {
+    const names = css.property === undefined ? css.properties : [css.property];
+    if ((css.property !== undefined && css.properties !== undefined) || !Array.isArray(names) || names.length === 0 ||
+      names.some((name) => typeof name !== "string" || !/^[a-z-][a-z0-9-]*$/.test(name))) {
+      invalid(path, "expected one CSS property or a nonempty list of CSS properties");
+    }
+    if (css.custom !== undefined) invalid(`${path}.custom`, "expected the custom CSS unit");
+  }
+  if (css.unit === "keyword") {
+    if (typeof css.keywords !== "object" || css.keywords === null || Array.isArray(css.keywords) ||
+      Object.values(css.keywords).some((value) => typeof value !== "string")) {
+      invalid(`${path}.keywords`, "expected a map of string keys to CSS keywords");
+    }
+  } else if (css.keywords !== undefined) invalid(`${path}.keywords`, "expected the keyword CSS unit");
+}
+
 function validateMembers(members: LocatedMember[], unions: Record<string, string[]>, platforms: Platforms): void {
   const names = new Set<string>();
   for (const { member, path } of members) {
@@ -100,15 +140,10 @@ function validateMembers(members: LocatedMember[], unions: Record<string, string
       }
       continue;
     }
-    if (!Object.hasOwn(propTypes, member.type)) {
-      const message = Object.hasOwn(unions, member.type) || member.type === "Float" || member.type === "Strings"
-        ? "unsupported property type"
-        : "unknown property type";
-      invalid(`${path}.type`, `${message} ${quote(member.type)}`);
+    if (!Object.hasOwn(propTypes, member.type) && !Object.hasOwn(unions, member.type)) {
+      invalid(`${path}.type`, `unknown property type ${quote(member.type)}`);
     }
-    if (member.css && !Object.hasOwn(cssUnits, member.css.unit)) {
-      invalid(`${path}.css.unit`, `unknown CSS unit ${quote(member.css.unit)}`);
-    }
+    if (member.css !== undefined) validateCss(member.css, `${path}.css`);
   }
 }
 
@@ -120,12 +155,18 @@ function expand(schema: Schema, platforms: Platforms): ExpandedElement[] {
   for (const [name, values] of Object.entries(unions)) {
     const path = `unions.${name}`;
     if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) invalid(path, "expected a PascalCase union name");
-    if (Object.hasOwn(propTypes, name) || name === "Float" || name === "Strings") {
+    if (Object.hasOwn(propTypes, name) || name === "Strings") {
       invalid(path, `duplicate name ${quote(name)}`);
     }
-    if (values.length === 0) invalid(path, "expected a nonempty union");
+    if (!Array.isArray(values) || values.length === 0) invalid(path, "expected a nonempty union");
     const names = new Set<string>();
-    for (const [i, value] of values.entries()) unique(names, value, `${path}[${i}]`);
+    for (const [i, value] of values.entries()) {
+      const valuePath = `${path}[${i}]`;
+      if (typeof value !== "string" || !/^[a-z][A-Za-z0-9]*$/.test(value)) {
+        invalid(valuePath, "expected a lowerCamelCase union value");
+      }
+      unique(names, snake(value), valuePath);
+    }
   }
   const groups = new Map<string, LocatedMember[]>();
   for (const [name, members] of Object.entries(schema.groups ?? {})) {
@@ -150,6 +191,15 @@ function expand(schema: Schema, platforms: Platforms): ExpandedElement[] {
     validateSupport(element.support, `${path}.support`, platforms);
     validateMembers(members, unions, platforms);
 
+    const overrides = element.memberSupport ?? {};
+    for (const [name, support] of Object.entries(overrides)) {
+      const overridePath = `${path}.memberSupport.${name}`;
+      if (!members.some(({ member, path: memberPath }) => member.name === name && memberPath.startsWith("groups."))) {
+        invalid(overridePath, `unknown group member ${quote(name)}`);
+      }
+      validateSupport(support, overridePath, platforms);
+    }
+
     let main: Prop | undefined;
     for (const { member, path: memberPath } of members) {
       if (member.event) continue;
@@ -172,7 +222,13 @@ function expand(schema: Schema, platforms: Platforms): ExpandedElement[] {
         if (!names.has(name)) invalid(`${path}.${field}[${j}]`, `unknown element ${quote(name)}`);
       }
     }
-    return { ...element, members: members.map(({ member }) => member), main: main?.name ?? null };
+    return {
+      ...element,
+      members: members.map(({ member }) => Object.hasOwn(overrides, member.name)
+        ? { ...member, support: overrides[member.name] }
+        : member),
+      main: main?.name ?? null,
+    };
   });
 }
 
@@ -184,25 +240,73 @@ function rustSupport(support: Support | undefined, platforms: Platforms): string
   return entries.length < 2 ? `&[${entries.join("")}]` : `&[\n            ${entries.join(",\n            ")},\n        ]`;
 }
 
-function rustMember(member: Member, platforms: Platforms): string {
+function rustMember(member: Member, platforms: Platforms, cssIndices: ReadonlyMap<Css, number>): string {
   const prop = member.event ? undefined : member;
   const kind = member.event
     ? member.payload == null
       ? "PropKind::Handler { payload: None }"
       : `PropKind::Handler {\n            payload: Some(PropType::${member.payload}),\n        }`
-    : `PropKind::Value(PropType::${member.type})`;
-  const css = prop?.css;
+    : Object.hasOwn(propTypes, member.type)
+      ? `PropKind::Value(PropType::${member.type})`
+      : `PropKind::Value(PropType::Union(${snake(member.type).toUpperCase()}))`;
   return `    PropSpec {
         name: ${quote(member.name)},
         kind: ${kind},
         positional: ${prop?.positional ?? false},
         required: ${prop?.required ?? false},
-        css: ${css ? `Some(Css {
-            property: ${quote(css.property)},
-            unit: CssUnit::${cssUnits[css.unit]},
-        })` : "None"},
+        constant: ${prop?.constant ?? false},
+        css: ${prop?.css === undefined ? "None" : `Some(${cssIndices.get(prop.css)})`},
         controlled_by: ${prop?.controlledBy === undefined ? "None" : `Some(${quote(prop.controlledBy)})`},
         support: ${rustSupport(member.support, platforms)},
+    },`;
+}
+
+interface CssCatalog {
+  mappings: Css[];
+  indices: Map<Css, number>;
+}
+
+function collectCss(elements: ExpandedElement[]): CssCatalog {
+  const mappings: Css[] = [];
+  const indices = new Map<Css, number>();
+  const seen = new Map<string, number>();
+  for (const element of elements) {
+    for (const member of element.members) {
+      if (member.event || member.css === undefined || indices.has(member.css)) continue;
+      const css = member.css;
+      // Key order in schema objects is not meaningful. Property array order is.
+      const key = quote([
+        css.unit, css.property ?? css.properties, css.custom, css.target,
+        css.keywords && Object.keys(css.keywords).sort().map((name) => [name, css.keywords![name]]),
+      ]);
+      let index = seen.get(key);
+      if (index === undefined) {
+        index = mappings.length;
+        mappings.push(css);
+        seen.set(key, index);
+      }
+      indices.set(css, index);
+    }
+  }
+  return { mappings, indices };
+}
+
+function rustCss(css: Css): string {
+  const properties = css.properties ?? (css.property === undefined ? [] : [css.property]);
+  const props = properties.map((p) => quote(p)).join(", ");
+  const list = props.length <= 60 ? `&[${props}]`
+    : `&[\n${properties.map((p) => `            ${quote(p)},`).join("\n")}\n        ]`;
+  let unit: string;
+  if (css.unit === "keyword") {
+    const keywords = Object.entries(css.keywords!).map(([name, value]) => `(${quote(name)}, ${quote(value)})`);
+    unit = keywords.join(", ").length <= 56 ? `Keyword(&[${keywords.join(", ")}])`
+      : `Keyword(&[\n${keywords.map((pair) => `            ${pair},`).join("\n")}\n        ])`;
+  } else if (css.unit === "custom") unit = `Custom(CustomCss::${rustCustom[css.custom as keyof typeof rustCustom]})`;
+  else unit = rustUnits[css.unit as keyof typeof rustUnits];
+  return `    Css {
+        properties: ${list},
+        unit: CssUnit::${unit},
+        target: CssTarget::${css.target === "inner" ? "Inner" : "Node"},
     },`;
 }
 
@@ -212,12 +316,15 @@ function rustChildren(children: Children = "none"): string {
   return `Children::Only(&[${children.map((name) => `Element::${name}`).join(", ")}])`;
 }
 
-function rust(elements: ExpandedElement[], features: Record<string, Feature>, platforms: Platforms): string {
+function rust(
+  elements: ExpandedElement[], features: Record<string, Feature>, platforms: Platforms,
+  unions: Record<string, string[]>, css: CssCatalog, sheet: string,
+): string {
   // Elements with identical expanded members share one slice.
   const shared = new Map<string, string>();
   function props(members: Member[]): string {
     if (members.length === 0) return "&[]";
-    const rendered = members.map((member) => rustMember(member, platforms)).join("\n");
+    const rendered = members.map((member) => rustMember(member, platforms, css.indices)).join("\n");
     const name = shared.get(rendered) ?? `PROPS_${shared.size}`;
     shared.set(rendered, name);
     return name;
@@ -227,19 +334,35 @@ function rust(elements: ExpandedElement[], features: Record<string, Feature>, pl
         name: ${quote(element.name)},
         props: ${props(element.members)},
         children: ${rustChildren(element.children)},
+        parents: &[${(element.parents ?? []).map((name) => `Element::${name}`).join(", ")}],
+        content: ${element.content === undefined ? "None" : `Some(${quote(element.content)})`},
         support: ${rustSupport(element.support, platforms)},
     },`).join("\n");
-  const members = [...shared].map(([rendered, name]) => `const ${name}: &[PropSpec] = &[
-${rendered}
-];`).join("\n\n");
+  const members = [...shared].map(([rendered, name]) => {
+    if (rendered.indexOf("    PropSpec {") === rendered.lastIndexOf("    PropSpec {")) {
+      const single = rendered.replace(/^ {4}/gm, "").slice(0, -1);
+      return `const ${name}: &[PropSpec] = &[${single}];`;
+    }
+    return `const ${name}: &[PropSpec] = &[\n${rendered}\n];`;
+  }).join("\n\n");
   const featureSpecs = Object.entries(features).map(([name, feature]) => `    FeatureSpec {
         name: ${quote(name)},
         support: ${rustSupport(feature.support, platforms)},
     },`).join("\n");
   const usesPlatform = [specs, members, featureSpecs].some((code) => code.includes("Platform::"));
   const platformImport = usesPlatform ? "use crate::protocol::Platform;\n" : "";
+  const unionSpecs = Object.entries(unions).map(([name, values]) => {
+    const list = values.map((value) => quote(value)).join(", ");
+    const prefix = `const ${snake(name).toUpperCase()}: &[&str] = &`;
+    return list.length <= 60
+      ? `${prefix}[${list}];`
+      : `${prefix}[\n${values.map((value) => `    ${quote(value)},`).join("\n")}\n];`;
+  }).join("\n");
+  const customImport = css.mappings.some((mapping) => mapping.unit === "custom") ? "CustomCss, " : "";
   return `${header}
-use super::{Children, Css, CssUnit, ElementSpec, FeatureSpec, PropKind, PropSpec, PropType};
+use super::{${`Children, Css, CssTarget, CssUnit, ${customImport}ElementSpec, FeatureSpec, PropKind, PropSpec, PropType`.length > 88
+    ? `\n    Children, Css, CssTarget, CssUnit, ${customImport}ElementSpec, FeatureSpec, PropKind, PropSpec,\n    PropType,\n`
+    : `Children, Css, CssTarget, CssUnit, ${customImport}ElementSpec, FeatureSpec, PropKind, PropSpec, PropType`}};
 ${platformImport}
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -263,6 +386,12 @@ impl Element {
     }
 }
 
+${unionSpecs ? `${unionSpecs}\n\n` : ""}pub(crate) const CSS_PROPS: &[Css<'static>] = &[
+${css.mappings.map(rustCss).join("\n")}
+];
+
+pub(crate) const CSS: &str = r#"${sheet}"#;
+
 ${members}
 
 pub(crate) const ELEMENTS: [ElementSpec; ${elements.length}] = [
@@ -275,16 +404,70 @@ ${featureSpecs}
 `;
 }
 
-function typescript(elements: ExpandedElement[], unions: Record<string, string[]>): string {
+function typescript(elements: ExpandedElement[], unions: Record<string, string[]>, css: Css[], sheet: string): string {
   const types = Object.entries(unions).map(([name, values]) =>
     `export type ${name} = ${values.map((value) => quote(value)).join(" | ")};\n\n`).join("");
   const entries = elements.map(({ name, main, children = "none" }) =>
     `  ${name}: { main: ${quote(main)}, children: ${quote(children)} },`).join("\n");
   return `${header}
+import type { Css } from "./css.ts";
+
 ${types}export const ELEMENTS: Record<string, { main: string | null; children: "any" | "none" | readonly string[] }> = {
 ${entries}
 };
+
+export const CSS_PROPS: readonly Css[] = [
+${css.map((mapping) => `  ${quote(mapping)},`).join("\n")}
+];
+
+export const CSS = ${quote(sheet)};
 `;
+}
+
+function nativeUnions(unions: Record<string, string[]>): Record<string, string> {
+  const entries = Object.entries(unions);
+  const swift = entries.map(([name, values]) => `public enum Weft${name}: String {
+${values.map((value) => `    case ${value}`).join("\n")}
+
+    public init(weft: String) {
+        if let value = Self(rawValue: weft) {
+            self = value
+        } else {
+            #if DEBUG
+            NSLog("weft: invalid ${name} value: %@", weft)
+            #endif
+            self = .${values[0]}
+        }
+    }
+}`).join("\n\n");
+  const kotlin = entries.map(([name, values]) => `enum class Weft${name} {
+${values.map((value) => `    ${snake(value).toUpperCase()}`).join(",\n")};
+
+    companion object {
+        fun parse(value: String): Weft${name} = when (value) {
+${values.slice(1).map((value) => `            ${quote(value)} -> ${snake(value).toUpperCase()}\n`).join("")}            else -> ${snake(values[0]).toUpperCase()}
+        }
+    }
+}`).join("\n\n");
+  const csharp = entries.map(([name, values]) => `public enum Weft${name}
+{
+${values.map((value) => `    ${pascal(value)},`).join("\n")}
+}`).join("\n\n");
+  const csharpParse = entries.map(([name, values]) => `    public static Weft${name} Parse${name}(string value) => value switch
+    {
+${values.slice(1).map((value) => `        ${quote(value)} => Weft${name}.${pascal(value)},\n`).join("")}        _ => Weft${name}.${pascal(values[0])},
+    };`).join("\n\n");
+  const cpp = entries.map(([name, values]) => `enum class ${name} { ${values.map(pascal).join(", ")} };
+
+[[nodiscard]] constexpr ${name} parse_${snake(name)}(std::string_view value) noexcept {
+${values.slice(1).map((value) => `    if (value == ${quote(value)}) return ${name}::${pascal(value)};\n`).join("")}    return ${name}::${pascal(values[0])};
+}`).join("\n\n");
+  return {
+    "native/apple/Sources/WeftKit/Elements.swift": `${header}\nimport Foundation\n\n${swift}\n`,
+    "native/android/src/main/kotlin/net/mioyi/weftui/Elements.kt": `${header}\npackage net.mioyi.weftui\n\n${kotlin}\n`,
+    "native/windows/Weft.WinUI/Elements.Generated.cs": `${header}\nnamespace Weft.WinUI;\n\n${csharp}\n\npublic static class WeftUnions\n{\n${csharpParse}\n}\n`,
+    "native/linux/include/weft/elements.hpp": `${header}\n#pragma once\n\n#include <string_view>\n\nnamespace weft {\n\n${cpp}\n\n} // namespace weft\n`,
+  };
 }
 
 const markdownHeader = "<!-- Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit. -->";
@@ -428,9 +611,13 @@ export function generateElements(platforms: Platforms): Record<string, string> {
   const schema: Schema = JSON.parse(readFileSync(new URL("weft.elements.json", import.meta.url), "utf8"));
   const elements = expand(schema, platforms);
   const features = schema.features ?? {};
+  const unions = schema.unions ?? {};
+  const css = collectCss(elements);
+  const sheet = readFileSync(new URL("weft.css", import.meta.url), "utf8");
   const outputs: Record<string, string> = {
-    "crates/transformer/src/elements/catalog.rs": rust(elements, features, platforms),
-    "packages/runtime/src/elements.ts": typescript(elements, schema.unions ?? {}),
+    "crates/transformer/src/elements/catalog.rs": rust(elements, features, platforms, unions, css, sheet),
+    "packages/runtime/src/elements.ts": typescript(elements, unions, css.mappings, sheet),
+    ...nativeUnions(unions),
   };
   for (const locale of ["en", "zh"] as const) {
     const prefix = locale === "zh" ? "zh/" : "";

@@ -9,8 +9,8 @@ use std::collections::{BTreeMap, HashMap};
 
 use crate::ir::{
     Arg, ArgValue, Assign, AssignOp, BindingId, Branch, Component, Dep, DepRoot, EmitArg,
-    EmitTarget, EventId, Expr, ExprKind, FieldId, Handler, LoopId, NodeId, NodeKind, ParamId,
-    ParamKind, Program, Prop, PropValue, SlotRef, StateId, Stmt, Type,
+    EmitTarget, EventId, FieldId, Handler, LoopId, NodeId, NodeKind, ParamId, ParamKind, Program,
+    Prop, PropValue, SlotRef, StateId, Stmt, Type,
 };
 
 use super::expr::{Env, expr};
@@ -277,25 +277,6 @@ pub fn instance_watches(program: &Program, comp: &Component, consts: &mut Consts
 }
 
 /* ---- expressions ------------------------------------------------------- */
-
-/// A constant property value that can be written into static markup.
-pub enum Literal<'e> {
-    Str(&'e str),
-    Token(&'e str),
-    Int(i64),
-    Bool(bool),
-}
-
-pub fn literal(e: &Expr) -> Option<Literal<'_>> {
-    match &e.kind {
-        ExprKind::Str(s) => Some(Literal::Str(s)),
-        ExprKind::Theme(name) => Some(Literal::Token(name)),
-        ExprKind::Int(v) => Some(Literal::Int(*v)),
-        ExprKind::Bool(v) => Some(Literal::Bool(*v)),
-        ExprKind::Coerce { expr, .. } => literal(expr),
-        _ => None,
-    }
-}
 
 /// Index of the active branch of an `if` chain, `-1` when none matches.
 pub fn branch_index(branches: &[Branch]) -> String {

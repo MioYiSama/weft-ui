@@ -537,6 +537,43 @@ impl Lowerer<'_, '_> {
     }
 }
 
+/// Folds literals and simple control flow in an expression with no reactive dependencies.
+pub(super) fn constant_kind(kind: ExprKind) -> Option<ExprKind> {
+    match kind {
+        ExprKind::Int(_)
+        | ExprKind::Float(_)
+        | ExprKind::Bool(_)
+        | ExprKind::Null
+        | ExprKind::Str(_)
+        | ExprKind::Theme(_) => Some(kind),
+        ExprKind::Coerce { coercion, expr } => match (coercion, constant_kind(expr.kind)?) {
+            (Coercion::IntToFloat, ExprKind::Int(v)) => Some(ExprKind::Float(v as f64)),
+            (Coercion::WrapOptional, kind) => Some(kind),
+            _ => None,
+        },
+        ExprKind::Unary { op, expr } => match (op, constant_kind(expr.kind)?) {
+            (UnaryOp::Neg, ExprKind::Int(v)) => v.checked_neg().map(ExprKind::Int),
+            (UnaryOp::Neg, ExprKind::Float(v)) => Some(ExprKind::Float(-v)),
+            (UnaryOp::Not, ExprKind::Bool(v)) => Some(ExprKind::Bool(!v)),
+            _ => None,
+        },
+        ExprKind::If { cond, then, else_ } => match constant_kind(cond.kind)? {
+            ExprKind::Bool(true) => constant_kind(then.kind),
+            ExprKind::Bool(false) => constant_kind(else_.kind),
+            _ => None,
+        },
+        ExprKind::Binary {
+            op: BinaryOp::Coalesce,
+            lhs,
+            rhs,
+        } => match constant_kind(lhs.kind)? {
+            ExprKind::Null => constant_kind(rhs.kind),
+            kind => Some(kind),
+        },
+        _ => None,
+    }
+}
+
 pub(super) fn error_expr(span: Span) -> Expr {
     Expr {
         kind: ExprKind::Error,

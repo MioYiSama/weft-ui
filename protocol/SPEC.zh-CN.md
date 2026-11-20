@@ -76,9 +76,9 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 
 值以一个 u8 标签开头：`0` false、`1` true、`2` 数字（f64 小端，`Int` 槽的值也按 f64 传）、`3` 字符串（u32 字节长度 + UTF-8），或 `4` 字符串数组（u32 元素数，后接对应数量的字符串，每个字符串为 u32 字节长度加 UTF-8 字节，不带标签）。JS 侧的 `OpWriter`（`@weft-ui/runtime` 的 `src/ops.ts`）复用同一块缓冲，每批的字节只在下一次写入前有效。
 
-版本号、opcode、值标签和解码错误种类，以及 WeChat 样式单位、平台名和平台调用模块，都只在 [`protocol/weft.protocol.json`](weft.protocol.json) 中定义一次。`pnpm gen:protocol`（`protocol/generate.ts`）据此生成 TypeScript、Rust、C++、Swift、Kotlin 和 C# 的常量；生成文件过期时 `pnpm test` 会失败。
+版本号、opcode、值标签、解码错误种类、平台名和平台调用模块，都只在 [`protocol/weft.protocol.json`](weft.protocol.json) 中定义一次。`pnpm gen:protocol`（`protocol/generate.ts`）据此生成 TypeScript、Rust、C++、Swift、Kotlin 和 C# 的常量；生成文件过期时 `pnpm test` 会失败。
 
-内置元素单独定义在 [`protocol/weft.elements.json`](weft.elements.json) 中。同一命令会生成 Rust 编译器目录和由 `@weft-ui/runtime/elements` 导出的 TypeScript 目录。成员顺序不能随意改动：属性下标是小程序数据键的一部分。
+内置元素单独定义在 [`protocol/weft.elements.json`](weft.elements.json) 中。同一命令生成 Rust 和 TypeScript 目录、内置字符串联合的原生枚举，以及来自 [`protocol/weft.css`](weft.css) 的基础样式表常量。成员顺序不能随意改动：属性下标是小程序数据键的一部分。两份目录共用 `CSS_PROPS` 映射表，按首次使用顺序列出去重后的 CSS 映射。
 
 ## 解码错误
 
@@ -148,7 +148,9 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 
 `$e` 从 `currentTarget.dataset["e" + event.type]` 取处理器 id。`tap` 不带 payload，`input` 和 `change` 的 payload 为 `detail.value`。
 
-声明了主题时，`view.wxss` 在 `:host` 上定义令牌变量，并在深色媒体查询中覆盖其值。生成的视图表列出有效令牌名；引用这些令牌的动态 `Color` 值写成 `var(--weft-name)`。未知令牌显示为透明。
+生成的视图表中，直接使用的值槽写成 `[key]`，样式值槽写成 `[key, cssIndex]`。sink 按 `CSS_PROPS[cssIndex]` 把样式值转换为完整的 CSS 声明。模板按 schema 的成员顺序拼接静态和动态声明，使单边等更具体的内外边距设置覆盖较宽泛的设置。
+
+`view.wxss` 总是包含基础样式表。声明了主题时，它还在 `:host` 上定义令牌变量，并在深色媒体查询中覆盖其值。生成的视图表列出有效令牌名；引用这些令牌的动态 `Color` 值写成 `var(--weft-name)`。未知令牌显示为透明。
 
 `setData` 规则：
 

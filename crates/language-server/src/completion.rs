@@ -69,7 +69,11 @@ pub(crate) fn complete(server: &Server, params: CompletionParams) -> Option<Comp
                 let (insert, snippet) = insert_text(symbol, server.snippets);
                 items.push(item(
                     &symbol.name,
-                    kind(symbol),
+                    if probe.context == ProbeContext::SlotFill {
+                        CompletionItemKind::PROPERTY
+                    } else {
+                        kind(symbol)
+                    },
                     Some(&symbol.detail),
                     insert,
                     snippet,

@@ -76,6 +76,10 @@
       {
         "type": "if_node",
         "named": true
+      },
+      {
+        "type": "slot_fill",
+        "named": true
       }
     ]
   },
@@ -963,6 +967,32 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "slot_fill",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "block",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {

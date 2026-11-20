@@ -12,7 +12,8 @@ use crate::elements::{
 };
 use crate::ir::{
     Arg, ArgValue, Binding, BindingId, BindingKind, Branch, ComponentId, Dep, Expr, ExprKind, Loop,
-    LoopId, Node, NodeId, NodeKind, Param, ParamId, ParamKind, Prop, PropValue, Type,
+    LoopId, Node, NodeId, NodeKind, Param, ParamId, ParamKind, Prop, PropValue, SlotFill, Type,
+    first_slot, slot_params,
 };
 use crate::sema::record::{ProbeContext, RawCall, Target};
 use crate::sema::{DeclKind, article};
@@ -79,6 +80,16 @@ impl Lowerer<'_, '_> {
             ast::NodeKind::Element(e) => self.element(e, node.span),
             ast::NodeKind::If(i) => Some(self.if_node(i, node.span)),
             ast::NodeKind::For(f) => Some(self.for_node(f, node.span)),
+            ast::NodeKind::SlotFill(fill) => {
+                self.error(
+                    fill.name.span,
+                    format!(
+                        "slot fill `{}:` is only allowed directly inside a component call",
+                        fill.name.name
+                    ),
+                );
+                None
+            }
             ast::NodeKind::Error => None,
         }
     }
@@ -333,32 +344,89 @@ impl Lowerer<'_, '_> {
         }
         let own = first_binding..self.bindings.len();
 
-        let accepts_children = callee.params.iter().any(|p| p.kind == ParamKind::Children);
-        let children = match &e.children {
-            Some(block) if !accepts_children => {
-                let name = callee.name.clone();
-                self.diags.push(
-                    Diagnostic::error(
-                        block.span,
-                        format!("component `{name}` does not accept children"),
-                    )
-                    .with_note("declare a parameter of type `Children` to accept a block"),
-                );
-                Vec::new()
-            }
-            Some(block) => self.block(block),
-            None => Vec::new(),
-        };
+        let slots = e
+            .children
+            .as_ref()
+            .map_or_else(Vec::new, |block| self.slot_fills(id, block));
         self.push_node(
             NodeKind::Component {
                 component: id,
                 args,
                 props,
-                children,
+                slots,
             },
             span,
             own,
         )
+    }
+
+    fn slot_fills(&mut self, id: ComponentId, block: &ast::Block) -> Vec<SlotFill> {
+        let cx = self.cx;
+        let callee = &cx.components[id.index()];
+        let Some(first) = first_slot(&callee.params) else {
+            self.diags.push(
+                Diagnostic::error(
+                    block.span,
+                    format!("component `{}` does not accept children", callee.name),
+                )
+                .with_note("declare a parameter of type `Children` to accept a block"),
+            );
+            return Vec::new();
+        };
+
+        let has_default = block
+            .nodes
+            .iter()
+            .any(|node| !matches!(node.kind, ast::NodeKind::SlotFill(_)));
+        let scope_len = self.scope.len();
+        self.let_declarations(&block.lets);
+        let mut fills: Vec<SlotFill> = Vec::new();
+        let mut default_children = Vec::new();
+        for node in &block.nodes {
+            let ast::NodeKind::SlotFill(fill) = &node.kind else {
+                default_children.extend(self.node(node));
+                continue;
+            };
+            let name = &fill.name.name;
+            let available = || slot_params(&callee.params);
+            if cx.is_probe(name) {
+                let candidates = available()
+                    .filter(|(param, slot)| {
+                        !(has_default && *param == first)
+                            && !block.nodes.iter().any(|node| {
+                                matches!(&node.kind, ast::NodeKind::SlotFill(fill) if fill.name.name == slot.name)
+                            })
+                    })
+                    .map(|(param, _)| Target::ComponentParam(id, param.index()))
+                    .collect();
+                cx.set_probe(ProbeContext::SlotFill, candidates);
+            }
+            let Some((param, _)) = available().find(|(_, param)| &param.name == name) else {
+                self.error(
+                    fill.name.span,
+                    format!("`{}` has no slot `{name}`", callee.name),
+                );
+                continue;
+            };
+            cx.record(fill.name.span, || Target::ComponentParam(id, param.index()));
+            if (has_default && param == first) || fills.iter().any(|fill| fill.param == param) {
+                self.error(fill.name.span, format!("slot `{name}` is filled twice"));
+                continue;
+            }
+            fills.push(SlotFill {
+                param,
+                children: self.block(&fill.block),
+            });
+        }
+        self.scope.truncate(scope_len);
+        if !default_children.is_empty() {
+            fills.push(SlotFill {
+                param: first,
+                children: default_children,
+            });
+        }
+        fills.sort_unstable_by_key(|fill| fill.param);
+        fills
     }
 
     fn if_node(&mut self, node: &ast::IfNode, span: Span) -> NodeId {

@@ -12,6 +12,8 @@ use super::builtins::MemberSig;
 pub enum ProbeContext {
     /// A node in a component body: elements, components and slots.
     Node,
+    /// A named slot label in a component call's child block.
+    SlotFill,
     /// An expression: let bindings, parameters, states, loop variables, lambda parameters.
     Value,
     /// An event handler value: events.

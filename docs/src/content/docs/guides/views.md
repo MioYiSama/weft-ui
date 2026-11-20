@@ -143,7 +143,7 @@ component DraftField(value: String) {
 
 ## Compose components across files
 
-A component can declare one `Children` parameter as a slot. Place the parameter name where the supplied nodes should render, and pass those nodes in a trailing block at the call site. The slot has no default value; omitting the block supplies no children.
+A component can declare multiple `Children` parameters as slots. Use each parameter name as a node where its content should appear. In the call's trailing block, `name: { ... }` fills that named slot, and nodes outside named blocks fill the first `Children` parameter. You can omit any slot, but you can't fill the same slot twice.
 
 Save this `App.weft` beside the two todo files:
 
@@ -151,16 +151,18 @@ Save this `App.weft` beside the two todo files:
 import "./Todo.weft"
 import "./TodoList.weft"
 
-component Panel(title: String, content: Children) {
+component Panel(title: String, content: Children, footer: Children) {
   Column(padding = 16, gap = 12) {
     Text(title, size = 20, bold = true)
     content
+    footer
   }
 }
 
 component App(todos: Todo[]) {
   Panel("My tasks") {
     TodoList(todos)
+    footer: { Text("End of list") }
   }
 }
 ```

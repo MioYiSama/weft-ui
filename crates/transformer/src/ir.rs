@@ -5,6 +5,7 @@
 
 use std::fmt;
 
+use weft_ui_ast::span::offset;
 pub use weft_ui_ast::{AssignOp, BinaryOp, UnaryOp};
 use weft_ui_ast::{FileId, Span};
 
@@ -303,6 +304,20 @@ pub enum ParamKind {
     Children,
 }
 
+/// Slot parameters with their indices in the full signature, in declaration order.
+pub(crate) fn slot_params(params: &[Param]) -> impl Iterator<Item = (ParamId, &Param)> {
+    params
+        .iter()
+        .enumerate()
+        .filter(|(_, param)| param.kind == ParamKind::Children)
+        .map(|(i, param)| (ParamId(offset(i)), param))
+}
+
+/// The first slot gets the unnamed child nodes and keeps the unsuffixed template and data keys.
+pub(crate) fn first_slot(params: &[Param]) -> Option<ParamId> {
+    slot_params(params).next().map(|(id, _)| id)
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct State {
     pub name: String,
@@ -341,7 +356,8 @@ pub enum NodeKind {
         args: Vec<Arg>,
         /// Lifecycle handlers (`onMount` / `onUnmount`).
         props: Vec<Prop>,
-        children: Vec<NodeId>,
+        /// Filled slots in parameter order.
+        slots: Vec<SlotFill>,
     },
     If {
         branches: Vec<Branch>,
@@ -361,19 +377,29 @@ pub enum NodeKind {
 }
 
 impl NodeKind {
-    #[must_use]
-    pub fn children(&self) -> Vec<NodeId> {
-        match self {
-            NodeKind::Element { children, .. }
-            | NodeKind::Component { children, .. }
-            | NodeKind::For { children, .. } => children.clone(),
-            NodeKind::If { branches, .. } => branches
-                .iter()
-                .flat_map(|b| b.children.iter().copied())
-                .collect(),
-            NodeKind::Slot { .. } => Vec::new(),
-        }
+    /// Iterates over the immediate child nodes, including branch and slot roots.
+    pub fn children(&self) -> impl Iterator<Item = NodeId> + '_ {
+        let (direct, slots, branches) = match self {
+            NodeKind::Element { children, .. } | NodeKind::For { children, .. } => {
+                (children.as_slice(), &[][..], &[][..])
+            }
+            NodeKind::Component { slots, .. } => (&[][..], slots.as_slice(), &[][..]),
+            NodeKind::If { branches, .. } => (&[][..], &[][..], branches.as_slice()),
+            NodeKind::Slot { .. } => (&[][..], &[][..], &[][..]),
+        };
+        direct
+            .iter()
+            .chain(slots.iter().flat_map(|slot| &slot.children))
+            .chain(branches.iter().flat_map(|branch| &branch.children))
+            .copied()
     }
+}
+
+/// The caller's nodes passed to one `Children` parameter.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SlotFill {
+    pub param: ParamId,
+    pub children: Vec<NodeId>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

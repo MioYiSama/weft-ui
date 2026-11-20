@@ -507,6 +507,26 @@ line */
 }
 
 #[test]
+fn formats_named_slot_fills() {
+    golden(
+        r#"component Screen() {Card {Text("body") footer :{} header : { // heading
+          Text("title") } }}"#,
+        r#"component Screen() {
+    Card {
+        Text("body")
+        footer: {}
+        header: {
+            // heading
+            Text("title")
+        }
+    }
+}
+"#,
+        Options::default(),
+    );
+}
+
+#[test]
 fn reports_syntax_errors() {
     for source in [
         "event E(",

@@ -30,6 +30,27 @@ fn demo_parses_without_diagnostics() {
     assert!(matches!(children[2].kind, NodeKind::If(_)));
 }
 
+#[test]
+fn named_slot_fill_has_a_label_and_child_block() {
+    let input = r#"component Screen() { Card { header: { let title = "Hi" Text(title) } } }"#;
+    let (file, diagnostics) = parse(FileId(0), input);
+    assert!(diagnostics.is_empty(), "{diagnostics:#?}");
+    let Item::Component(screen) = &file.items[0] else {
+        panic!("expected Screen component");
+    };
+    let NodeKind::Element(card) = &screen.body[0].kind else {
+        panic!("expected Card call");
+    };
+    let block = card.children.as_ref().expect("Card has a block");
+    let NodeKind::SlotFill(header) = &block.nodes[0].kind else {
+        panic!("expected named slot fill");
+    };
+    assert_eq!(header.name.name, "header");
+    assert_eq!(header.span, block.nodes[0].span);
+    assert_eq!(header.block.lets[0].name.name, "title");
+    assert!(matches!(header.block.nodes[0].kind, NodeKind::Element(_)));
+}
+
 fn render(src: &str) -> String {
     let mut sources = SourceMap::new();
     let id = sources.add("broken.weft".into(), src.into());

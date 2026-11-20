@@ -4,8 +4,8 @@ use weft_ui_ast::span::offset;
 use weft_ui_ast::{
     Arg, Assign, AssignOp, BinaryOp, Block, CallStmt, ComponentDecl, Diagnostic, ElementNode,
     EventDecl, Expr, ExprKind, Field, File, FileId, ForNode, Ident, IfBranch, IfNode, Import, Item,
-    Lambda, LambdaStmt, LetDecl, ModelDecl, Node, NodeKind, Param, Span, StateDecl, StrPart,
-    TypeAlias, TypeExpr, TypeExprKind, UnaryOp,
+    Lambda, LambdaStmt, LetDecl, ModelDecl, Node, NodeKind, Param, SlotFill, Span, StateDecl,
+    StrPart, TypeAlias, TypeExpr, TypeExprKind, UnaryOp,
 };
 
 use crate::lexer::{lex, scan_interpolation};
@@ -588,6 +588,16 @@ impl<'src> Parser<'src> {
                 self.error(start, "`let` must be declared before any node");
                 self.let_decl();
                 return None;
+            }
+            TokenKind::Ident if self.peek_at(1) == TokenKind::Colon => {
+                let name = self.ident("slot name")?;
+                self.bump(); // `:`
+                let block = self.block();
+                NodeKind::SlotFill(SlotFill {
+                    name,
+                    block,
+                    span: self.span_from(start),
+                })
             }
             TokenKind::Ident => NodeKind::Element(self.element()),
             TokenKind::If => NodeKind::If(self.if_node()),

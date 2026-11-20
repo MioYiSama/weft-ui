@@ -46,7 +46,7 @@ export function Panel$c(app, args, children, depth) {
   const c = new $.Instance(app, 0, 1, depth, args, children);
   c.s[0] = 0;
   c.sw[0] = $.watch($s0, c, c.s[0]);
-  const y0 = c.children ? c.children.create() : null;
+  const y0 = c.children[0]?.create() ?? null;
   if (y0) c.attach(0, y0);
   c.on(0, () => { c.state(0, c.s[0] + 1); }, -1);
   c.set(0, ("Panel clicks: " + $.str(c.s[0])));
@@ -120,7 +120,7 @@ export function Gallery$c(app, args, children, depth) {
     };
     return b;
   });
-  const k10 = Panel$c(c.app, [undefined], s10, c.depth + 1);
+  const k10 = Panel$c(c.app, [undefined], [s10], c.depth + 1);
   c.attach(0, k10);
   c.u = () => {
     if (c.d[0] & 1) c.set(0, c.p[0].$v[0].$v[0]);

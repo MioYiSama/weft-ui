@@ -13,6 +13,9 @@ model LanguageModel {
   items: LanguageItem[],
   mode: Mode,
   rating: Int,
+  title: String,
+  body: String,
+  footer: String,
 }
 
 component ModeLabel(mode: "compact" | "full" = "full") {
@@ -34,6 +37,14 @@ component ForwardRating(onSelect: Event<Int>) {
   Rating(0, onSelect = onSelect)
 }
 
+component Card(body: Children, header: Children, footer: Children) {
+  Column {
+    header
+    body
+    footer
+  }
+}
+
 component Language(model: LanguageModel) {
   state local = 0
   let title = "${model.name} (${model.items.length})"
@@ -44,6 +55,15 @@ component Language(model: LanguageModel) {
     Rating(local, onSelect = { v -> local = v; Rated(local) })
     ForwardRating(onSelect = Rated(model.rating))
     Rating(0)
+    Card {
+      Text(model.body)
+      header: { Text(model.title) }
+      footer: { Text(model.footer) }
+    }
+    Card {
+      header: {}
+      footer: { Text("Footer only") }
+    }
     for (item in model.items; key = item.id) {
       let label = item.name.uppercase()
       Text(label)

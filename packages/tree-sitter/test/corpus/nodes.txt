@@ -133,6 +133,50 @@ component C(m: M) {
         (block)))))
 
 ========================================
+Named slots
+========================================
+
+component Screen() {
+  Card {
+    Text("body")
+    header: { Text("title") }
+    footer: {}
+  }
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters)
+    (component_body
+      (element
+        (element_name
+          (identifier))
+        (block
+          (element
+            (element_name
+              (identifier))
+            (arguments
+              (argument
+                (string
+                  (string_content)))))
+          (slot_fill
+            (identifier)
+            (block
+              (element
+                (element_name
+                  (identifier))
+                (arguments
+                  (argument
+                    (string
+                      (string_content)))))))
+          (slot_fill
+            (identifier)
+            (block)))))))
+
+========================================
 Lambdas
 ========================================
 

@@ -3,7 +3,9 @@
 use std::fmt::Display;
 
 use crate::elements::Element;
-use crate::ir::{BindingId, Branch, Component, DepRoot, NodeId, NodeKind, Program, Prop};
+use crate::ir::{
+    BindingId, Branch, Component, DepRoot, NodeId, NodeKind, Program, Prop, slot_params,
+};
 
 use super::blocks::{
     Consts, Ctx, Parts, arg_updates, arg_values, binding_cond, branch_index, lifecycle,
@@ -46,7 +48,7 @@ pub(crate) trait Backend {
     /// Arguments locating a branch or list mount point.
     fn anchor<'parent>(&self, id: NodeId, parent: &'parent str) -> impl Display + 'parent;
 
-    /// Declares block scope `b` for the indexed branch or the sole slot template.
+    /// Declares block scope `b` for the indexed branch or filled slot template.
     fn block_decl(&self, id: NodeId, index: usize, out: &mut Code);
 
     /// Extra arguments preceding the common row arguments.
@@ -140,10 +142,13 @@ impl<'ir, 'consts, B: Backend> Flow<'ir, 'consts, B> {
             }
             NodeKind::For { .. } => self.for_node(id, kind, ctx, parent, parts),
             NodeKind::Component { .. } => self.component_node(id, kind, ctx, parent, parts),
-            NodeKind::Slot { .. } => {
+            NodeKind::Slot { param } => {
                 let slot = format!("y{}", id.0);
+                let index = slot_params(&self.ir.comp.params)
+                    .position(|(id, _)| id == *param)
+                    .expect("a slot node refers to a Children parameter");
                 parts.create.line(format!(
-                    "const {slot} = c.children ? c.children.create() : null;"
+                    "const {slot} = c.children[{index}]?.create() ?? null;"
                 ));
                 let mount = self.backend.mount(id, parent, &slot);
                 parts.create.line(format!("if ({slot}) {mount}"));
@@ -265,42 +270,49 @@ impl<'ir, 'consts, B: Backend> Flow<'ir, 'consts, B> {
             component,
             args,
             props,
-            children,
+            slots,
         } = kind
         else {
             unreachable!("caller checked the node kind");
         };
         let callee = self.ir.program.component(*component);
         let var = format!("k{}", id.0);
-        let slot = if children.is_empty() {
-            None
-        } else {
-            let slot = format!("s{}", id.0);
-            parts
-                .create
-                .open(format!("const {slot} = new $.Slot(() => {{"));
-            self.block_scope(id, 0, children, ctx, &mut parts.create);
-            parts.create.close("});");
-            Some(slot)
-        };
+        arg_updates(self.ir.program, self.ir.comp, &var, args, &mut parts.update);
+
+        let mut fills = slots.iter().enumerate().peekable();
+        let children: Vec<_> = slot_params(&callee.params)
+            .enumerate()
+            .map(|(ordinal, (param, _))| {
+                let Some((index, fill)) = fills.next_if(|(_, fill)| fill.param == param) else {
+                    return "null".to_owned();
+                };
+                let slot = if ordinal == 0 {
+                    format!("s{}", id.0)
+                } else {
+                    format!("s{}_{}", id.0, param.0)
+                };
+                parts
+                    .create
+                    .open(format!("const {slot} = new $.Slot(() => {{"));
+                self.block_scope(id, index, &fill.children, ctx, &mut parts.create);
+                parts.create.close("});");
+                if let Some(cond) = walk_cond(self.ir.comp, fill.children.iter().copied(), ctx) {
+                    parts.update.line(format!("if ({cond}) {slot}.update();"));
+                }
+                slot
+            })
+            .collect();
 
         parts.create.line(format!(
-            "const {var} = {}$c(c.app, [{}], {}, {}.depth + 1);",
+            "const {var} = {}$c(c.app, [{}], [{}], {}.depth + 1);",
             callee.name,
             arg_values(self.ir.program, callee, args).join(", "),
-            slot.as_deref().unwrap_or("null"),
+            children.join(", "),
             ctx.scope()
         ));
         parts
             .create
             .line(self.backend.mount(id, parent, &var).to_string());
-
-        arg_updates(self.ir.program, self.ir.comp, &var, args, &mut parts.update);
-        if let Some(slot) = slot
-            && let Some(cond) = walk_cond(self.ir.comp, children.iter().copied(), ctx)
-        {
-            parts.update.line(format!("if ({cond}) {slot}.update();"));
-        }
         let destroy = self.backend.slot_destroy();
         parts.cleanup.line(format!("{var}.{destroy};"));
         lifecycle(self.ir.program, lifecycle_handlers(props), parts);

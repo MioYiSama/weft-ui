@@ -710,15 +710,6 @@ fn signature(
             ParamKind::Callback { payload }
         } else if let Some((ty_name, [])) = named.filter(|(n, _)| n.name == CHILDREN) {
             cx.record(ty_name.span, || Target::Type(CHILDREN.to_owned()));
-            if let Some(prev) = params.iter().find(|p| p.kind == ParamKind::Children) {
-                diags.push(
-                    Diagnostic::error(
-                        name.span,
-                        "a component can have only one `Children` parameter",
-                    )
-                    .with_secondary(prev.span, "first `Children` parameter"),
-                );
-            }
             if let Some(default) = &param.default {
                 diags.push(Diagnostic::error(
                     default.span,

@@ -153,10 +153,10 @@ export class Instance extends ScopeBlock {
   s: unknown[] = [];
   pw: (Watch | undefined)[] = [];
   sw: Watch[] = [];
-  /** Caller-supplied block for the `Children` parameter. */
-  children: Slot | null;
+  /** Caller-supplied blocks in `Children` parameter order. */
+  children: readonly (Slot | null)[];
 
-  constructor(app: App, words: number, depth: number, args: unknown[], children: Slot | null) {
+  constructor(app: App, words: number, depth: number, args: unknown[], children: readonly (Slot | null)[]) {
     super(words, depth);
     this.app = app;
     this.p = args;
@@ -345,7 +345,7 @@ export class Slot {
 /* Host-facing component                                                     */
 /* ------------------------------------------------------------------------ */
 
-type Create = (app: App, args: unknown[], children: Slot | null, depth: number) => Instance;
+type Create = (app: App, args: unknown[], children: readonly (Slot | null)[], depth: number) => Instance;
 
 /** Base class of the generated root component classes. */
 export class App extends AppBase {
@@ -359,7 +359,7 @@ export class App extends AppBase {
 
   mount(target: Node): void {
     if (this.#root) throw new Error("weft: component is already mounted");
-    const root = this.#create(this, this.$args, null, 0);
+    const root = this.#create(this, this.$args, [], 0);
     root.mount(target, null);
     this.#root = root;
   }

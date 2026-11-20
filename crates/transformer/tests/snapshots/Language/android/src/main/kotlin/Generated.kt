@@ -14,7 +14,7 @@ import net.mioyi.weftui.*
 /** Root view of the app: starts the kernel with the bundle and renders the root component. */
 @Composable
 fun WeftApp() {
-    WeftRoot(layoutHash = 0x0491f0fb29968dc8uL, make = ::makeScope)
+    WeftRoot(layoutHash = 0xc9566ac30b2d948fuL, make = ::makeScope)
 }
 
 /** Scope of a `create` op. */
@@ -26,6 +26,12 @@ private fun makeScope(template: Int, id: Int, session: WeftSession): WeftScope? 
     4 -> S4(id, session)
     5 -> S5(id, session)
     6 -> S6(id, session)
+    7 -> S7(id, session)
+    8 -> S8(id, session)
+    9 -> S9(id, session)
+    10 -> S10(id, session)
+    11 -> S11(id, session)
+    12 -> S12(id, session)
     else -> null
 }
 
@@ -102,9 +108,37 @@ private fun V2(s: S2) {
     s.p0?.let { V1(it) }
 }
 
-// 3 Language
+// 3 Card
 
 private class S3(id: Int, session: WeftSession) : WeftScope(id, session) {
+    var p0 by mutableStateOf<WeftScope?>(null)
+    var p1 by mutableStateOf<WeftScope?>(null)
+    var p2 by mutableStateOf<WeftScope?>(null)
+
+    override fun mount(point: Int, children: List<WeftScope>) {
+        when (point) {
+            0 -> p0 = children.firstOrNull()
+            1 -> p1 = children.firstOrNull()
+            2 -> p2 = children.firstOrNull()
+        }
+    }
+
+    @Composable
+    override fun Content() = V3(this)
+}
+
+@Composable
+private fun V3(s: S3) {
+    WeftColumn {
+        s.p0?.let { key(it.id) { it.Content() } }
+        s.p1?.let { key(it.id) { it.Content() } }
+        s.p2?.let { key(it.id) { it.Content() } }
+    }
+}
+
+// 4 Language
+
+private class S4(id: Int, session: WeftSession) : WeftScope(id, session) {
     /** Text.value */
     var v0 by mutableStateOf("")
     var p0 by mutableStateOf<S0?>(null)
@@ -112,7 +146,9 @@ private class S3(id: Int, session: WeftSession) : WeftScope(id, session) {
     var p2 by mutableStateOf<S1?>(null)
     var p3 by mutableStateOf<S2?>(null)
     var p4 by mutableStateOf<S1?>(null)
-    var p5 by mutableStateOf<List<S4>>(emptyList())
+    var p5 by mutableStateOf<S3?>(null)
+    var p6 by mutableStateOf<S3?>(null)
+    var p7 by mutableStateOf<List<S10>>(emptyList())
 
     override fun apply(slot: Int, value: WeftValue) {
         when (slot) {
@@ -127,16 +163,18 @@ private class S3(id: Int, session: WeftSession) : WeftScope(id, session) {
             2 -> p2 = children.firstOrNull() as S1?
             3 -> p3 = children.firstOrNull() as S2?
             4 -> p4 = children.firstOrNull() as S1?
-            5 -> p5 = children.map { it as S4 }
+            5 -> p5 = children.firstOrNull() as S3?
+            6 -> p6 = children.firstOrNull() as S3?
+            7 -> p7 = children.map { it as S10 }
         }
     }
 
     @Composable
-    override fun Content() = V3(this)
+    override fun Content() = V4(this)
 }
 
 @Composable
-private fun V3(s: S3) {
+private fun V4(s: S4) {
     WeftColumn {
         WeftText(s.v0)
         s.p0?.let { V0(it) }
@@ -144,13 +182,101 @@ private fun V3(s: S3) {
         s.p2?.let { V1(it) }
         s.p3?.let { V2(it) }
         s.p4?.let { V1(it) }
-        for (c in s.p5) key(c.id) { V4(c) }
+        s.p5?.let { V3(it) }
+        s.p6?.let { V3(it) }
+        for (c in s.p7) key(c.id) { V10(c) }
     }
 }
 
-// 4 Language:for10
+// 5 Language:slot9
 
-private class S4(id: Int, session: WeftSession) : WeftScope(id, session) {
+private class S5(id: Int, session: WeftSession) : WeftScope(id, session) {
+    /** Text.value */
+    var v0 by mutableStateOf("")
+
+    override fun apply(slot: Int, value: WeftValue) {
+        when (slot) {
+            0 -> v0 = value.string
+        }
+    }
+
+    @Composable
+    override fun Content() = V5(this)
+}
+
+@Composable
+private fun V5(s: S5) {
+    WeftText(s.v0)
+}
+
+// 6 Language:slot9.header
+
+private class S6(id: Int, session: WeftSession) : WeftScope(id, session) {
+    /** Text.value */
+    var v0 by mutableStateOf("")
+
+    override fun apply(slot: Int, value: WeftValue) {
+        when (slot) {
+            0 -> v0 = value.string
+        }
+    }
+
+    @Composable
+    override fun Content() = V6(this)
+}
+
+@Composable
+private fun V6(s: S6) {
+    WeftText(s.v0)
+}
+
+// 7 Language:slot9.footer
+
+private class S7(id: Int, session: WeftSession) : WeftScope(id, session) {
+    /** Text.value */
+    var v0 by mutableStateOf("")
+
+    override fun apply(slot: Int, value: WeftValue) {
+        when (slot) {
+            0 -> v0 = value.string
+        }
+    }
+
+    @Composable
+    override fun Content() = V7(this)
+}
+
+@Composable
+private fun V7(s: S7) {
+    WeftText(s.v0)
+}
+
+// 8 Language:slot11.header
+
+private class S8(id: Int, session: WeftSession) : WeftScope(id, session) {
+    @Composable
+    override fun Content() = V8(this)
+}
+
+@Composable
+private fun V8(s: S8) {
+}
+
+// 9 Language:slot11.footer
+
+private class S9(id: Int, session: WeftSession) : WeftScope(id, session) {
+    @Composable
+    override fun Content() = V9(this)
+}
+
+@Composable
+private fun V9(s: S9) {
+    WeftText("Footer only")
+}
+
+// 10 Language:for16
+
+private class S10(id: Int, session: WeftSession) : WeftScope(id, session) {
     /** Text.value */
     var v0 by mutableStateOf("")
     var p0 by mutableStateOf<WeftScope?>(null)
@@ -168,38 +294,38 @@ private class S4(id: Int, session: WeftSession) : WeftScope(id, session) {
     }
 
     @Composable
-    override fun Content() = V4(this)
+    override fun Content() = V10(this)
 }
 
 @Composable
-private fun V4(s: S4) {
+private fun V10(s: S10) {
     WeftText(s.v0)
     when (val c = s.p0) {
-        is S5 -> key(c.id) { V5(c) }
-        is S6 -> key(c.id) { V6(c) }
+        is S11 -> key(c.id) { V11(c) }
+        is S12 -> key(c.id) { V12(c) }
     }
 }
 
-// 5 Language:if9.0
+// 11 Language:if15.0
 
-private class S5(id: Int, session: WeftSession) : WeftScope(id, session) {
+private class S11(id: Int, session: WeftSession) : WeftScope(id, session) {
     @Composable
-    override fun Content() = V5(this)
+    override fun Content() = V11(this)
 }
 
 @Composable
-private fun V5(s: S5) {
+private fun V11(s: S11) {
     WeftText("image")
 }
 
-// 6 Language:if9.1
+// 12 Language:if15.1
 
-private class S6(id: Int, session: WeftSession) : WeftScope(id, session) {
+private class S12(id: Int, session: WeftSession) : WeftScope(id, session) {
     @Composable
-    override fun Content() = V6(this)
+    override fun Content() = V12(this)
 }
 
 @Composable
-private fun V6(s: S6) {
+private fun V12(s: S12) {
     WeftText("text")
 }

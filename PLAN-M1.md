@@ -916,8 +916,8 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | P2 | ☑ | bf3519f | Web、iOS、Android 上切换深浅色与旋转时日志随之变化；协议版本不变 |
 | L1 | ☑ | 7768759 | 新增 `Language` 快照与 `language.ops`；C-core 含 `conformance.language` 通过；C-apps 无差异 |
 | L2 | ☑ | cd1e466 | 仅 `Language` 快照与 `language.ops` 变化；C-core 17/17；C-apps 无差异 |
-| L3 | ☑ | （本提交） | 三个驱动的宿主事件日志均含 `Rated`；C-core 17/17；C-apps 无差异 |
-| L4 | ☐ | | |
+| L3 | ☑ | 3212932 | 三个驱动的宿主事件日志均含 `Rated`；C-core 17/17；C-apps 无差异 |
+| L4 | ☑ | （本提交） | `Gallery` 仅生成的 JS 变化（`TodoList` 没有组件调用，不变）；C-apps 仅各平台打包 JS 变化，已重新录制基线；未改原生壳 |
 | L5 | ☐ | | |
 | L6.w | ☐ | | |
 | L6.a | ☐ | | |

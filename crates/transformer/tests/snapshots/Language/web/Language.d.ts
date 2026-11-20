@@ -10,6 +10,9 @@ export interface LanguageModel {
   items: readonly LanguageItem[];
   mode: "compact" | "full";
   rating: number;
+  title: string;
+  body: string;
+  footer: string;
 }
 
 export type Rated = { value: number };
@@ -33,6 +36,15 @@ export declare class Rating {
 }
 
 export declare class ForwardRating {
+  constructor();
+  /** Value of the first parameter; event handlers receive the same object. */
+  readonly model: undefined;
+  $on(name: string, handler: (model: undefined, event: object) => unknown): () => void;
+  mount(target: Node): void;
+  unmount(): void;
+}
+
+export declare class Card {
   constructor();
   /** Value of the first parameter; event handlers receive the same object. */
   readonly model: undefined;

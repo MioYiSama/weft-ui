@@ -145,7 +145,9 @@ export default grammar({
 
     block: $ => seq('{', repeat($.let_declaration), repeat($._node), '}'),
 
-    _node: $ => choice($.element, $.if_node, $.for_node),
+    _node: $ => choice($.element, $.if_node, $.for_node, $.slot_fill),
+
+    slot_fill: $ => seq(field('name', $.identifier), ':', field('body', $.block)),
 
     element: $ => prec.right(seq(
       field('name', $.element_name),

@@ -35,6 +35,69 @@ fn diagnostics(files: &[(&str, &str)]) -> Vec<String> {
 }
 
 #[test]
+fn invalid_slot_fills_report_unknown_duplicate_and_misplaced_labels() {
+    let source = r#"component Card(body: Children, title: String, header: Children) {
+  Column { header Text(title) body }
+}
+component Label() { Text("label") }
+component Screen() {
+  Card("a") { title: {} }
+  Card("b") { header: {} header: {} }
+  Card("c") { body: {} Text("implicit body") }
+  Card("d") { if (true) { header: {} } }
+  Column { body: {} }
+  Label { Text("body") }
+}"#;
+    assert_eq!(
+        diagnostics(&[("slots.weft", source)]),
+        [
+            "slots.weft:6:15: `Card` has no slot `title`",
+            "slots.weft:7:26: slot `header` is filled twice",
+            "slots.weft:8:15: slot `body` is filled twice",
+            "slots.weft:9:27: slot fill `header:` is only allowed directly inside a component call",
+            "slots.weft:10:12: slot fill `body:` is only allowed directly inside a component call",
+            "slots.weft:11:9: component `Label` does not accept children",
+        ]
+    );
+}
+
+#[test]
+fn named_slots_keep_signature_indices_and_empty_fills() {
+    let source = r#"component Card(body: Children, title: String, header: Children) {
+  Column { header Text(title) body }
+}
+component Screen() {
+  Card("a") {
+    let shared = "shared"
+    header: { let local = shared Text(local) }
+    Text(shared)
+    Text("second body node")
+  }
+  Card("b") { header: {} }
+  Card("c") { body: {} }
+}"#;
+    let compilation = compile(&[("slots.weft", source)]);
+    let program = compilation
+        .program
+        .as_ref()
+        .unwrap_or_else(|| panic!("{}", compilation.render_diagnostics()));
+    let screen = program.component_named("Screen").expect("Screen component");
+    let slots = |i: usize| match &screen.node(screen.roots[i]).kind {
+        NodeKind::Component { slots, .. } => slots.as_slice(),
+        _ => panic!("expected a component call"),
+    };
+    let first = slots(0);
+    assert_eq!(first.len(), 2);
+    assert_eq!((first[0].param, first[0].children.len()), (ParamId(0), 2));
+    assert_eq!((first[1].param, first[1].children.len()), (ParamId(2), 1));
+    for (i, param) in [(1, ParamId(2)), (2, ParamId(0))] {
+        assert_eq!(slots(i).len(), 1);
+        assert_eq!(slots(i)[0].param, param);
+        assert!(slots(i)[0].children.is_empty());
+    }
+}
+
+#[test]
 fn let_bindings_are_immutable_and_cannot_shadow_or_escape_their_scope() {
     let src = r#"component Shadow() {
   state name = "original"

@@ -21,7 +21,7 @@ mod json;
 
 use crate::color::Color;
 use crate::elements::Element;
-use crate::ir::{ComponentId, NodeId};
+use crate::ir::{ComponentId, NodeId, ParamId};
 
 /// Index into [`ViewLayout::templates`]; the same number the logic layer
 /// sends in `create` ops.
@@ -71,8 +71,8 @@ pub enum TemplateKind {
     Branch { node: NodeId, index: u32 },
     /// One row of the `for` node `node`.
     Row { node: NodeId },
-    /// Children that the component call `node` passes to its callee's slot.
-    SlotContent { node: NodeId },
+    /// Children that the component call `node` passes to its callee's slot `param`.
+    SlotContent { node: NodeId, param: ParamId },
 }
 
 /// A node of a template's static tree.
@@ -182,7 +182,7 @@ pub enum PointKind {
     List { template: TemplateId },
     /// A component call: one child of the callee's body template.
     Instance { template: TemplateId },
-    /// The component's `Children` parameter: at most one child, whose
+    /// A component's `Children` parameter: at most one child, whose
     /// template is the caller's slot content.
     Slot,
 }
@@ -208,7 +208,7 @@ enum Role {
     Point {
         index: u32,
         /// Branch templates of an `if`, the row template of a `for`, or the
-        /// slot content of a component call with children.
+        /// filled slots of a component call, in parameter order.
         children: Vec<TemplateId>,
     },
 }
@@ -297,8 +297,7 @@ impl ViewLayout {
     }
 
     /// Templates created for the children of a mount point: one per branch
-    /// of an `if`, the row of a `for`, or the slot content of a component
-    /// call (empty without children).
+    /// of an `if`, the row of a `for`, or one per filled slot of a component call.
     ///
     /// # Panics
     ///

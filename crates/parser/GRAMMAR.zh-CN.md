@@ -47,7 +47,8 @@ UnionType   = STRING ( "|" STRING )+ ;       (* 不允许插值 *)
 TypeSuffix  = "[" "]" | "?" ;
 
 Block       = "{" LetDecl* Node* "}" ;
-Node        = ElementNode | IfNode | ForNode ;
+Node        = ElementNode | IfNode | ForNode | SlotFill ;
+SlotFill    = IDENT ":" Block ;                  (* 只能直接写在组件调用的子块里 *)
 ElementNode = Path ( "(" ArgList? ")" )? Block? ;
 Path        = IDENT ( "." IDENT )* ;
 IfNode      = "if" "(" Expr ")" Block ( "else" ( IfNode | Block ) )? ;
@@ -116,7 +117,8 @@ Call        = IDENT "(" ArgList? ")" ;
 ### 类型
 
 - 基础类型 `Int` `Float` `Bool` `String`，复合类型 `T[]`、`T?`，以及 `model` 名。
-- 组件参数还可以是 `Children`（插槽，每个组件至多一个）。调用方用尾随块填充，组件体内以参数名作为节点使用。
+- 一个组件可以声明多个 `Children` 参数（插槽）。组件体内以参数名作为节点使用。插槽没有默认值，调用时可以不填。
+- 调用方在尾随块里用 `name: { ... }` 填充同名 `Children` 参数，其余节点填充按声明顺序排列的第一个 `Children` 参数。具名填充只能直接写在组件调用的尾随块里。未知插槽名、同一插槽填充两次（包括同时使用具名和非具名内容），以及给没有插槽的组件传入子块，都会报错。
 - `type` 为其他类型声明别名，例如 `type Kind = "text" | "image"`。类型检查时展开别名；别名不能直接或间接引用自身。可用别名书写可空联合（`Kind?`）和联合数组（`Kind[]`）。
 - 字面量联合至少有两个不同的字符串字面量，转义解码后比较是否重复。联合值在运行时就是字符串，在 TypeScript 声明里保留为字面量联合。
 - 赋值兼容：相同类型；`Int` → `Float`；`null` → `T?`；`T` → `T?`。字符串字面量可以赋给包含它的联合，普通 `String` 值不可以。联合可以赋给包含其全部成员的联合，也可以赋给 `String`。

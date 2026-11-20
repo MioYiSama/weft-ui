@@ -153,7 +153,16 @@ pub enum NodeKind {
     Element(ElementNode),
     If(IfNode),
     For(ForNode),
+    SlotFill(SlotFill),
     Error,
+}
+
+/// `name: { ... }` in a component call's child block.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SlotFill {
+    pub name: Ident,
+    pub block: Block,
+    pub span: Span,
 }
 
 /// `Path(args) { children }`; both the argument list and the block are optional.

@@ -140,7 +140,10 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 | `i{N}` / `b{N}` | `if` 当前分支下标 / 分支数据                                             |
 | `l{N}`          | `for` 的行数组，每行带 `k`（行的 scope id，用作 `wx:key`）               |
 | `c{N}`          | 组件实例数据                                                             |
-| `y{N}`          | 插槽数据，`t` 是插槽模板名（`{组件}-s{N}`）                              |
+| `y{N}`          | 第一个 `Children` 参数的插槽数据                                         |
+| `y{N}_{p}`      | 其他 `Children` 参数的插槽数据，`p` 是该参数在整个参数列表中从 0 开始的下标 |
+
+插槽数据的 `t` 字段保存插槽内容的模板名。调用方为被调用组件的第一个 `Children` 参数使用 `{组件}-s{N}`，其他插槽用 `{组件}-s{N}_{p}`。这里的 `N` 是调用节点编号，不是接收方数据键里的插槽节点编号。
 
 `$e` 从 `currentTarget.dataset["e" + event.type]` 取处理器 id。`tap` 不带 payload，`input` 和 `change` 的 payload 为 `detail.value`。
 

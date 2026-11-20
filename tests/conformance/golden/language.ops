@@ -1,5 +1,5 @@
 # mount
-create 1 3  # Language
+create 1 4  # Language
 set 1 0 "Gallery (1)"  # Text.value
 create 2 0  # ModeLabel
 set 2 0 "F"  # Text.value
@@ -18,22 +18,39 @@ attach 1 3 5
 create 7 1  # Rating
 set 7 0 "Rating: 0"  # Text.value
 attach 1 4 7
-create 8 4  # Language:for10
-set 8 0 "OAK"  # Text.value
-create 9 6  # Language:if9.1
-branch 8 0 9
-rows 1 5 [8]
+create 8 3  # Card
+create 9 6  # Language:slot9.header
+set 9 0 "Card title"  # Text.value
+attach 8 0 9
+create 10 5  # Language:slot9
+set 10 0 "Card body"  # Text.value
+attach 8 1 10
+create 11 7  # Language:slot9.footer
+set 11 0 "Card footer"  # Text.value
+attach 8 2 11
+attach 1 5 8
+create 12 3  # Card
+create 13 8  # Language:slot11.header
+attach 12 0 13
+create 14 9  # Language:slot11.footer
+attach 12 2 14
+attach 1 6 12
+create 15 10  # Language:for16
+set 15 0 "OAK"  # Text.value
+create 16 12  # Language:if15.1
+branch 15 0 16
+rows 1 7 [15]
 attach 0 0 1
 
 # rename the gallery
 set 1 0 "Library (1)"  # Text.value
 
 # rename one item
-set 8 0 "ELM"  # Text.value
+set 15 0 "ELM"  # Text.value
 
 # switch item kind to image
-create 10 5  # Language:if9.0
-branch 8 0 10
+create 17 11  # Language:if15.0
+branch 15 0 17
 
 # switch mode to compact
 set 2 0 "C"  # Text.value
@@ -59,3 +76,12 @@ set 1 0 "Rated 5 (1)"  # Text.value
 
 # call an omitted callback
 (no ops)
+
+# change the card header
+set 9 0 "New header"  # Text.value
+
+# change the card body
+set 10 0 "New body"  # Text.value
+
+# change the card footer
+set 11 0 "New footer"  # Text.value

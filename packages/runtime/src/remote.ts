@@ -213,10 +213,10 @@ export class Instance extends ScopeBlock {
   s: unknown[] = [];
   pw: (Watch | undefined)[] = [];
   sw: Watch[] = [];
-  /** Caller-supplied block for the `Children` parameter. */
-  children: Slot | null;
+  /** Caller-supplied blocks in `Children` parameter order. */
+  children: readonly (Slot | null)[];
 
-  constructor(app: App, template: number, words: number, depth: number, args: unknown[], children: Slot | null) {
+  constructor(app: App, template: number, words: number, depth: number, args: unknown[], children: readonly (Slot | null)[]) {
     super(app, template, words, depth);
     this.p = args;
     this.children = children;
@@ -381,7 +381,7 @@ export class Slot {
 /** Something an app can be mounted into: a sink, or a view that owns one (the mini program view component). */
 export type Target = Sink | { readonly $sink: Sink };
 
-type Create = (app: App, args: unknown[], children: Slot | null, depth: number) => Instance;
+type Create = (app: App, args: unknown[], children: readonly (Slot | null)[], depth: number) => Instance;
 
 function sinkOf(target: Target): Sink {
   const sink = target && "$sink" in target ? target.$sink : target;
@@ -421,7 +421,7 @@ export class App extends AppBase {
     });
     this.$sink = sink;
     mounted.add(this);
-    const root = this.#create(this, this.$args, null, 0);
+    const root = this.#create(this, this.$args, [], 0);
     this.$root = root;
     sink.attach(0, 0, root.id);
     schedule();

@@ -10,7 +10,7 @@ namespace Weft.Generated;
 public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
-    public const ulong LayoutHash = 0x0491f0fb29968dc8UL;
+    public const ulong LayoutHash = 0xc9566ac30b2d948fUL;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
     public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);
@@ -25,6 +25,12 @@ public static class WeftApp
         4 => new S4(id, session),
         5 => new S5(id, session),
         6 => new S6(id, session),
+        7 => new S7(id, session),
+        8 => new S8(id, session),
+        9 => new S9(id, session),
+        10 => new S10(id, session),
+        11 => new S11(id, session),
+        12 => new S12(id, session),
         _ => null,
     };
 }
@@ -100,14 +106,28 @@ file sealed class S2 : WeftScope
     }
 }
 
-// 3 Language
+// 3 Card
 
 file sealed class S3 : WeftScope
+{
+    public S3(uint id, WeftSession session) : base(id, session, points: 3)
+    {
+        var n0 = new WeftStack(vertical: true);
+        Roots.Add(n0.Element);
+        n0.Children.Point(this, 0);
+        n0.Children.Point(this, 1);
+        n0.Children.Point(this, 2);
+    }
+}
+
+// 4 Language
+
+file sealed class S4 : WeftScope
 {
     // Text.value
     private readonly WeftText n1;
 
-    public S3(uint id, WeftSession session) : base(id, session, points: 6)
+    public S4(uint id, WeftSession session) : base(id, session, points: 8)
     {
         var n0 = new WeftStack(vertical: true);
         Roots.Add(n0.Element);
@@ -119,6 +139,8 @@ file sealed class S3 : WeftScope
         n0.Children.Point(this, 3);
         n0.Children.Point(this, 4);
         n0.Children.Point(this, 5);
+        n0.Children.Point(this, 6);
+        n0.Children.Point(this, 7);
     }
 
     public override void Apply(int slot, WeftValue value)
@@ -130,14 +152,101 @@ file sealed class S3 : WeftScope
     }
 }
 
-// 4 Language:for10
+// 5 Language:slot9
 
-file sealed class S4 : WeftScope
+file sealed class S5 : WeftScope
 {
     // Text.value
     private readonly WeftText n0;
 
-    public S4(uint id, WeftSession session) : base(id, session, points: 1)
+    public S5(uint id, WeftSession session) : base(id, session)
+    {
+        n0 = new WeftText();
+        Roots.Add(n0.Element);
+    }
+
+    public override void Apply(int slot, WeftValue value)
+    {
+        switch (slot)
+        {
+            case 0: n0.Value = value.String; break;
+        }
+    }
+}
+
+// 6 Language:slot9.header
+
+file sealed class S6 : WeftScope
+{
+    // Text.value
+    private readonly WeftText n0;
+
+    public S6(uint id, WeftSession session) : base(id, session)
+    {
+        n0 = new WeftText();
+        Roots.Add(n0.Element);
+    }
+
+    public override void Apply(int slot, WeftValue value)
+    {
+        switch (slot)
+        {
+            case 0: n0.Value = value.String; break;
+        }
+    }
+}
+
+// 7 Language:slot9.footer
+
+file sealed class S7 : WeftScope
+{
+    // Text.value
+    private readonly WeftText n0;
+
+    public S7(uint id, WeftSession session) : base(id, session)
+    {
+        n0 = new WeftText();
+        Roots.Add(n0.Element);
+    }
+
+    public override void Apply(int slot, WeftValue value)
+    {
+        switch (slot)
+        {
+            case 0: n0.Value = value.String; break;
+        }
+    }
+}
+
+// 8 Language:slot11.header
+
+file sealed class S8 : WeftScope
+{
+    public S8(uint id, WeftSession session) : base(id, session)
+    {
+    }
+}
+
+// 9 Language:slot11.footer
+
+file sealed class S9 : WeftScope
+{
+    public S9(uint id, WeftSession session) : base(id, session)
+    {
+        var n0 = new WeftText();
+        n0.Value = "Footer only";
+        Roots.Add(n0.Element);
+    }
+}
+
+// 10 Language:for16
+
+file sealed class S10 : WeftScope
+{
+    // Text.value
+    private readonly WeftText n0;
+
+    public S10(uint id, WeftSession session) : base(id, session, points: 1)
     {
         n0 = new WeftText();
         Roots.Add(n0.Element);
@@ -153,11 +262,11 @@ file sealed class S4 : WeftScope
     }
 }
 
-// 5 Language:if9.0
+// 11 Language:if15.0
 
-file sealed class S5 : WeftScope
+file sealed class S11 : WeftScope
 {
-    public S5(uint id, WeftSession session) : base(id, session)
+    public S11(uint id, WeftSession session) : base(id, session)
     {
         var n0 = new WeftText();
         n0.Value = "image";
@@ -165,11 +274,11 @@ file sealed class S5 : WeftScope
     }
 }
 
-// 6 Language:if9.1
+// 12 Language:if15.1
 
-file sealed class S6 : WeftScope
+file sealed class S12 : WeftScope
 {
-    public S6(uint id, WeftSession session) : base(id, session)
+    public S12(uint id, WeftSession session) : base(id, session)
     {
         var n0 = new WeftText();
         n0.Value = "text";

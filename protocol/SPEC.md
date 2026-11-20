@@ -140,7 +140,10 @@ WXML renders only `{{key}}`. The `setData` paths are paths in the block data tre
 | `i{N}` / `b{N}` | Current `if` branch index / branch data. |
 | `l{N}`          | Array of `for` rows. Each row carries `k` (the row's scope ID, used as `wx:key`). |
 | `c{N}`          | Component instance data. |
-| `y{N}`          | Slot data. `t` is the slot template name (`{Component}-s{N}`). |
+| `y{N}`          | Data for the first `Children` parameter. |
+| `y{N}_{p}`      | Data for another `Children` parameter, where `p` is its zero-based index in the full parameter list. |
+
+Slot data holds `t`, the slot content template name. In the calling component, that name is `{Component}-s{N}` for the callee's first `Children` parameter and `{Component}-s{N}_{p}` for any other slot. Here `N` is the call node ID, rather than the slot node ID used in the receiving component's data key.
 
 `$e` reads `currentTarget.dataset["e" + event.type]`. `tap` carries no payload; `input` and `change` carry `detail.value`.
 

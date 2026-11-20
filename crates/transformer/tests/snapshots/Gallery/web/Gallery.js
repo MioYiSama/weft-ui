@@ -56,7 +56,7 @@ export function Panel$c(app, args, children, depth) {
   const n0 = n3.firstChild;
   const n2 = n0.nextSibling;
   const n1 = n2.firstChild;
-  const y0 = c.children ? c.children.create() : null;
+  const y0 = c.children[0]?.create() ?? null;
   if (y0) y0.mount(n0.parentNode, n0);
   n2.addEventListener("click", () => { c.state(0, c.s[0] + 1); });
   n1.textContent = ("Panel clicks: " + $.str(c.s[0]));
@@ -150,7 +150,7 @@ export function Gallery$c(app, args, children, depth) {
     };
     return b;
   });
-  const k10 = Panel$c(c.app, [undefined], s10, c.depth + 1);
+  const k10 = Panel$c(c.app, [undefined], [s10], c.depth + 1);
   k10.mount(n10.parentNode, n10);
   c.init(f);
   c.u = () => {

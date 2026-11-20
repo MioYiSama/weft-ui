@@ -311,8 +311,7 @@ pub fn branch_index(branches: &[Branch]) -> String {
     index
 }
 
-/// Argument values of a component call in parameter order; the `Children`
-/// parameter is passed separately.
+/// Argument values of a component call in parameter order; `Children` slots are passed separately.
 pub fn arg_values(program: &Program, callee: &Component, args: &[Arg]) -> Vec<String> {
     callee
         .params

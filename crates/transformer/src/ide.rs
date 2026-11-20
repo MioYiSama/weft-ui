@@ -515,6 +515,24 @@ component App(model: Model) {
     }
 
     #[test]
+    fn slot_labels_resolve_to_the_callee_and_offer_unfilled_siblings() {
+        let app = r#"component Card(body: Children, title: String, header: Children, footer: Children) {
+  Column { header Text(title) body footer }
+}
+component App() {
+  Card("card") { Text("body") header: {} footer: {} }
+}"#;
+        let analysis = analyze_app(app, None);
+        let header = at(&analysis, app, "header: {}");
+        assert_eq!(header.detail, "(parameter) header: Children");
+        assert_eq!(header.def, at(&analysis, app, "header: Children").def);
+
+        let probe = probe(&app.replace("header: {}", "__probe: {}"));
+        assert_eq!(probe.context, ProbeContext::SlotFill);
+        assert_eq!(names(&probe), ["header"]);
+    }
+
+    #[test]
     fn type_aliases_have_definitions_and_type_completion() {
         let app = r#"type Kind = "text" | "image"
 component Example(kind: Kind) { Text(kind) }"#;

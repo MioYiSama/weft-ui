@@ -6,7 +6,7 @@ import WeftKit
 /// The app's kernel session, started on first use with the bundle of this package.
 @MainActor private let session = WeftSession(
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
-    layoutHash: 0x0491f0fb29968dc8,
+    layoutHash: 0xc9566ac30b2d948f,
     make: makeScope
 )
 
@@ -29,6 +29,12 @@ public struct WeftAppView: View {
     case 4: S4(id: id, session: session)
     case 5: S5(id: id, session: session)
     case 6: S6(id: id, session: session)
+    case 7: S7(id: id, session: session)
+    case 8: S8(id: id, session: session)
+    case 9: S9(id: id, session: session)
+    case 10: S10(id: id, session: session)
+    case 11: S11(id: id, session: session)
+    case 12: S12(id: id, session: session)
     default: nil
     }
 }
@@ -127,9 +133,40 @@ private struct V2: View {
     }
 }
 
-// MARK: - 3 Language
+// MARK: - 3 Card
 
 @Observable private final class S3: WeftScope {
+    var p0: WeftScope?
+    var p1: WeftScope?
+    var p2: WeftScope?
+
+    override func mount(_ point: Int, _ children: [WeftScope]) {
+        switch point {
+        case 0: p0 = children.first
+        case 1: p1 = children.first
+        case 2: p2 = children.first
+        default: break
+        }
+    }
+
+    override var view: AnyView { AnyView(V3(s: self)) }
+}
+
+private struct V3: View {
+    let s: S3
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let c = s.p0 { c.view.id(c.id) }
+            if let c = s.p1 { c.view.id(c.id) }
+            if let c = s.p2 { c.view.id(c.id) }
+        }
+    }
+}
+
+// MARK: - 4 Language
+
+@Observable private final class S4: WeftScope {
     /// Text.value
     var v0: String = ""
     var p0: S0?
@@ -137,7 +174,9 @@ private struct V2: View {
     var p2: S1?
     var p3: S2?
     var p4: S1?
-    var p5: [S4] = []
+    var p5: S3?
+    var p6: S3?
+    var p7: [S10] = []
 
     override func apply(_ slot: Int, _ value: WeftValue) {
         switch slot {
@@ -153,16 +192,18 @@ private struct V2: View {
         case 2: p2 = children.first.map { $0 as! S1 }
         case 3: p3 = children.first.map { $0 as! S2 }
         case 4: p4 = children.first.map { $0 as! S1 }
-        case 5: p5 = children.map { $0 as! S4 }
+        case 5: p5 = children.first.map { $0 as! S3 }
+        case 6: p6 = children.first.map { $0 as! S3 }
+        case 7: p7 = children.map { $0 as! S10 }
         default: break
         }
     }
 
-    override var view: AnyView { AnyView(V3(s: self)) }
+    override var view: AnyView { AnyView(V4(s: self)) }
 }
 
-private struct V3: View {
-    let s: S3
+private struct V4: View {
+    let s: S4
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -172,14 +213,117 @@ private struct V3: View {
             if let c = s.p2 { V1(s: c) }
             if let c = s.p3 { V2(s: c) }
             if let c = s.p4 { V1(s: c) }
-            ForEach(s.p5) { c in V4(s: c) }
+            if let c = s.p5 { V3(s: c) }
+            if let c = s.p6 { V3(s: c) }
+            ForEach(s.p7) { c in V10(s: c) }
         }
     }
 }
 
-// MARK: - 4 Language:for10
+// MARK: - 5 Language:slot9
 
-@Observable private final class S4: WeftScope {
+@Observable private final class S5: WeftScope {
+    /// Text.value
+    var v0: String = ""
+
+    override func apply(_ slot: Int, _ value: WeftValue) {
+        switch slot {
+        case 0: v0 = value.string
+        default: break
+        }
+    }
+
+    override var view: AnyView { AnyView(V5(s: self)) }
+}
+
+private struct V5: View {
+    let s: S5
+
+    var body: some View {
+        Text(verbatim: s.v0)
+    }
+}
+
+// MARK: - 6 Language:slot9.header
+
+@Observable private final class S6: WeftScope {
+    /// Text.value
+    var v0: String = ""
+
+    override func apply(_ slot: Int, _ value: WeftValue) {
+        switch slot {
+        case 0: v0 = value.string
+        default: break
+        }
+    }
+
+    override var view: AnyView { AnyView(V6(s: self)) }
+}
+
+private struct V6: View {
+    let s: S6
+
+    var body: some View {
+        Text(verbatim: s.v0)
+    }
+}
+
+// MARK: - 7 Language:slot9.footer
+
+@Observable private final class S7: WeftScope {
+    /// Text.value
+    var v0: String = ""
+
+    override func apply(_ slot: Int, _ value: WeftValue) {
+        switch slot {
+        case 0: v0 = value.string
+        default: break
+        }
+    }
+
+    override var view: AnyView { AnyView(V7(s: self)) }
+}
+
+private struct V7: View {
+    let s: S7
+
+    var body: some View {
+        Text(verbatim: s.v0)
+    }
+}
+
+// MARK: - 8 Language:slot11.header
+
+@Observable private final class S8: WeftScope {
+
+    override var view: AnyView { AnyView(V8(s: self)) }
+}
+
+private struct V8: View {
+    let s: S8
+
+    var body: some View {
+    }
+}
+
+// MARK: - 9 Language:slot11.footer
+
+@Observable private final class S9: WeftScope {
+
+    override var view: AnyView { AnyView(V9(s: self)) }
+}
+
+private struct V9: View {
+    let s: S9
+
+    var body: some View {
+        Text(verbatim: "Footer only")
+    }
+}
+
+// MARK: - 10 Language:for16
+
+@Observable private final class S10: WeftScope {
     /// Text.value
     var v0: String = ""
     var p0: WeftScope?
@@ -198,46 +342,46 @@ private struct V3: View {
         }
     }
 
-    override var view: AnyView { AnyView(V4(s: self)) }
+    override var view: AnyView { AnyView(V10(s: self)) }
 }
 
-private struct V4: View {
-    let s: S4
+private struct V10: View {
+    let s: S10
 
     var body: some View {
         Text(verbatim: s.v0)
         switch s.p0 {
-        case let c as S5: V5(s: c).id(c.id)
-        case let c as S6: V6(s: c).id(c.id)
+        case let c as S11: V11(s: c).id(c.id)
+        case let c as S12: V12(s: c).id(c.id)
         default: EmptyView()
         }
     }
 }
 
-// MARK: - 5 Language:if9.0
+// MARK: - 11 Language:if15.0
 
-@Observable private final class S5: WeftScope {
+@Observable private final class S11: WeftScope {
 
-    override var view: AnyView { AnyView(V5(s: self)) }
+    override var view: AnyView { AnyView(V11(s: self)) }
 }
 
-private struct V5: View {
-    let s: S5
+private struct V11: View {
+    let s: S11
 
     var body: some View {
         Text(verbatim: "image")
     }
 }
 
-// MARK: - 6 Language:if9.1
+// MARK: - 12 Language:if15.1
 
-@Observable private final class S6: WeftScope {
+@Observable private final class S12: WeftScope {
 
-    override var view: AnyView { AnyView(V6(s: self)) }
+    override var view: AnyView { AnyView(V12(s: self)) }
 }
 
-private struct V6: View {
-    let s: S6
+private struct V12: View {
+    let s: S12
 
     var body: some View {
         Text(verbatim: "text")

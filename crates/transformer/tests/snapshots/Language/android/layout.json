@@ -1,5 +1,5 @@
 {
-  "hash": "0491f0fb29968dc8",
+  "hash": "c9566ac30b2d948f",
   "templates": [
     {
       "label": "ModeLabel",
@@ -52,18 +52,38 @@
       ]
     },
     {
+      "label": "Card",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {}, "children": [1, 2, 3]},
+        {"point": 0},
+        {"point": 1},
+        {"point": 2}
+      ],
+      "values": [],
+      "events": [],
+      "points": [
+        {"node": 1, "kind": "slot"},
+        {"node": 2, "kind": "slot"},
+        {"node": 3, "kind": "slot"}
+      ]
+    },
+    {
       "label": "Language",
       "kind": "component",
       "roots": [0],
       "nodes": [
-        {"element": "Column", "props": {}, "children": [1, 2, 3, 4, 5, 6, 7]},
+        {"element": "Column", "props": {}, "children": [1, 2, 3, 4, 5, 6, 7, 8, 9]},
         {"element": "Text", "props": {}, "children": []},
         {"point": 0},
         {"point": 1},
         {"point": 2},
         {"point": 3},
         {"point": 4},
-        {"point": 5}
+        {"point": 5},
+        {"point": 6},
+        {"point": 7}
       ],
       "values": [
         {"node": 1, "prop": "value", "type": "String"}
@@ -75,11 +95,72 @@
         {"node": 4, "kind": "instance", "template": 1},
         {"node": 5, "kind": "instance", "template": 2},
         {"node": 6, "kind": "instance", "template": 1},
-        {"node": 7, "kind": "list", "template": 4}
+        {"node": 7, "kind": "instance", "template": 3},
+        {"node": 8, "kind": "instance", "template": 3},
+        {"node": 9, "kind": "list", "template": 10}
       ]
     },
     {
-      "label": "Language:for10",
+      "label": "Language:slot9",
+      "kind": "slot",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {}, "children": []}
+      ],
+      "values": [
+        {"node": 0, "prop": "value", "type": "String"}
+      ],
+      "events": [],
+      "points": []
+    },
+    {
+      "label": "Language:slot9.header",
+      "kind": "slot",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {}, "children": []}
+      ],
+      "values": [
+        {"node": 0, "prop": "value", "type": "String"}
+      ],
+      "events": [],
+      "points": []
+    },
+    {
+      "label": "Language:slot9.footer",
+      "kind": "slot",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {}, "children": []}
+      ],
+      "values": [
+        {"node": 0, "prop": "value", "type": "String"}
+      ],
+      "events": [],
+      "points": []
+    },
+    {
+      "label": "Language:slot11.header",
+      "kind": "slot",
+      "roots": [],
+      "nodes": [],
+      "values": [],
+      "events": [],
+      "points": []
+    },
+    {
+      "label": "Language:slot11.footer",
+      "kind": "slot",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {"value": "Footer only"}, "children": []}
+      ],
+      "values": [],
+      "events": [],
+      "points": []
+    },
+    {
+      "label": "Language:for16",
       "kind": "row",
       "roots": [0, 1],
       "nodes": [
@@ -91,11 +172,11 @@
       ],
       "events": [],
       "points": [
-        {"node": 1, "kind": "branch", "templates": [5, 6]}
+        {"node": 1, "kind": "branch", "templates": [11, 12]}
       ]
     },
     {
-      "label": "Language:if9.0",
+      "label": "Language:if15.0",
       "kind": "branch",
       "roots": [0],
       "nodes": [
@@ -106,7 +187,7 @@
       "points": []
     },
     {
-      "label": "Language:if9.1",
+      "label": "Language:if15.1",
       "kind": "branch",
       "roots": [0],
       "nodes": [

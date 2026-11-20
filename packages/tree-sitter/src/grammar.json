@@ -740,6 +740,35 @@
         {
           "type": "SYMBOL",
           "name": "for_node"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "slot_fill"
+        }
+      ]
+    },
+    "slot_fill": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "block"
+          }
         }
       ]
     },

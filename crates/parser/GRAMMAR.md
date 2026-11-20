@@ -47,7 +47,8 @@ UnionType   = STRING ( "|" STRING )+ ;       (* no interpolation *)
 TypeSuffix  = "[" "]" | "?" ;
 
 Block       = "{" LetDecl* Node* "}" ;
-Node        = ElementNode | IfNode | ForNode ;
+Node        = ElementNode | IfNode | ForNode | SlotFill ;
+SlotFill    = IDENT ":" Block ;                  (* only directly in a component call's child block *)
 ElementNode = Path ( "(" ArgList? ")" )? Block? ;
 Path        = IDENT ( "." IDENT )* ;
 IfNode      = "if" "(" Expr ")" Block ( "else" ( IfNode | Block ) )? ;
@@ -116,7 +117,8 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 ### Types
 
 - Primitive types are `Int` `Float` `Bool` `String`. Other types are compound types `T[]` and `T?` and `model` names.
-- A component parameter can also be `Children` (a slot, at most one per component). The caller fills it with a trailing block, and the component body uses the parameter name as a node.
+- A component can declare multiple `Children` parameters (slots). The component body uses each parameter name as a node. Slots have no default value and can be omitted.
+- A caller fills slots in a trailing block: `name: { ... }` fills the corresponding `Children` parameter, and all other nodes go to the first `Children` parameter in declaration order. Named fills are only allowed directly in a component call's trailing block. Unknown slot names, filling a slot twice (including through both named and unnamed content), and passing a block to a component without slots are errors.
 - `type` declares an alias for another type, such as `type Kind = "text" | "image"`. Aliases are expanded for type checking and cannot refer to themselves directly or indirectly. Use an alias to write a nullable union (`Kind?`) or an array of unions (`Kind[]`).
 - A literal union must contain at least two distinct string literals, compared after decoding escapes. Its values are ordinary strings at runtime and become a string literal union in TypeScript declarations.
 - Assignment compatibility: identical types; `Int` → `Float`; `null` → `T?`; `T` → `T?`. A string literal can be assigned to a union that contains it, but an arbitrary `String` value cannot. A union can be assigned to another union containing all its members or to `String`.

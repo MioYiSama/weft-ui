@@ -538,6 +538,11 @@ impl<'src> Printer<'src, '_> {
                 self.token(TokenKind::RParen)?;
                 self.block(&node.body)?;
             }
+            NodeKind::SlotFill(fill) => {
+                self.ident(&fill.name)?;
+                self.token(TokenKind::Colon)?;
+                self.block(&fill.block)?;
+            }
             NodeKind::Error => {
                 return Err(FormatError::Internal("cannot print invalid node".into()));
             }

@@ -18,7 +18,7 @@ use crate::ir::{NodeKind, Program, Prop};
 use crate::view::{PointKind, Template, TemplateKind, ViewLayout, ViewNodeKind};
 
 use super::elements::{Target, event_key, inline, target, value_key};
-use super::wxml::slot_template;
+use super::wxml::{slot_key, slot_template};
 
 /// The table object literal passed to the view runtime.
 pub(crate) fn object(program: &Program, layout: &ViewLayout) -> String {
@@ -55,8 +55,11 @@ fn entry(program: &Program, template: &Template) -> String {
     let mut fields = Vec::new();
     match template.kind {
         TemplateKind::Component => fields.push(format!("n: {}", js::string(&comp.name))),
-        TemplateKind::SlotContent { node } => {
-            fields.push(format!("t: {}", js::string(&slot_template(comp, node))));
+        TemplateKind::SlotContent { node, param } => {
+            fields.push(format!(
+                "t: {}",
+                js::string(&slot_template(program, comp, node, param))
+            ));
         }
         TemplateKind::Branch { index, .. } => fields.push(format!("i: {index}")),
         TemplateKind::Row { .. } => {}
@@ -97,12 +100,18 @@ fn entry(program: &Program, template: &Template) -> String {
             .points
             .iter()
             .map(|point| {
-                let n = template.nodes[point.node as usize].source.0;
+                let node = template.nodes[point.node as usize].source;
+                let n = node.0;
                 match point.kind {
                     PointKind::Branch { .. } => format!("[\"i{n}\", \"b{n}\"]"),
                     PointKind::List { .. } => format!("\"l{n}\""),
                     PointKind::Instance { .. } => format!("\"c{n}\""),
-                    PointKind::Slot => format!("\"y{n}\""),
+                    PointKind::Slot => {
+                        let NodeKind::Slot { param } = comp.node(node).kind else {
+                            unreachable!("slot point belongs to a slot node");
+                        };
+                        js::string(&slot_key(comp, node, param))
+                    }
                 }
             })
             .collect();

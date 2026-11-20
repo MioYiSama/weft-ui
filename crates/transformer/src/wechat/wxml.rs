@@ -6,16 +6,43 @@
 //! rendered by a template of the calling component, chosen at run time
 //! through `t`, so all templates of the app live in one file.
 
+use std::fmt;
+
 use crate::elements::Element;
-use crate::ir::{Component, ComponentId, NodeId, NodeKind, Program};
+use crate::ir::{Component, ComponentId, NodeId, NodeKind, ParamId, Program, first_slot};
 use crate::style::{COLUMN_STYLE, ROW_STYLE};
 use crate::view::ViewLayout;
 
 use super::elements::{Target, Value, event_key, event_type, prop_value, target};
 
+fn slot_name(base: fmt::Arguments<'_>, callee: &Component, param: ParamId) -> String {
+    if first_slot(&callee.params) == Some(param) {
+        base.to_string()
+    } else {
+        format!("{base}_{}", param.0)
+    }
+}
+
+/// Data key for a rendered slot in the receiving component.
+pub(crate) fn slot_key(comp: &Component, node: NodeId, param: ParamId) -> String {
+    slot_name(format_args!("y{}", node.0), comp, param)
+}
+
 /// Template rendering the children a component call passes to a slot.
-pub(crate) fn slot_template(comp: &Component, node: NodeId) -> String {
-    format!("{}-s{}", comp.name, node.0)
+pub(crate) fn slot_template(
+    program: &Program,
+    comp: &Component,
+    node: NodeId,
+    param: ParamId,
+) -> String {
+    let NodeKind::Component { component, .. } = comp.node(node).kind else {
+        unreachable!("slot content comes from a component call");
+    };
+    slot_name(
+        format_args!("{}-s{}", comp.name, node.0),
+        program.component(component),
+        param,
+    )
 }
 
 /// Templates for every component of the program.
@@ -110,22 +137,21 @@ impl Markup<'_> {
                 out.push_str("</block>");
             }
             NodeKind::Component {
-                component,
-                children,
-                ..
+                component, slots, ..
             } => {
                 let callee = &self.program.component(*component).name;
                 out.push_str(&format!(
                     "<template is=\"{callee}\" data=\"{{{{...{prefix}c{n}}}}}\"/>"
                 ));
-                if !children.is_empty() {
+                for fill in slots {
                     let mut body = String::new();
-                    self.nodes(children, "", &mut body);
-                    self.slots.push((slot_template(self.comp, id), body));
+                    self.nodes(&fill.children, "", &mut body);
+                    self.slots
+                        .push((slot_template(self.program, self.comp, id, fill.param), body));
                 }
             }
-            NodeKind::Slot { .. } => {
-                let y = format!("{prefix}y{n}");
+            NodeKind::Slot { param } => {
+                let y = format!("{prefix}{}", slot_key(self.comp, id, *param));
                 out.push_str(&format!(
                     "<block wx:if=\"{{{{{y}}}}}\"><template is=\"{{{{{y}.t}}}}\" data=\"{{{{...{y}}}}}\"/></block>"
                 ));

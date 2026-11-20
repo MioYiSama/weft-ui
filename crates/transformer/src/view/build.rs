@@ -1,7 +1,7 @@
 use crate::color::Color;
 use crate::elements::{ElementSpec, PropKind, PropType};
 use crate::ir::{
-    Component, ComponentId, Expr, ExprKind, NodeId, NodeKind, Program, Prop, PropValue,
+    Component, ComponentId, Expr, ExprKind, NodeId, NodeKind, Program, Prop, PropValue, first_slot,
 };
 
 use super::json::fnv1a;
@@ -325,22 +325,31 @@ impl Builder<'_> {
             }
             NodeKind::Component {
                 component: callee,
-                children,
+                slots,
                 ..
             } => {
-                let content = if children.is_empty() {
-                    Vec::new()
-                } else {
-                    let child = self.reserve();
-                    self.build(
-                        child,
-                        component,
-                        format!("{name}:slot{n}"),
-                        TemplateKind::SlotContent { node: id },
-                        children,
-                    );
-                    vec![child]
-                };
+                let params = &self.program.component(*callee).params;
+                let first = first_slot(params);
+                let content = slots
+                    .iter()
+                    .map(|fill| {
+                        let param = fill.param;
+                        let label = if Some(param) == first {
+                            format!("{name}:slot{n}")
+                        } else {
+                            format!("{name}:slot{n}.{}", params[param.index()].name)
+                        };
+                        let child = self.reserve();
+                        self.build(
+                            child,
+                            component,
+                            label,
+                            TemplateKind::SlotContent { node: id, param },
+                            &fill.children,
+                        );
+                        child
+                    })
+                    .collect();
                 (
                     PointKind::Instance {
                         template: ViewLayout::body(*callee),

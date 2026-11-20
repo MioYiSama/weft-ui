@@ -143,7 +143,7 @@ component DraftField(value: String) {
 
 ## 跨文件组合组件
 
-一个组件可以声明一个 `Children` 参数作为插槽。在组件体内，把参数名写在要渲染插槽内容的位置；调用时，用尾随块传入节点。插槽不能设置默认值，不写尾随块时插槽为空。
+组件可以声明多个 `Children` 参数作为插槽。在组件体内，把参数名作为节点写在内容要出现的位置。调用时，在尾随块中用 `name: { ... }` 填充同名插槽；不在具名块里的节点填入第一个 `Children` 参数。插槽可以留空，但同一个插槽不能填两次。
 
 把下面的 `App.weft` 和前面两个待办文件放在同一目录：
 
@@ -151,16 +151,18 @@ component DraftField(value: String) {
 import "./Todo.weft"
 import "./TodoList.weft"
 
-component Panel(title: String, content: Children) {
+component Panel(title: String, content: Children, footer: Children) {
   Column(padding = 16, gap = 12) {
     Text(title, size = 20, bold = true)
     content
+    footer
   }
 }
 
 component App(todos: Todo[]) {
-  Panel("My tasks") {
+  Panel("我的待办") {
     TodoList(todos)
+    footer: { Text("列表结束") }
   }
 }
 ```

@@ -6,7 +6,15 @@ export const script: Script<Language> = {
   entry: "Language.weft",
   component: "Language",
   App: Language,
-  model: () => ({ name: "Gallery", items: [{ id: 1, kind: "text", name: "Oak" }], mode: "full", rating: 1 }),
+  model: () => ({
+    name: "Gallery",
+    items: [{ id: 1, kind: "text", name: "Oak" }],
+    mode: "full",
+    rating: 1,
+    title: "Card title",
+    body: "Card body",
+    footer: "Card footer",
+  }),
   setup(app, log) {
     app.onRated((model, { value }) => {
       log(`Rated ${value}`);
@@ -45,5 +53,8 @@ export const script: Script<Language> = {
     { name: "replace the bound callback", run: (_, model) => { model.rating = 5; } },
     { name: "forward the newly bound callback", run: (ui) => ui.click("Button", 6) },
     { name: "call an omitted callback", run: (ui) => ui.click("Button", 9) },
+    { name: "change the card header", run: (_, model) => { model.title = "New header"; } },
+    { name: "change the card body", run: (_, model) => { model.body = "New body"; } },
+    { name: "change the card footer", run: (_, model) => { model.footer = "New footer"; } },
   ],
 };

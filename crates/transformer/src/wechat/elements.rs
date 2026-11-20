@@ -10,7 +10,10 @@
 //! | `b{N}`     | data of the active `if` branch, or `null`              |
 //! | `l{N}`     | rows of a `for` loop; each row has its scope id in `k` |
 //! | `c{N}`     | data of a component instance                           |
-//! | `y{N}`     | data of slot content; its template name is in `t`      |
+//! | `y{N}`     | slot data for the first `Children` parameter            |
+//! | `y{N}_{p}` | slot data for another `Children` parameter at index `p` |
+//!
+//! Slot data holds its content template name in `t`.
 
 use std::fmt;
 

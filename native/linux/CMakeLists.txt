@@ -38,6 +38,8 @@ set_target_properties(weft_core_shared PROPERTIES
 # Only the kernel's C ABI crosses the shared library, so the shell compiles
 # the C++ ops decoder itself.
 add_library(weft_linux STATIC
+  src/appearance.cpp
+  src/color.cpp
   src/elements.cpp
   src/frame.cpp
   src/platform.cpp

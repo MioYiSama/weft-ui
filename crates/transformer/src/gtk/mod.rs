@@ -91,8 +91,27 @@ fn generate(layout: &ViewLayout) -> String {
     out.writer.blank();
     out.writer.line("}  // namespace");
     out.writer.blank();
-    out.writer
-        .line("GtkWidget *weft::start_app() { return Session::start(kLayoutHash, make_scope); }");
+    if layout.theme().is_empty() {
+        out.writer.line(
+            "GtkWidget *weft::start_app() { return Session::start(kLayoutHash, make_scope); }",
+        );
+    } else {
+        out.open("GtkWidget *weft::start_app()");
+        out.open("static constexpr theme::Entry kTheme[] =");
+        for (name, light, dark) in layout.theme() {
+            out.writer.line(format_args!(
+                "{{{}, {}, {}}},",
+                cpp::string(name),
+                cpp::rgba(*light),
+                cpp::rgba(*dark)
+            ));
+        }
+        out.close(";");
+        out.writer.line("theme::set(kTheme);");
+        out.writer
+            .line("return Session::start(kLayoutHash, make_scope);");
+        out.close("");
+    }
     out.writer.finish()
 }
 
@@ -186,10 +205,10 @@ mod tests {
             "n0.set_gap(2);",
             "n0.set_width(100);",
             "n0.set_height(80);",
-            "n0.set_background(weft::rgba(0xaabbccffu));\n    roots().add(n0);",
+            "n0.set_background(weft::Color::rgba(0xaabbccffu));\n    roots().add(n0);",
             "auto &n1 = make<weft::Stack>(weft::Axis::Horizontal);",
             "n2.set_value(\"hello\"sv);",
-            "n2.set_color(weft::rgba(0x12345680u));",
+            "n2.set_color(weft::Color::rgba(0x12345680u));",
             "n2.set_size(12);",
             "n2.set_bold(true);\n    n1.children().add(n2);",
             "auto &n3 = make<weft::Button>(nullptr);",

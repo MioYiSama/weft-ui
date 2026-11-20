@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "appearance.hpp"
 #include "platform.hpp"
 #include "point.hpp"
 #include "stack.hpp"
@@ -50,26 +51,6 @@ static void weft_viewport_init(WeftViewport *) {}
 namespace weft {
 
 namespace {
-
-constexpr const char *kPortal = "org.freedesktop.portal.Desktop";
-constexpr const char *kPortalPath = "/org/freedesktop/portal/desktop";
-constexpr const char *kPortalSettings = "org.freedesktop.portal.Settings";
-constexpr const char *kAppearance = "org.freedesktop.appearance";
-constexpr const char *kColorScheme = "color-scheme";
-
-// The portal can return a variant containing another variant for Read.
-// Of 0 (no preference), 1 (prefer dark), and 2 (prefer light), only 1 is dark.
-bool prefer_dark(GVariant *value) {
-  GVariant *inner = g_variant_ref(value);
-  while (g_variant_is_of_type(inner, G_VARIANT_TYPE_VARIANT)) {
-    GVariant *next = g_variant_get_variant(inner);
-    g_variant_unref(inner);
-    inner = next;
-  }
-  bool dark = g_variant_is_of_type(inner, G_VARIANT_TYPE_UINT32) && g_variant_get_uint32(inner) == 1;
-  g_variant_unref(inner);
-  return dark;
-}
 
 /// Why a batch of ops does not fit the views.
 struct OpError : std::runtime_error {
@@ -151,49 +132,17 @@ struct Session::Environment {
 
   ~Environment() {
     if (idle) g_source_remove(idle);
-    if (subscription) g_dbus_connection_signal_unsubscribe(portal, subscription);
-    if (portal) g_object_unref(portal);
   }
 
   Snapshot current() const {
-    return {dark, gtk_widget_get_width(view), gtk_widget_get_height(view), gtk_widget_get_scale_factor(view)};
-  }
-
-  void watch(Session *session) {
-    portal = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
-    if (!portal) return;
-    subscription = g_dbus_connection_signal_subscribe(
-        portal, kPortal, kPortalSettings, "SettingChanged", kPortalPath, kAppearance,
-        G_DBUS_SIGNAL_FLAGS_NONE,
-        [](GDBusConnection *, const gchar *, const gchar *, const gchar *, const gchar *, GVariant *params,
-           gpointer data) {
-          const char *setting;
-          GVariant *value;
-          g_variant_get(params, "(&s&sv)", nullptr, &setting, &value);
-          if (std::strcmp(setting, kColorScheme) == 0) {
-            auto *session = static_cast<Session *>(data);
-            session->environment_->dark = prefer_dark(value);
-            session->queue_environment();
-          }
-          g_variant_unref(value);
-        }, session, nullptr);
-    if (GVariant *result = g_dbus_connection_call_sync(
-            portal, kPortal, kPortalPath, kPortalSettings, "Read", g_variant_new("(ss)", kAppearance, kColorScheme),
-            G_VARIANT_TYPE("(v)"), G_DBUS_CALL_FLAGS_NONE, 500, nullptr, nullptr)) {
-      GVariant *value;
-      g_variant_get(result, "(v)", &value);
-      dark = prefer_dark(value);
-      g_variant_unref(value);
-      g_variant_unref(result);
-    }
+    return {weft::dark(), gtk_widget_get_width(view), gtk_widget_get_height(view), gtk_widget_get_scale_factor(view)};
   }
 
   GtkWidget *view;
   Snapshot sent{};
-  bool dark = false;
+  std::optional<Appearance> appearance;
+  bool colors_changed = false;
   guint idle = 0;
-  GDBusConnection *portal = nullptr;
-  guint subscription = 0;
 };
 
 GtkWidget *Session::start(uint64_t layout_hash, Factory make) {
@@ -245,7 +194,11 @@ void Session::open(const std::string &bundle, uint64_t layout_hash) {
     return;
   }
   std::string version = os_version();
-  environment_->watch(this);
+  environment_->appearance.emplace([](void *data) {
+    auto &session = *static_cast<Session *>(data);
+    session.environment_->colors_changed = true;
+    session.queue_environment();
+  }, this);
   environment_->sent = environment_->current();
   g_autofree char *environment = environment_->sent.json();
   weft_host host{
@@ -265,12 +218,17 @@ void Session::open(const std::string &bundle, uint64_t layout_hash) {
 
 void Session::queue_environment() {
   auto &env = *environment_;
-  if (!runtime_ || env.idle || env.current() == env.sent) return;
-  // Environment listeners can change the views, so run outside GTK allocation/signals.
+  if (!runtime_ || env.idle || (!env.colors_changed && env.current() == env.sent)) return;
+  // Theme updates and environment listeners can change the views, so run outside GTK allocation/signals.
   env.idle = g_idle_add([](gpointer data) -> gboolean {
     auto &session = *static_cast<Session *>(data);
     auto &env = *session.environment_;
     env.idle = 0;
+    if (std::exchange(env.colors_changed, false)) {
+      for (auto &entry : session.scopes_) {
+        for (auto &element : entry.second->elements_) element->reapply_colors();
+      }
+    }
     auto updated = env.current();
     if (updated != env.sent) {
       env.sent = updated;

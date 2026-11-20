@@ -110,7 +110,7 @@ class S4 final : public weft::Scope {
     n0.children().point(*this, 7);
     auto &n10 = make<weft::Text>();
     n10.set_value("note"sv);
-    n10.set_color(weft::rgba(0x6b7280ffu));
+    n10.set_color(weft::Color::rgba(0x6b7280ffu));
     n10.set_size(14);
     n0.children().add(n10);
   }

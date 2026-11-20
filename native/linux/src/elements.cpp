@@ -5,7 +5,6 @@
 #include <libsoup/soup.h>
 
 #include <cmath>
-#include <cstdio>
 #include <string>
 #include <utility>
 
@@ -40,39 +39,6 @@ std::string_view string(const ops::Value &value) {
   return text ? *text : std::string_view();
 }
 
-GdkRGBA color(const ops::Value &value) {
-  GdkRGBA parsed{};
-  if (!parse_color(string(value), parsed)) {
-#ifndef NDEBUG
-    std::fprintf(stderr, "[weft warn] weft: invalid color %.*s, using transparent\n", int(string(value).size()),
-                 string(value).data());
-#endif
-    return {};
-  }
-  return parsed;
-}
-
-bool parse_color(std::string_view text, GdkRGBA &color) {
-  if ((text.size() != 4 && text.size() != 7 && text.size() != 9) || text[0] != '#') return false;
-  uint32_t value = 0;
-  for (char c : text.substr(1)) {
-    int digit = g_ascii_xdigit_value(c);
-    if (digit < 0) return false;
-    value = value << 4 | uint32_t(digit);
-  }
-  switch (text.size()) {
-    case 4:
-      color = rgba((value >> 8 & 0xf) * 17 << 24 | (value >> 4 & 0xf) * 17 << 16 | (value & 0xf) * 17 << 8 | 0xff);
-      break;
-    case 7:
-      color = rgba(value << 8 | 0xff);
-      break;
-    default:
-      color = rgba(value);
-  }
-  return true;
-}
-
 // Element.
 
 Element::Element(GtkWidget *widget) : widget_(GTK_WIDGET(g_object_ref_sink(widget))) {}
@@ -96,7 +62,14 @@ void Stack::set_width(double width) { stack_set_width(WEFT_STACK(widget()), pixe
 
 void Stack::set_height(double height) { stack_set_height(WEFT_STACK(widget()), pixels(height)); }
 
-void Stack::set_background(GdkRGBA color) { stack_set_background(WEFT_STACK(widget()), color); }
+void Stack::set_background(Color color) {
+  background_ = color;
+  stack_set_background(WEFT_STACK(widget()), background_.resolve());
+}
+
+void Stack::reapply_colors() {
+  if (background_.is_token()) stack_set_background(WEFT_STACK(widget()), background_.resolve());
+}
 
 // Text.
 
@@ -104,10 +77,13 @@ Text::Text() : Element(gtk_label_new(nullptr)) { gtk_label_set_xalign(GTK_LABEL(
 
 void Text::set_value(std::string_view value) { gtk_label_set_text(GTK_LABEL(widget()), owned(value).c_str()); }
 
-void Text::set_color(GdkRGBA color) {
+void Text::set_color(Color color) {
   color_ = color;
-  has_color_ = true;
   restyle();
+}
+
+void Text::reapply_colors() {
+  if (color_ && color_->is_token()) restyle();
 }
 
 void Text::set_size(double size) {
@@ -122,11 +98,12 @@ void Text::set_bold(bool bold) {
 
 void Text::restyle() {
   PangoAttrList *attributes = pango_attr_list_new();
-  if (has_color_) {
+  if (color_) {
+    const GdkRGBA color = color_->resolve();
     auto channel = [](float value) { return guint16(std::lround(value * 65535)); };
     pango_attr_list_insert(attributes,
-                           pango_attr_foreground_new(channel(color_.red), channel(color_.green), channel(color_.blue)));
-    pango_attr_list_insert(attributes, pango_attr_foreground_alpha_new(std::max<guint16>(channel(color_.alpha), 1)));
+                           pango_attr_foreground_new(channel(color.red), channel(color.green), channel(color.blue)));
+    pango_attr_list_insert(attributes, pango_attr_foreground_alpha_new(std::max<guint16>(channel(color.alpha), 1)));
   }
   // Absolute sizes are in logical pixels, like CSS `font-size`.
   if (size_ > 0) pango_attr_list_insert(attributes, pango_attr_size_new_absolute(int(size_ * PANGO_SCALE)));

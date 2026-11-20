@@ -119,10 +119,7 @@ fn literal(value: &Constant) -> String {
         Constant::Int(v) => v.to_string(),
         Constant::Bool(v) => v.to_string(),
         Constant::String(s) => cpp::string(s),
-        Constant::Token(_) => unreachable!("platform support rejects theme tokens"),
-        Constant::Color(c) => format!(
-            "weft::rgba(0x{:02x}{:02x}{:02x}{:02x}u)",
-            c.r, c.g, c.b, c.a
-        ),
+        Constant::Token(name) => format!("weft::Color::token({})", cpp::string(name)),
+        Constant::Color(c) => format!("weft::Color::rgba({})", cpp::rgba(*c)),
     }
 }

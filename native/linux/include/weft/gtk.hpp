@@ -15,9 +15,12 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include <weft/runtime.h>
@@ -40,17 +43,43 @@ GtkWidget *start_app();
 double number(const ops::Value &value);
 bool boolean(const ops::Value &value);
 std::string_view string(const ops::Value &value);
-/// A `Color` slot; invalid colors are transparent (with a warning in debug builds).
-GdkRGBA color(const ops::Value &value);
 
-/// A constant color of the generated views, written as `0xRRGGBBAA`.
-constexpr GdkRGBA rgba(uint32_t rgba) {
-  return {float(rgba >> 24) / 255.f, float(rgba >> 16 & 0xff) / 255.f, float(rgba >> 8 & 0xff) / 255.f,
-          float(rgba & 0xff) / 255.f};
-}
+namespace theme {
 
-/// Parses `#RGB`, `#RRGGBB` or `#RRGGBBAA` in either hex case.
-bool parse_color(std::string_view text, GdkRGBA &color);
+struct Entry {
+  std::string_view name;
+  uint32_t light;
+  uint32_t dark;
+};
+
+/// Registers the generated static theme table before starting a session.
+void set(std::span<const Entry> entries);
+
+}  // namespace theme
+
+/// Either a fixed `0xRRGGBBAA` color or a reference to a static theme entry.
+class Color {
+ public:
+  static constexpr Color rgba(uint32_t value) { return Color(value); }
+  static Color token(std::string_view name);
+
+  /// Parses `#RGB`, `#RRGGBB`, `#RRGGBBAA`, or `@token`.
+  /// Invalid colors and unknown tokens are transparent and warn in debug builds.
+  static Color parse(std::string_view text);
+
+  bool is_token() const { return std::holds_alternative<const theme::Entry *>(value_); }
+  GdkRGBA resolve() const;
+  GdkRGBA resolve(bool dark) const;
+
+ private:
+  explicit constexpr Color(uint32_t value) : value_(value) {}
+  explicit Color(const theme::Entry *entry) : value_(entry) {}
+
+  std::variant<uint32_t, const theme::Entry *> value_;
+};
+
+/// Reads a `Color` value slot.
+Color color(const ops::Value &value);
 
 /// The main axis of a `Column` / `Row`.
 enum class Axis { Vertical, Horizontal };
@@ -67,6 +96,7 @@ class Element {
   virtual ~Element();
 
   GtkWidget *widget() const { return widget_; }
+  virtual void reapply_colors() {}
 
  protected:
   /// Takes the widget's floating reference.
@@ -132,10 +162,12 @@ class Stack final : public Element {
   void set_padding(double padding);
   void set_width(double width);
   void set_height(double height);
-  void set_background(GdkRGBA color);
+  void set_background(Color color);
+  void reapply_colors() override;
 
  private:
   Region children_;
+  Color background_ = Color::rgba(0);
 };
 
 /// `Text`: a `GtkLabel` styled with Pango attributes.
@@ -144,15 +176,15 @@ class Text final : public Element {
   Text();
 
   void set_value(std::string_view value);
-  void set_color(GdkRGBA color);
+  void set_color(Color color);
   void set_size(double size);
   void set_bold(bool bold);
+  void reapply_colors() override;
 
  private:
   void restyle();
 
-  GdkRGBA color_{};
-  bool has_color_ = false;
+  std::optional<Color> color_;
   double size_ = 0;
   bool bold_ = false;
 };

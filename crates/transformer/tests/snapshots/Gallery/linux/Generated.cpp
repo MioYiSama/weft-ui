@@ -47,11 +47,11 @@ class S1 final : public weft::Scope {
     n0.set_gap(8);
     n0.set_width(320);
     n0.set_height(280);
-    n0.set_background(weft::rgba(0xeeeeffffu));
+    n0.set_background(weft::Color::rgba(0xeeeeffffu));
     roots().add(n0);
     auto &n1 = make<weft::Text>();
     n1.set_value("Gallery"sv);
-    n1.set_color(weft::rgba(0x224466ffu));
+    n1.set_color(weft::Color::rgba(0x224466ffu));
     n1.set_size(20);
     n1.set_bold(true);
     n0.children().add(n1);

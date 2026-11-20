@@ -1,8 +1,9 @@
 //! Indented C++ source and string literals.
 
-use std::fmt::{Display, Write as _};
+use std::fmt::{self, Display, Write as _};
 
 use crate::code::Indented;
+use crate::color::Color;
 
 /// C++ source written line by line, with braces on the opening line.
 #[derive(Debug)]
@@ -35,6 +36,12 @@ impl Code {
         self.writer.line(format_args!(" {specifier}:"));
         self.writer.indent();
     }
+}
+
+/// A packed RGBA hexadecimal literal.
+pub(super) fn rgba(color: Color) -> impl Display {
+    let Color { r, g, b, a } = color;
+    fmt::from_fn(move |out| write!(out, "0x{r:02x}{g:02x}{b:02x}{a:02x}u"))
 }
 
 /// A `std::string_view` literal (`"…"sv`) of UTF-8 text, so embedded NULs

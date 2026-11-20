@@ -912,7 +912,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | S1 | ☑ | b19de6b | 快照、黄金文件、C-apps 不变；clippy 0 |
 | S2 | ☑ | e13bdf0 | 仅小程序快照与 example 小程序产物变化，已重新录制 C-apps 基线；原生 conformance 驱动同步转发事件名 |
 | S3 | ☑ | 58ccbc3 | 无产物变化；临时禁用 Linux 的 `Image` 时构建报 `` `Image` is not supported on linux `` |
-| P1 | ☐ | | |
+| P1 | ☑ | （本提交） | 快照、黄金文件不变；C-apps 中 6 个非 Web 平台的 `js/index.js` 有差异（见执行中发现），已重新录制基线 |
 | P2 | ☐ | | |
 | L1 | ☐ | | |
 | L2 | ☐ | | |
@@ -975,4 +975,4 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 （执行时按 [PLAN.md 的格式](PLAN.md#执行中发现) 记录：与计划不符的事实、标为 unverified 的项目的验证结果、维护者对截图基线的修改意见。）
 
 - [B0] 新建的 Linux 容器里没有 `/hermes-src`，`build-core.sh` 的 CMake 缓存指向它（同 PLAN.md 的 [P0.1]）；把 `native/core/build/_deps/hermes-src` `docker compose cp` 到 `/hermes-src` 后 C-linux 通过。结论：不处理（本地构建目录状态）
-
+- [P1] C-apps 的差异不只是版本常量：wechat、ios、macos、android、windows、linux 的 `js/index.js` 都打包了 runtime 的数组去重代码，5 个原生平台另外内联了标签 4 的写入器与版本号 2；Web 不变。结论：接受（运行时随协议升级的必然变化），已重新录制 C-apps 基线

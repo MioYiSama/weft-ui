@@ -22,6 +22,8 @@ function installKernel(modules: string[], reply: (call: Call) => Uint8Array | st
   const encoder = new TextEncoder();
   const kernel: Kernel = {
     version: "17.4",
+    environment: "{}",
+    listen: vi.fn(),
     open: vi.fn(),
     commit: vi.fn(),
     close: vi.fn(),

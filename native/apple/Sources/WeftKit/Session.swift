@@ -25,6 +25,7 @@ public final class WeftSession {
     @ObservationIgnored private let make: Make
     @ObservationIgnored private var scopes: [UInt32: WeftScope] = [:]
     @ObservationIgnored private let host = Host()
+    @ObservationIgnored private var environment = WeftEnvironment.initial()
     /// Whether a batch of ops is being applied; the kernel is not reentrant.
     @ObservationIgnored private var committing = false
     // The runtime and the bytecode it executes are released by `deinit`,
@@ -49,10 +50,14 @@ public final class WeftSession {
         host.session = self
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let version = "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
+        var json = environment.json()
+        json.append(0)
         runtime = version.withCString { version in
-            var callbacks = host.callbacks(version: version)
-            return weft_runtime_new(
-                &callbacks, buffer.baseAddress!.assumingMemoryBound(to: UInt8.self), buffer.count, layoutHash)
+            json.withUnsafeBytes { bytes in
+                var callbacks = host.callbacks(version: version, environment: bytes.bindMemory(to: CChar.self).baseAddress!)
+                return weft_runtime_new(
+                    &callbacks, buffer.baseAddress!.assumingMemoryBound(to: UInt8.self), buffer.count, layoutHash)
+            }
         }
         if runtime == nil {
             fail(host.lastError ?? "weft: the app failed to start")
@@ -62,6 +67,14 @@ public final class WeftSession {
     deinit {
         weft_runtime_free(runtime)
         bytecode?.deallocate()
+    }
+
+    func update(environment: WeftEnvironment) {
+        guard let runtime, self.environment != environment else { return }
+        self.environment = environment
+        environment.json().withUnsafeBytes {
+            weft_runtime_environment(runtime, $0.bindMemory(to: CChar.self).baseAddress, $0.count)
+        }
     }
 
     /// Reports event slot `slot` of `scope`; see `WeftScope.dispatch`.
@@ -181,7 +194,7 @@ private final class Host {
 
     /// The kernel's callbacks, valid while this host lives. Every callback
     /// arrives on the main thread.
-    func callbacks(version: UnsafePointer<CChar>) -> weft_host {
+    func callbacks(version: UnsafePointer<CChar>, environment: UnsafePointer<CChar>) -> weft_host {
         weft_host(
             ctx: Unmanaged.passUnretained(self).toOpaque(),
             commit: { ctx, ops, len in
@@ -216,7 +229,8 @@ private final class Host {
                     MainActor.assumeIsolated { host.lastError = text }
                 }
             },
-            version: version
+            version: version,
+            environment: environment
         )
     }
 }

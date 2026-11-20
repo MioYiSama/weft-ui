@@ -43,6 +43,7 @@ class WeftSession private constructor(context: Context, layoutHash: Long, privat
     /** The last error the kernel logged: why the runtime failed to start. */
     private var lastError: String? = null
     private var runtime = 0L
+    private var environment = WeftEnvironment.initial(context.resources)
 
     private val host = object : NativeHost {
         override fun commit(ops: ByteBuffer) = this@WeftSession.commit(ops)
@@ -80,11 +81,17 @@ class WeftSession private constructor(context: Context, layoutHash: Long, privat
             return fail("weft: cannot read the bundle $BUNDLE ($error)")
         }
         runtime = try {
-            Native.create(host, bytecode, layoutHash, Build.VERSION.RELEASE ?: "")
+            Native.create(host, bytecode, layoutHash, Build.VERSION.RELEASE ?: "", environment.json())
         } catch (error: UnsatisfiedLinkError) {
             return fail("weft: cannot load the native kernel ($error)")
         }
         if (runtime == 0L) fail(lastError ?: "weft: the app failed to start")
+    }
+
+    internal fun updateEnvironment(updated: WeftEnvironment) {
+        if (runtime == 0L || environment == updated) return
+        environment = updated
+        Native.environment(runtime, updated.json())
     }
 
     /** Reports event slot [slot] of [scope]; see [WeftScope.dispatch]. */

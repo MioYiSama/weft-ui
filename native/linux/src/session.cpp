@@ -1,7 +1,10 @@
 #include <sys/utsname.h>
 
+#include <json-glib/json-glib.h>
+
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <exception>
 #include <unordered_set>
 #include <utility>
@@ -12,9 +15,61 @@
 #include "weft/gtk.hpp"
 #include "weft/protocol.hpp"
 
+// GtkWidget has no width/height notifications. Observe allocation of a
+// single-child viewport while leaving the scroll view's layout unchanged.
+struct WeftViewport {
+  GtkWidget parent_instance;
+  void (*changed)(GtkWidget *);
+};
+using WeftViewportClass = GtkWidgetClass;
+G_DEFINE_TYPE(WeftViewport, weft_viewport, GTK_TYPE_WIDGET)
+
+static void weft_viewport_class_init(WeftViewportClass *klass) {
+  klass->get_request_mode = [](GtkWidget *view) {
+    return gtk_widget_get_request_mode(gtk_widget_get_first_child(view));
+  };
+  klass->measure = [](GtkWidget *view, GtkOrientation orientation, int size, int *minimum, int *natural,
+                      int *minimum_baseline, int *natural_baseline) {
+    gtk_widget_measure(gtk_widget_get_first_child(view), orientation, size, minimum, natural,
+                       minimum_baseline, natural_baseline);
+  };
+  klass->size_allocate = [](GtkWidget *view, int width, int height, int baseline) {
+    gtk_widget_allocate(gtk_widget_get_first_child(view), width, height, baseline, nullptr);
+    auto *viewport = reinterpret_cast<WeftViewport *>(view);
+    if (viewport->changed) viewport->changed(view);
+  };
+  G_OBJECT_CLASS(klass)->dispose = [](GObject *object) {
+    if (GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(object))) gtk_widget_unparent(child);
+    G_OBJECT_CLASS(weft_viewport_parent_class)->dispose(object);
+  };
+  gtk_widget_class_set_accessible_role(klass, GTK_ACCESSIBLE_ROLE_GENERIC);
+}
+
+static void weft_viewport_init(WeftViewport *) {}
+
 namespace weft {
 
 namespace {
+
+constexpr const char *kPortal = "org.freedesktop.portal.Desktop";
+constexpr const char *kPortalPath = "/org/freedesktop/portal/desktop";
+constexpr const char *kPortalSettings = "org.freedesktop.portal.Settings";
+constexpr const char *kAppearance = "org.freedesktop.appearance";
+constexpr const char *kColorScheme = "color-scheme";
+
+// The portal can return a variant containing another variant for Read.
+// Of 0 (no preference), 1 (prefer dark), and 2 (prefer light), only 1 is dark.
+bool prefer_dark(GVariant *value) {
+  GVariant *inner = g_variant_ref(value);
+  while (g_variant_is_of_type(inner, G_VARIANT_TYPE_VARIANT)) {
+    GVariant *next = g_variant_get_variant(inner);
+    g_variant_unref(inner);
+    inner = next;
+  }
+  bool dark = g_variant_is_of_type(inner, G_VARIANT_TYPE_UINT32) && g_variant_get_uint32(inner) == 1;
+  g_variant_unref(inner);
+  return dark;
+}
 
 /// Why a batch of ops does not fit the views.
 struct OpError : std::runtime_error {
@@ -63,21 +118,109 @@ class RootScope final : public Scope {
 
 }  // namespace
 
+struct Session::Environment {
+  struct Snapshot {
+    bool dark;
+    int width;
+    int height;
+    int scale;
+
+    bool operator==(const Snapshot &) const = default;
+
+    char *json() const {
+      auto *obj = json_object_new();
+      json_object_set_string_member(obj, "colorScheme", dark ? "dark" : "light");
+      auto *screen = json_object_new();
+      json_object_set_int_member(screen, "width", width);
+      json_object_set_int_member(screen, "height", height);
+      json_object_set_int_member(screen, "scale", scale);
+      json_object_set_object_member(obj, "screen", screen);
+      auto *safe = json_object_new();
+      for (const char *edge : {"top", "bottom", "start", "end"}) json_object_set_int_member(safe, edge, 0);
+      json_object_set_object_member(obj, "safeArea", safe);
+      json_object_set_string_member(obj, "orientation", width > height ? "landscape" : "portrait");
+      auto *node = json_node_new(JSON_NODE_OBJECT);
+      json_node_take_object(node, obj);
+      char *result = json_to_string(node, false);
+      json_node_unref(node);
+      return result;
+    }
+  };
+
+  explicit Environment(GtkWidget *view) : view(view) {}
+
+  ~Environment() {
+    if (idle) g_source_remove(idle);
+    if (subscription) g_dbus_connection_signal_unsubscribe(portal, subscription);
+    if (portal) g_object_unref(portal);
+  }
+
+  Snapshot current() const {
+    return {dark, gtk_widget_get_width(view), gtk_widget_get_height(view), gtk_widget_get_scale_factor(view)};
+  }
+
+  void watch(Session *session) {
+    portal = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
+    if (!portal) return;
+    subscription = g_dbus_connection_signal_subscribe(
+        portal, kPortal, kPortalSettings, "SettingChanged", kPortalPath, kAppearance,
+        G_DBUS_SIGNAL_FLAGS_NONE,
+        [](GDBusConnection *, const gchar *, const gchar *, const gchar *, const gchar *, GVariant *params,
+           gpointer data) {
+          const char *setting;
+          GVariant *value;
+          g_variant_get(params, "(&s&sv)", nullptr, &setting, &value);
+          if (std::strcmp(setting, kColorScheme) == 0) {
+            auto *session = static_cast<Session *>(data);
+            session->environment_->dark = prefer_dark(value);
+            session->queue_environment();
+          }
+          g_variant_unref(value);
+        }, session, nullptr);
+    if (GVariant *result = g_dbus_connection_call_sync(
+            portal, kPortal, kPortalPath, kPortalSettings, "Read", g_variant_new("(ss)", kAppearance, kColorScheme),
+            G_VARIANT_TYPE("(v)"), G_DBUS_CALL_FLAGS_NONE, 500, nullptr, nullptr)) {
+      GVariant *value;
+      g_variant_get(result, "(v)", &value);
+      dark = prefer_dark(value);
+      g_variant_unref(value);
+      g_variant_unref(result);
+    }
+  }
+
+  GtkWidget *view;
+  Snapshot sent{};
+  bool dark = false;
+  guint idle = 0;
+  GDBusConnection *portal = nullptr;
+  guint subscription = 0;
+};
+
 GtkWidget *Session::start(uint64_t layout_hash, Factory make) {
   GtkWidget *page = stack_new(Axis::Vertical, Align::Start);
   gtk_widget_set_halign(page, GTK_ALIGN_START);
   gtk_widget_set_valign(page, GTK_ALIGN_START);
-  GtkWidget *view = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(view), page);
+  GtkWidget *scroll = gtk_scrolled_window_new();
+  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroll), page);
+  auto *viewport = static_cast<WeftViewport *>(g_object_new(weft_viewport_get_type(), nullptr));
+  GtkWidget *view = GTK_WIDGET(viewport);
+  gtk_widget_set_parent(scroll, view);
   // The session ends with the root widget.
-  auto *session = new Session(page, make);
+  auto *session = new Session(view, page, make);
   g_object_set_data_full(G_OBJECT(view), "weft-session", session,
                          [](gpointer session) { delete static_cast<Session *>(session); });
+  viewport->changed = [](GtkWidget *view) {
+    static_cast<Session *>(g_object_get_data(G_OBJECT(view), "weft-session"))->queue_environment();
+  };
+  g_signal_connect(view, "notify::scale-factor", G_CALLBACK(+[](GtkWidget *, GParamSpec *, gpointer data) {
+    static_cast<Session *>(data)->queue_environment();
+  }), session);
   session->open(bundle_path(), layout_hash);
   return view;
 }
 
-Session::Session(GtkWidget *page, Factory make) : make_(make), page_(page), cancellable_(g_cancellable_new()) {
+Session::Session(GtkWidget *view, GtkWidget *page, Factory make)
+    : make_(make), page_(page), environment_(std::make_unique<Environment>(view)), cancellable_(g_cancellable_new()) {
   scopes_[0] = std::make_unique<RootScope>(*this, page);
 }
 
@@ -102,6 +245,9 @@ void Session::open(const std::string &bundle, uint64_t layout_hash) {
     return;
   }
   std::string version = os_version();
+  environment_->watch(this);
+  environment_->sent = environment_->current();
+  g_autofree char *environment = environment_->sent.json();
   weft_host host{
       .ctx = this,
       .commit = on_commit,
@@ -110,10 +256,29 @@ void Session::open(const std::string &bundle, uint64_t layout_hash) {
       .call = on_call,
       .log = on_log,
       .version = version.c_str(),
+      .environment = environment,
   };
   runtime_ = weft_runtime_new(&host, reinterpret_cast<const uint8_t *>(g_mapped_file_get_contents(bytecode_)),
                               g_mapped_file_get_length(bytecode_), layout_hash);
   if (!runtime_) fail(last_error_.empty() ? "weft: the app failed to start" : last_error_);
+}
+
+void Session::queue_environment() {
+  auto &env = *environment_;
+  if (!runtime_ || env.idle || env.current() == env.sent) return;
+  // Environment listeners can change the views, so run outside GTK allocation/signals.
+  env.idle = g_idle_add([](gpointer data) -> gboolean {
+    auto &session = *static_cast<Session *>(data);
+    auto &env = *session.environment_;
+    env.idle = 0;
+    auto updated = env.current();
+    if (updated != env.sent) {
+      env.sent = updated;
+      g_autofree char *json = updated.json();
+      weft_runtime_environment(session.runtime_, json, std::strlen(json));
+    }
+    return G_SOURCE_REMOVE;
+  }, this);
 }
 
 bool Session::dispatch(uint32_t scope, uint32_t slot, const std::string &payload) {

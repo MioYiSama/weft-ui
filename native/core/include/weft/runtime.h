@@ -61,6 +61,9 @@ typedef struct {
   void (*log)(void *ctx, int level, const char *msg, size_t len);
   /* OS version reported as `platform.version`; may be NULL. Copied by `weft_runtime_new`. */
   const char *version;
+  /* Initial environment as NUL-terminated UTF-8 JSON; NULL means {}.
+     Copied by `weft_runtime_new`. */
+  const char *environment;
 } weft_host;
 
 /*
@@ -95,6 +98,9 @@ WEFT_API bool weft_runtime_dispatch(weft_runtime *rt, uint32_t scope, uint32_t h
  */
 WEFT_API void weft_runtime_resolve(weft_runtime *rt, uint32_t id, bool ok, const uint8_t *result,
                                    size_t len);
+
+/* Publishes a changed environment as `len` UTF-8 JSON bytes and notifies the bundle. */
+WEFT_API void weft_runtime_environment(weft_runtime *rt, const char *json, size_t len);
 
 /* Destroys the runtime; pending calls are dropped. Accepts NULL. */
 WEFT_API void weft_runtime_free(weft_runtime *rt);

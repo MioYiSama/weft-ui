@@ -60,8 +60,26 @@ export const storage: {
   remove(key: string): Promise<void>;
 };
 
-/** Current operating platform and host version (the user agent on the web). */
-export const platform: { readonly os: Platform; readonly version: string };
+/** Window content size in logical pixels and its physical pixel density. */
+export interface Screen { readonly width: number; readonly height: number; readonly scale: number }
+
+/** Insets from the window edges in logical pixels. */
+export interface Insets { readonly top: number; readonly bottom: number; readonly start: number; readonly end: number }
+
+export type ColorScheme = "light" | "dark";
+
+/** Current operating platform, host version and window environment. */
+export const platform: {
+  readonly os: Platform;
+  /** The user agent on the web. */
+  readonly version: string;
+  readonly colorScheme: ColorScheme;
+  readonly screen: Screen;
+  readonly safeArea: Insets;
+  readonly orientation: "portrait" | "landscape";
+  /** Calls `listener` after any environment value changes; returns a function that removes it. */
+  onChange(listener: () => void): () => void;
+};
 
 /** Reports current host capability availability, without invoking the API. */
 export function isSupported(api: PlatformModule): boolean;

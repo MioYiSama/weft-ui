@@ -96,9 +96,10 @@ struct Shell {
     return h;
   }
 
-  weft_runtime *start(const std::string &bundle, uint64_t hash = 0) {
+  weft_runtime *start(const std::string &bundle, uint64_t hash = 0, const char *environment = nullptr) {
     bytecode = read_file(dir + "/" + bundle + ".hbc");
     weft_host h = host();
+    h.environment = environment;
     rt = weft_runtime_new(&h, bytecode.data(), bytecode.size(), hash);
     return rt;
   }
@@ -249,6 +250,22 @@ void calls() {
   auto lines = shell.lines();
   CHECK_EQ(std::vector<std::string>(lines.begin() + 2, lines.end()),
            (std::vector<std::string>{"resolved HI", "rejected nope!", "empty 0"}));
+}
+
+void environment() {
+  Shell shell;
+  CHECK(shell.start("environment", 0, R"({"colorScheme":"light"})"));
+  CHECK_EQ(shell.lines(), (std::vector<std::string>{R"({"colorScheme":"light"})"}));
+
+  const std::string_view dark = R"({"colorScheme":"dark"})";
+  weft_runtime_environment(shell.rt, dark.data(), dark.size());
+  CHECK_EQ(shell.lines(), (std::vector<std::string>{R"({"colorScheme":"light"})",
+      R"({"colorScheme":"dark"})", "after change"}));
+  CHECK(shell.logged(WEFT_LOG_ERROR, "listener error"));
+
+  Shell missing;
+  CHECK(missing.start("environment"));
+  CHECK_EQ(missing.lines(), (std::vector<std::string>{"{}"}));
 }
 
 /// A payload: one encoded value.
@@ -527,7 +544,7 @@ const std::map<std::string, std::function<void()>> kCases = {
     {"timers", timers},   {"microtasks", microtasks},   {"console", console},
     {"text", text},       {"calls", calls},             {"session", session},
     {"refused", refused}, {"stable_rows", stable_rows}, {"ops", ops},
-    {"corpus", corpus},   {"unicode", unicode},
+    {"corpus", corpus},   {"unicode", unicode},         {"environment", environment},
 };
 
 }  // namespace

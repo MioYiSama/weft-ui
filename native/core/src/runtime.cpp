@@ -76,6 +76,7 @@ struct weft_runtime {
   std::unique_ptr<facebook::hermes::HermesRuntime> js;
   // JavaScript values below must be released before `js`, so they are declared after it.
   std::shared_ptr<jsi::Function> dispatch;
+  std::shared_ptr<jsi::Function> environment_listener;
   std::map<uint32_t, Timer> timers;
   uint32_t last_timer = 0;
   uint64_t seq = 0;
@@ -262,10 +263,20 @@ void install_console(weft_runtime &rt) {
 }
 
 /// `globalThis.__weft`: the bundle's side of the kernel (see `@weft-ui/runtime/native`).
-void install_weft(weft_runtime &rt) {
+void install_weft(weft_runtime &rt, const char *environment) {
   auto &js = *rt.js;
   jsi::Object weft(js);
   weft.setProperty(js, "version", jsi::String::createFromUtf8(js, rt.version));
+  const char *json = environment ? environment : "{}";
+  weft.setProperty(js, "environment", jsi::String::createFromUtf8(
+      js, reinterpret_cast<const uint8_t *>(json), std::strlen(json)));
+  weft.setProperty(js, "listen", host_function(js, "listen", 1, [&rt](jsi::Runtime &js, const jsi::Value &, const jsi::Value *args, size_t count) {
+    if (count == 0 || !is_function(js, args[0])) {
+      throw jsi::JSError(js, "weft: listen expects a function");
+    }
+    rt.environment_listener = std::make_shared<jsi::Function>(args[0].getObject(js).getFunction(js));
+    return jsi::Value::undefined();
+  }));
 
   weft.setProperty(js, "open", host_function(js, "open", 2, [&rt](jsi::Runtime &js, const jsi::Value &, const jsi::Value *args, size_t count) {
     if (count < 2 || !args[0].isString() || !is_function(js, args[1])) {
@@ -349,6 +360,7 @@ weft_runtime *weft_runtime_new(const weft_host *host, const uint8_t *bytecode, s
   rt->host = *host;
   rt->version = host->version ? host->version : "";
   rt->host.version = nullptr;
+  rt->host.environment = nullptr;
   char hash[17];
   std::snprintf(hash, sizeof hash, "%016" PRIx64, layout_hash);
   rt->hash = hash;
@@ -357,7 +369,7 @@ weft_runtime *weft_runtime_new(const weft_host *host, const uint8_t *bytecode, s
         ::hermes::vm::RuntimeConfig::Builder().withMicrotaskQueue(true).build());
     install_timers(*rt);
     install_console(*rt);
-    install_weft(*rt);
+    install_weft(*rt, host->environment);
   } catch (const std::exception &e) {
     log(*rt, WEFT_LOG_ERROR, std::string("weft: cannot start Hermes: ") + e.what());
     return nullptr;
@@ -465,6 +477,18 @@ void weft_runtime_resolve(weft_runtime *rt, uint32_t id, bool ok, const uint8_t 
                       .getArrayBuffer(js);
     if (len > 0) std::memcpy(buffer.data(js), result, len);
     call.resolve.call(js, std::move(buffer));
+  });
+  request(*rt);
+}
+
+void weft_runtime_environment(weft_runtime *rt, const char *json, size_t len) {
+  run(*rt, [&] {
+    auto &js = *rt->js;
+    auto weft = js.global().getPropertyAsObject(js, "__weft");
+    weft.setProperty(js, "environment", jsi::String::createFromUtf8(
+        js, reinterpret_cast<const uint8_t *>(json), len));
+    // The listener can replace itself during the call.
+    if (auto listener = rt->environment_listener) listener->call(js);
   });
   request(*rt);
 }

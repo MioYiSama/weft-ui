@@ -114,7 +114,7 @@ To forget the saved flag, use `await storage.remove("clicked")`. That removes th
 
 ## Check the host and its capabilities
 
-`platform` exposes the read-only fields `os` and `version`. `os` is one of `web`, `wechat`, `ios`, `macos`, `android`, `windows`, or `linux`. `version` is a host-specific string, not the Weft UI package version. Don't assume a common format across platforms. For example, on Web it is the full user agent string; on native targets it is empty if the kernel isn't present or the shell supplies no version.
+Use `platform.os` and `platform.version` to identify the current host. `os` is one of `web`, `wechat`, `ios`, `macos`, `android`, `windows`, or `linux`. `version` is a host-specific string, not the Weft UI package version. Don't assume a common format across platforms. For example, on Web it is the full user agent string; on native targets it is empty if the kernel isn't present or the shell supplies no version.
 
 `isSupported(api: "fetch" | "storage"): boolean` checks whether the current host exposes a capability without performing a request or a storage operation. Use it to choose a fallback. A `true` result does not guarantee an individual operation will succeed.
 
@@ -128,6 +128,27 @@ To forget the saved flag, use `await storage.remove("clicked")`. That removes th
 | Linux | libsoup | `storage.json` in the app's XDG user data directory | Distribution version ID, or kernel release if unavailable |
 
 All five native shells supplied by Weft UI implement both capabilities. The native implementation asks the running shell what it supports. See [Platforms](/guides/platforms/) for host setup or the [view protocol spec](https://github.com/weft-ui/weft-ui/blob/master/protocol/SPEC.md#platform-calls) for the native call format.
+
+## Read the window environment
+
+- `platform.colorScheme` is `"light"` or `"dark"`. WeChat reports the system appearance when you enable `"darkmode": true` in `app.json`; Linux uses the desktop settings portal. The fallback is `"light"`.
+- `platform.screen` gives the window content's `width` and `height` in logical pixels and the physical pixel `scale`. A native host can report provisional screen dimensions before the window is laid out.
+- `platform.safeArea` gives the window insets reserved for system UI, in logical pixels. The `start` and `end` fields mean left and right. Desktop native targets report zero for all four insets.
+- `platform.orientation` is `"landscape"` if the window is wider than it is tall and `"portrait"` otherwise.
+
+Read these fields whenever you need them, or subscribe to changes. `onChange` does not call the listener immediately. It calls listeners after the new values are available and returns a function to remove the listener.
+
+```ts
+import { platform } from "@weft-ui/platform";
+
+function reportEnvironment() {
+  console.log(platform.colorScheme, platform.screen, platform.safeArea);
+}
+
+reportEnvironment();
+const stop = platform.onChange(reportEnvironment);
+// Call stop() when you no longer need updates.
+```
 
 ## Handle unavailable APIs with `PlatformError`
 

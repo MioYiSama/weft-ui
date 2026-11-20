@@ -114,7 +114,7 @@ app.onClick(async (model) => {
 
 ## 查看宿主和可用能力
 
-`platform` 有 `os` 和 `version` 两个只读字段。`os` 的取值为 `web`、`wechat`、`ios`、`macos`、`android`、`windows` 或 `linux`。`version` 是宿主报告的字符串，不是 Weft UI 的包版本，也没有跨平台的统一格式。比如，在 Web 上它是完整的用户代理字符串；在原生目标上，如果没有内核或平台壳没有提供版本，它就是空字符串。
+用 `platform.os` 和 `platform.version` 查看当前宿主。`os` 的取值为 `web`、`wechat`、`ios`、`macos`、`android`、`windows` 或 `linux`。`version` 是宿主报告的字符串，不是 Weft UI 的包版本，也没有跨平台的统一格式。比如，在 Web 上它是完整的用户代理字符串；在原生目标上，如果没有内核或平台壳没有提供版本，它就是空字符串。
 
 `isSupported(api: "fetch" | "storage"): boolean` 检查当前宿主是否提供该能力，不会实际发请求或读写存储。可以据此选择备用方案。返回 `true` 不代表某次调用一定成功。
 
@@ -128,6 +128,27 @@ app.onClick(async (model) => {
 | Linux | libsoup | 应用的 XDG 用户数据目录中的 `storage.json` | 发行版版本标识，取不到时用内核版本 |
 
 Weft UI 自带的五个原生平台壳均实现了这两项能力。原生实现会向正在运行的平台壳查询支持情况。宿主配置见[平台指南](/zh/guides/platforms/)，原生调用格式见[视图协议规范](https://github.com/weft-ui/weft-ui/blob/master/protocol/SPEC.zh-CN.md#平台调用)。
+
+## 读取窗口环境
+
+- `platform.colorScheme` 为 `"light"` 或 `"dark"`。微信小程序需要在 `app.json` 中开启 `"darkmode": true` 才能读取系统外观；Linux 通过桌面设置门户读取。取不到时为 `"light"`。
+- `platform.screen` 提供窗口内容的 `width` 和 `height`（逻辑像素），以及像素密度 `scale`。原生窗口首次布局前，宿主可能先报告临时尺寸。
+- `platform.safeArea` 是窗口各边被系统界面占用的内边距（逻辑像素），其中 `start`、`end` 分别是左边和右边。原生桌面平台四边均为 0。
+- 窗口宽度大于高度时，`platform.orientation` 为 `"landscape"`；否则为 `"portrait"`。
+
+可以直接读取这些字段，也可以订阅变化。`onChange` 注册时不会立即调用监听器，更新后的值可读时才会调用。它返回一个取消订阅的函数。
+
+```ts
+import { platform } from "@weft-ui/platform";
+
+function reportEnvironment() {
+  console.log(platform.colorScheme, platform.screen, platform.safeArea);
+}
+
+reportEnvironment();
+const stop = platform.onChange(reportEnvironment);
+// 不再需要更新时调用 stop()。
+```
 
 ## 用 `PlatformError` 处理不可用的 API
 

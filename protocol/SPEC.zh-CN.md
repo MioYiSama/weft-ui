@@ -166,14 +166,33 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 | `supports(module)`                | 平台壳是否实现平台模块 `module`                              |
 | `call(module, method, args?)`     | 平台调用，返回 `Promise<ArrayBuffer>`。`args` 是字符串（按 UTF-8 发送）、`ArrayBuffer` 或其视图。模块不受支持时立即以 `Error` 拒绝 |
 | `version`                         | 平台壳报告的系统版本（`weft_host.version`）                  |
+| `environment`                     | 当前窗口环境的 JSON 字符串                                    |
+| `listen(callback)`                | 注册一个无参数的环境变化回调；再次注册会替换前一个            |
 
 内核还注入 `setTimeout` / `setInterval` / `clearTimeout` / `clearInterval`、`queueMicrotask` 和 `console`（`debug` / `log` / `info` / `warn` / `error` 对应 `weft_host.log` 的 0–3 级；非字符串参数按 JSON 输出，错误对象输出 `stack`）。`TextEncoder` / `TextDecoder` 由 Hermes 自带。
 
+### 环境
+
+平台壳通过 `weft_host.environment` 提供初始环境：以 NUL 结尾的 UTF-8 JSON 字符串，内核在 `weft_runtime_new` 时复制。传空指针时使用 `{}`。对象格式如下：
+
+```json
+{
+  "colorScheme": "light",
+  "screen": { "width": 390, "height": 844, "scale": 2 },
+  "safeArea": { "top": 47, "bottom": 34, "start": 0, "end": 0 },
+  "orientation": "portrait"
+}
+```
+
+`colorScheme` 为 `light` 或 `dark`。`screen` 提供窗口内容尺寸（逻辑像素）和像素密度。`safeArea` 是窗口各边被系统界面占用的内边距（逻辑像素，`start` 是左边，`end` 是右边），桌面平台的四边均为 0。宽度大于高度时，`orientation` 为 `landscape`；否则为 `portrait`。
+
+任一字段变化时，平台壳在 UI 线程调用 `weft_runtime_environment(rt, json, len)`，传入完整对象的 UTF-8 字节；字段值都相同时不推送。内核先替换 `__weft.environment`，再调用已注册的回调，返回前清空微任务队列。
+
 ### 事件循环
 
-- `weft_runtime_new` 执行 bundle（bundle 在其中挂载 app），之后每个会执行 JS 的入口（`new`、`tick`、`dispatch`、`resolve`）返回前都清空微任务队列。所以 `weft_runtime_new` 返回时第一批 ops 已经提交。
+- `weft_runtime_new` 执行 bundle（bundle 在其中挂载 app），之后每个会执行 JS 的入口（`new`、`tick`、`dispatch`、`resolve`、`environment`）返回前都清空微任务队列。所以 `weft_runtime_new` 返回时第一批 ops 已经提交。
 - 定时器按到期时间、同一时间按设置顺序执行，每个定时器之后清空一次微任务；在一次 `tick` 里新设的定时器留到下一次。内核用 `weft_host.schedule(delay)` 请求下一次 `tick`，平台壳可以合并请求，提前或多余的 `tick` 无害。
-- 未捕获的异常（bundle、定时器、微任务、事件处理函数里）以 `WEFT_LOG_ERROR` 报告，不终止运行时。bundle 本身抛错（包括布局哈希不一致）时 `weft_runtime_new` 返回 `NULL`。
+- 未捕获的异常（bundle、定时器、微任务、事件处理函数或环境变化回调中）以 `WEFT_LOG_ERROR` 报告，不终止运行时。bundle 本身抛错（包括布局哈希不一致）时 `weft_runtime_new` 返回 `NULL`。
 
 ### 事件载荷
 

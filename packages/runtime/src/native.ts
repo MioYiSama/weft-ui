@@ -31,6 +31,10 @@ export interface Kernel {
   call(module: string, method: string, args?: string | ArrayBuffer | ArrayBufferView): Promise<ArrayBuffer>;
   /** OS version reported by the shell. */
   readonly version: string;
+  /** Current environment as a JSON string. */
+  readonly environment: string;
+  /** Installs the callback for environment changes, replacing any previous callback. */
+  listen(callback: () => void): void;
 }
 
 declare global {

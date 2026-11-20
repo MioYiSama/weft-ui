@@ -7,6 +7,7 @@
 
 import { NativeSink, kernel } from "@weft-ui/runtime/native";
 import type { PlatformModule } from "@weft-ui/runtime/protocol";
+import { Environment, type EnvironmentData } from "./environment.ts";
 import { PlatformError } from "./error.ts";
 import { frame, unframe } from "./frame.ts";
 import type { App, RequestInit, Response } from "./index.d.ts";
@@ -58,11 +59,16 @@ export const storage = {
   },
 };
 
-/** The native platform and the OS version reported by the shell. */
-export const platform = {
-  os,
-  get version(): string { return globalThis.__weft?.version ?? ""; },
-};
+class NativePlatform extends Environment {
+  readonly os = os;
+  get version(): string { return globalThis.__weft?.version ?? ""; }
+}
+
+/** The native platform and the environment reported by its shell. */
+export const platform = /* @__PURE__ */ new NativePlatform(
+  () => JSON.parse(kernel().environment) as EnvironmentData,
+  (notify) => kernel().listen(notify),
+);
 
 /** Whether the shell implements the API's platform module. */
 export function isSupported(api: PlatformModule): boolean {

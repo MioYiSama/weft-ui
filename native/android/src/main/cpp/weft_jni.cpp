@@ -9,6 +9,7 @@
 #include <fbjni/fbjni.h>
 
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
@@ -132,7 +133,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
 
 JNIEXPORT jlong JNICALL Java_net_mioyi_weftui_Native_create(JNIEnv *e, jobject, jobject host,
                                                             jbyteArray bytecode,
-                                                            jlong layout_hash, jstring version) {
+                                                            jlong layout_hash, jstring version,
+                                                            jstring environment) {
   auto session = std::make_unique<Session>();
   jclass type = e->GetObjectClass(host);
   session->commit = e->GetMethodID(type, "commit", "(Ljava/nio/ByteBuffer;)V");
@@ -153,6 +155,8 @@ JNIEXPORT jlong JNICALL Java_net_mioyi_weftui_Native_create(JNIEnv *e, jobject, 
   const std::string os = chars != nullptr ? chars : "";
   if (chars != nullptr) e->ReleaseStringUTFChars(version, chars);
 
+  // The environment JSON has ASCII keys and values (numbers and fixed strings).
+  const char *json = e->GetStringUTFChars(environment, nullptr);
   const weft_host callbacks{
       .ctx = session.get(),
       .commit = commit,
@@ -161,14 +165,25 @@ JNIEXPORT jlong JNICALL Java_net_mioyi_weftui_Native_create(JNIEnv *e, jobject, 
       .call = call,
       .log = log,
       .version = os.c_str(),
+      .environment = json,
   };
-  session->runtime = weft_runtime_new(&callbacks, session->bytecode.get(), len,
-                                      static_cast<uint64_t>(layout_hash));
+  if (json != nullptr) {
+    session->runtime = weft_runtime_new(&callbacks, session->bytecode.get(), len,
+                                        static_cast<uint64_t>(layout_hash));
+    e->ReleaseStringUTFChars(environment, json);
+  }
   if (session->runtime == nullptr) {
     e->DeleteGlobalRef(session->host);
     return 0;
   }
   return reinterpret_cast<jlong>(session.release());
+}
+
+JNIEXPORT void JNICALL Java_net_mioyi_weftui_Native_environment(JNIEnv *e, jobject, jlong handle, jstring json) {
+  const char *bytes = e->GetStringUTFChars(json, nullptr);
+  if (bytes == nullptr) return;
+  weft_runtime_environment(from(handle)->runtime, bytes, std::strlen(bytes));
+  e->ReleaseStringUTFChars(json, bytes);
 }
 
 JNIEXPORT void JNICALL Java_net_mioyi_weftui_Native_tick(JNIEnv *, jobject, jlong handle) {

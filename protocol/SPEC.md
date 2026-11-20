@@ -166,14 +166,33 @@ The kernel installs this global before running the bundle. The native implementa
 | `supports(module)`                | Whether the platform shell implements the platform module `module`. |
 | `call(module, method, args?)`     | A platform call returning `Promise<ArrayBuffer>`. `args` is a string (sent as UTF-8), an `ArrayBuffer`, or a view of one. If the module is unsupported, the promise immediately rejects with an `Error`. |
 | `version`                         | The system version reported by the platform shell (`weft_host.version`). |
+| `environment`                     | The current window environment as a JSON string. |
+| `listen(callback)`                | Registers one environment callback with no arguments; another call replaces it. |
 
 The kernel also injects `setTimeout` / `setInterval` / `clearTimeout` / `clearInterval`, `queueMicrotask`, and `console` (`debug` / `log` / `info` / `warn` / `error` map to levels 0–3 of `weft_host.log`; non-string arguments are output as JSON and error objects are output as their `stack`). Hermes provides `TextEncoder` / `TextDecoder`.
 
+### Environment
+
+The shell supplies the initial environment in `weft_host.environment` as a NUL-terminated UTF-8 JSON string (the kernel copies it during `weft_runtime_new`). A null pointer supplies `{}`. The object has this shape:
+
+```json
+{
+  "colorScheme": "light",
+  "screen": { "width": 390, "height": 844, "scale": 2 },
+  "safeArea": { "top": 47, "bottom": 34, "start": 0, "end": 0 },
+  "orientation": "portrait"
+}
+```
+
+`colorScheme` is `light` or `dark`. `screen` gives the window content size in logical pixels and the physical pixel scale. `safeArea` gives the logical insets reserved for system UI on the respective edges (`start` is left and `end` is right); desktops report zero. `orientation` is `landscape` when width exceeds height, otherwise `portrait`.
+
+When any field changes, the shell calls `weft_runtime_environment(rt, json, len)` on the UI thread with the complete updated object as UTF-8 bytes. It skips identical updates. The kernel replaces `__weft.environment` before invoking the registered callback, then drains microtasks before returning.
+
 ### Event loop
 
-- `weft_runtime_new` executes the bundle, which mounts the app. Every entry point that executes JS (`new`, `tick`, `dispatch`, `resolve`) drains the microtask queue before returning. The first batch of ops has therefore been committed by the time `weft_runtime_new` returns.
+- `weft_runtime_new` executes the bundle, which mounts the app. Every entry point that executes JS (`new`, `tick`, `dispatch`, `resolve`, `environment`) drains the microtask queue before returning. The first batch of ops has therefore been committed by the time `weft_runtime_new` returns.
 - Timers run in order of expiration, with ties broken by the order in which they were set. The microtask queue is drained after each timer. Timers set during a `tick` are deferred to the next one. The kernel requests the next `tick` with `weft_host.schedule(delay)`. The platform shell may coalesce requests; early or redundant calls to `tick` are harmless.
-- Uncaught exceptions in the bundle, timers, microtasks, or event handlers are reported as `WEFT_LOG_ERROR` without terminating the runtime. If the bundle itself throws (including on a layout hash mismatch), `weft_runtime_new` returns `NULL`.
+- Uncaught exceptions in the bundle, timers, microtasks, event handlers, or the environment callback are reported as `WEFT_LOG_ERROR` without terminating the runtime. If the bundle itself throws (including on a layout hash mismatch), `weft_runtime_new` returns `NULL`.
 
 ### Event payloads
 

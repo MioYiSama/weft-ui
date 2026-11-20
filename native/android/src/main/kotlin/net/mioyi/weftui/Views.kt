@@ -1,12 +1,16 @@
 package net.mioyi.weftui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -14,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -22,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
@@ -34,13 +40,28 @@ import androidx.compose.ui.unit.dp
 fun WeftRoot(layoutHash: ULong, make: WeftMake) {
     val context = LocalContext.current
     val session = remember { WeftSession.start(context, layoutHash.toLong(), make) }
-    Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState())) {
-        val failure = session.failure
-        val root = session.root
-        if (failure != null) {
-            Text(failure, Modifier.padding(16.dp), color = Color.Red)
-        } else if (root != null) {
-            key(root.id) { root.Content() }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val safe = WindowInsets.safeDrawing
+        val environment = WeftEnvironment(
+            dark = isSystemInDarkTheme(),
+            width = maxWidth.value,
+            height = maxHeight.value,
+            scale = density.density,
+            top = with(density) { safe.getTop(this).toDp().value },
+            bottom = with(density) { safe.getBottom(this).toDp().value },
+            start = with(density) { safe.getLeft(this, LayoutDirection.Ltr).toDp().value },
+            end = with(density) { safe.getRight(this, LayoutDirection.Ltr).toDp().value },
+        )
+        LaunchedEffect(session, environment) { session.updateEnvironment(environment) }
+        Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState())) {
+            val failure = session.failure
+            val root = session.root
+            if (failure != null) {
+                Text(failure, Modifier.padding(16.dp), color = Color.Red)
+            } else if (root != null) {
+                key(root.id) { root.Content() }
+            }
         }
     }
 }

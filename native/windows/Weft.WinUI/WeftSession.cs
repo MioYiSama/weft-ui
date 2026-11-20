@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -31,6 +32,11 @@ public sealed class WeftSession
     private readonly Factory make;
     private readonly Dictionary<uint, WeftScope> scopes = [];
     private readonly Panel root;
+    private readonly FrameworkElement view;
+    private WindowEnvironment environment;
+    private readonly ArrayBufferWriter<byte> environmentJson = new(192);
+    private XamlRoot? xamlRoot;
+    private bool environmentQueued;
     private readonly DispatcherQueue queue;
     private readonly DispatcherQueueTimer timer;
     /// <summary>When the timer fires, in <see cref="Environment.TickCount64"/> milliseconds.</summary>
@@ -60,14 +66,15 @@ public sealed class WeftSession
         {
             view.Background = (Brush)brush;
         }
-        _ = new WeftSession(Path.Combine(AppContext.BaseDirectory, "weft", "bundle.hbc"), layoutHash, make, page);
+        _ = new WeftSession(Path.Combine(AppContext.BaseDirectory, "weft", "bundle.hbc"), layoutHash, make, page, view);
         return view;
     }
 
-    private unsafe WeftSession(string bundle, ulong layoutHash, Factory make, Panel root)
+    private unsafe WeftSession(string bundle, ulong layoutHash, Factory make, Panel root, FrameworkElement view)
     {
         this.make = make;
         this.root = root;
+        this.view = view;
         queue = DispatcherQueue.GetForCurrentThread()
             ?? throw new InvalidOperationException("weft: the session must start on a UI thread");
         timer = queue.CreateTimer();
@@ -94,7 +101,11 @@ public sealed class WeftSession
         data.CopyTo(new Span<byte>(bytecode, data.Length));
 
         var version = Encoding.UTF8.GetBytes(Environment.OSVersion.Version + "\0");
-        fixed (byte* versionBytes = version)
+        environment = WindowEnvironment.Initial();
+        environment.WriteJson(environmentJson);
+        environmentJson.GetSpan(1)[0] = 0;
+        environmentJson.Advance(1);
+        fixed (byte* versionBytes = version, jsonBytes = environmentJson.WrittenSpan)
         {
             var host = new Native.Host
             {
@@ -106,10 +117,54 @@ public sealed class WeftSession
                 Call = &OnCall,
                 Log = &OnLog,
                 Version = versionBytes,
+                Environment = jsonBytes,
             };
             runtime = Native.RuntimeNew(&host, bytecode, (nuint)data.Length, layoutHash);
         }
-        if (runtime == 0) Fail(lastError ?? "weft: the app failed to start");
+        if (runtime == 0)
+        {
+            Fail(lastError ?? "weft: the app failed to start");
+            return;
+        }
+
+        view.Loaded += (_, _) =>
+        {
+            if (xamlRoot is not null) xamlRoot.Changed -= OnXamlRootChanged;
+            xamlRoot = view.XamlRoot;
+            if (xamlRoot is not null) xamlRoot.Changed += OnXamlRootChanged;
+            QueueEnvironment();
+        };
+        view.Unloaded += (_, _) =>
+        {
+            if (xamlRoot is not null) xamlRoot.Changed -= OnXamlRootChanged;
+            xamlRoot = null;
+        };
+        view.SizeChanged += (_, _) => QueueEnvironment();
+        view.ActualThemeChanged += (_, _) => QueueEnvironment();
+    }
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => QueueEnvironment();
+
+    private void QueueEnvironment()
+    {
+        // Do not enter the kernel from a XAML change that occurred during a commit.
+        if (!environmentQueued) environmentQueued = queue.TryEnqueue(UpdateEnvironment);
+    }
+
+    private unsafe void UpdateEnvironment()
+    {
+        environmentQueued = false;
+        if (xamlRoot is null) return;
+        var size = xamlRoot.Size;
+        var updated = new WindowEnvironment(view.ActualTheme == ElementTheme.Dark,
+            size.Width, size.Height, xamlRoot.RasterizationScale);
+        if (environment == updated) return;
+        environment = updated;
+        updated.WriteJson(environmentJson);
+        fixed (byte* json = environmentJson.WrittenSpan)
+        {
+            Native.RuntimeEnvironment(runtime, json, (nuint)environmentJson.WrittenCount);
+        }
     }
 
     /// <summary>Reports event slot <paramref name="slot"/> of <paramref name="scope"/>; see <see cref="WeftScope.Dispatch"/>.</summary>

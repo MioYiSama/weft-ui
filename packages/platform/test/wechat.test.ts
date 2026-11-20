@@ -172,6 +172,34 @@ test("imports without wx and reads the host version lazily", async () => {
   expect(imported.platform.version).toBe("8.0.66");
 });
 
+test("reports the window-relative safe area and observes theme and resize changes", () => {
+  const info = {
+    windowWidth: 390, windowHeight: 790, pixelRatio: 3, screenTop: 50,
+    safeArea: { top: 47, right: 390, bottom: 810, left: 0 },
+  };
+  const onThemeChange = vi.fn<(listener: () => void) => void>();
+  const onWindowResize = vi.fn<(listener: () => void) => void>();
+  let theme: "dark" | undefined;
+  vi.stubGlobal("wx", {
+    getAppBaseInfo: () => ({ version: "8.0.65", theme }),
+    getWindowInfo: () => info,
+    onThemeChange, onWindowResize,
+  });
+  const seen = vi.fn(() => [platform.colorScheme, platform.orientation]);
+  const unsubscribe = platform.onChange(seen);
+  try {
+    expect(platform.safeArea).toEqual({ top: 0, bottom: 30, start: 0, end: 0 });
+    expect(platform.screen).toEqual({ width: 390, height: 790, scale: 3 });
+    theme = "dark";
+    onThemeChange.mock.calls[0][0]();
+    [info.windowWidth, info.windowHeight] = [info.windowHeight, info.windowWidth];
+    onWindowResize.mock.calls[0][0]();
+    expect(seen.mock.results.map(({ value }) => value)).toEqual([["dark", "portrait"], ["dark", "landscape"]]);
+  } finally {
+    unsubscribe();
+  }
+});
+
 test("missing wx rejects unsupported async APIs with the shared PlatformError", async () => {
   vi.stubGlobal("wx", undefined);
   expect(isSupported("fetch")).toBe(false);

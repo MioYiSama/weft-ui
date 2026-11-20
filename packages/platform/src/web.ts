@@ -1,4 +1,5 @@
 import type { PlatformModule } from "@weft-ui/runtime/protocol";
+import { Environment, type EnvironmentData } from "./environment.ts";
 import { PlatformError } from "./error.ts";
 import type { App, RequestInit, Response } from "./index.d.ts";
 
@@ -45,8 +46,46 @@ export const storage = {
   },
 };
 
-/** Browser platform and user agent. */
-export const platform = { os: "web", version: navigator.userAgent } as const;
+const COLOR_SCHEME = "(prefers-color-scheme: dark)";
+const SAFE_AREA = { top: "top", bottom: "bottom", start: "left", end: "right" } as const;
+
+function readEnvironment(): EnvironmentData {
+  const root = document.documentElement;
+  const style = getComputedStyle(root);
+  const inset = (edge: keyof typeof SAFE_AREA) => parseFloat(style.getPropertyValue(`--weft-safe-${edge}`)) || 0;
+  return {
+    colorScheme: window.matchMedia(COLOR_SCHEME).matches ? "dark" : "light",
+    screen: { width: window.innerWidth, height: window.innerHeight, scale: window.devicePixelRatio },
+    safeArea: { top: inset("top"), bottom: inset("bottom"), start: inset("start"), end: inset("end") },
+  };
+}
+
+function observeEnvironment(notify: () => void): void {
+  const style = document.documentElement.style;
+  for (const [edge, side] of Object.entries(SAFE_AREA)) {
+    style.setProperty(`--weft-safe-${edge}`, `env(safe-area-inset-${side}, 0px)`);
+  }
+  window.matchMedia(COLOR_SCHEME).addEventListener("change", notify);
+  window.addEventListener("resize", notify);
+  // A monitor/DPR change need not resize the viewport in logical pixels.
+  function watchScale(): void {
+    window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener("change", () => {
+      watchScale();
+      notify();
+    }, { once: true });
+  }
+  watchScale();
+}
+
+const userAgent = navigator.userAgent;
+
+class WebPlatform extends Environment {
+  readonly os = "web";
+  get version(): string { return userAgent; }
+}
+
+/** Browser platform, user agent and window environment. */
+export const platform = /* @__PURE__ */ new WebPlatform(readEnvironment, observeEnvironment);
 
 /** Checks whether the browser currently exposes the requested capability. */
 export function isSupported(api: PlatformModule): boolean {

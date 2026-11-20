@@ -312,8 +312,10 @@ class Session {
   bool dispatch(uint32_t scope, uint32_t slot, const std::string &payload);
 
  private:
-  Session(GtkWidget *page, Factory make);
+  Session(GtkWidget *view, GtkWidget *page, Factory make);
   void open(const std::string &bundle, uint64_t layout_hash);
+  void queue_environment();
+  struct Environment;
   void commit(const uint8_t *ops, size_t len);
   void apply(const ops::Op &op);
   void mount(uint32_t parent, uint32_t index, std::vector<uint32_t> ids);
@@ -333,6 +335,7 @@ class Session {
 
   Factory make_;
   GtkWidget *page_;
+  std::unique_ptr<Environment> environment_;
   std::unordered_map<uint32_t, std::unique_ptr<Scope>> scopes_;
   /// Destroyed scopes, freed once the main loop is idle: a widget's signal
   /// handler may still run code of the scope that its event destroyed.

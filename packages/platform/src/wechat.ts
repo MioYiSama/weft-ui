@@ -1,7 +1,8 @@
 import type { PlatformModule } from "@weft-ui/runtime/protocol";
 import { view } from "@weft-ui/runtime/wechat";
+import { Environment, type EnvironmentData } from "./environment.ts";
 import { PlatformError } from "./error.ts";
-import type { App as WeftApp, RequestInit, Response } from "./index.d.ts";
+import type { App as WeftApp, ColorScheme, RequestInit, Response } from "./index.d.ts";
 
 export { PlatformError } from "./error.ts";
 export type { App, RequestInit, Response } from "./index.d.ts";
@@ -36,7 +37,16 @@ interface Wx {
     success(): void;
     fail(error: Failure): void;
   }): void;
-  getAppBaseInfo(): { version: string };
+  getAppBaseInfo(): { version: string; theme?: ColorScheme };
+  getWindowInfo(): {
+    windowWidth: number;
+    windowHeight: number;
+    pixelRatio: number;
+    screenTop: number;
+    safeArea?: { top: number; bottom: number; left: number; right: number };
+  };
+  onThemeChange(listener: () => void): void;
+  onWindowResize(listener: () => void): void;
 }
 
 declare const wx: Wx;
@@ -169,11 +179,33 @@ export const storage = {
   },
 };
 
-/** WeChat host version, read only when requested so imports do not access wx. */
-export const platform = {
-  os: "wechat",
-  get version(): string { return wx.getAppBaseInfo().version; },
-} as const;
+function readEnvironment(): EnvironmentData {
+  const { windowWidth, windowHeight, pixelRatio, screenTop, safeArea } = wx.getWindowInfo();
+  return {
+    colorScheme: wx.getAppBaseInfo().theme,
+    screen: { width: windowWidth, height: windowHeight, scale: pixelRatio },
+    // WeChat reports safe-area edges relative to the screen, not the window.
+    safeArea: safeArea && {
+      top: Math.max(0, safeArea.top - screenTop),
+      bottom: Math.max(0, screenTop + windowHeight - safeArea.bottom),
+      start: Math.max(0, safeArea.left),
+      end: Math.max(0, windowWidth - safeArea.right),
+    },
+  };
+}
+
+function observeEnvironment(notify: () => void): void {
+  wx.onThemeChange(notify);
+  wx.onWindowResize(notify);
+}
+
+class WechatPlatform extends Environment {
+  readonly os = "wechat";
+  get version(): string { return wx.getAppBaseInfo().version; }
+}
+
+/** WeChat host version and window environment; imports do not access wx. */
+export const platform = /* @__PURE__ */ new WechatPlatform(readEnvironment, observeEnvironment);
 
 /** Checks whether all host functions for the requested capability exist. */
 export function isSupported(api: PlatformModule): boolean {

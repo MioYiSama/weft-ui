@@ -5,6 +5,7 @@
     weft_runtime_tick;
     weft_runtime_dispatch;
     weft_runtime_resolve;
+    weft_runtime_environment;
     weft_stable_rows;
   local:
     *;

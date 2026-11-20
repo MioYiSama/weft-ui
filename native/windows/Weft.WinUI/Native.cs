@@ -23,6 +23,7 @@ internal static unsafe partial class Native
         public delegate* unmanaged<nint, uint, byte*, byte*, byte*, nuint, void> Call;
         public delegate* unmanaged<nint, int, byte*, nuint, void> Log;
         public byte* Version;
+        public byte* Environment;
     }
 
     [LibraryImport(Library, EntryPoint = "weft_runtime_new")]
@@ -37,11 +38,17 @@ internal static unsafe partial class Native
     [LibraryImport(Library, EntryPoint = "weft_runtime_resolve")]
     public static partial void RuntimeResolve(nint runtime, uint id, byte ok, byte* result, nuint len);
 
+    [LibraryImport(Library, EntryPoint = "weft_runtime_environment")]
+    public static partial void RuntimeEnvironment(nint runtime, byte* json, nuint len);
+
     [LibraryImport(Library, EntryPoint = "weft_runtime_free")]
     public static partial void RuntimeFree(nint runtime);
 
     [LibraryImport(Library, EntryPoint = "weft_stable_rows")]
     public static partial nuint StableRows(uint* oldRows, nuint oldLen, uint* newRows, nuint newLen, byte* stable);
+
+    [LibraryImport("user32.dll")]
+    public static partial uint GetDpiForSystem();
 
     [LibraryImport("kernel32.dll", EntryPoint = "OutputDebugStringW", StringMarshalling = StringMarshalling.Utf16)]
     public static partial void OutputDebugString(string message);

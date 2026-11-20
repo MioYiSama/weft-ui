@@ -8,8 +8,9 @@ The versions match the CI workflows in `.github/workflows/`.
 
 | For | Tools |
 | --- | --- |
-| Everything | Git, Node.js 26, pnpm 11 (`corepack enable` picks the version in `package.json`), Rust stable with the `wasm32-unknown-unknown` target, `wasm-bindgen-cli` 0.2.130 (`cargo install wasm-bindgen-cli --version 0.2.130 --locked`) |
-| Native kernel | CMake 3.28 or later, Ninja, Python 3; a stable Rust toolchain on Linux |
+| Workspace | Git, Node.js 26, pnpm 11 (`corepack enable` picks the version in `package.json`) |
+| Compiler WASM | Rust stable with the `wasm32-unknown-unknown` target, `wasm-bindgen-cli` 0.2.130 (`cargo install wasm-bindgen-cli --version 0.2.130 --locked`) |
+| Native kernel | CMake 3.28 or later, Ninja, Python 3 |
 | Apple | macOS 26 with Xcode 27 |
 | Android | Android SDK (platform 37) and NDK, JDK 21 |
 | Windows | Windows 11, Visual Studio Build Tools with the C++ workload (includes CMake and Ninja), .NET SDK 10, PowerShell 7 |
@@ -27,7 +28,7 @@ native/apple/build-core.sh       # macOS: WeftCore.xcframework, for swift test a
 native/android/build-core.sh     # libweft.so for every ABI; WEFT_ANDROID_ABIS="x86_64" for a subset
 ```
 
-The first kernel build fetches and compiles Hermes, which takes a while; later builds reuse it. The README lists the commands of every platform.
+The first kernel build fetches and compiles Hermes, which takes a while; later builds reuse it. On Linux, CMake also downloads a prebuilt ICU4X archive and its matching C++ headers, so the kernel build needs neither Rust nor system ICU. To reuse local copies, pass `-DWEFT_ICU4X_ARCHIVE=/path/to/icu4x.a` and `-DWEFT_ICU4X_HEADERS=/path/to/source.tar.gz` to CMake; both must match the pinned upstream SHA-256 hashes. The README lists the commands for each platform.
 
 ## Checks
 
@@ -52,7 +53,7 @@ CI runs the Android and iOS flows nightly (`nightly.yml`). The other platforms r
 
 - **macOS**: `pnpm --filter example test:macos`. Switch to an English input source (ABC) first; other input methods intercept XCUITest's typing.
 - **Windows**: `pnpm --filter example build:windows`, then `pnpm --filter example test:windows` from an interactive desktop session (FlaUI drives the real window).
-- **Linux**: start the container (`docker compose -f native/linux/docker/compose.yaml up -d --build`), then in `docker compose -f native/linux/docker/compose.yaml exec linux bash`: `pnpm install`, `native/linux/build-core.sh`, `pnpm --filter example build:linux` and `pnpm --filter example test:linux`. The desktop is on `vnc://localhost:5901` (password `weft`).
+- **Linux**: build the compiler WASM on the host (`pnpm build:wasm`), then start the container (`docker compose -f native/linux/docker/compose.yaml up -d --build`), then in `docker compose -f native/linux/docker/compose.yaml exec linux bash`: `pnpm install`, `native/linux/build-core.sh`, `pnpm --filter example build:linux` and `pnpm --filter example test:linux`. The desktop is on `vnc://localhost:5901` (password `weft`).
 
 ## Conventions
 

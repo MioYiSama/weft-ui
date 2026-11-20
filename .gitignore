@@ -6,3 +6,4 @@ node_modules/
 /native/core/build
 /docs/dist
 /docs/.astro
+.DS_Store

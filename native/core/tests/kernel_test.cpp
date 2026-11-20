@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <functional>
@@ -18,6 +19,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 
@@ -204,6 +206,21 @@ void unicode() {
   Shell shell;
   CHECK(shell.start("unicode"));
   CHECK_EQ(shell.lines(), (std::vector<std::string>{"Unicode OK"}));
+
+  // Linux locale tests run in separate processes because ICU4X caches LC_*/LANG.
+  if (const char *locale = std::getenv("WEFT_UNICODE_EXPECTED")) {
+    const std::map<std::string_view, std::string_view> expected = {
+        {"root", "II ii\u0307 1 false"},
+        {"pinyin", "II ii\u0307 -1 false"},
+        {"turkish", "İI ıi 1 false"},
+        {"serbian-latin", "II ii\u0307 1 true"},
+    };
+    Shell linux_shell;
+    const auto runtime = linux_shell.start("unicode-linux");
+    CHECK_EQ(linux_shell.lines(WEFT_LOG_ERROR), (std::vector<std::string>{}));
+    CHECK(runtime);
+    CHECK_EQ(linux_shell.lines(), (std::vector<std::string>{std::string(expected.at(locale))}));
+  }
 }
 
 void calls() {

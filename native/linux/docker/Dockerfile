@@ -34,10 +34,6 @@ RUN for dir in node_modules packages/compiler/node_modules packages/platform/nod
 
 # Ubuntu images have the user `ubuntu` with uid 1000, the usual desktop uid.
 USER ubuntu
-RUN curl --proto '=https' --tlsv1.2 -fsSLo /tmp/rustup-init.sh https://sh.rustup.rs \
-    && sh /tmp/rustup-init.sh -y --profile minimal --default-toolchain stable \
-    && rm /tmp/rustup-init.sh
-ENV PATH="/home/ubuntu/.cargo/bin:${PATH}" \
-    DISPLAY=:1
+ENV DISPLAY=:1
 ENTRYPOINT ["weft-desktop"]
 CMD ["sleep", "infinity"]

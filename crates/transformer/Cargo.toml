@@ -7,7 +7,7 @@ repository = { workspace = true }
 description = "Semantic analysis and platform backends for Weft UI"
 
 [dependencies]
-weft-ui-ast = { path = "../ast" }
+weft-ui-ast = { workspace = true }
 
 [dev-dependencies]
-weft-ui-parser = { path = "../parser" }
+weft-ui-parser = { workspace = true }

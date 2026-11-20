@@ -63,8 +63,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      # The host hermesc of the cross builds is a Linux kernel build, which needs cargo.
-      - uses: dtolnay/rust-toolchain@stable
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
       - run: native/android/build-core.sh
       - uses: actions/upload-artifact@v7
@@ -105,7 +103,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
       - run: native/linux/build-core.sh
       - uses: actions/upload-artifact@v7

@@ -35,9 +35,6 @@ importers:
       '@weft-ui/platform':
         specifier: workspace:*
         version: link:../packages/platform
-      '@weft-ui/runtime':
-        specifier: workspace:*
-        version: link:../packages/runtime
       '@weft-ui/vite':
         specifier: workspace:*
         version: link:../packages/vite

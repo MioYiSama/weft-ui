@@ -4,7 +4,6 @@
   "type": "module",
   "dependencies": {
     "@weft-ui/platform": "workspace:*",
-    "@weft-ui/runtime": "workspace:*",
     "@weft-ui/vite": "workspace:*"
   },
   "devDependencies": {

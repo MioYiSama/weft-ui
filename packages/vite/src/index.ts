@@ -80,6 +80,19 @@ function selectPlatforms(configured: readonly Platform[], app: boolean): Platfor
   return [...new Set(names as Platform[])];
 }
 
+/**
+ * Imports of `@weft-ui/runtime` resolve from the plugin's own dependency, so an
+ * app needs no direct dependency on it, and every module of a build (generated
+ * logic, `@weft-ui/platform`, app code) shares the runtime whose protocol
+ * version `checkShellProtocol` compared with the native shell.
+ */
+const RUNTIME = "@weft-ui/runtime";
+const RUNTIME_IMPORTER = fileURLToPath(import.meta.url);
+
+function isRuntimeImport(source: string): boolean {
+  return source === RUNTIME || source.startsWith(`${RUNTIME}/`);
+}
+
 const ENTRY_CANDIDATES = ["src/index.js", "src/index.ts", "src/index.mjs", "src/index.mts", "src/index.cjs", "src/index.cts"];
 
 function resolveEntry(root: string, entry: string | undefined): string {
@@ -261,6 +274,10 @@ export default function weft(options: WeftOptions = {}): Plugin {
           },
         },
       };
+    },
+    resolveId(source, _importer, resolveOptions) {
+      if (!isRuntimeImport(source)) return;
+      return this.resolve(source, RUNTIME_IMPORTER, { ...resolveOptions, skipSelf: true });
     },
     async buildApp(builder) {
       for (const platform of selected) await builder.build(builder.environments[platform]!);

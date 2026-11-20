@@ -41,7 +41,7 @@ WEFT_PLATFORM=web,wechat pnpm exec vite build
 
 Without `WEFT_PLATFORM`, `vite build` builds Web, while `vite build --app` builds every target in `platforms`. For native targets, the plugin uses Debug by default; pass `--mode release` to select Release.
 
-In an app using the npm packages, install `@weft-ui/runtime` and `@weft-ui/platform` alongside the Vite plugin. Add a shell package only for the native platforms you build:
+In an app using the npm packages, install `@weft-ui/platform` alongside the Vite plugin. The plugin depends on `@weft-ui/runtime` itself, so the app does not install it. Add a shell package only for the native platforms you build:
 
 | Target | Install in the app project |
 | --- | --- |
@@ -139,7 +139,7 @@ Use a Linux host with a C++20 toolchain, CMake 3.28 or later, `pkg-config`, and 
 
 On Linux arm64, Vite uses the `hermesc` shipped in `@weft-ui/native-linux`, because `hermes-compiler` does not provide one. Install that package on a Linux arm64 host even when targeting a different native platform, or set `WEFT_HERMESC`.
 
-In the Weft UI workspace, building the kernel also requires Ninja, Python 3, and a stable Rust toolchain. The kernel script writes `native/linux/build/linux-<arch>/libweft_core.so` and `bin/hermesc` under the same build directory.
+In the Weft UI workspace, building the kernel also requires Ninja and Python 3. CMake downloads the prebuilt ICU4X archive for the host architecture, so the kernel build does not need a Rust toolchain or system ICU. The kernel script writes `native/linux/build/linux-<arch>/libweft_core.so` and `bin/hermesc` under the same build directory.
 
 ```sh
 native/linux/build-core.sh

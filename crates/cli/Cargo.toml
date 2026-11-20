@@ -11,7 +11,7 @@ name = "weft"
 path = "src/main.rs"
 
 [dependencies]
-ignore = "0.4"
-weft-ui-ast = { path = "../ast" }
-weft-ui-formatter = { path = "../formatter" }
-weft-ui-language-server = { path = "../language-server" }
+ignore = { workspace = true }
+weft-ui-ast = { workspace = true }
+weft-ui-formatter = { workspace = true }
+weft-ui-language-server = { workspace = true }

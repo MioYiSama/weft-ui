@@ -300,6 +300,8 @@ R1、R2 在 M0 收尾后接着做（下一节）。
 - **验收**：新内核测试 `core.unicode`（大小写、规范化、孤立代理项、`localeCompare`、`toLocaleString`）在 macOS、Windows、Linux 都通过；crate 的单元测试通过；Linux 上 `libweft_core.so` 和 `hermesc` 的 `NEEDED` 里没有 libicu，导出的符号仍然只有内核的 C ABI；C-linux、C-core、C-windows、C-rust 通过。
 - **提交**：`feat(core): ICU4X Unicode backend for the Linux kernel`
 
+**后续调整**：Linux 内核改用 ICU4X 官方 C++ 绑定，链接 2.4.0 的预构建归档，移除 `crates/unicode`。内核构建不再需要 Rust 工具链，仍不依赖系统 ICU；编译器和 WASM 构建不变。
+
 ### R2 Release 工作流
 
 - **改动**：新增 `.github/workflows/release.yml`，手动触发，`stage` 默认关闭。分平台构建内核：macOS 构建 Apple 和 Android，`windows-2025` 构建 x64，`windows-11-arm` 构建 arm64，`ubuntu-24.04` 构建 Linux x64，`ubuntu-24.04-arm` 构建 Linux arm64；Linux 直接在运行器上构建，用的是 Ubuntu 24.04 的 glibc。汇总后跑每个 native 包的 `prepublishOnly` 检查，`pnpm -r pack` 打包全部发布包并上传为 artifact，对 npm 上还没有的版本执行 `npm stage publish`；不勾 `stage`，或者不在 master 上运行时，加 `--dry-run`。发布构建不用缓存。CONTRIBUTING 增加「Releasing」一节：发布步骤、可信发布配置，以及新包的首次暂存。
@@ -356,7 +358,7 @@ R1、R2 在 M0 收尾后接着做（下一节）。
 - [F5] 文档构建在修复前后均提示 `i18n` 集合缺失或为空、`404` 文档条目缺失；结论：不处理（已有警告，不影响构建及侧边栏验收）。
 - [N.2] 重建 Linux 容器后，内核 CMake 缓存指向的 `/hermes-src` 不再存在；重新指向工作区中已有的 Hermes 源码后 C-linux 通过；结论：不处理（同 PLAN.md P0.1，仅限本地缓存）。
 - [T2] B0 的 `tests` tsc 基线为 59，但未传 `--runExternalCode`，TypeScript 不会加载 `.weft` content mapper；C-ts 仅对 `tests` 启用该参数后，既有错误 56 个、Gallery 新增 0 个。剩余错误来自既有 fixture 和 native driver 的类型导入路径；结论：不处理这些既有错误，C-ts 与 W1 按启用 mapper 后的 56 个错误作基线。
-- [N.6] 仓库外的 pnpm 项目若只间接依赖 `@weft-ui/runtime`，Vite 无法从应用生成的模块解析 `@weft-ui/runtime/remote`；结论：不处理（应用直接依赖运行时，C-pack 与使用文档均明确声明）。
+- [N.6] 仓库外的 pnpm 项目若只间接依赖 `@weft-ui/runtime`，Vite 无法从应用生成的模块解析 `@weft-ui/runtime/remote`；结论：不处理（应用直接依赖运行时，C-pack 与使用文档均明确声明）。后续调整：已修复，Vite 插件把构建中所有 `@weft-ui/runtime` 导入解析到插件自身依赖的运行时，应用不再直接依赖它。
 - [W1] CI 首次在 Linux（GCC）上跑内核测试，`core.corpus` 段错误。原因是 P1.4 起就有的悬垂引用：`for (auto &c : read_corpus("ops.json")["cases"].array())` 中 `read_corpus` 返回的临时文档在循环开始前就析构了（C++23 之前范围 for 不延长中间临时对象的生命周期），Clang 和 MSVC 恰好没有崩。结论：已修复（文档存进局部变量，提交 `test(core): keep the corpus documents alive in the kernel test`；容器内 GCC 跑内核测试 14 项通过）。
 - [W1] Windows 运行器检出时 `core.autocrlf` 把黄金文件转成 CRLF，`conformance.board`、`conformance.todo` 在第 1 行就不一致；虚拟机用 robocopy 同步 Mac 的工作区，所以本地从未出现。结论：已修复（`.gitattributes` 固定 `*.ops` 为 LF，提交 `test(conformance): keep the goldens LF on Windows checkouts`）。
 - [W1] 容器的 `node_modules` 卷在 N.1 之后需要重新 `pnpm install` 才有 native 包的链接，否则内核 conformance 报「needs the native shell」。结论：不处理（C-linux 命令本身先跑 `pnpm install`；只影响手动在旧容器里跑内核测试）。

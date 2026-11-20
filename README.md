@@ -37,11 +37,13 @@ pnpm --filter example build:windows  # dotnet project in example/apps/windows/, 
 pnpm --filter example test:windows   # UI Automation (FlaUI) click flow; needs an interactive desktop
 dotnet test native/windows/Weft.WinUI.Tests
 
-# Linux (Linux host with a C++20 compiler, CMake, Ninja, Python 3, stable Rust and GTK 4 / libsoup 3 / json-glib dev packages): the kernel as libweft_core.so, once
+# Linux (C++20 compiler, CMake, Ninja, Python 3 and GTK 4 / libsoup 3 / json-glib dev packages)
+# CMake downloads prebuilt ICU4X; building libweft_core.so needs neither Rust nor system ICU.
 native/linux/build-core.sh           # also builds hermesc, which hermes-compiler lacks for arm64
 pnpm --filter example build:linux    # CMake project in example/apps/linux/, built into apps/linux/build/
 pnpm --filter example test:linux     # in-process click flow; needs a display
-# or all of it in Docker, with an XFCE desktop on vnc://localhost:5901 (password weft)
+# Or run the Linux steps in Docker after building the compiler WASM on the host (pnpm build:wasm).
+# The XFCE desktop is on vnc://localhost:5901 (password weft).
 docker compose -f native/linux/docker/compose.yaml up -d --build
 docker compose -f native/linux/docker/compose.yaml exec linux bash
 ```
@@ -70,7 +72,7 @@ Then run `tsc --runExternalCode` (`pnpm --filter example typecheck`); VS Code st
 
 With `@weft-ui/vite`, `entry` selects the JS/TS entry for non-Web builds, relative to the Vite root. It defaults to the first existing file in `src/index.{js,ts,mjs,mts,cjs,cts}`, in that order. Web builds start from `index.html`. Set `apps` to change the output directory for platform projects (an absolute path or a path relative to the Vite root; default `./apps`). The paths below assume the default.
 
-In an app using the npm packages, install `@weft-ui/runtime` and `@weft-ui/platform` alongside the Vite plugin. Add the native shell for each target you build, for example:
+In an app using the npm packages, install `@weft-ui/platform` alongside the Vite plugin; the plugin brings `@weft-ui/runtime` and resolves the generated code's runtime imports to it. Add the native shell for each target you build, for example:
 
 ```sh
 pnpm add -D @weft-ui/native-android

@@ -56,7 +56,7 @@ jobs:
               - .github/actions/**
               - protocol/**
               - native/core/**
-            # The compiler and Vite plugin bundle the conformance fixtures; crates/unicode is in the Linux kernel.
+            # The compiler and Vite plugin bundle the conformance fixtures.
             compiler: &compiler
               - crates/**
               - Cargo.toml

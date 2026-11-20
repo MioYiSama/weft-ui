@@ -41,7 +41,7 @@ WEFT_PLATFORM=web,wechat pnpm exec vite build
 
 未设置 `WEFT_PLATFORM` 时，`vite build` 构建 Web，`vite build --app` 则构建 `platforms` 中的所有目标。原生平台默认构建 Debug 版本，传入 `--mode release` 可构建 Release 版本。
 
-如果项目通过 npm 使用 Weft UI，请安装 Vite 插件、`@weft-ui/runtime` 和 `@weft-ui/platform`，再按需安装原生壳包：
+如果项目通过 npm 使用 Weft UI，请安装 Vite 插件和 `@weft-ui/platform`，再按需安装原生壳包。`@weft-ui/runtime` 由 Vite 插件自带，应用无需单独安装：
 
 | 目标平台 | 在应用项目中运行 |
 | --- | --- |
@@ -139,7 +139,7 @@ pnpm --filter example test:windows
 
 `hermes-compiler` 不提供 Linux arm64 版本，所以 Vite 在这类主机上使用 `@weft-ui/native-linux` 提供的 `hermesc`。即使目标是其他原生平台，也要安装这个包，或设置 `WEFT_HERMESC`。
 
-在 Weft UI 工作区构建内核还需要 Ninja、Python 3 和稳定版 Rust 工具链。内核脚本会在 `native/linux/build/linux-<arch>/` 下生成 `libweft_core.so` 和 `bin/hermesc`。
+在 Weft UI 工作区构建内核还需要 Ninja 和 Python 3。CMake 会下载与主机架构匹配的 ICU4X 预构建归档，因此构建内核无需 Rust 工具链或系统 ICU。内核脚本会在 `native/linux/build/linux-<arch>/` 下生成 `libweft_core.so` 和 `bin/hermesc`。
 
 ```sh
 native/linux/build-core.sh

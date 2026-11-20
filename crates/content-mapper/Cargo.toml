@@ -7,5 +7,5 @@ repository = { workspace = true }
 description = "TypeScript content mapper transform for Weft UI files"
 
 [dependencies]
-weft-ui-parser = { path = "../parser" }
-weft-ui-transformer = { path = "../transformer" }
+weft-ui-parser = { workspace = true }
+weft-ui-transformer = { workspace = true }

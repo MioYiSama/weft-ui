@@ -10,10 +10,18 @@ members = ["crates/*"]
 # Built by Zed for wasm32-wasip2 with its own lockfile and target directory.
 exclude = ["crates/zed"]
 
-# The ICU4X backend is linked into the prebuilt Linux kernel.
-[profile.kernel]
-inherits = "release"
-opt-level = "s"
-lto = true
-codegen-units = 1
-panic = "abort"
+[workspace.dependencies]
+ignore = "0.4"
+js-sys = "0.3.107"
+lsp-server = "0.10.0"
+lsp-types = "0.97.0"
+serde = "1"
+serde_json = "1"
+url = "2.5"
+wasm-bindgen = "=0.2.130"
+weft-ui-ast = { path = "crates/ast" }
+weft-ui-content-mapper = { path = "crates/content-mapper" }
+weft-ui-formatter = { path = "crates/formatter" }
+weft-ui-language-server = { path = "crates/language-server" }
+weft-ui-parser = { path = "crates/parser" }
+weft-ui-transformer = { path = "crates/transformer" }

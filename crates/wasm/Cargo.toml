@@ -9,8 +9,8 @@ repository = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-weft-ui-content-mapper = { path = "../content-mapper" }
-weft-ui-parser = { path = "../parser" }
-weft-ui-transformer = { path = "../transformer" }
-wasm-bindgen = "=0.2.130"
-js-sys = "0.3.107"
+weft-ui-content-mapper = { workspace = true }
+weft-ui-parser = { workspace = true }
+weft-ui-transformer = { workspace = true }
+wasm-bindgen = { workspace = true }
+js-sys = { workspace = true }

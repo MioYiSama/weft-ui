@@ -185,7 +185,7 @@ private fun V4(s: S4) {
         s.p5?.let { V3(it) }
         s.p6?.let { V3(it) }
         for (c in s.p7) key(c.id) { V10(c) }
-        WeftText("note", color = Color(0xff6b7280L), size = 14f)
+        WeftText("note", color = WeftColor.Fixed(Color(0xff6b7280L)), size = 14f)
     }
 }
 

@@ -1,6 +1,5 @@
 package net.mioyi.weftui
 
-import androidx.compose.ui.graphics.Color
 import java.io.ByteArrayOutputStream
 
 /** A value of a value slot or an event payload (protocol/SPEC.md, "Binary encoding"). */
@@ -25,12 +24,8 @@ sealed class WeftValue {
     /** The value of an `Int` slot: a length in dp. */
     val length: Float get() = (this as? Number)?.value?.toFloat() ?: 0f
 
-    /** The value of a `Color` slot; invalid colors are transparent. */
-    val color: Color
-        get() = parseColor(string) ?: run {
-            if (WeftLog.debuggable) WeftLog.warn("weft: invalid color $string, using transparent")
-            Color.Transparent
-        }
+    /** The fixed color or theme token of a `Color` slot. */
+    val color: WeftColor get() = WeftColor.parse(string)
 
     /** The binary encoding of an event payload: a tag byte and the data. */
     internal fun encode(): ByteArray = when (this) {
@@ -50,26 +45,4 @@ sealed class WeftValue {
         }
         is Strings -> error("weft: string lists are not event payloads")
     }
-}
-
-/** Parses `#RGB`, `#RRGGBB` or `#RRGGBBAA` in either hex case. */
-internal fun parseColor(text: String): Color? {
-    if (!text.startsWith('#')) return null
-    val digits = text.substring(1)
-    if (digits.length !in intArrayOf(3, 6, 8) || !digits.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) {
-        return null
-    }
-    val value = digits.toLong(16)
-    val rgba = when (digits.length) {
-        3 -> {
-            val r = value shr 8 and 0xf
-            val g = value shr 4 and 0xf
-            val b = value and 0xf
-            (r * 17 shl 24) or (g * 17 shl 16) or (b * 17 shl 8) or 0xff
-        }
-        6 -> value shl 8 or 0xff
-        else -> value
-    }
-    // Compose colors are ARGB.
-    return Color(((rgba and 0xff) shl 24) or (rgba ushr 8))
 }

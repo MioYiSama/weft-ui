@@ -72,13 +72,13 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
     /** Row.height */
     var v3 by mutableFloatStateOf(0f)
     /** Row.background */
-    var v4 by mutableStateOf(Color.Transparent)
+    var v4 by mutableStateOf(WeftColor.Transparent)
     /** Checkbox.checked */
     var v5 by mutableStateOf(false)
     /** Image.src */
     var v6 by mutableStateOf("")
     /** Text.color */
-    var v7 by mutableStateOf(Color.Transparent)
+    var v7 by mutableStateOf(WeftColor.Transparent)
     /** Text.size */
     var v8 by mutableFloatStateOf(0f)
     /** Text.bold */
@@ -115,8 +115,8 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V1(s: S1) {
-    WeftColumn(gap = 8f, padding = 12f, width = 320f, height = 280f, background = Color(0xffeeeeffL)) {
-        WeftText("Gallery", color = Color(0xff224466L), size = 20f, bold = true)
+    WeftColumn(gap = 8f, padding = 12f, width = 320f, height = 280f, background = WeftColor.Fixed(Color(0xffeeeeffL))) {
+        WeftText("Gallery", color = WeftColor.Fixed(Color(0xff224466L)), size = 20f, bold = true)
         WeftRow(gap = s.v1, padding = s.v0, width = s.v2, height = s.v3, background = s.v4) {
             WeftCheckbox(s.v5) { s.dispatch(0, WeftValue.Bool(it)) }
             WeftImage(s.v6, width = 32f, height = 32f)

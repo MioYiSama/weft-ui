@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
@@ -38,7 +39,7 @@ import androidx.compose.ui.unit.dp
  * top start corner inside the system bars.
  */
 @Composable
-fun WeftRoot(layoutHash: ULong, make: WeftMake) {
+fun WeftRoot(layoutHash: ULong, theme: WeftTheme = WeftTheme.Empty, make: WeftMake) {
     val context = LocalContext.current
     val session = remember { WeftSession.start(context, layoutHash.toLong(), make) }
     DisposableEffect(session) { onDispose { session.close() } }
@@ -62,7 +63,9 @@ fun WeftRoot(layoutHash: ULong, make: WeftMake) {
             if (failure != null) {
                 Text(failure, Modifier.padding(16.dp), color = Color.Red)
             } else if (root != null) {
-                key(root.id) { root.Content() }
+                CompositionLocalProvider(LocalWeftTheme provides theme) {
+                    key(root.id) { root.Content() }
+                }
             }
         }
     }
@@ -75,11 +78,11 @@ fun WeftColumn(
     padding: Float? = null,
     width: Float? = null,
     height: Float? = null,
-    background: Color? = null,
+    background: WeftColor? = null,
     content: @Composable () -> Unit,
 ) {
     Column(
-        Modifier.weftBox(padding, width, height, background),
+        Modifier.weftBox(padding, width, height, background?.resolve()),
         verticalArrangement = Arrangement.spacedBy(gap.dp),
         horizontalAlignment = Alignment.Start,
     ) { content() }
@@ -92,11 +95,11 @@ fun WeftRow(
     padding: Float? = null,
     width: Float? = null,
     height: Float? = null,
-    background: Color? = null,
+    background: WeftColor? = null,
     content: @Composable () -> Unit,
 ) {
     Row(
-        Modifier.weftBox(padding, width, height, background),
+        Modifier.weftBox(padding, width, height, background?.resolve()),
         horizontalArrangement = Arrangement.spacedBy(gap.dp),
         verticalAlignment = Alignment.Top,
     ) { content() }
@@ -117,11 +120,11 @@ private fun Modifier.weftBox(padding: Float?, width: Float?, height: Float?, bac
 
 /** `Text`; unset style properties keep the theme's. Sizes are dp, like every length. */
 @Composable
-fun WeftText(value: String, color: Color? = null, size: Float? = null, bold: Boolean? = null) {
+fun WeftText(value: String, color: WeftColor? = null, size: Float? = null, bold: Boolean? = null) {
     val fontSize = if (size != null) with(LocalDensity.current) { size.dp.toSp() } else TextUnit.Unspecified
     Text(
         value,
-        color = color ?: Color.Unspecified,
+        color = color?.resolve() ?: Color.Unspecified,
         fontSize = fontSize,
         fontWeight = if (bold == true) FontWeight.Bold else null,
     )

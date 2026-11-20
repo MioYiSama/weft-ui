@@ -13,6 +13,8 @@
 mod kotlin;
 mod view;
 
+use std::fmt;
+
 use crate::transform::{Context, OutputFile};
 use crate::view::{PointKind, Template, ValueType, ViewLayout, ViewNodeKind};
 
@@ -54,11 +56,29 @@ fn generate(layout: &ViewLayout) -> String {
     out.writer.line("import androidx.compose.ui.graphics.Color");
     out.writer.line("import net.mioyi.weftui.*");
     out.writer.blank();
+    let theme = layout.theme();
+    if !theme.is_empty() {
+        out.open("private val appTheme = WeftTheme.register(mapOf(");
+        for (name, light, dark) in theme {
+            let name = fmt::from_fn(|f| kotlin::string(f, name));
+            let light = kotlin::color(*light);
+            let dark = kotlin::color(*dark);
+            out.writer
+                .line(format_args!("{name} to ({light} to {dark}),"));
+        }
+        out.close("))");
+        out.writer.blank();
+    }
     out.writer.line("/** Root view of the app: starts the kernel with the bundle and renders the root component. */");
     out.writer.line("@Composable");
     out.open("fun WeftApp() {");
+    let theme_arg = if theme.is_empty() {
+        ""
+    } else {
+        ", theme = appTheme"
+    };
     out.writer.line(format_args!(
-        "WeftRoot(layoutHash = 0x{:016x}uL, make = ::makeScope)",
+        "WeftRoot(layoutHash = 0x{:016x}uL{theme_arg}, make = ::makeScope)",
         layout.hash()
     ));
     out.close("}");
@@ -99,7 +119,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
             ValueType::Int => "mutableFloatStateOf(0f)",
             ValueType::Bool => "mutableStateOf(false)",
             ValueType::String => "mutableStateOf(\"\")",
-            ValueType::Color => "mutableStateOf(Color.Transparent)",
+            ValueType::Color => "mutableStateOf(WeftColor.Transparent)",
         };
         out.writer.line(format_args!("var v{slot} by {state}"));
     }

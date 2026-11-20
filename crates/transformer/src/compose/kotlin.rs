@@ -3,6 +3,7 @@
 use std::fmt::{self, Display, Write as _};
 
 use crate::code::Indented;
+use crate::color::Color;
 
 /// Kotlin source written line by line, indented by nesting depth.
 #[derive(Debug)]
@@ -34,6 +35,12 @@ impl Code {
         self.writer.end_line(tail);
         self.writer.indent();
     }
+}
+
+/// Formats an RGBA color as an ARGB Compose color literal.
+pub(super) fn color(color: Color) -> impl Display {
+    let Color { r, g, b, a } = color;
+    fmt::from_fn(move |f| write!(f, "Color(0x{a:02x}{r:02x}{g:02x}{b:02x}L)"))
 }
 
 /// Writes a Kotlin string literal. Escaping `$` disables string templates.

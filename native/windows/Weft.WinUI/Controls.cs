@@ -12,12 +12,11 @@ namespace Weft.WinUI;
 // reported, so it is never rolled back mid-composition; the committed text is.
 
 /// <summary><c>Input</c>: a <see cref="TextBox"/>.</summary>
-public sealed class WeftInput
+public sealed class WeftInput : WeftElement
 {
-    /// <summary>Width of an <c>Input</c>, which has no width property (CSS inputs default to about 20 characters).</summary>
+    // The normal intrinsic width is about 20 characters, not a fixed layout constraint.
     private const double InputWidth = 200;
-
-    private readonly TextBox box = new() { Width = InputWidth };
+    private readonly TextBox box = new();
     private readonly Func<string, bool> edit;
     private string value = "";
     private bool composing;
@@ -25,6 +24,7 @@ public sealed class WeftInput
     public WeftInput(Func<string, bool> edit)
     {
         this.edit = edit;
+        box.SetValue(WeftLayout.PreferredWidthProperty, InputWidth);
         box.TextChanging += (_, args) =>
         {
             if (args.IsContentChanging) Edited();
@@ -37,7 +37,7 @@ public sealed class WeftInput
         };
     }
 
-    public UIElement Element => box;
+    protected override FrameworkElement Control => box;
 
     /// <summary>The controlled value slot.</summary>
     public string Value
@@ -75,7 +75,7 @@ public sealed class WeftInput
 }
 
 /// <summary><c>Checkbox</c>: a <see cref="CheckBox"/> without a label.</summary>
-public sealed class WeftCheckbox
+public sealed class WeftCheckbox : WeftElement
 {
     private readonly CheckBox box = new() { MinWidth = 0 };
     private readonly Func<bool, bool> edit;
@@ -89,7 +89,7 @@ public sealed class WeftCheckbox
         box.Unchecked += (_, _) => Edited(false);
     }
 
-    public UIElement Element => box;
+    protected override FrameworkElement Control => box;
 
     /// <summary>The controlled value slot.</summary>
     public bool Checked

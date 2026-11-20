@@ -65,10 +65,12 @@ public sealed class WeftSession
     /// </summary>
     public static UIElement Start(ulong layoutHash, Factory make, WeftTheme? theme = null)
     {
-        var page = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+        var page = new WeftLinearPanel(WeftAxis.Vertical, scrolling: true);
         // A ThemeResource stays live when the appearance changes, unlike a resource dictionary lookup.
         var view = (ScrollViewer)XamlReader.Load("""
             <ScrollViewer xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                          HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                          HorizontalContentAlignment="Stretch"
                           Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
             """);
         view.Content = page;

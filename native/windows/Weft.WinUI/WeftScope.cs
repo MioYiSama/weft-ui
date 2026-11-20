@@ -72,19 +72,8 @@ internal sealed class WeftRootScope : WeftScope
 {
     public WeftRootScope(WeftSession session, Panel panel) : base(0, session, 1)
     {
-        new WeftRegion(panel, StackAlignment.Leading).Point(this, 0);
+        new WeftRegion(panel).Point(this, 0);
     }
-}
-
-/// <summary>How a container aligns its children on the cross axis.</summary>
-internal enum StackAlignment
-{
-    /// <summary>A vertical stack: children start at the left.</summary>
-    Leading,
-    /// <summary>A horizontal stack: children start at the top.</summary>
-    Top,
-    /// <summary>A horizontal stack centering its children vertically (button content).</summary>
-    Center,
 }
 
 /// <summary>
@@ -99,15 +88,10 @@ public sealed class WeftRegion
     /// <summary><see cref="UIElement"/> or <see cref="WeftPoint"/>, in order.</summary>
     private readonly List<object> parts = [];
     private readonly Panel? panel;
-    private readonly StackAlignment alignment;
     private readonly WeftScope? scope;
 
     /// <summary>The children of a container.</summary>
-    internal WeftRegion(Panel panel, StackAlignment alignment)
-    {
-        this.panel = panel;
-        this.alignment = alignment;
-    }
+    internal WeftRegion(Panel panel) => this.panel = panel;
 
     /// <summary>The top-level nodes of a scope.</summary>
     internal WeftRegion(WeftScope scope)
@@ -195,23 +179,14 @@ public sealed class WeftRegion
         foreach (var control in controls) Insert(index++, control);
     }
 
-    /// <summary>Inserts <paramref name="control"/> into the container at <paramref name="index"/>, aligned on the cross axis.</summary>
+    /// <summary>Inserts <paramref name="control"/> into the container at <paramref name="index"/>.</summary>
     private void Insert(int index, UIElement control)
     {
+        // The panel resolves alignment itself. Native control styles must not override its frame.
         if (control is FrameworkElement element)
         {
-            switch (alignment)
-            {
-                case StackAlignment.Leading:
-                    element.HorizontalAlignment = HorizontalAlignment.Left;
-                    break;
-                case StackAlignment.Top:
-                    element.VerticalAlignment = VerticalAlignment.Top;
-                    break;
-                case StackAlignment.Center:
-                    element.VerticalAlignment = VerticalAlignment.Center;
-                    break;
-            }
+            element.HorizontalAlignment = HorizontalAlignment.Stretch;
+            element.VerticalAlignment = VerticalAlignment.Stretch;
         }
         panel!.Children.Insert(index, control);
     }

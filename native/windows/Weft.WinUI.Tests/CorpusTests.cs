@@ -95,6 +95,84 @@ public sealed class CorpusTests
         }
     }
 
+    [TestMethod]
+    public void LaysOutEverySharedCase()
+    {
+        using var corpus = Load("layout.json");
+        foreach (var row in corpus.RootElement.GetProperty("cases").EnumerateArray())
+        {
+            var input = row.GetProperty("children");
+            var children = new LayoutChild[input.GetArrayLength()];
+            var intrinsic = new LayoutSize[children.Length];
+            var frames = new LayoutFrame[children.Length];
+            for (var i = 0; i < children.Length; i++)
+            {
+                var child = input[i];
+                var size = child.GetProperty("intrinsic");
+                intrinsic[i] = new(size[0].GetDouble(), size[1].GetDouble());
+                var bounds = new LayoutBounds(Number(child, "width") ?? double.NaN, Number(child, "height") ?? double.NaN,
+                    Number(child, "minWidth") ?? 0, Number(child, "maxWidth") ?? double.PositiveInfinity,
+                    Number(child, "minHeight") ?? 0, Number(child, "maxHeight") ?? double.PositiveInfinity,
+                    Number(child, "aspectRatio") ?? 0, default);
+                children[i] = new(bounds, child.TryGetProperty("margin", out var margin) ? Insets(margin) : default,
+                    Number(child, "grow") ?? 0, Flag(child, "fill"), Flag(child, "spacer"), Number(child, "size"));
+            }
+
+            LayoutSize Measure(int index, LayoutProposal proposal)
+            {
+                var bounds = children[index].Bounds;
+                return bounds.Resolve(bounds.Constrain(proposal), intrinsic[index]);
+            }
+
+            var axis = WeftUnions.ParseAxis(row.GetProperty("axis").GetString()!);
+            var limits = row.GetProperty("proposal");
+            var (main, cross) = (Limit(limits[0]), Limit(limits[1]));
+            var proposal = axis == WeftAxis.Vertical ? new LayoutProposal(cross, main) : new LayoutProposal(main, cross);
+            var padding = Insets(row.GetProperty("padding"));
+            var result = row.GetProperty("kind").GetString() switch
+            {
+                "linear" => WeftLayoutAlgorithm.Linear(axis, row.GetProperty("gap").GetDouble(),
+                    WeftUnions.ParseCrossAlign(row.GetProperty("align").GetString()!),
+                    WeftUnions.ParseJustify(row.GetProperty("justify").GetString()!), padding, proposal, children, Measure, frames),
+                "stack" => WeftLayoutAlgorithm.Stack(WeftUnions.ParseAlignment(row.GetProperty("alignment").GetString()!),
+                    padding, proposal, children, Measure, frames),
+                _ => throw new InvalidOperationException($"Unknown layout kind in {Name(row)}"),
+            };
+            var expected = row.GetProperty("size");
+            Near(expected[0], result.Width, $"{Name(row)} width");
+            Near(expected[1], result.Height, $"{Name(row)} height");
+            var expectedFrames = row.GetProperty("frames");
+            Assert.AreEqual(expectedFrames.GetArrayLength(), frames.Length, Name(row));
+            for (var i = 0; i < frames.Length; i++)
+            {
+                var rect = expectedFrames[i];
+                var frame = frames[i];
+                Near(rect[0], frame.X, $"{Name(row)} child {i} x");
+                Near(rect[1], frame.Y, $"{Name(row)} child {i} y");
+                Near(rect[2], frame.Width, $"{Name(row)} child {i} width");
+                Near(rect[3], frame.Height, $"{Name(row)} child {i} height");
+            }
+        }
+    }
+
+    [TestMethod]
+    public void AspectRatioMeasuresTheContentBoxAndSizeBoundsClampTheResult()
+    {
+        var bounds = new LayoutBounds(90, double.NaN, 0, 80, 32, 39, 2, new(3, 6, 4, 8));
+        var proposed = LayoutProposal.Exact(new(45, 46));
+        Assert.AreEqual(new LayoutSize(80, 39), bounds.Resolve(bounds.Constrain(proposed), new(2, 3)));
+        bounds = bounds with { MaxWidth = double.PositiveInfinity, MaxHeight = double.PositiveInfinity };
+        Assert.AreEqual(new LayoutSize(90, 45), bounds.Resolve(bounds.Constrain(proposed), new(2, 3)));
+    }
+
+    private static LayoutLimit Limit(JsonElement value) => value.ValueKind == JsonValueKind.Null ? LayoutLimit.Unbounded
+        : value.TryGetProperty("exact", out var exact) ? new(exact.GetDouble(), true) : new(value.GetProperty("atMost").GetDouble());
+
+    private static LayoutInsets Insets(JsonElement value) => new(value[0].GetDouble(), value[1].GetDouble(), value[2].GetDouble(), value[3].GetDouble());
+    private static double? Number(JsonElement value, string name) => value.TryGetProperty(name, out var number) ? number.GetDouble() : null;
+    private static bool Flag(JsonElement value, string name) => value.TryGetProperty(name, out var flag) && flag.GetBoolean();
+    private static void Near(JsonElement expected, double actual, string context) => Assert.AreEqual(expected.GetDouble(), actual, 0.001, context);
+
     private static JsonDocument Load(string file) =>
         JsonDocument.Parse(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "corpus", file)));
 

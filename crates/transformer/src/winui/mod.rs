@@ -10,8 +10,11 @@
 //!
 //! | Element    | Weft.WinUI wrapper | Native control              |
 //! | ---------- | ------------------ | --------------------------- |
-//! | `Column`   | `WeftStack(true)`  | Vertical `StackPanel`       |
-//! | `Row`      | `WeftStack(false)` | Horizontal `StackPanel`     |
+//! | `Column`   | `WeftStack(true)`  | Vertical `WeftLinearPanel` |
+//! | `Row`      | `WeftStack(false)` | Horizontal `WeftLinearPanel` |
+//! | `Stack`    | `WeftOverlay`      | `WeftStackPanel`            |
+//! | `Scroll`   | `WeftScroll`       | `ScrollViewer`             |
+//! | `Spacer`   | `WeftSpacer`       | Empty `FrameworkElement`   |
 //! | `Text`     | `WeftText`         | `TextBlock`                 |
 //! | `Button`   | `WeftButton`       | `Button`                    |
 //! | `Input`    | `WeftInput`        | Controlled `TextBox`        |
@@ -151,15 +154,22 @@ fn scope(out: &mut Code, index: usize, template: &Template, has_theme: bool) {
         out.open("public override void Apply(int slot, WeftValue value)");
         out.open("switch (slot)");
         for (slot, value) in template.values.iter().enumerate() {
-            let accessor = match value.ty {
-                ValueType::Int => "Number",
-                ValueType::Float => unreachable!("platform support rejects Float properties"),
-                ValueType::Bool => "Bool",
-                ValueType::String => "String",
-                ValueType::Color => "Color",
+            let ViewNodeKind::Element { element, .. } = template.nodes[value.node as usize].kind
+            else {
+                unreachable!("value slots belong to elements");
             };
+            let accessor = match value.ty {
+                ValueType::Int | ValueType::Float => "value.Number",
+                ValueType::Bool => "value.Bool",
+                ValueType::String => "value.String",
+                ValueType::Color => "value.Color",
+            };
+            let expression = std::fmt::from_fn(|out| match view::union(element, value.prop) {
+                Some(ty) => write!(out, "WeftUnions.Parse{ty}({accessor})"),
+                None => out.write_str(accessor),
+            });
             out.writer.line(format_args!(
-                "case {slot}: n{}.{} = value.{accessor}; break;",
+                "case {slot}: n{}.{} = {expression}; break;",
                 value.node,
                 view::property(value.prop),
             ));

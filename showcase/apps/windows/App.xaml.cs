@@ -10,18 +10,20 @@ namespace WeftMain;
 public partial class App : Application
 {
     private Window? window;
+    private readonly string? shotAppearance = Environment.GetEnvironmentVariable("WEFT_SHOT_APPEARANCE");
 
     public App()
     {
-        if (Environment.GetEnvironmentVariable("WEFT_SHOT_APPEARANCE") is { } appearance)
-            RequestedTheme = appearance == "dark" ? ApplicationTheme.Dark : ApplicationTheme.Light;
+        if (shotAppearance is not null)
+            RequestedTheme = shotAppearance == "dark" ? ApplicationTheme.Dark : ApplicationTheme.Light;
         InitializeComponent();
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         window = new Window { Title = "Weft Showcase", Content = WeftApp.Start() };
-        WeftWindow.Resize(window, 480, 640);
+        // Show the whole layout page in reference captures without changing the preview window.
+        WeftWindow.Resize(window, 480, shotAppearance is null ? 640 : 760);
         window.Activate();
     }
 }

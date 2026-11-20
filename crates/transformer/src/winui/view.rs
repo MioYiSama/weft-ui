@@ -40,8 +40,13 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                     let (slot, _) = template.controlled(index);
                     format!("v => Dispatch({slot}, WeftValue.Of(v))")
                 }
-                Element::Text | Element::Image => String::new(),
-                _ => unreachable!("platform support rejects unsupported elements"),
+                Element::Scroll => props
+                    .iter()
+                    .find(|prop| prop.name == "direction")
+                    .map_or_else(String::new, |prop| {
+                        format!("direction: {}", literal(*element, prop.name, &prop.value))
+                    }),
+                Element::Stack | Element::Spacer | Element::Text | Element::Image => String::new(),
             };
             out.writer.line(format_args!(
                 "{declaration}n{index} = new {}({args});",
@@ -54,11 +59,11 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
             {
                 out.writer.line(format_args!("TrackColors(n{index});"));
             }
-            for prop in props {
+            for prop in props.iter().filter(|p| p.name != "direction") {
                 out.writer.line(format_args!(
                     "n{index}.{} = {};",
                     property(prop.name),
-                    literal(&prop.value)
+                    literal(*element, prop.name, &prop.value)
                 ));
             }
             out.writer
@@ -81,7 +86,9 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Input => "WeftInput",
         Element::Checkbox => "WeftCheckbox",
         Element::Image => "WeftImage",
-        _ => unreachable!("platform support rejects unsupported elements"),
+        Element::Stack => "WeftOverlay",
+        Element::Scroll => "WeftScroll",
+        Element::Spacer => "WeftSpacer",
     }
 }
 
@@ -92,12 +99,25 @@ pub(crate) fn property(name: &str) -> String {
     property
 }
 
-fn literal(value: &Constant) -> String {
+pub(super) fn union(element: Element, name: &str) -> Option<&'static str> {
+    match (element, name) {
+        (Element::Column | Element::Row | Element::Scroll, "align") => Some("CrossAlign"),
+        (Element::Column | Element::Row, "justify") => Some("Justify"),
+        (Element::Stack, "alignment") => Some("Alignment"),
+        (Element::Scroll, "direction") => Some("Axis"),
+        _ => None,
+    }
+}
+
+fn literal(element: Element, name: &str, value: &Constant) -> String {
     match value {
         Constant::Int(v) => v.to_string(),
-        Constant::Float(_) => unreachable!("platform support rejects Float properties"),
+        Constant::Float(v) => format!("{v:?}d"),
         Constant::Bool(v) => v.to_string(),
-        Constant::String(s) => csharp::string(s),
+        Constant::String(s) => match union(element, name) {
+            Some(ty) => format!("Weft{ty}.{}", property(s)),
+            None => csharp::string(s),
+        },
         Constant::Token(name) => format!("WeftColor.Token({})", csharp::string(name)),
         Constant::Color(c) => format!("WeftColor.Rgba({})", csharp::rgba(*c)),
     }

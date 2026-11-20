@@ -12,7 +12,7 @@ namespace Weft.WinUI;
 // keep the platform's defaults. Lengths are DIPs.
 
 /// <summary>An element that can paint a fixed color or a theme token.</summary>
-public abstract class WeftPaintedElement
+public abstract class WeftPaintedElement : WeftElement
 {
     private WeftColor color;
     private SolidColorBrush? brush;
@@ -45,81 +45,108 @@ public abstract class WeftPaintedElement
     protected abstract void SetColorBrush(SolidColorBrush brush);
 }
 
-/// <summary>
-/// <c>Column</c> / <c>Row</c>: a <see cref="StackPanel"/>. Children start at
-/// the leading edge of the cross axis without stretching; a fixed width or
-/// height sizes the content box, with the padding around it, as CSS boxes do.
-/// </summary>
-public sealed class WeftStack : WeftPaintedElement
+/// <summary><c>Column</c> and <c>Row</c>: a linear panel with one main axis.</summary>
+public sealed class WeftStack : WeftPaddedElement
 {
-    private readonly StackPanel panel;
-    private double padding;
-    private double width = double.NaN;
-    private double height = double.NaN;
+    private readonly WeftLinearPanel panel;
 
     public WeftStack(bool vertical)
     {
-        panel = new StackPanel { Orientation = vertical ? Orientation.Vertical : Orientation.Horizontal };
-        Children = new WeftRegion(panel, vertical ? StackAlignment.Leading : StackAlignment.Top);
+        panel = new WeftLinearPanel(vertical ? WeftAxis.Vertical : WeftAxis.Horizontal);
+        Children = new WeftRegion(panel);
     }
 
-    public UIElement Element => panel;
-
+    protected override FrameworkElement Control => panel;
     public WeftRegion Children { get; }
 
-    public double Gap
-    {
-        set => panel.Spacing = value;
-    }
+    public double Gap { set => panel.Gap = value; }
+    public WeftCrossAlign Align { set => panel.Align = value; }
+    public WeftJustify Justify { set => panel.Justify = value; }
+    public WeftColor Background { set => Paint(value); }
 
-    public double Padding
-    {
-        set
-        {
-            padding = value;
-            panel.Padding = new Thickness(value);
-            Resize();
-        }
-    }
-
-    public double Width
-    {
-        set
-        {
-            width = value;
-            Resize();
-        }
-    }
-
-    public double Height
-    {
-        set
-        {
-            height = value;
-            Resize();
-        }
-    }
-
-    public WeftColor Background
-    {
-        set => Paint(value);
-    }
-
+    protected override void SetPadding(Thickness value) => panel.Padding = value;
     protected override void SetColorBrush(SolidColorBrush brush) => panel.Background = brush;
+}
 
-    private void Resize()
+/// <summary><c>Stack</c>: children occupy the same content box, ordered back to front.</summary>
+public sealed class WeftOverlay : WeftPaddedElement
+{
+    private readonly WeftStackPanel panel = new();
+
+    public WeftOverlay() => Children = new WeftRegion(panel);
+
+    protected override FrameworkElement Control => panel;
+    public WeftRegion Children { get; }
+    public WeftAlignment Alignment { set => panel.Alignment = value; }
+
+    protected override void SetPadding(Thickness value) => panel.Padding = value;
+    protected override void SetColorBrush(SolidColorBrush brush) => panel.Background = brush;
+}
+
+/// <summary><c>Scroll</c>: a one-axis viewport around a linear panel.</summary>
+public sealed class WeftScroll : WeftPaddedElement
+{
+    private readonly WeftAxis direction;
+    private readonly ScrollViewer scroll;
+    private readonly WeftLinearPanel panel;
+
+    public WeftScroll(WeftAxis direction = WeftAxis.Vertical)
     {
-        panel.Width = width + 2 * padding;
-        panel.Height = height + 2 * padding;
+        this.direction = direction;
+        var vertical = direction == WeftAxis.Vertical;
+        panel = new WeftLinearPanel(direction, scrolling: true);
+        scroll = new ScrollViewer
+        {
+            Content = panel,
+            HorizontalScrollMode = vertical ? ScrollMode.Disabled : ScrollMode.Enabled,
+            VerticalScrollMode = vertical ? ScrollMode.Enabled : ScrollMode.Disabled,
+            HorizontalContentAlignment = vertical ? HorizontalAlignment.Stretch : HorizontalAlignment.Left,
+            VerticalContentAlignment = vertical ? VerticalAlignment.Top : VerticalAlignment.Stretch,
+            ZoomMode = ZoomMode.Disabled,
+        };
+        Children = new WeftRegion(panel);
+        Grow = 1;
+        Fill = true;
+        Indicators = true;
     }
+
+    protected override FrameworkElement Control => scroll;
+    public WeftRegion Children { get; }
+    public double Gap { set => panel.Gap = value; }
+    public WeftCrossAlign Align { set => panel.Align = value; }
+
+    public bool Indicators
+    {
+        set
+        {
+            var bar = value ? ScrollBarVisibility.Auto : ScrollBarVisibility.Hidden;
+            scroll.VerticalScrollBarVisibility = direction == WeftAxis.Vertical ? bar : ScrollBarVisibility.Disabled;
+            scroll.HorizontalScrollBarVisibility = direction == WeftAxis.Horizontal ? bar : ScrollBarVisibility.Disabled;
+        }
+    }
+
+    protected override void SetPadding(Thickness value) => scroll.Padding = value;
+    protected override void SetColorBrush(SolidColorBrush brush) => scroll.Background = brush;
+}
+
+/// <summary><c>Spacer</c>: an empty element, fixed or flexible along its parent's main axis.</summary>
+public sealed class WeftSpacer
+{
+    private sealed class SpacerElement : FrameworkElement { }
+
+    public WeftSpacer() => Element.SetValue(WeftLayout.IsSpacerProperty, true);
+
+    public UIElement Element { get; } = new SpacerElement();
+    public double Size { set => Element.SetValue(WeftLayout.SpacerSizeProperty, Math.Max(0, value)); }
 }
 
 /// <summary><c>Text</c>: a <see cref="TextBlock"/>.</summary>
-public sealed class WeftText : WeftPaintedElement
+public sealed class WeftText : WeftPaddedElement
 {
-    private readonly TextBlock block = new();
+    private readonly TextBlock block = new() { TextWrapping = TextWrapping.Wrap };
 
-    public UIElement Element => block;
+    protected override FrameworkElement Control => block;
+    protected override void SetPadding(Thickness value) => block.Padding = value;
 
     public string Value
     {
@@ -145,19 +172,19 @@ public sealed class WeftText : WeftPaintedElement
 }
 
 /// <summary><c>Button</c>: a <see cref="Button"/> whose content is a horizontal stack of its children.</summary>
-public sealed class WeftButton
+public sealed class WeftButton : WeftElement
 {
     private readonly Button button = new();
 
     public WeftButton(Action? click)
     {
-        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        var content = new WeftLinearPanel(WeftAxis.Horizontal, flexibleChildren: false) { Align = WeftCrossAlign.Center };
         button.Content = content;
-        Children = new WeftRegion(content, StackAlignment.Center);
+        Children = new WeftRegion(content);
         if (click is not null) button.Click += (_, _) => click();
     }
 
-    public UIElement Element => button;
+    protected override FrameworkElement Control => button;
 
     public WeftRegion Children { get; }
 
@@ -172,42 +199,21 @@ public sealed class WeftButton
 /// aspect ratio, with both the image fills them, and with neither it keeps
 /// its own size.
 /// </summary>
-public sealed class WeftImage
+public sealed class WeftImage : WeftElement
 {
     private readonly Image image = new() { Stretch = Stretch.None };
-    private double width = double.NaN;
-    private double height = double.NaN;
 
-    public UIElement Element => image;
+    protected override FrameworkElement Control => image;
 
     public string Src
     {
         set => image.Source = Uri.TryCreate(value, UriKind.Absolute, out var uri) ? new BitmapImage(uri) : null;
     }
 
-    public double Width
+    protected override void Resize()
     {
-        set
-        {
-            width = value;
-            image.Width = value;
-            Restretch();
-        }
-    }
-
-    public double Height
-    {
-        set
-        {
-            height = value;
-            image.Height = value;
-            Restretch();
-        }
-    }
-
-    private void Restretch()
-    {
-        image.Stretch = (double.IsNaN(width), double.IsNaN(height)) switch
+        base.Resize();
+        image.Stretch = (double.IsNaN(image.Width), double.IsNaN(image.Height)) switch
         {
             (true, true) => Stretch.None,
             (false, false) => Stretch.Fill,

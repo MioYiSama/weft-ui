@@ -1,0 +1,112 @@
+{
+  "hash": "4104d6fab1e290a7",
+  "templates": [
+    {
+      "label": "Overlay",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Stack", "props": {"alignment": "center"}, "children": [1]},
+        {"point": 0}
+      ],
+      "values": [],
+      "events": [],
+      "points": [
+        {"node": 1, "kind": "slot"}
+      ]
+    },
+    {
+      "label": "Layout",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {"width": 320, "height": 540, "minWidth": 160, "maxWidth": 480, "minHeight": 240, "maxHeight": 640, "margin": 12, "marginX": 10, "padding": 16, "paddingX": 14, "gap": 8, "align": "stretch", "justify": "spaceBetween"}, "children": [1, 6, 9, 11, 15]},
+        {"element": "Row", "props": {"marginY": 6, "marginBottom": 4, "padding": 6, "paddingTop": 5}, "children": [2, 4, 5]},
+        {"element": "Row", "props": {"minWidth": 12}, "children": [3]},
+        {"element": "Text", "props": {"marginTop": 1, "marginBottom": 2, "marginStart": 3, "marginEnd": 4, "paddingTop": 2, "paddingBottom": 3, "paddingStart": 4, "paddingEnd": 5, "value": "fluid"}, "children": []},
+        {"element": "Spacer", "props": {}, "children": []},
+        {"element": "Text", "props": {"grow": 2.0, "fill": true, "aspectRatio": 1.5, "paddingY": 8, "value": "fixed"}, "children": []},
+        {"element": "Stack", "props": {"width": 128, "height": 64, "alignment": "bottomEnd"}, "children": [7, 8]},
+        {"element": "Image", "props": {"width": 32, "height": 32, "src": "square.png"}, "children": []},
+        {"point": 0},
+        {"element": "Stack", "props": {}, "children": [10]},
+        {"point": 1},
+        {"element": "Scroll", "props": {"gap": 4, "align": "center"}, "children": [12, 13, 14]},
+        {"element": "Text", "props": {"value": "vertical"}, "children": []},
+        {"element": "Spacer", "props": {}, "children": []},
+        {"point": 2},
+        {"element": "Scroll", "props": {"direction": "horizontal", "indicators": false}, "children": [16, 17, 19, 20]},
+        {"element": "Spacer", "props": {"size": 16}, "children": []},
+        {"element": "Button", "props": {"width": 80}, "children": [18]},
+        {"element": "Text", "props": {"value": "horizontal"}, "children": []},
+        {"element": "Input", "props": {}, "children": []},
+        {"element": "Checkbox", "props": {}, "children": []}
+      ],
+      "values": [
+        {"node": 1, "prop": "width", "type": "Int"},
+        {"node": 1, "prop": "margin", "type": "Int"},
+        {"node": 1, "prop": "paddingY", "type": "Int"},
+        {"node": 1, "prop": "gap", "type": "Int"},
+        {"node": 1, "prop": "align", "type": "String"},
+        {"node": 1, "prop": "justify", "type": "String"},
+        {"node": 2, "prop": "grow", "type": "Float"},
+        {"node": 2, "prop": "fill", "type": "Bool"},
+        {"node": 2, "prop": "aspectRatio", "type": "Float"},
+        {"node": 4, "prop": "size", "type": "Int"},
+        {"node": 5, "prop": "marginStart", "type": "Int"},
+        {"node": 9, "prop": "alignment", "type": "String"},
+        {"node": 11, "prop": "indicators", "type": "Bool"},
+        {"node": 15, "prop": "gap", "type": "Int"},
+        {"node": 15, "prop": "align", "type": "String"},
+        {"node": 19, "prop": "minWidth", "type": "Int"},
+        {"node": 19, "prop": "value", "type": "String"},
+        {"node": 20, "prop": "fill", "type": "Bool"},
+        {"node": 20, "prop": "checked", "type": "Bool"}
+      ],
+      "events": [
+        {"node": 19, "event": "onChange", "payload": "String", "controls": 16},
+        {"node": 20, "event": "onChange", "payload": "Bool", "controls": 18}
+      ],
+      "points": [
+        {"node": 8, "kind": "branch", "templates": [2]},
+        {"node": 10, "kind": "instance", "template": 0},
+        {"node": 14, "kind": "list", "template": 4}
+      ]
+    },
+    {
+      "label": "Layout:if7.0",
+      "kind": "branch",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {"fill": true, "value": "overlay"}, "children": []}
+      ],
+      "values": [],
+      "events": [],
+      "points": []
+    },
+    {
+      "label": "Layout:slot10",
+      "kind": "slot",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {"value": "projected"}, "children": []}
+      ],
+      "values": [],
+      "events": [],
+      "points": []
+    },
+    {
+      "label": "Layout:for15",
+      "kind": "row",
+      "roots": [0],
+      "nodes": [
+        {"element": "Text", "props": {}, "children": []}
+      ],
+      "values": [
+        {"node": 0, "prop": "value", "type": "String"}
+      ],
+      "events": [],
+      "points": []
+    }
+  ]
+}

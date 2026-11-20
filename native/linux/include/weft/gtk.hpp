@@ -9,6 +9,7 @@
 #pragma once
 
 #include <gtk/gtk.h>
+#include <weft/elements.hpp>
 #include <weft/ops.hpp>
 
 #include <cstddef>
@@ -81,11 +82,8 @@ class Color {
 /// Reads a `Color` value slot.
 Color color(const ops::Value &value);
 
-/// The main axis of a `Column` / `Row`.
-enum class Axis { Vertical, Horizontal };
-
-/// Where a stack places its children on the cross axis.
-enum class Align { Start, Center };
+enum class Edge;
+struct WidgetLayout;
 
 /// A built-in element: owns a reference to its widget. Properties never set
 /// keep the platform's defaults; lengths are logical pixels.
@@ -98,12 +96,33 @@ class Element {
   GtkWidget *widget() const { return widget_; }
   virtual void reapply_colors() {}
 
+  void set_width(double width);
+  void set_height(double height);
+  void set_min_width(double min_width);
+  void set_max_width(double max_width);
+  void set_min_height(double min_height);
+  void set_max_height(double max_height);
+  void set_aspect_ratio(double aspect_ratio);
+  void set_grow(double grow);
+  void set_fill(bool fill);
+  void set_margin(double margin);
+  void set_margin_x(double margin_x);
+  void set_margin_y(double margin_y);
+  void set_margin_top(double margin_top);
+  void set_margin_bottom(double margin_bottom);
+  void set_margin_start(double margin_start);
+  void set_margin_end(double margin_end);
+
  protected:
   /// Takes the widget's floating reference.
   explicit Element(GtkWidget *widget);
+  WidgetLayout &layout() const { return layout_; }
 
  private:
+  void set_margin_edge(Edge edge, double value);
+
   GtkWidget *widget_;
+  WidgetLayout &layout_;
 };
 
 /// An ordered run of sibling nodes: the children of a stack, or the
@@ -113,7 +132,7 @@ class Element {
 /// mounted in, at the position its point has there.
 class Region {
  public:
-  /// The children of `container`, a `WeftStack`.
+  /// The children of a linear or overlay layout widget.
   explicit Region(GtkWidget *container) : container_(container) {}
   /// The top-level nodes of `scope`.
   explicit Region(Scope &scope) : scope_(&scope) {}
@@ -149,19 +168,34 @@ class Region {
   Scope *scope_ = nullptr;
 };
 
-/// `Column` / `Row`: a `WeftStack`. Children keep their natural size and
-/// start at the leading edge of the cross axis; a fixed width or height
-/// sizes the content box, with the padding around it, as CSS boxes do.
-class Stack final : public Element {
+/// Element with schema padding, which may live inside a scroll viewport.
+class Padded : public Element {
  public:
-  explicit Stack(Axis axis, Align align = Align::Start);
+  void set_padding(double padding);
+  void set_padding_x(double padding_x);
+  void set_padding_y(double padding_y);
+  void set_padding_top(double padding_top);
+  void set_padding_bottom(double padding_bottom);
+  void set_padding_start(double padding_start);
+  void set_padding_end(double padding_end);
+
+ protected:
+  explicit Padded(GtkWidget *widget, GtkWidget *content = nullptr);
+
+ private:
+  void set_padding_edge(Edge edge, double value);
+};
+
+/// `Column` / `Row`: a vertical or horizontal linear layout.
+class Linear final : public Padded {
+ public:
+  explicit Linear(Axis axis, CrossAlign align = CrossAlign::Start);
 
   Region &children() { return children_; }
 
   void set_gap(double gap);
-  void set_padding(double padding);
-  void set_width(double width);
-  void set_height(double height);
+  void set_align(CrossAlign align);
+  void set_justify(Justify justify);
   void set_background(Color color);
   void reapply_colors() override;
 
@@ -170,8 +204,43 @@ class Stack final : public Element {
   Color background_ = Color::rgba(0);
 };
 
+/// `Stack`: overlays children in paint order.
+class Stack final : public Padded {
+ public:
+  Stack();
+  Region &children() { return children_; }
+  void set_alignment(Alignment alignment);
+
+ private:
+  Region children_;
+};
+
+/// `Scroll`: a linear layout inside a single-axis GTK scroll viewport.
+class Scroll final : public Padded {
+ public:
+  explicit Scroll(Axis direction = Axis::Vertical);
+  Region &children() { return children_; }
+  void set_gap(double gap);
+  void set_align(CrossAlign align);
+  void set_indicators(bool indicators);
+
+ private:
+  Scroll(Axis direction, GtkWidget *content);
+
+  Axis direction_;
+  GtkWidget *content_;
+  Region children_;
+};
+
+/// `Spacer`: empty space on the main axis, flexible until `size` is set.
+class Spacer final : public Element {
+ public:
+  Spacer();
+  void set_size(double size);
+};
+
 /// `Text`: a `GtkLabel` styled with Pango attributes.
-class Text final : public Element {
+class Text final : public Padded {
  public:
   Text();
 
@@ -184,6 +253,7 @@ class Text final : public Element {
  private:
   void restyle();
 
+  GtkLabel *label_;
   std::optional<Color> color_;
   double size_ = 0;
   bool bold_ = false;
@@ -202,7 +272,7 @@ class Button final : public Element {
   static void clicked(GtkButton *button, Button *self);
 
   std::function<void()> click_;
-  Stack content_;
+  Linear content_;
 };
 
 // Controlled `Input` and `Checkbox`. The widget reports every user edit
@@ -266,10 +336,7 @@ class Image final : public Element {
   void set_height(double height);
 
  private:
-  void resize();
-
-  int width_ = -1;
-  int height_ = -1;
+  void update_fit();
 };
 
 /// One template instance of the view protocol. The generated views subclass

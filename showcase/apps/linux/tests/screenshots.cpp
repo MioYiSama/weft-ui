@@ -60,7 +60,8 @@ int main(int argc, char **argv) {
     auto *window = gtk_window_new();
     auto *root = weft::start_app();
     gtk_window_set_child(GTK_WINDOW(window), root);
-    gtk_window_set_default_size(GTK_WINDOW(window), 480, 640);
+    // Keep the entire layout sample visible in the desktop screenshot.
+    gtk_window_set_default_size(GTK_WINDOW(window), 480, 720);
     gtk_window_present(GTK_WINDOW(window));
     GtkWidget *button = nullptr;
     const auto label = "page:" + id;

@@ -4,11 +4,12 @@
 
 #include <libsoup/soup.h>
 
+#include <algorithm>
 #include <cmath>
 #include <string>
 #include <utility>
 
-#include "stack.hpp"
+#include "container.hpp"
 #include "texture_cache.hpp"
 #include "weft/gtk.hpp"
 
@@ -41,7 +42,7 @@ std::string_view string(const ops::Value &value) {
 
 // Element.
 
-Element::Element(GtkWidget *widget) : widget_(GTK_WIDGET(g_object_ref_sink(widget))) {}
+Element::Element(GtkWidget *widget) : widget_(GTK_WIDGET(g_object_ref_sink(widget))), layout_(attach_layout(widget)) {}
 
 Element::~Element() {
   // The widget may outlive the element, e.g. while GTK emits one of its
@@ -50,32 +51,131 @@ Element::~Element() {
   g_object_unref(widget_);
 }
 
-// Stack.
-
-Stack::Stack(Axis axis, Align align) : Element(stack_new(axis, align)), children_(widget()) {}
-
-void Stack::set_gap(double gap) { stack_set_gap(WEFT_STACK(widget()), pixels(gap)); }
-
-void Stack::set_padding(double padding) { stack_set_padding(WEFT_STACK(widget()), pixels(padding)); }
-
-void Stack::set_width(double width) { stack_set_width(WEFT_STACK(widget()), pixels(width)); }
-
-void Stack::set_height(double height) { stack_set_height(WEFT_STACK(widget()), pixels(height)); }
-
-void Stack::set_background(Color color) {
-  background_ = color;
-  stack_set_background(WEFT_STACK(widget()), background_.resolve());
+void Element::set_width(double width) {
+  layout_.size.width = width;
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_height(double height) {
+  layout_.size.height = height;
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_min_width(double min_width) {
+  layout_.size.min_width = min_width;
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_max_width(double max_width) {
+  layout_.size.max_width = max_width;
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_min_height(double min_height) {
+  layout_.size.min_height = min_height;
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_max_height(double max_height) {
+  layout_.size.max_height = max_height;
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_aspect_ratio(double aspect_ratio) {
+  layout_.size.aspect_ratio = aspect_ratio;
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_grow(double grow) {
+  layout_.grow = grow;
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_fill(bool fill) {
+  layout_.fill = fill;
+  gtk_widget_queue_resize(widget_);
 }
 
-void Stack::reapply_colors() {
-  if (background_.is_token()) stack_set_background(WEFT_STACK(widget()), background_.resolve());
+void Element::set_margin_edge(Edge edge, double value) {
+  layout_.margin.set(edge, value);
+  auto [top, right, bottom, left] = layout_.margin.resolve();
+  // GTK margins are unsigned; layout and allocation still use the signed values.
+  const auto native = [](double margin) { return pixels(std::clamp(margin, 0.0, double(G_MAXINT16))); };
+  gtk_widget_set_margin_top(widget_, native(top));
+  gtk_widget_set_margin_end(widget_, native(right));
+  gtk_widget_set_margin_bottom(widget_, native(bottom));
+  gtk_widget_set_margin_start(widget_, native(left));
+  gtk_widget_queue_resize(widget_);
+}
+void Element::set_margin(double margin) { set_margin_edge(Edge::All, margin); }
+void Element::set_margin_x(double margin_x) { set_margin_edge(Edge::X, margin_x); }
+void Element::set_margin_y(double margin_y) { set_margin_edge(Edge::Y, margin_y); }
+void Element::set_margin_top(double margin_top) { set_margin_edge(Edge::Top, margin_top); }
+void Element::set_margin_bottom(double margin_bottom) { set_margin_edge(Edge::Bottom, margin_bottom); }
+void Element::set_margin_start(double margin_start) { set_margin_edge(Edge::Start, margin_start); }
+void Element::set_margin_end(double margin_end) { set_margin_edge(Edge::End, margin_end); }
+
+Padded::Padded(GtkWidget *widget, GtkWidget *content) : Element(widget) {
+  layout().padding_widget = content ? content : widget;
+}
+
+void Padded::set_padding_edge(Edge edge, double value) { container_set_padding(layout().padding_widget, edge, value); }
+void Padded::set_padding(double padding) { set_padding_edge(Edge::All, padding); }
+void Padded::set_padding_x(double padding_x) { set_padding_edge(Edge::X, padding_x); }
+void Padded::set_padding_y(double padding_y) { set_padding_edge(Edge::Y, padding_y); }
+void Padded::set_padding_top(double padding_top) { set_padding_edge(Edge::Top, padding_top); }
+void Padded::set_padding_bottom(double padding_bottom) { set_padding_edge(Edge::Bottom, padding_bottom); }
+void Padded::set_padding_start(double padding_start) { set_padding_edge(Edge::Start, padding_start); }
+void Padded::set_padding_end(double padding_end) { set_padding_edge(Edge::End, padding_end); }
+
+// Containers.
+
+Linear::Linear(Axis axis, CrossAlign align) : Padded(linear_new(axis, align)), children_(widget()) {}
+
+void Linear::set_gap(double gap) { container_set_gap(widget(), gap); }
+void Linear::set_align(CrossAlign align) { container_set_align(widget(), align); }
+void Linear::set_justify(Justify justify) { container_set_justify(widget(), justify); }
+void Linear::set_background(Color color) {
+  background_ = color;
+  container_set_background(widget(), color.resolve());
+}
+void Linear::reapply_colors() {
+  if (background_.is_token()) container_set_background(widget(), background_.resolve());
+}
+
+Stack::Stack() : Padded(overlay_new()), children_(widget()) {}
+void Stack::set_alignment(Alignment alignment) { container_set_alignment(widget(), alignment); }
+
+Scroll::Scroll(Axis direction) : Scroll(direction, linear_new(direction, CrossAlign::Start, true)) {}
+
+Scroll::Scroll(Axis direction, GtkWidget *content)
+    : Padded(gtk_scrolled_window_new(), content), direction_(direction), content_(content), children_(content) {
+  auto *scroll = GTK_SCROLLED_WINDOW(widget());
+  gtk_scrolled_window_set_propagate_natural_width(scroll, true);
+  gtk_scrolled_window_set_propagate_natural_height(scroll, true);
+  gtk_scrolled_window_set_child(scroll, content_);
+  set_indicators(true);
+  layout().grow = 1;
+  layout().fill = true;
+}
+
+void Scroll::set_gap(double gap) { container_set_gap(content_, gap); }
+void Scroll::set_align(CrossAlign align) { container_set_align(content_, align); }
+void Scroll::set_indicators(bool indicators) {
+  const auto active = indicators ? GTK_POLICY_AUTOMATIC : GTK_POLICY_EXTERNAL;
+  const bool horizontal = direction_ == Axis::Horizontal;
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(widget()), horizontal ? active : GTK_POLICY_NEVER,
+                                 horizontal ? GTK_POLICY_NEVER : active);
+}
+
+Spacer::Spacer() : Element(spacer_new()) { layout().spacer = true; }
+void Spacer::set_size(double size) {
+  layout().spacer_size = std::max(0.0, size);
+  gtk_widget_queue_resize(widget());
 }
 
 // Text.
 
-Text::Text() : Element(gtk_label_new(nullptr)) { gtk_label_set_xalign(GTK_LABEL(widget()), 0); }
+Text::Text() : Padded(linear_new(Axis::Vertical, CrossAlign::Stretch)), label_(GTK_LABEL(gtk_label_new(nullptr))) {
+  gtk_label_set_xalign(label_, 0);
+  gtk_label_set_wrap(label_, true);
+  gtk_label_set_wrap_mode(label_, PANGO_WRAP_WORD_CHAR);
+  gtk_widget_set_parent(GTK_WIDGET(label_), widget());
+}
 
-void Text::set_value(std::string_view value) { gtk_label_set_text(GTK_LABEL(widget()), owned(value).c_str()); }
+void Text::set_value(std::string_view value) { gtk_label_set_text(label_, owned(value).c_str()); }
 
 void Text::set_color(Color color) {
   color_ = color;
@@ -108,14 +208,14 @@ void Text::restyle() {
   // Absolute sizes are in logical pixels, like CSS `font-size`.
   if (size_ > 0) pango_attr_list_insert(attributes, pango_attr_size_new_absolute(int(size_ * PANGO_SCALE)));
   if (bold_) pango_attr_list_insert(attributes, pango_attr_weight_new(PANGO_WEIGHT_BOLD));
-  gtk_label_set_attributes(GTK_LABEL(widget()), attributes);
+  gtk_label_set_attributes(label_, attributes);
   pango_attr_list_unref(attributes);
 }
 
 // Button.
 
 Button::Button(std::function<void()> click)
-    : Element(gtk_button_new()), click_(std::move(click)), content_(Axis::Horizontal, Align::Center) {
+    : Element(gtk_button_new()), click_(std::move(click)), content_(Axis::Horizontal, CrossAlign::Center) {
   gtk_button_set_child(GTK_BUTTON(widget()), content_.widget());
   if (click_) g_signal_connect(widget(), "clicked", G_CALLBACK(clicked), this);
 }
@@ -128,7 +228,7 @@ void Button::set_disabled(bool disabled) { gtk_widget_set_sensitive(widget(), !d
 
 namespace {
 
-/// Width of an `Input`, which has no width property.
+/// Natural width of an `Input` when no width is specified.
 constexpr int kInputWidth = 200;
 
 }  // namespace
@@ -250,7 +350,6 @@ void loaded(Load *load, GBytes *bytes, GError *error) {
 
 Image::Image() : Element(gtk_picture_new()) {
   gtk_picture_set_can_shrink(GTK_PICTURE(widget()), true);
-  resize();
 }
 
 void Image::set_src(std::string_view src) {
@@ -301,19 +400,19 @@ void Image::set_src(std::string_view src) {
 }
 
 void Image::set_width(double width) {
-  width_ = pixels(width);
-  resize();
+  Element::set_width(width);
+  update_fit();
 }
 
 void Image::set_height(double height) {
-  height_ = pixels(height);
-  resize();
+  Element::set_height(height);
+  update_fit();
 }
 
-void Image::resize() {
-  gtk_widget_set_size_request(widget(), width_, height_);
-  gtk_picture_set_content_fit(GTK_PICTURE(widget()), width_ >= 0 && height_ >= 0 ? GTK_CONTENT_FIT_FILL
-                                                                                  : GTK_CONTENT_FIT_CONTAIN);
+void Image::update_fit() {
+  const auto &size = layout().size;
+  gtk_picture_set_content_fit(GTK_PICTURE(widget()), size.width && size.height ? GTK_CONTENT_FIT_FILL
+                                                                              : GTK_CONTENT_FIT_CONTAIN);
 }
 
 }  // namespace weft

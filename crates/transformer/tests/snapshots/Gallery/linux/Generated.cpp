@@ -17,7 +17,7 @@ constexpr uint64_t kLayoutHash = 0xa003534a93be9333ull;
 class S0 final : public weft::Scope {
  public:
   S0(uint32_t id, weft::Session &session) : Scope(id, session, 1) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
+    auto &n0 = make<weft::Linear>(weft::Axis::Vertical);
     roots().add(n0);
     n0.children().point(*this, 0);
     auto &n2 = make<weft::Button>([this] { dispatch(0); });
@@ -42,7 +42,7 @@ class S0 final : public weft::Scope {
 class S1 final : public weft::Scope {
  public:
   S1(uint32_t id, weft::Session &session) : Scope(id, session, 1) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
+    auto &n0 = make<weft::Linear>(weft::Axis::Vertical);
     n0.set_width(320);
     n0.set_height(280);
     n0.set_padding(12);
@@ -55,7 +55,7 @@ class S1 final : public weft::Scope {
     n1.set_size(20);
     n1.set_bold(true);
     n0.children().add(n1);
-    n2_ = &make<weft::Stack>(weft::Axis::Horizontal);
+    n2_ = &make<weft::Linear>(weft::Axis::Horizontal);
     n0.children().add(*n2_);
     n3_ = &make<weft::Checkbox>([this](bool v) { return dispatch(0, v); });
     n2_->children().add(*n3_);
@@ -94,7 +94,7 @@ class S1 final : public weft::Scope {
   // Row.padding
   // Row.background
   // Row.gap
-  weft::Stack *n2_;
+  weft::Linear *n2_;
   // Checkbox.checked
   weft::Checkbox *n3_;
   // Image.src

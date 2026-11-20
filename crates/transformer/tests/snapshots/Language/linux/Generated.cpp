@@ -37,7 +37,7 @@ class S0 final : public weft::Scope {
 class S1 final : public weft::Scope {
  public:
   S1(uint32_t id, weft::Session &session) : Scope(id, session) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Horizontal);
+    auto &n0 = make<weft::Linear>(weft::Axis::Horizontal);
     roots().add(n0);
     n1_ = &make<weft::Text>();
     n0.children().add(*n1_);
@@ -83,7 +83,7 @@ class S2 final : public weft::Scope {
 class S3 final : public weft::Scope {
  public:
   S3(uint32_t id, weft::Session &session) : Scope(id, session, 3) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
+    auto &n0 = make<weft::Linear>(weft::Axis::Vertical);
     roots().add(n0);
     n0.children().point(*this, 0);
     n0.children().point(*this, 1);
@@ -96,7 +96,7 @@ class S3 final : public weft::Scope {
 class S4 final : public weft::Scope {
  public:
   S4(uint32_t id, weft::Session &session) : Scope(id, session, 8) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
+    auto &n0 = make<weft::Linear>(weft::Axis::Vertical);
     roots().add(n0);
     n1_ = &make<weft::Text>();
     n0.children().add(*n1_);

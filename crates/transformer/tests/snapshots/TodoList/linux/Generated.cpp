@@ -17,7 +17,7 @@ constexpr uint64_t kLayoutHash = 0xa6bb96edf9a9ad2dull;
 class S0 final : public weft::Scope {
  public:
   S0(uint32_t id, weft::Session &session) : Scope(id, session, 1) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
+    auto &n0 = make<weft::Linear>(weft::Axis::Vertical);
     roots().add(n0);
     n1_ = &make<weft::Input>([this](std::string_view v) { return dispatch(0, v); });
     n0.children().add(*n1_);
@@ -56,7 +56,7 @@ class S1 final : public weft::Scope {
 class S2 final : public weft::Scope {
  public:
   S2(uint32_t id, weft::Session &session) : Scope(id, session) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Horizontal);
+    auto &n0 = make<weft::Linear>(weft::Axis::Horizontal);
     roots().add(n0);
     n1_ = &make<weft::Text>();
     n0.children().add(*n1_);

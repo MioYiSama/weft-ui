@@ -1,7 +1,7 @@
 //! Imperative construction of a template's elements and mount points.
 
 use crate::elements::Element;
-use crate::view::{Constant, Template, ViewNodeKind};
+use crate::view::{Constant, Template, ValueType, ViewNodeKind};
 
 use super::cpp::{self, Code};
 
@@ -38,8 +38,13 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                     let (slot, _) = template.controlled(index);
                     format!("[this](bool v) {{ return dispatch({slot}, v); }}")
                 }
-                Element::Text | Element::Image => String::new(),
-                _ => unreachable!("platform support rejects unsupported elements"),
+                Element::Scroll => props
+                    .iter()
+                    .find(|prop| prop.name == "direction")
+                    .map_or_else(String::new, |prop| {
+                        literal(*element, prop.name, &prop.value)
+                    }),
+                Element::Stack | Element::Spacer | Element::Text | Element::Image => String::new(),
             };
             let made = format!("make<weft::{}>({args})", wrapper(*element));
             let member = member(template, index);
@@ -48,11 +53,11 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             } else {
                 out.writer.line(format_args!("auto &n{index} = {made};"));
             }
-            for prop in props {
+            for prop in props.iter().filter(|prop| prop.name != "direction") {
                 out.writer.line(format_args!(
                     "{member}{}({});",
                     setter(prop.name),
-                    literal(&prop.value)
+                    literal(*element, prop.name, &prop.value)
                 ));
             }
             out.writer.line(format_args!(
@@ -94,34 +99,66 @@ fn member(template: &Template, index: u32) -> String {
 
 pub(crate) fn wrapper(element: Element) -> &'static str {
     match element {
-        Element::Column | Element::Row => "Stack",
+        Element::Column | Element::Row => "Linear",
+        Element::Stack => "Stack",
+        Element::Scroll => "Scroll",
+        Element::Spacer => "Spacer",
         Element::Text => "Text",
         Element::Button => "Button",
         Element::Input => "Input",
         Element::Checkbox => "Checkbox",
         Element::Image => "Image",
-        _ => unreachable!("platform support rejects unsupported elements"),
     }
 }
 
 /// The wrapper method writing property `name`: `set_` and the name in snake case.
 pub(crate) fn setter(name: &str) -> String {
-    let mut setter = String::from("set");
-    for c in name.chars() {
-        if c.is_ascii_uppercase() || setter.len() == 3 {
-            setter.push('_');
-        }
-        setter.push(c.to_ascii_lowercase());
-    }
-    setter
+    prefixed("set", name)
 }
 
-fn literal(value: &Constant) -> String {
+fn prefixed(prefix: &str, name: &str) -> String {
+    let mut result = String::from(prefix);
+    for (index, c) in name.chars().enumerate() {
+        if index == 0 || c.is_ascii_uppercase() {
+            result.push('_');
+        }
+        result.push(c.to_ascii_lowercase());
+    }
+    result
+}
+
+fn union_type(element: Element, prop: &str) -> Option<&'static str> {
+    match (element, prop) {
+        (Element::Column | Element::Row | Element::Scroll, "align") => Some("CrossAlign"),
+        (Element::Column | Element::Row, "justify") => Some("Justify"),
+        (Element::Stack, "alignment") => Some("Alignment"),
+        (Element::Scroll, "direction") => Some("Axis"),
+        _ => None,
+    }
+}
+
+pub(crate) fn slot_value(element: Element, prop: &str, ty: ValueType) -> String {
+    if let Some(union) = union_type(element, prop) {
+        return format!("weft::{}(weft::string(value))", prefixed("parse", union));
+    }
+    let accessor = match ty {
+        ValueType::Int | ValueType::Float => "number",
+        ValueType::Bool => "boolean",
+        ValueType::String => "string",
+        ValueType::Color => "color",
+    };
+    format!("weft::{accessor}(value)")
+}
+
+fn literal(element: Element, prop: &str, value: &Constant) -> String {
     match value {
         Constant::Int(v) => v.to_string(),
-        Constant::Float(_) => unreachable!("platform support rejects Float properties"),
+        Constant::Float(v) => format!("{v:?}"),
         Constant::Bool(v) => v.to_string(),
-        Constant::String(s) => cpp::string(s),
+        Constant::String(s) => union_type(element, prop).map_or_else(
+            || cpp::string(s),
+            |union| format!("weft::{union}::{}{}", s[..1].to_ascii_uppercase(), &s[1..]),
+        ),
         Constant::Token(name) => format!("weft::Color::token({})", cpp::string(name)),
         Constant::Color(c) => format!("weft::Color::rgba({})", cpp::rgba(*c)),
     }

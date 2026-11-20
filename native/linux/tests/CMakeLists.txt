@@ -13,3 +13,8 @@ add_test(NAME linux.textures COMMAND weft_linux_texture_tests)
 add_executable(weft_linux_color_tests color_test.cpp)
 target_link_libraries(weft_linux_color_tests PRIVATE weft_linux)
 add_test(NAME linux.colors COMMAND weft_linux_color_tests)
+
+add_executable(weft_linux_layout_tests layout_test.cpp)
+target_link_libraries(weft_linux_layout_tests PRIVATE weft_linux)
+target_compile_definitions(weft_linux_layout_tests PRIVATE WEFT_CORPUS_DIR="${corpus}")
+add_test(NAME linux.layout COMMAND weft_linux_layout_tests)

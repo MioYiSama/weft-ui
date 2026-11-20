@@ -38,7 +38,7 @@ class S0 final : public weft::Scope {
 class S1 final : public weft::Scope {
  public:
   S1(uint32_t id, weft::Session &session) : Scope(id, session, 1) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
+    auto &n0 = make<weft::Linear>(weft::Axis::Vertical);
     n0.set_gap(8);
     roots().add(n0);
     auto &n1 = make<weft::Text>();

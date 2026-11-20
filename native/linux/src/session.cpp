@@ -12,7 +12,7 @@
 #include "appearance.hpp"
 #include "platform.hpp"
 #include "point.hpp"
-#include "stack.hpp"
+#include "container.hpp"
 #include "weft/gtk.hpp"
 #include "weft/protocol.hpp"
 
@@ -146,10 +146,9 @@ struct Session::Environment {
 };
 
 GtkWidget *Session::start(uint64_t layout_hash, Factory make) {
-  GtkWidget *page = stack_new(Axis::Vertical, Align::Start);
-  gtk_widget_set_halign(page, GTK_ALIGN_START);
-  gtk_widget_set_valign(page, GTK_ALIGN_START);
+  GtkWidget *page = linear_new(Axis::Vertical, CrossAlign::Start, true);
   GtkWidget *scroll = gtk_scrolled_window_new();
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroll), page);
   auto *viewport = static_cast<WeftViewport *>(g_object_new(weft_viewport_get_type(), nullptr));
   GtkWidget *view = GTK_WIDGET(viewport);

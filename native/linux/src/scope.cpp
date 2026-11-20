@@ -4,12 +4,17 @@
 #include <utility>
 
 #include "point.hpp"
-#include "stack.hpp"
 #include "weft/gtk.hpp"
 
 namespace weft {
 
 namespace {
+
+GtkWidget *child_at(GtkWidget *container, size_t index) {
+  auto *child = gtk_widget_get_first_child(container);
+  for (; child && index > 0; index--) child = gtk_widget_get_next_sibling(child);
+  return child;
+}
 
 size_t index_of(GtkWidget *container, GtkWidget *widget) {
   size_t index = 0;
@@ -114,11 +119,11 @@ bool Region::locate(const Point &point, Region *&container, size_t &index) {
 }
 
 void Region::insert(size_t index, GtkWidget *widget) {
-  gtk_widget_insert_before(widget, container_, stack_child(container_, index));
+  gtk_widget_insert_before(widget, container_, child_at(container_, index));
 }
 
 void Region::remove(size_t index, size_t count) {
-  for (size_t i = 0; i < count; i++) gtk_widget_unparent(stack_child(container_, index));
+  for (size_t i = 0; i < count; i++) gtk_widget_unparent(child_at(container_, index));
 }
 
 // Point.

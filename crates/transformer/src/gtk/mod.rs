@@ -11,8 +11,11 @@
 //!
 //! | Element    | Shell wrapper  | Native widget                   |
 //! | ---------- | -------------- | ------------------------------- |
-//! | `Column`   | `weft::Stack`  | Vertical `WeftStack`            |
-//! | `Row`      | `weft::Stack`  | Horizontal `WeftStack`          |
+//! | `Column`   | `weft::Linear` | Vertical `WeftLinear`           |
+//! | `Row`      | `weft::Linear` | Horizontal `WeftLinear`         |
+//! | `Stack`    | `weft::Stack`  | `WeftLinear` with overlay layout |
+//! | `Scroll`   | `weft::Scroll` | `GtkScrolledWindow`             |
+//! | `Spacer`   | `weft::Spacer` | Empty `WeftWidget`               |
 //! | `Text`     | `weft::Text`   | `GtkLabel`                      |
 //! | `Button`   | `weft::Button` | `GtkButton`                     |
 //! | `Input`    | `weft::Input`  | Controlled `GtkEntry`           |
@@ -28,7 +31,7 @@ mod cpp;
 mod view;
 
 use crate::transform::{Context, OutputFile};
-use crate::view::{Template, ValueType, ViewLayout, ViewNodeKind};
+use crate::view::{Template, ViewLayout, ViewNodeKind};
 
 use cpp::Code;
 
@@ -137,17 +140,14 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
     out.open("void apply(uint32_t slot, const weft::ops::Value &value) override");
     out.open("switch (slot)");
     for (slot, value) in template.values.iter().enumerate() {
-        let accessor = match value.ty {
-            ValueType::Int => "number",
-            ValueType::Float => unreachable!("platform support rejects Float properties"),
-            ValueType::Bool => "boolean",
-            ValueType::String => "string",
-            ValueType::Color => "color",
+        let ViewNodeKind::Element { element, .. } = template.nodes[value.node as usize].kind else {
+            unreachable!("value slots belong to elements");
         };
         out.writer.line(format_args!(
-            "case {slot}: n{}_->{}(weft::{accessor}(value)); break;",
+            "case {slot}: n{}_->{}({}); break;",
             value.node,
             view::setter(value.prop),
+            view::slot_value(element, value.prop, value.ty),
         ));
     }
     out.close("");
@@ -201,12 +201,12 @@ mod tests {
                 }
             }"##);
         for expected in [
-            "auto &n0 = make<weft::Stack>(weft::Axis::Vertical);",
+            "auto &n0 = make<weft::Linear>(weft::Axis::Vertical);",
             "n0.set_padding(4);",
             "n0.set_width(100);",
             "n0.set_height(80);",
             "n0.set_background(weft::Color::rgba(0xaabbccffu));\n    n0.set_gap(2);\n    roots().add(n0);",
-            "auto &n1 = make<weft::Stack>(weft::Axis::Horizontal);",
+            "auto &n1 = make<weft::Linear>(weft::Axis::Horizontal);",
             "n2.set_value(\"hello\"sv);",
             "n2.set_color(weft::Color::rgba(0x12345680u));",
             "n2.set_size(12);",

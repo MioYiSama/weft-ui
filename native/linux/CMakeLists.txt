@@ -40,12 +40,13 @@ set_target_properties(weft_core_shared PROPERTIES
 add_library(weft_linux STATIC
   src/appearance.cpp
   src/color.cpp
+  src/container.cpp
   src/elements.cpp
   src/frame.cpp
+  src/layout.cpp
   src/platform.cpp
   src/scope.cpp
   src/session.cpp
-  src/stack.cpp
   src/texture_cache.cpp
   ${weft_core_source}/src/ops.cpp
 )
@@ -53,6 +54,7 @@ add_library(weft::linux ALIAS weft_linux)
 target_include_directories(weft_linux PUBLIC include)
 target_compile_features(weft_linux PUBLIC cxx_std_20)
 target_link_libraries(weft_linux PUBLIC PkgConfig::WEFT_DEPS weft_core_shared)
+install(FILES include/weft/gtk.hpp include/weft/elements.hpp include/weft/layout.hpp DESTINATION include/weft)
 
 if(WEFT_LINUX_TESTS)
   enable_testing()

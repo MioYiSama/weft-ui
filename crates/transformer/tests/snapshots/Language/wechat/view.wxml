@@ -1,3 +1,3 @@
 <template name="ModeLabel"><text>{{n0_0}}</text></template>
-<template name="Language"><view style="display:flex;flex-direction:column;align-items:flex-start"><template is="ModeLabel" data="{{...c0}}"/><block wx:for="{{l4}}" wx:for-item="r0" wx:key="k"><block wx:if="{{r0.i3 === 0}}"><text>image</text></block><block wx:else><text>text</text></block></block></view></template>
+<template name="Language"><view style="display:flex;flex-direction:column;align-items:flex-start"><text>{{n0_0}}</text><template is="ModeLabel" data="{{...c1}}"/><block wx:for="{{l6}}" wx:for-item="r0" wx:key="k"><text>{{r0.n2_0}}</text><block wx:if="{{r0.i5 === 0}}"><text>image</text></block><block wx:else><text>text</text></block></block></view></template>
 <block wx:if="{{t}}"><template is="{{t}}" data="{{...r}}"/></block>

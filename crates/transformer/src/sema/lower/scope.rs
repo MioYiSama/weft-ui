@@ -2,29 +2,39 @@ use weft_ui_ast as ast;
 use weft_ui_ast::span::offset;
 use weft_ui_ast::{Diagnostic, Span};
 
-use crate::ir::{LoopId, ParamId, State, StateId, Type};
+use crate::ir::{Expr, LoopId, ParamId, State, StateId, Type};
 use crate::sema::record::{LocalBinding, ProbeContext, Target};
 
 use super::Lowerer;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug)]
 pub(super) enum LocalKind {
-    Param(ParamId),
+    Param(ParamId, Type),
     Slot(ParamId),
-    State(StateId),
-    Item(LoopId),
-    LambdaArg,
+    State(StateId, Type),
+    Item(LoopId, Type),
+    LambdaArg(Type),
+    Let(Expr),
+}
+
+impl LocalKind {
+    fn ty(&self) -> &Type {
+        match self {
+            Self::Param(_, ty) | Self::State(_, ty) | Self::Item(_, ty) | Self::LambdaArg(ty) => ty,
+            Self::Slot(_) => &Type::Error,
+            Self::Let(expr) => &expr.ty,
+        }
+    }
 }
 
 pub(super) struct Local {
     pub(super) name: String,
     pub(super) kind: LocalKind,
-    pub(super) ty: Type,
     span: Span,
 }
 
 impl Lowerer<'_, '_> {
-    pub(super) fn declare(&mut self, name: &str, kind: LocalKind, ty: Type, span: Span) {
+    pub(super) fn declare(&mut self, name: &str, kind: LocalKind, span: Span) {
         if let Some(prev) = self.scope.iter().find(|l| l.name == name) {
             self.diags.push(
                 Diagnostic::error(
@@ -37,11 +47,10 @@ impl Lowerer<'_, '_> {
         let local = Local {
             name: name.to_owned(),
             kind,
-            ty,
             span,
         };
         // Parameters are recorded with the component signature.
-        if !matches!(kind, LocalKind::Param(_) | LocalKind::Slot(_)) {
+        if !matches!(local.kind, LocalKind::Param(..) | LocalKind::Slot(_)) {
             self.cx.record(span, || self.local_target(&local));
         }
         self.scope.push(local);
@@ -53,18 +62,19 @@ impl Lowerer<'_, '_> {
 
     pub(super) fn local_target(&self, local: &Local) -> Target {
         let binding = match local.kind {
-            LocalKind::Param(p) | LocalKind::Slot(p) => match self.component {
+            LocalKind::Param(p, _) | LocalKind::Slot(p) => match self.component {
                 Some(component) => return Target::ComponentParam(component, p.index()),
                 None => LocalBinding::Param,
             },
-            LocalKind::State(_) => LocalBinding::State,
-            LocalKind::Item(_) => LocalBinding::LoopItem,
-            LocalKind::LambdaArg => LocalBinding::LambdaParam,
+            LocalKind::State(..) => LocalBinding::State,
+            LocalKind::Item(..) => LocalBinding::LoopItem,
+            LocalKind::LambdaArg(_) => LocalBinding::LambdaParam,
+            LocalKind::Let(_) => LocalBinding::Let,
         };
         Target::Local {
             binding,
             name: local.name.clone(),
-            ty: local.ty.clone(),
+            ty: local.kind.ty().clone(),
             def: local.span,
         }
     }
@@ -73,15 +83,27 @@ impl Lowerer<'_, '_> {
     pub(super) fn probe_locals(
         &self,
         context: ProbeContext,
-        keep: impl Fn(LocalKind) -> bool,
+        keep: impl Fn(&LocalKind) -> bool,
         extra: Vec<Target>,
     ) {
         let locals = self
             .scope
             .iter()
-            .filter(|l| keep(l.kind))
+            .filter(|l| keep(&l.kind))
             .map(|l| self.local_target(l));
         self.cx.set_probe(context, locals.chain(extra).collect());
+    }
+
+    pub(super) fn let_declarations(&mut self, declarations: &[ast::LetDecl]) {
+        for decl in declarations {
+            let value = if let Some(ty) = &decl.ty {
+                let ty = self.cx.resolve_type(self.file, ty, self.diags);
+                self.expr_as(&decl.value, &ty)
+            } else {
+                self.expr(&decl.value)
+            };
+            self.declare(&decl.name.name, LocalKind::Let(value), decl.name.span);
+        }
     }
 
     pub(super) fn state(&mut self, decl: &ast::StateDecl) {
@@ -108,8 +130,7 @@ impl Lowerer<'_, '_> {
         let id = StateId(offset(self.states.len()));
         self.declare(
             &decl.name.name,
-            LocalKind::State(id),
-            ty.clone(),
+            LocalKind::State(id, ty.clone()),
             decl.name.span,
         );
         self.states.push(State {

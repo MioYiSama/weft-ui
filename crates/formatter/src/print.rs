@@ -1,6 +1,6 @@
 use weft_ui_ast::{
-    Arg, AssignOp, Block, ComponentDecl, Expr, ExprKind, Field, File, Ident, Item, Lambda, Node,
-    NodeKind, Param, Span, TypeExpr, TypeExprKind, UnaryOp,
+    Arg, AssignOp, Block, ComponentDecl, Expr, ExprKind, Field, File, Ident, Item, Lambda, LetDecl,
+    Node, NodeKind, Param, Span, TypeExpr, TypeExprKind, UnaryOp,
 };
 use weft_ui_parser::token::{Token, TokenKind};
 
@@ -307,25 +307,28 @@ impl<'src> Printer<'src, '_> {
         let mut gap = Gap::First;
         for state in &component.states {
             self.boundary(Line::Hard, gap);
-            self.token(TokenKind::Ident)?;
-            self.doc.text(" ");
-            self.ident(&state.name)?;
-            if let Some(ty) = &state.ty {
-                self.token(TokenKind::Colon)?;
-                self.doc.text(" ");
-                self.ty(ty)?;
-            }
-            self.doc.text(" ");
-            self.token(TokenKind::Eq)?;
-            self.doc.text(" ");
-            self.expr(&state.init)?;
+            self.value_decl(&state.name, state.ty.as_ref(), &state.init)?;
             self.trailing_comments();
             gap = Gap::Preserve;
         }
-        if !component.states.is_empty() && !component.body.is_empty() {
+        if !component.states.is_empty() && !component.lets.is_empty() {
             gap = Gap::Section;
         }
-        self.block_contents(&component.body, gap)
+        self.block_contents(&component.lets, &component.body, gap)
+    }
+
+    fn value_decl(&mut self, name: &Ident, ty: Option<&TypeExpr>, value: &Expr) -> Printed {
+        self.token(TokenKind::Ident)?;
+        self.doc.text(" ");
+        if let Some(ty) = ty {
+            self.typed_name(name, ty)?;
+        } else {
+            self.ident(name)?;
+        }
+        self.doc.text(" ");
+        self.token(TokenKind::Eq)?;
+        self.doc.text(" ");
+        self.expr(value)
     }
 
     fn comma_group<T>(&mut self, items: &[T], item: fn(&mut Self, &T) -> Printed) -> Printed {
@@ -430,16 +433,26 @@ impl<'src> Printer<'src, '_> {
         self.doc.text(" ");
         self.token(TokenKind::LBrace)?;
         self.doc.indent();
-        self.block_contents(&block.nodes, Gap::First)
+        self.block_contents(&block.lets, &block.nodes, Gap::First)
     }
 
-    fn block_contents(&mut self, nodes: &[Node], mut gap: Gap) -> Printed {
-        if nodes.is_empty()
+    fn block_contents(&mut self, lets: &[LetDecl], nodes: &[Node], mut gap: Gap) -> Printed {
+        if lets.is_empty()
+            && nodes.is_empty()
             && matches!(gap, Gap::First)
             && self.comment_before(self.current().span.start).is_none()
         {
             self.doc.dedent();
             return self.token(TokenKind::RBrace);
+        }
+        for decl in lets {
+            self.boundary(Line::Hard, gap);
+            self.value_decl(&decl.name, decl.ty.as_ref(), &decl.value)?;
+            self.trailing_comments();
+            gap = Gap::Preserve;
+        }
+        if !matches!(gap, Gap::First) && !nodes.is_empty() {
+            gap = Gap::Section;
         }
         for node in nodes {
             self.boundary(Line::Hard, gap);

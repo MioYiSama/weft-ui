@@ -309,6 +309,10 @@
         {
           "type": "_node",
           "named": true
+        },
+        {
+          "type": "let_declaration",
+          "named": true
         }
       ]
     }
@@ -353,6 +357,10 @@
       "types": [
         {
           "type": "_node",
+          "named": true
+        },
+        {
+          "type": "let_declaration",
           "named": true
         },
         {
@@ -735,6 +743,42 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "let_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "_type",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1199,6 +1243,10 @@
   },
   {
     "type": "key",
+    "named": false
+  },
+  {
+    "type": "let",
     "named": false
   },
   {

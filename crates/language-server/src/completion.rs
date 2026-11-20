@@ -18,7 +18,7 @@ use crate::server::Server;
 const PROBE: &str = "__weft_complete__";
 
 const TOP_LEVEL_KEYWORDS: [&str; 5] = ["import", "model", "event", "component", "type"];
-const NODE_KEYWORDS: [&str; 3] = ["if", "for", "state"];
+const NODE_KEYWORDS: [&str; 4] = ["if", "for", "state", "let"];
 const VALUE_KEYWORDS: [&str; 4] = ["true", "false", "null", "if"];
 
 pub(crate) fn complete(server: &Server, params: CompletionParams) -> Option<CompletionResponse> {
@@ -107,9 +107,11 @@ fn kind(symbol: &Symbol) -> CompletionItemKind {
         SymbolKind::Event => CompletionItemKind::EVENT,
         SymbolKind::Component | SymbolKind::Element => CompletionItemKind::CLASS,
         SymbolKind::Field => CompletionItemKind::FIELD,
-        SymbolKind::Param | SymbolKind::State | SymbolKind::LoopVar | SymbolKind::LambdaParam => {
-            CompletionItemKind::VARIABLE
-        }
+        SymbolKind::Param
+        | SymbolKind::State
+        | SymbolKind::Let
+        | SymbolKind::LoopVar
+        | SymbolKind::LambdaParam => CompletionItemKind::VARIABLE,
         SymbolKind::Prop => CompletionItemKind::PROPERTY,
         SymbolKind::Member if is_method(symbol) => CompletionItemKind::METHOD,
         SymbolKind::Member => CompletionItemKind::PROPERTY,

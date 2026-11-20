@@ -1,9 +1,9 @@
 Component(getApp().weft.view({
-  hash: "d7ad73a72b4b61c5",
+  hash: "518bf39fdd8340b7",
   templates: [
     { n: "ModeLabel", v: [["n0_0", 0]] },
-    { n: "Language", p: ["c0", "l4"] },
-    { p: [["i3", "b3"]] },
+    { n: "Language", v: [["n0_0", 0]], p: ["c1", "l6"] },
+    { v: [["n2_0", 0]], p: [["i5", "b5"]] },
     { i: 0 },
     { i: 1 },
   ],

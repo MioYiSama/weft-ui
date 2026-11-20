@@ -163,6 +163,7 @@ pub enum SymbolKind {
     /// Component parameter.
     Param,
     State,
+    Let,
     LoopVar,
     LambdaParam,
     /// Built-in element.
@@ -316,6 +317,7 @@ impl Resolver<'_> {
                 let (kind, prefix) = match binding {
                     LocalBinding::Param => (SymbolKind::Param, "(parameter) "),
                     LocalBinding::State => (SymbolKind::State, "state "),
+                    LocalBinding::Let => (SymbolKind::Let, "let "),
                     LocalBinding::LoopItem => (SymbolKind::LoopVar, "(loop variable) "),
                     LocalBinding::LambdaParam => (SymbolKind::LambdaParam, "(lambda parameter) "),
                 };
@@ -523,6 +525,33 @@ component Example(kind: Kind) { Text(kind) }"#;
         let probe = probe(&app.replace("Kind)", "__probe)"));
         assert_eq!(probe.context, ProbeContext::Type);
         assert!(names(&probe).contains(&"Kind"));
+    }
+
+    #[test]
+    fn let_bindings_have_types_definitions_and_scoped_completion() {
+        let app = r#"component Example(name: String) {
+    if (true) {
+        let label = name.uppercase()
+        Text(label)
+    }
+    Text(name)
+}"#;
+        let analysis = analyze_app(app, None);
+        let label = at(&analysis, app, "label)");
+        assert_eq!(label.kind, SymbolKind::Let);
+        assert_eq!(label.detail, "let label: String");
+        assert_eq!(label.def, at(&analysis, app, "label =").def);
+        assert_eq!(
+            label.def.map(|span| span.start as usize),
+            app.find("label =")
+        );
+
+        let inner = probe(&app.replace("Text(label)", "Text(__probe)"));
+        assert_eq!(inner.context, ProbeContext::Value);
+        assert!(names(&inner).contains(&"label"));
+        let outer = probe(&app.replace("Text(name)", "Text(__probe)"));
+        assert_eq!(outer.context, ProbeContext::Value);
+        assert!(!names(&outer).contains(&"label"));
     }
 
     #[test]

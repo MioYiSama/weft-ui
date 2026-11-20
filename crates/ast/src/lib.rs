@@ -86,6 +86,7 @@ pub struct ComponentDecl {
     pub name: Ident,
     pub params: Vec<Param>,
     pub states: Vec<StateDecl>,
+    pub lets: Vec<LetDecl>,
     pub body: Vec<Node>,
     pub span: Span,
 }
@@ -103,6 +104,15 @@ pub struct StateDecl {
     pub name: Ident,
     pub ty: Option<TypeExpr>,
     pub init: Expr,
+    pub span: Span,
+}
+
+/// An immutable, optionally typed expression alias within a component or block.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LetDecl {
+    pub name: Ident,
+    pub ty: Option<TypeExpr>,
+    pub value: Expr,
     pub span: Span,
 }
 
@@ -124,6 +134,7 @@ pub enum TypeExprKind {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Block {
+    pub lets: Vec<LetDecl>,
     pub nodes: Vec<Node>,
     pub span: Span,
 }

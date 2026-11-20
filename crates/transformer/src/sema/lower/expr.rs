@@ -157,13 +157,17 @@ impl Lowerer<'_, '_> {
         }
         if let Some(local) = self.local(name) {
             self.cx.record(span, || self.local_target(local));
-        }
-        if let Some((kind, ty)) = self.local(name).map(|l| (l.kind, l.ty.clone())) {
-            let kind = match kind {
-                LocalKind::Param(p) => ExprKind::Param(p),
-                LocalKind::State(s) => ExprKind::State(s),
-                LocalKind::Item(l) => ExprKind::Item(l),
-                LocalKind::LambdaArg => ExprKind::LambdaArg,
+            let (kind, ty) = match &local.kind {
+                LocalKind::Param(p, ty) => (ExprKind::Param(*p), ty),
+                LocalKind::State(s, ty) => (ExprKind::State(*s), ty),
+                LocalKind::Item(l, ty) => (ExprKind::Item(*l), ty),
+                LocalKind::LambdaArg(ty) => (ExprKind::LambdaArg, ty),
+                LocalKind::Let(expr) => {
+                    return Expr {
+                        span,
+                        ..expr.clone()
+                    };
+                }
                 LocalKind::Slot(_) => {
                     self.error(
                         span,
@@ -172,7 +176,11 @@ impl Lowerer<'_, '_> {
                     return error_expr(span);
                 }
             };
-            return Expr { kind, ty, span };
+            return Expr {
+                kind,
+                ty: ty.clone(),
+                span,
+            };
         }
         let msg = match self.cx.global(self.file, name, span, self.diags) {
             Some(DeclKind::Event(_)) => {

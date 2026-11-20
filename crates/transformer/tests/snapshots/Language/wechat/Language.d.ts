@@ -2,9 +2,11 @@
 export interface LanguageItem {
   id: number;
   kind: "text" | "image";
+  name: string;
 }
 
 export interface LanguageModel {
+  name: string;
   items: readonly LanguageItem[];
   mode: "compact" | "full";
 }

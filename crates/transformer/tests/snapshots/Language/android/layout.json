@@ -1,5 +1,5 @@
 {
-  "hash": "d7ad73a72b4b61c5",
+  "hash": "518bf39fdd8340b7",
   "templates": [
     {
       "label": "ModeLabel",
@@ -19,32 +19,38 @@
       "kind": "component",
       "roots": [0],
       "nodes": [
-        {"element": "Column", "props": {}, "children": [1, 2]},
+        {"element": "Column", "props": {}, "children": [1, 2, 3]},
+        {"element": "Text", "props": {}, "children": []},
         {"point": 0},
         {"point": 1}
       ],
-      "values": [],
+      "values": [
+        {"node": 1, "prop": "value", "type": "String"}
+      ],
       "events": [],
       "points": [
-        {"node": 1, "kind": "instance", "template": 0},
-        {"node": 2, "kind": "list", "template": 2}
+        {"node": 2, "kind": "instance", "template": 0},
+        {"node": 3, "kind": "list", "template": 2}
       ]
     },
     {
-      "label": "Language:for4",
+      "label": "Language:for6",
       "kind": "row",
-      "roots": [0],
+      "roots": [0, 1],
       "nodes": [
+        {"element": "Text", "props": {}, "children": []},
         {"point": 0}
       ],
-      "values": [],
+      "values": [
+        {"node": 0, "prop": "value", "type": "String"}
+      ],
       "events": [],
       "points": [
-        {"node": 0, "kind": "branch", "templates": [3, 4]}
+        {"node": 1, "kind": "branch", "templates": [3, 4]}
       ]
     },
     {
-      "label": "Language:if3.0",
+      "label": "Language:if5.0",
       "kind": "branch",
       "roots": [0],
       "nodes": [
@@ -55,7 +61,7 @@
       "points": []
     },
     {
-      "label": "Language:if3.1",
+      "label": "Language:if5.1",
       "kind": "branch",
       "roots": [0],
       "nodes": [

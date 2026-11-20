@@ -5,9 +5,11 @@ type Mode = "compact" | "full"
 model LanguageItem {
   id: Int,
   kind: Kind,
+  name: String,
 }
 
 model LanguageModel {
+  name: String,
   items: LanguageItem[],
   mode: Mode,
 }
@@ -17,9 +19,13 @@ component ModeLabel(mode: "compact" | "full" = "full") {
 }
 
 component Language(model: LanguageModel) {
+  let title = "${model.name} (${model.items.length})"
   Column {
+    Text(title)
     ModeLabel(model.mode)
     for (item in model.items; key = item.id) {
+      let label = item.name.uppercase()
+      Text(label)
       if (item.kind == "image") {
         Text("image")
       } else {

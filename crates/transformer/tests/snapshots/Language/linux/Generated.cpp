@@ -10,7 +10,7 @@ using namespace std::literals;
 namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
-constexpr uint64_t kLayoutHash = 0xd7ad73a72b4b61c5ull;
+constexpr uint64_t kLayoutHash = 0x518bf39fdd8340b7ull;
 
 // 0 ModeLabel
 
@@ -39,21 +39,45 @@ class S1 final : public weft::Scope {
   S1(uint32_t id, weft::Session &session) : Scope(id, session, 2) {
     auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
     roots().add(n0);
+    n1_ = &make<weft::Text>();
+    n0.children().add(*n1_);
     n0.children().point(*this, 0);
     n0.children().point(*this, 1);
   }
+
+  void apply(uint32_t slot, const weft::ops::Value &value) override {
+    switch (slot) {
+      case 0: n1_->set_value(weft::string(value)); break;
+    }
+  }
+
+ private:
+  // Text.value
+  weft::Text *n1_;
 };
 
-// 2 Language:for4
+// 2 Language:for6
 
 class S2 final : public weft::Scope {
  public:
   S2(uint32_t id, weft::Session &session) : Scope(id, session, 1) {
+    n0_ = &make<weft::Text>();
+    roots().add(*n0_);
     roots().point(*this, 0);
   }
+
+  void apply(uint32_t slot, const weft::ops::Value &value) override {
+    switch (slot) {
+      case 0: n0_->set_value(weft::string(value)); break;
+    }
+  }
+
+ private:
+  // Text.value
+  weft::Text *n0_;
 };
 
-// 3 Language:if3.0
+// 3 Language:if5.0
 
 class S3 final : public weft::Scope {
  public:
@@ -64,7 +88,7 @@ class S3 final : public weft::Scope {
   }
 };
 
-// 4 Language:if3.1
+// 4 Language:if5.1
 
 class S4 final : public weft::Scope {
  public:

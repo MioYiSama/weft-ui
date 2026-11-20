@@ -10,7 +10,7 @@ namespace Weft.Generated;
 public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
-    public const ulong LayoutHash = 0xd7ad73a72b4b61c5UL;
+    public const ulong LayoutHash = 0x518bf39fdd8340b7UL;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
     public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);
@@ -53,26 +53,52 @@ file sealed class S0 : WeftScope
 
 file sealed class S1 : WeftScope
 {
+    // Text.value
+    private readonly WeftText n1;
+
     public S1(uint id, WeftSession session) : base(id, session, points: 2)
     {
         var n0 = new WeftStack(vertical: true);
         Roots.Add(n0.Element);
+        n1 = new WeftText();
+        n0.Children.Add(n1.Element);
         n0.Children.Point(this, 0);
         n0.Children.Point(this, 1);
     }
-}
 
-// 2 Language:for4
-
-file sealed class S2 : WeftScope
-{
-    public S2(uint id, WeftSession session) : base(id, session, points: 1)
+    public override void Apply(int slot, WeftValue value)
     {
-        Roots.Point(this, 0);
+        switch (slot)
+        {
+            case 0: n1.Value = value.String; break;
+        }
     }
 }
 
-// 3 Language:if3.0
+// 2 Language:for6
+
+file sealed class S2 : WeftScope
+{
+    // Text.value
+    private readonly WeftText n0;
+
+    public S2(uint id, WeftSession session) : base(id, session, points: 1)
+    {
+        n0 = new WeftText();
+        Roots.Add(n0.Element);
+        Roots.Point(this, 0);
+    }
+
+    public override void Apply(int slot, WeftValue value)
+    {
+        switch (slot)
+        {
+            case 0: n0.Value = value.String; break;
+        }
+    }
+}
+
+// 3 Language:if5.0
 
 file sealed class S3 : WeftScope
 {
@@ -84,7 +110,7 @@ file sealed class S3 : WeftScope
     }
 }
 
-// 4 Language:if3.1
+// 4 Language:if5.1
 
 file sealed class S4 : WeftScope
 {

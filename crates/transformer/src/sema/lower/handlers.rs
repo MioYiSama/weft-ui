@@ -182,7 +182,7 @@ impl Lowerer<'_, '_> {
                     Type::Error
                 }
             };
-            self.declare(&param.name, LocalKind::LambdaArg, ty, param.span);
+            self.declare(&param.name, LocalKind::LambdaArg(ty), param.span);
         }
         let body = lambda.body.iter().filter_map(|a| self.assign(a)).collect();
         self.scope.truncate(scope_len);
@@ -197,7 +197,7 @@ impl Lowerer<'_, '_> {
         if self.cx.is_probe(&target.name) {
             self.probe_locals(
                 ProbeContext::AssignTarget,
-                |k| matches!(k, LocalKind::State(_)),
+                |k| matches!(k, LocalKind::State(..)),
                 Vec::new(),
             );
         }
@@ -206,12 +206,21 @@ impl Lowerer<'_, '_> {
             return None;
         };
         self.cx.record(target.span, || self.local_target(local));
-        let (kind, ty) = (local.kind, local.ty.clone());
-        let LocalKind::State(state) = kind else {
-            let what = match kind {
-                LocalKind::Param(_) | LocalKind::Slot(_) => "parameter",
-                LocalKind::Item(_) => "loop variable",
-                LocalKind::LambdaArg | LocalKind::State(_) => "lambda parameter",
+        let LocalKind::State(state, ty) = &local.kind else {
+            let what = match local.kind {
+                LocalKind::Let(_) => {
+                    self.error(
+                        target.span,
+                        format!(
+                            "cannot assign to `{}`: only `state` can be assigned",
+                            target.name
+                        ),
+                    );
+                    return None;
+                }
+                LocalKind::Param(..) | LocalKind::Slot(_) => "parameter",
+                LocalKind::Item(..) => "loop variable",
+                LocalKind::LambdaArg(_) | LocalKind::State(..) => "lambda parameter",
             };
             self.diags.push(
                 Diagnostic::error(
@@ -223,6 +232,7 @@ impl Lowerer<'_, '_> {
             );
             return None;
         };
+        let (state, ty) = (*state, ty.clone());
         let valid_op = match assign.op {
             AssignOp::Set => true,
             AssignOp::Add => ty.is_numeric() || ty == Type::String || ty == Type::Error,

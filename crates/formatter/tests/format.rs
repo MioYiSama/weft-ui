@@ -107,6 +107,41 @@ component App(type: "compact" | "full" = "full") {
 }
 
 #[test]
+fn local_let_bindings() {
+    golden(
+        r#"component Card(body: Children){body}
+component C(let:String) {state n=0 let title : String=let // alias
+    let count="${n}" Card{let label=title.uppercase() Text(label)}
+    if(n>0){let positive="${count}!" Text(positive)} else{Text(count)}}"#,
+        r#"component Card(body: Children) {
+    body
+}
+
+component C(let: String) {
+    state n = 0
+
+    let title: String = let // alias
+    let count = "${n}"
+
+    Card {
+        let label = title.uppercase()
+
+        Text(label)
+    }
+    if (n > 0) {
+        let positive = "${count}!"
+
+        Text(positive)
+    } else {
+        Text(count)
+    }
+}
+"#,
+        Options::default(),
+    );
+}
+
+#[test]
 fn nodes_expressions_and_parentheses() {
     golden(
         r#"component C(){

@@ -4,8 +4,8 @@ use weft_ui_ast::span::offset;
 use weft_ui_ast::{
     Arg, Assign, AssignOp, BinaryOp, Block, ComponentDecl, Diagnostic, ElementNode, EventDecl,
     Expr, ExprKind, Field, File, FileId, ForNode, Ident, IfBranch, IfNode, Import, Item, Lambda,
-    ModelDecl, Node, NodeKind, Param, Span, StateDecl, StrPart, TypeAlias, TypeExpr, TypeExprKind,
-    UnaryOp,
+    LetDecl, ModelDecl, Node, NodeKind, Param, Span, StateDecl, StrPart, TypeAlias, TypeExpr,
+    TypeExprKind, UnaryOp,
 };
 
 use crate::lexer::{lex, scan_interpolation};
@@ -154,11 +154,11 @@ impl<'src> Parser<'src> {
         }
     }
 
-    /// `state name ...`; `state` is a contextual keyword.
-    fn at_state(&self) -> bool {
+    /// Recognizes a contextual declaration keyword followed by a name.
+    fn at_binding(&self, keyword: &str) -> bool {
         let token = self.token();
         token.kind == TokenKind::Ident
-            && self.text_of(token.span) == "state"
+            && self.text_of(token.span) == keyword
             && self.peek_at(1) == TokenKind::Ident
     }
 
@@ -382,19 +382,24 @@ impl<'src> Parser<'src> {
             Vec::new()
         };
         let mut states = Vec::new();
+        let mut lets = Vec::new();
         let mut body = Vec::new();
         if self.expect(TokenKind::LBrace).is_some() {
             while !self.at(TokenKind::RBrace) && !self.at(TokenKind::Eof) {
                 if self.at_item_start() {
                     break;
                 }
-                if self.at_state() {
+                if self.at_binding("state") {
                     let state_span = self.token().span;
                     let state = self.state_decl();
                     if !body.is_empty() {
                         self.error(state_span, "`state` must be declared before any node");
+                    } else if !lets.is_empty() {
+                        self.error(state_span, "`state` must be declared before any `let`");
                     }
                     states.extend(state);
+                } else if body.is_empty() && self.at_binding("let") {
+                    lets.extend(self.let_decl());
                 } else {
                     body.extend(self.node());
                 }
@@ -405,6 +410,7 @@ impl<'src> Parser<'src> {
             name,
             params,
             states,
+            lets,
             body,
             span: self.span_from(start),
         })
@@ -426,8 +432,30 @@ impl<'src> Parser<'src> {
     fn state_decl(&mut self) -> Option<StateDecl> {
         let start = self.bump().span;
         let name = self.ident("state name")?;
+        let (ty, init) = self.binding_value();
+        Some(StateDecl {
+            name,
+            ty,
+            init,
+            span: self.span_from(start),
+        })
+    }
+
+    fn let_decl(&mut self) -> Option<LetDecl> {
+        let start = self.bump().span;
+        let name = self.ident("let name")?;
+        let (ty, value) = self.binding_value();
+        Some(LetDecl {
+            name,
+            ty,
+            value,
+            span: self.span_from(start),
+        })
+    }
+
+    fn binding_value(&mut self) -> (Option<TypeExpr>, Expr) {
         let ty = self.eat(TokenKind::Colon).then(|| self.type_expr());
-        let init = if self.expect(TokenKind::Eq).is_some() {
+        let value = if self.expect(TokenKind::Eq).is_some() {
             self.expr()
         } else {
             Expr {
@@ -435,12 +463,7 @@ impl<'src> Parser<'src> {
                 span: self.token().span,
             }
         };
-        Some(StateDecl {
-            name,
-            ty,
-            init,
-            span: self.span_from(start),
-        })
+        (ty, value)
     }
 
     fn type_alias(&mut self) -> Option<TypeAlias> {
@@ -518,8 +541,12 @@ impl<'src> Parser<'src> {
 
     fn block(&mut self) -> Block {
         let start = self.token().span;
+        let mut lets = Vec::new();
         let mut nodes = Vec::new();
         if self.expect(TokenKind::LBrace).is_some() {
+            while self.at_binding("let") {
+                lets.extend(self.let_decl());
+            }
             while !self.at(TokenKind::RBrace) && !self.at(TokenKind::Eof) {
                 if self.at_item_start() {
                     break;
@@ -529,6 +556,7 @@ impl<'src> Parser<'src> {
             self.expect(TokenKind::RBrace);
         }
         Block {
+            lets,
             nodes,
             span: self.span_from(start),
         }
@@ -538,12 +566,20 @@ impl<'src> Parser<'src> {
     fn node(&mut self) -> Option<Node> {
         let start = self.token().span;
         let kind = match self.peek() {
-            TokenKind::Ident if self.at_state() => {
+            TokenKind::Ident if self.at_binding("state") => {
                 self.error(
                     start,
                     "`state` can only be declared at the top level of a component",
                 );
                 self.state_decl();
+                return None;
+            }
+            TokenKind::Ident
+                if self.at_binding("let")
+                    && matches!(self.peek_at(2), TokenKind::Colon | TokenKind::Eq) =>
+            {
+                self.error(start, "`let` must be declared before any node");
+                self.let_decl();
                 return None;
             }
             TokenKind::Ident => NodeKind::Element(self.element()),

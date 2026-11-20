@@ -59,9 +59,17 @@ impl Lowerer<'_, '_> {
         nodes.iter().filter_map(|n| self.node(n)).collect()
     }
 
-    fn guarded_nodes(&mut self, nodes: &[ast::Node]) -> Vec<NodeId> {
+    fn block(&mut self, block: &ast::Block) -> Vec<NodeId> {
+        let scope_len = self.scope.len();
+        self.let_declarations(&block.lets);
+        let ids = self.nodes(&block.nodes);
+        self.scope.truncate(scope_len);
+        ids
+    }
+
+    fn guarded_block(&mut self, block: &ast::Block) -> Vec<NodeId> {
         self.guard_depth += 1;
-        let ids = self.nodes(nodes);
+        let ids = self.block(block);
         self.guard_depth -= 1;
         ids
     }
@@ -100,18 +108,17 @@ impl Lowerer<'_, '_> {
         }
         if let Some(local) = self.local(name) {
             self.cx.record(first.span, || self.local_target(local));
-            let (kind, local_name) = (local.kind, local.name.clone());
-            let LocalKind::Slot(param) = kind else {
+            let LocalKind::Slot(param) = local.kind else {
                 self.error(
                     first.span,
-                    format!("`{local_name}` is a value, not an element or component"),
+                    format!("`{name}` is a value, not an element or component"),
                 );
                 return None;
             };
             if !e.args.is_empty() || e.children.is_some() {
                 self.error(
                     span,
-                    format!("slot `{local_name}` takes no arguments or children"),
+                    format!("slot `{name}` takes no arguments or children"),
                 );
             }
             return Some(self.push_node(NodeKind::Slot { param }, span, 0..0));
@@ -220,7 +227,15 @@ impl Lowerer<'_, '_> {
                 );
                 Vec::new()
             }
-            Some(block) => self.nodes(&block.nodes),
+            Some(block) => {
+                for decl in &block.lets {
+                    self.error(
+                        decl.span,
+                        "`let` cannot be declared directly inside a built-in element",
+                    );
+                }
+                self.block(block)
+            }
             None => Vec::new(),
         };
         self.push_node(
@@ -319,7 +334,7 @@ impl Lowerer<'_, '_> {
                 );
                 Vec::new()
             }
-            Some(block) => self.nodes(&block.nodes),
+            Some(block) => self.block(block),
             None => Vec::new(),
         };
         self.push_node(
@@ -353,13 +368,13 @@ impl Lowerer<'_, '_> {
             .zip(&node.branches)
             .map(|(cond, b)| Branch {
                 cond: Some(cond),
-                children: self.guarded_nodes(&b.block.nodes),
+                children: self.guarded_block(&b.block),
             })
             .collect();
         if let Some(block) = &node.else_block {
             branches.push(Branch {
                 cond: None,
-                children: self.guarded_nodes(&block.nodes),
+                children: self.guarded_block(block),
             });
         }
         self.push_node(NodeKind::If { branches, binding }, span, own)
@@ -392,8 +407,7 @@ impl Lowerer<'_, '_> {
         let scope_len = self.scope.len();
         self.declare(
             &node.var.name,
-            LocalKind::Item(loop_id),
-            item_ty,
+            LocalKind::Item(loop_id, item_ty),
             node.var.span,
         );
 
@@ -425,7 +439,7 @@ impl Lowerer<'_, '_> {
         let key_binding = self.bind(BindingKind::Key, expr_deps(&key));
         let own = first_binding..self.bindings.len();
 
-        let children = self.guarded_nodes(&node.body.nodes);
+        let children = self.guarded_block(&node.body);
         self.scope.truncate(scope_len);
         let id = self.push_node(
             NodeKind::For {

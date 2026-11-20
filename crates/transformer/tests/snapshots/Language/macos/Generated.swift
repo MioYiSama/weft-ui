@@ -6,7 +6,7 @@ import WeftKit
 /// The app's kernel session, started on first use with the bundle of this package.
 @MainActor private let session = WeftSession(
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
-    layoutHash: 0xd7ad73a72b4b61c5,
+    layoutHash: 0x518bf39fdd8340b7,
     make: makeScope
 )
 
@@ -58,8 +58,17 @@ private struct V0: View {
 // MARK: - 1 Language
 
 @Observable private final class S1: WeftScope {
+    /// Text.value
+    var v0: String = ""
     var p0: S0?
     var p1: [S2] = []
+
+    override func apply(_ slot: Int, _ value: WeftValue) {
+        switch slot {
+        case 0: v0 = value.string
+        default: break
+        }
+    }
 
     override func mount(_ point: Int, _ children: [WeftScope]) {
         switch point {
@@ -77,16 +86,26 @@ private struct V1: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            Text(verbatim: s.v0)
             if let c = s.p0 { V0(s: c) }
             ForEach(s.p1) { c in V2(s: c) }
         }
     }
 }
 
-// MARK: - 2 Language:for4
+// MARK: - 2 Language:for6
 
 @Observable private final class S2: WeftScope {
+    /// Text.value
+    var v0: String = ""
     var p0: WeftScope?
+
+    override func apply(_ slot: Int, _ value: WeftValue) {
+        switch slot {
+        case 0: v0 = value.string
+        default: break
+        }
+    }
 
     override func mount(_ point: Int, _ children: [WeftScope]) {
         switch point {
@@ -102,6 +121,7 @@ private struct V2: View {
     let s: S2
 
     var body: some View {
+        Text(verbatim: s.v0)
         switch s.p0 {
         case let c as S3: V3(s: c).id(c.id)
         case let c as S4: V4(s: c).id(c.id)
@@ -110,7 +130,7 @@ private struct V2: View {
     }
 }
 
-// MARK: - 3 Language:if3.0
+// MARK: - 3 Language:if5.0
 
 @Observable private final class S3: WeftScope {
 
@@ -125,7 +145,7 @@ private struct V3: View {
     }
 }
 
-// MARK: - 4 Language:if3.1
+// MARK: - 4 Language:if5.1
 
 @Observable private final class S4: WeftScope {
 

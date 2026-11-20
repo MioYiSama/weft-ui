@@ -83,15 +83,16 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
     pub(crate) fn component(mut self, decl: &ast::ComponentDecl) -> LoweredBody {
         for (index, param) in self.params.iter().enumerate() {
             let id = ParamId(offset(index));
-            let (kind, ty) = match &param.kind {
-                ParamKind::Value(ty) => (LocalKind::Param(id), ty.clone()),
-                ParamKind::Children => (LocalKind::Slot(id), Type::Error),
+            let kind = match &param.kind {
+                ParamKind::Value(ty) => LocalKind::Param(id, ty.clone()),
+                ParamKind::Children => LocalKind::Slot(id),
             };
-            self.declare(&param.name, kind, ty, param.span);
+            self.declare(&param.name, kind, param.span);
         }
         for state in &decl.states {
             self.state(state);
         }
+        self.let_declarations(&decl.lets);
         let roots = self.nodes(&decl.body);
         LoweredBody {
             states: self.states,

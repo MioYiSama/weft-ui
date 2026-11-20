@@ -12,7 +12,7 @@ use super::builtins::MemberSig;
 pub enum ProbeContext {
     /// A node in a component body: elements, components and slots.
     Node,
-    /// An expression: parameters, states, loop variables, lambda parameters.
+    /// An expression: let bindings, parameters, states, loop variables, lambda parameters.
     Value,
     /// An event handler value: events.
     Handler,
@@ -65,6 +65,7 @@ pub(crate) enum LocalBinding {
     State,
     LoopItem,
     LambdaParam,
+    Let,
 }
 
 #[derive(Debug)]

@@ -14,7 +14,7 @@ import net.mioyi.weftui.*
 /** Root view of the app: starts the kernel with the bundle and renders the root component. */
 @Composable
 fun WeftApp() {
-    WeftRoot(layoutHash = 0xd7ad73a72b4b61c5uL, make = ::makeScope)
+    WeftRoot(layoutHash = 0x518bf39fdd8340b7uL, make = ::makeScope)
 }
 
 /** Scope of a `create` op. */
@@ -51,8 +51,16 @@ private fun V0(s: S0) {
 // 1 Language
 
 private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
+    /** Text.value */
+    var v0 by mutableStateOf("")
     var p0 by mutableStateOf<S0?>(null)
     var p1 by mutableStateOf<List<S2>>(emptyList())
+
+    override fun apply(slot: Int, value: WeftValue) {
+        when (slot) {
+            0 -> v0 = value.string
+        }
+    }
 
     override fun mount(point: Int, children: List<WeftScope>) {
         when (point) {
@@ -68,15 +76,24 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 @Composable
 private fun V1(s: S1) {
     WeftColumn {
+        WeftText(s.v0)
         s.p0?.let { V0(it) }
         for (c in s.p1) key(c.id) { V2(c) }
     }
 }
 
-// 2 Language:for4
+// 2 Language:for6
 
 private class S2(id: Int, session: WeftSession) : WeftScope(id, session) {
+    /** Text.value */
+    var v0 by mutableStateOf("")
     var p0 by mutableStateOf<WeftScope?>(null)
+
+    override fun apply(slot: Int, value: WeftValue) {
+        when (slot) {
+            0 -> v0 = value.string
+        }
+    }
 
     override fun mount(point: Int, children: List<WeftScope>) {
         when (point) {
@@ -90,13 +107,14 @@ private class S2(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V2(s: S2) {
+    WeftText(s.v0)
     when (val c = s.p0) {
         is S3 -> key(c.id) { V3(c) }
         is S4 -> key(c.id) { V4(c) }
     }
 }
 
-// 3 Language:if3.0
+// 3 Language:if5.0
 
 private class S3(id: Int, session: WeftSession) : WeftScope(id, session) {
     @Composable
@@ -108,7 +126,7 @@ private fun V3(s: S3) {
     WeftText("image")
 }
 
-// 4 Language:if3.1
+// 4 Language:if5.1
 
 private class S4(id: Int, session: WeftSession) : WeftScope(id, session) {
     @Composable

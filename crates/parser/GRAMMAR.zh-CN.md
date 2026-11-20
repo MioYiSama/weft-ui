@@ -13,6 +13,7 @@
 - 上下文关键字（其他位置是普通标识符，例如 Demo 中的参数 `model`）：
   - `import`（后跟字符串）、`model` / `event` / `component` / `type`（后跟标识符）只在顶层开启声明；
   - `state`（后跟标识符）只在组件体内开启状态声明；
+  - `let`（后跟标识符）在组件体或块的开头开启局部声明；
   - `key` 只在 `for` 头部出现。
 - 整数：`[0-9]+`，范围为 `i64`。浮点：`[0-9]+ "." [0-9]+ ([eE] [+-]? [0-9]+)?` 或 `[0-9]+ [eE] [+-]? [0-9]+`。
 - 字符串：`"..."`，转义 `\n` `\r` `\t` `\0` `\\` `\"` `\$` `\u{XXXX}`。
@@ -34,16 +35,17 @@ Event       = "event" IDENT ( "(" FieldList? ")" )? ;
 FieldList   = Field ( "," Field )* ","? ;
 Field       = IDENT ":" Type ;
 
-Component   = "component" IDENT "(" ParamList? ")" "{" StateDecl* Node* "}" ;
+Component   = "component" IDENT "(" ParamList? ")" "{" StateDecl* LetDecl* Node* "}" ;
 ParamList   = Param ( "," Param )* ","? ;
 Param       = IDENT ":" Type ( "=" Expr )? ;
 StateDecl   = "state" IDENT ( ":" Type )? "=" Expr ;
+LetDecl     = "let" IDENT ( ":" Type )? "=" Expr ;
 
 Type        = UnionType | IDENT TypeSuffix* ;
 UnionType   = STRING ( "|" STRING )+ ;       (* 不允许插值 *)
 TypeSuffix  = "[" "]" | "?" ;
 
-Block       = "{" Node* "}" ;
+Block       = "{" LetDecl* Node* "}" ;
 Node        = ElementNode | IfNode | ForNode ;
 ElementNode = Path ( "(" ArgList? ")" )? Block? ;
 Path        = IDENT ( "." IDENT )* ;
@@ -78,7 +80,8 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 
 说明：
 
-- `state` 只能写在组件体顶层，并且在所有节点之前。
+- `state` 只能写在组件体顶层，并且在所有 `let` 声明和节点之前。
+- `let` 写在组件体、`if` 或 `for` 块、组件调用的子块开头，且在节点之前。内置元素的子块不能直接包含 `let` 声明。
 - 节点之间不需要分隔符。`Name` 后面紧跟的 `(` 和 `{` 都属于这个节点，包括换行之后的 `{`。
 - `if` 出现在节点位置时是条件渲染，分支是节点块；出现在表达式位置时是条件表达式，必须带 `else`，分支是表达式。
 - 调用只允许出现在标识符或成员访问之后：`Remove(todo.id)`、`name.trim()`。
@@ -104,7 +107,8 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 - 导入闭包内 `model`、`event`、`component`、`type` 共用一个命名空间，任何重名都报错；也不能与内置元素重名。
 - 宿主侧的事件注册方法由事件名派生（`onFooBar` / `on_foo_bar`），因此忽略大小写和下划线后相同的两个事件名（如 `FooBar` 与 `foo_bar`）也报错。
 - 循环导入、找不到的文件都报错。
-- 组件内名称查找顺序：lambda 参数 → `for` 变量 → `state` → 组件参数。组件内不允许遮蔽已有名称。
+- 组件内名称查找顺序：lambda 参数 → `let` 绑定（由内向外） → `for` 变量 → `state` → 组件参数。组件内不允许遮蔽已有名称。
+- `let` 声明不可变的表达式别名，在同一块内的声明之后可见，也可以在嵌套块和 lambda 中使用。省略类型标注时，类型由表达式推导。编译器在每个使用处内联表达式，因此依赖与直接写出表达式相同。
 
 ### 类型
 

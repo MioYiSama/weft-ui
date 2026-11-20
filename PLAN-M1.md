@@ -915,7 +915,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | P1 | ☑ | ddae077 | 快照、黄金文件不变；C-apps 中 6 个非 Web 平台的 `js/index.js` 有差异（见执行中发现），已重新录制基线 |
 | P2 | ☑ | bf3519f | Web、iOS、Android 上切换深浅色与旋转时日志随之变化；协议版本不变 |
 | L1 | ☑ | 7768759 | 新增 `Language` 快照与 `language.ops`；C-core 含 `conformance.language` 通过；C-apps 无差异 |
-| L2 | ☐ | | |
+| L2 | ☑ | （本提交） | 仅 `Language` 快照与 `language.ops` 变化；C-core 17/17；C-apps 无差异 |
 | L3 | ☐ | | |
 | L4 | ☐ | | |
 | L5 | ☐ | | |

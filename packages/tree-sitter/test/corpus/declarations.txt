@@ -147,6 +147,45 @@ component App(type: "compact" | "full" = "full") {
         (arguments (argument (identifier)))))))
 
 ========================================
+Local let bindings
+========================================
+
+component App(let: String) {
+  state count = 0
+  let title: String = let
+  for (item in items; key = item.id) {
+    let label = item.name
+    Card {
+      let caption = label
+      Text(caption)
+    }
+  }
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters (parameter (identifier) (type_identifier)))
+    (component_body
+      (state_declaration (identifier) (integer))
+      (let_declaration (identifier) (type_identifier) (identifier))
+      (for_node
+        (identifier)
+        (identifier)
+        (field_expression (identifier) (identifier))
+        (block
+          (let_declaration (identifier) (field_expression (identifier) (identifier)))
+          (element
+            (element_name (identifier))
+            (block
+              (let_declaration (identifier) (identifier))
+              (element
+                (element_name (identifier))
+                (arguments (argument (identifier)))))))))))
+
+========================================
 Comments
 ========================================
 

@@ -13,6 +13,7 @@ This document defines the normative grammar of the `.weft` language. The parser 
 - Contextual keywords (ordinary identifiers elsewhere, such as the `model` parameter in Demo):
   - `import` (followed by a string) and `model` / `event` / `component` / `type` (followed by an identifier) begin declarations only at the top level;
   - `state` (followed by an identifier) begins a state declaration only in a component body;
+  - `let` (followed by an identifier) begins a local declaration at the start of a component body or block;
   - `key` appears only in a `for` header.
 - Integers: `[0-9]+`, within the range of `i64`. Floating-point numbers: `[0-9]+ "." [0-9]+ ([eE] [+-]? [0-9]+)?` or `[0-9]+ [eE] [+-]? [0-9]+`.
 - Strings: `"..."`, with escapes `\n` `\r` `\t` `\0` `\\` `\"` `\$` `\u{XXXX}`.
@@ -34,16 +35,17 @@ Event       = "event" IDENT ( "(" FieldList? ")" )? ;
 FieldList   = Field ( "," Field )* ","? ;
 Field       = IDENT ":" Type ;
 
-Component   = "component" IDENT "(" ParamList? ")" "{" StateDecl* Node* "}" ;
+Component   = "component" IDENT "(" ParamList? ")" "{" StateDecl* LetDecl* Node* "}" ;
 ParamList   = Param ( "," Param )* ","? ;
 Param       = IDENT ":" Type ( "=" Expr )? ;
 StateDecl   = "state" IDENT ( ":" Type )? "=" Expr ;
+LetDecl     = "let" IDENT ( ":" Type )? "=" Expr ;
 
 Type        = UnionType | IDENT TypeSuffix* ;
 UnionType   = STRING ( "|" STRING )+ ;       (* no interpolation *)
 TypeSuffix  = "[" "]" | "?" ;
 
-Block       = "{" Node* "}" ;
+Block       = "{" LetDecl* Node* "}" ;
 Node        = ElementNode | IfNode | ForNode ;
 ElementNode = Path ( "(" ArgList? ")" )? Block? ;
 Path        = IDENT ( "." IDENT )* ;
@@ -78,7 +80,8 @@ Binary operator precedence (lowest to highest; all operators are left-associativ
 
 Notes:
 
-- `state` declarations are allowed only at the top level of a component body, before all nodes.
+- `state` declarations are allowed only at the top level of a component body, before any `let` declarations or nodes.
+- `let` declarations precede the nodes of a component body, an `if` or `for` block, or a component call’s child block. Built-in elements do not accept `let` declarations directly in their child blocks.
 - Nodes require no separators. An opening `(` or `{` immediately after `Name` belongs to that node, even if the `{` is on the next line.
 - In node position, `if` renders conditionally and its branches are blocks of nodes. In expression position, `if` requires an `else` and its branches are expressions.
 - Calls are allowed only after identifiers or member accesses: `Remove(todo.id)`, `name.trim()`.
@@ -104,7 +107,8 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 - Within the import closure, `model`, `event`, `component`, and `type` declarations share one namespace. Duplicate names and names that collide with built-in elements are errors.
 - Host-side event registration methods are derived from event names (`onFooBar` / `on_foo_bar`). Two event names that differ only in case and underscores (such as `FooBar` and `foo_bar`) are therefore also an error.
 - Import cycles and missing files are errors.
-- Name lookup within a component proceeds in this order: lambda parameters → `for` variables → `state` → component parameters. Names may not shadow existing names within a component.
+- Name lookup within a component proceeds in this order: lambda parameters → `let` bindings (innermost block first) → `for` variables → `state` → component parameters. Names may not shadow existing names within a component.
+- `let` creates an immutable expression alias, visible after its declaration in the same block and in nested blocks and lambdas. Its type is inferred unless annotated. The compiler substitutes its expression at each use site, so dependencies are the same as if the expression had been written there directly.
 
 ### Types
 

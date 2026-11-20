@@ -33,6 +33,116 @@ fn diagnostics(files: &[(&str, &str)]) -> Vec<String> {
 }
 
 #[test]
+fn let_bindings_are_immutable_and_cannot_shadow_or_escape_their_scope() {
+    let src = r#"component Shadow() {
+  state name = "original"
+  if (true) {
+    let name = "shadow"
+    Text(name)
+  }
+}
+component Assignment() {
+  let name = "fixed"
+  Button(onClick = { name = "changed" }) { Text(name) }
+}
+component Scope() {
+  if (true) {
+    let name = "inner"
+    Text(name)
+  } else {
+    Text(name)
+  }
+  Text(name)
+}"#;
+    assert_eq!(
+        diagnostics(&[("let.weft", src)]),
+        [
+            "let.weft:4:9: `name` is already defined in this component",
+            "let.weft:10:22: cannot assign to `name`: only `state` can be assigned",
+            "let.weft:17:10: unknown name `name`",
+            "let.weft:19:8: unknown name `name`",
+        ]
+    );
+}
+
+#[test]
+fn let_types_and_order_are_checked_at_the_declaration() {
+    let src = r#"type Kind = "text" | "image"
+component Invalid() {
+  let title: Kind = "invalid"
+  let forward = later
+  let later = "ok"
+  Text(later)
+}
+component AfterState() {
+  let title = "title"
+  state count = 0
+}
+component AfterNode() {
+  Text("first")
+  let title = "too late"
+}
+component BuiltIn() {
+  Column { let title = "title" Text(title) }
+}"#;
+    assert_eq!(
+        diagnostics(&[("let.weft", src)]),
+        [
+            r#"let.weft:3:21: `"invalid"` is not a member of `"text" | "image"`"#,
+            "let.weft:4:17: unknown name `later`",
+            "let.weft:10:3: `state` must be declared before any `let`",
+            "let.weft:14:3: `let` must be declared before any node",
+            "let.weft:17:12: `let` cannot be declared directly inside a built-in element",
+        ]
+    );
+}
+
+#[test]
+fn let_aliases_preserve_the_dependencies_of_inlined_expressions() {
+    let src = r#"model Item { id: Int, name: String }
+model Model { name: String, items: Item[] }
+component Card(body: Children) { body }
+component App(model: Model) {
+  state selected = ""
+  let title = "${model.name} (${model.items.length})"
+  for (item in model.items; key = item.id) {
+    let label: String = item.name.uppercase()
+    Card {
+      let caption = "${title}: ${label}"
+      if (true) {
+        let buttonText = "${caption} [${selected}]"
+        Button(onClick = { selected = label }) { Text(buttonText) }
+      }
+    }
+  }
+}"#;
+    let inlined = r#"model Item { id: Int, name: String }
+model Model { name: String, items: Item[] }
+component Card(body: Children) { body }
+component App(model: Model) {
+  state selected = ""
+  for (item in model.items; key = item.id) {
+    Card {
+      if (true) {
+        Button(onClick = { selected = item.name.uppercase() }) {
+          Text("${"${model.name} (${model.items.length})"}: ${item.name.uppercase()} [${selected}]")
+        }
+      }
+    }
+  }
+}"#;
+    let report = |source| {
+        let compilation = compile(&[("let.weft", source)]);
+        let program = compilation
+            .program
+            .as_ref()
+            .unwrap_or_else(|| panic!("{}", compilation.render_diagnostics()));
+        dependency_report(program)
+    };
+    assert_eq!(report(src), report(inlined));
+}
+
+#[test]
 fn unions_require_multiple_distinct_string_literals() {
     assert_eq!(
         diagnostics(&[("c.weft", r#"type Single = "a""#)]),

@@ -6,9 +6,21 @@ export const script: Script<Language> = {
   entry: "Language.weft",
   component: "Language",
   App: Language,
-  model: () => ({ items: [{ id: 1, kind: "text" }], mode: "full" }),
+  model: () => ({ name: "Gallery", items: [{ id: 1, kind: "text", name: "Oak" }], mode: "full" }),
   setup() {},
   steps: [
+    {
+      name: "rename the gallery",
+      run: (_, model) => {
+        model.name = "Library";
+      },
+    },
+    {
+      name: "rename one item",
+      run: (_, model) => {
+        model.items[0]!.name = "Elm";
+      },
+    },
     {
       name: "switch item kind to image",
       run: (_, model) => {

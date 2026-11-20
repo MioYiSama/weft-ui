@@ -10,7 +10,7 @@
 //   WeftProtocol.Version, WeftProtocol.FetchModule and WeftProtocol.FetchRequest.
 // In native bindings, module names use <module>Module and methods use <module><method>.
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { generateElements } from "./elements.ts";
 
 interface Schema {
@@ -242,7 +242,7 @@ const outputs = {
   "native/apple/Sources/WeftKit/Protocol.swift": header + swift(),
   "native/android/src/main/kotlin/net/mioyi/weftui/Protocol.kt": header + kotlin(),
   "native/windows/Weft.WinUI/Protocol.cs": header + csharp(),
-  ...generateElements(),
+  ...generateElements(new Map(platforms.map(({ name }) => [name, pascal(name)]))),
 };
 
 const stale: string[] = [];
@@ -251,7 +251,10 @@ for (const [path, content] of Object.entries(outputs)) {
   const generated = Buffer.from(content);
   if (existsSync(file) && readFileSync(file).equals(generated)) continue;
   if (check) stale.push(path);
-  else writeFileSync(file, generated);
+  else {
+    mkdirSync(new URL(".", file), { recursive: true });
+    writeFileSync(file, generated);
+  }
 }
 // Keep the rest of each hand-maintained package manifest intact.
 for (const target of ["apple", "android", "windows", "linux"]) {

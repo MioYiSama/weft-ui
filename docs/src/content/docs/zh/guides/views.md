@@ -53,11 +53,7 @@ Row(gap = 8, padding = 12, background = "#EEF2FF") {
 }
 ```
 
-- `Text` 必须传入 `String` 类型的 `value`，可以设置 `size`、`bold` 和 `color`。
-- `Button` 可以用块传入子节点，例如作为标签的 `Text`。用 `disabled` 禁用按钮，用 `onClick` 处理点击。
-- `Input` 必须传入 `String` 类型的 `value`，可以设置 `placeholder` 和 `disabled`。`onChange` 会提供修改后的文本。
-- `Checkbox` 必须传入 `Bool` 类型的 `checked`，可以设置 `disabled`。`onChange` 会提供修改后的选中状态。
-- `Image` 必须传入 URL 字符串 `src`，可以设置 `width` 和 `height`。
+各元素的属性、事件和平台支持情况见[内置元素参考](/zh/reference/elements/)。
 
 `Text`、`Input`、`Checkbox` 和 `Image` 的必填值都可以作为第一个位置参数，如上例所示。长度（包括字号 `size`）用逻辑像素计量，直接写 `Int`，不加单位后缀。它对应 iOS 和 macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px，以及小程序的 `px`（不是 `rpx`）。各平台的布局语义一致，控件外观可能不同。
 

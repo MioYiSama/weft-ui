@@ -2,11 +2,18 @@
 
 mod catalog;
 
-pub(crate) use catalog::ELEMENTS;
 pub use catalog::Element;
+pub(crate) use catalog::{ELEMENTS, Level};
 
 use crate::ir::Type;
-use crate::protocol::wechat_unit;
+use crate::protocol::{Platform, wechat_unit};
+
+#[derive(Debug)]
+#[expect(dead_code, reason = "feature checks land in L6 and R7")]
+pub(crate) struct FeatureSpec {
+    pub name: &'static str,
+    pub support: &'static [(Platform, Level)],
+}
 
 /// Value type of an element property.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,6 +78,7 @@ pub(crate) struct PropSpec {
     pub required: bool,
     pub css: Option<Css>,
     pub controlled_by: Option<&'static str>,
+    pub support: &'static [(Platform, Level)],
 }
 
 impl PropSpec {
@@ -92,6 +100,7 @@ pub(crate) const LIFECYCLE: [PropSpec; 2] = [
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "onUnmount",
@@ -100,6 +109,7 @@ pub(crate) const LIFECYCLE: [PropSpec; 2] = [
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
 ];
 
@@ -120,6 +130,7 @@ pub(crate) struct ElementSpec {
     pub name: &'static str,
     pub props: &'static [PropSpec],
     pub children: Children,
+    pub support: &'static [(Platform, Level)],
 }
 
 impl ElementSpec {

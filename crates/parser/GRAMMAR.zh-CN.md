@@ -143,17 +143,23 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 
 ### 内置元素与布局
 
-所有平台支持同一组内置元素和属性（P2 定稿）。只保证布局语义一致，外观贴近各平台原生风格。
+使用目标平台标为「不支持」的元素、属性或事件时，编译器会报错；标为「忽略」的写法可以编译，但没有效果。受支持的布局语义一致，外观贴近各平台原生风格。
 
-| 元素       | 属性（位置参数加粗）                                         | 事件                         | 子节点 |
-| ---------- | ------------------------------------------------------------ | ---------------------------- | ------ |
-| `Column`   | `padding` `gap` `width` `height`: `Int`，`background`: `Color` | —                            | 有     |
-| `Row`      | 同 `Column`                                                  | —                            | 有     |
-| `Text`     | **`value`**: `String`，`color`: `Color`，`size`: `Int`，`bold`: `Bool` | —                  | 无     |
-| `Button`   | `disabled`: `Bool`                                           | `onClick`                    | 有     |
-| `Input`    | **`value`**: `String`，`placeholder`: `String`，`disabled`: `Bool` | `onChange(String)`     | 无     |
-| `Checkbox` | **`checked`**: `Bool`，`disabled`: `Bool`                    | `onChange(Bool)`             | 无     |
-| `Image`    | **`src`**: `String`，`width` `height`: `Int`                 | —                            | 无     |
+<!-- elements:begin -->
+<!-- Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit. -->
+
+| 元素 | 位置属性 | 事件 | 子节点 |
+| --- | --- | --- | --- |
+| `Column` | — | — | 不限 |
+| `Row` | — | — | 不限 |
+| `Text` | `value` | — | 无 |
+| `Button` | — | `onClick` | 不限 |
+| `Input` | `value` | `onChange(String)` | 无 |
+| `Checkbox` | `checked` | `onChange(Bool)` | 无 |
+| `Image` | `src` | — | 无 |
+
+完整的属性、事件及各平台的支持情况见[元素参考](https://weftui.mioyi.net/zh/reference/elements/)。
+<!-- elements:end -->
 
 所有元素另有 `onMount` / `onUnmount`。
 

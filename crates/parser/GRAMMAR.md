@@ -143,17 +143,23 @@ Element event arguments have payload types (`onClick` has no payload; `Input.onC
 
 ### Built-in elements and layout
 
-All platforms support the same set of built-in elements and properties (finalized in P2). Only layout semantics are guaranteed to be consistent; appearance follows each platform's native style.
+The compiler rejects elements, properties, and events marked unsupported for the target platform. Those marked ignored are accepted but have no effect. Layout semantics are shared where supported; appearance follows each platform's native style.
 
-| Element    | Properties (positional arguments in bold)                    | Events                       | Children |
-| ---------- | ------------------------------------------------------------ | ---------------------------- | -------- |
-| `Column`   | `padding` `gap` `width` `height`: `Int`, `background`: `Color` | —                            | Yes      |
-| `Row`      | Same as `Column`                                             | —                            | Yes      |
-| `Text`     | **`value`**: `String`, `color`: `Color`, `size`: `Int`, `bold`: `Bool` | —                     | No       |
-| `Button`   | `disabled`: `Bool`                                           | `onClick`                    | Yes      |
-| `Input`    | **`value`**: `String`, `placeholder`: `String`, `disabled`: `Bool` | `onChange(String)`       | No       |
-| `Checkbox` | **`checked`**: `Bool`, `disabled`: `Bool`                     | `onChange(Bool)`             | No       |
-| `Image`    | **`src`**: `String`, `width` `height`: `Int`                  | —                            | No       |
+<!-- elements:begin -->
+<!-- Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit. -->
+
+| Element | Positional property | Events | Children |
+| --- | --- | --- | --- |
+| `Column` | — | — | Any |
+| `Row` | — | — | Any |
+| `Text` | `value` | — | None |
+| `Button` | — | `onClick` | Any |
+| `Input` | `value` | `onChange(String)` | None |
+| `Checkbox` | `checked` | `onChange(Bool)` | None |
+| `Image` | `src` | — | None |
+
+See the [element reference](https://weftui.mioyi.net/reference/elements/) for full properties, events, and platform support.
+<!-- elements:end -->
 
 All elements also have `onMount` / `onUnmount`.
 

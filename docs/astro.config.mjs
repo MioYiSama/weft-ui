@@ -33,6 +33,11 @@ export default defineConfig({
           items: [{ autogenerate: { directory: "guides" } }],
         },
         {
+          label: "Reference",
+          translations: { "zh-CN": "参考" },
+          items: [{ autogenerate: { directory: "reference" } }],
+        },
+        {
           label: "Specification",
           translations: { "zh-CN": "规范" },
           items: [

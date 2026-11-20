@@ -15,6 +15,7 @@ use weft_ui_transformer::{AppOutput, compile_app};
 struct Fixture {
     name: &'static str,
     source: &'static str,
+    natives: &'static [Platform],
 }
 
 impl Fixture {
@@ -38,13 +39,22 @@ impl Fixture {
     }
 }
 
+const ALL_NATIVES: &[Platform] = &[
+    Platform::Ios,
+    Platform::Macos,
+    Platform::Android,
+    Platform::Windows,
+    Platform::Linux,
+];
 const TODO_LIST: Fixture = Fixture {
     name: "TodoList",
     source: include_str!("fixtures/TodoList.weft"),
+    natives: ALL_NATIVES,
 };
 const GALLERY: Fixture = Fixture {
     name: "Gallery",
     source: include_str!("fixtures/Gallery.weft"),
+    natives: ALL_NATIVES,
 };
 
 /// Every generated file of the app, as the platform's output directory would
@@ -232,12 +242,17 @@ fn check_native(fixture: &Fixture, wechat: &BTreeMap<String, String>, layout: &s
     let name = fixture.name;
     let js = format!("{name}.js");
     let dts = format!("{name}.d.ts");
-    for (platform, view) in [
-        (Platform::Macos, "Generated.swift"),
-        (Platform::Android, "src/main/kotlin/Generated.kt"),
-        (Platform::Windows, "Generated.cs"),
-        (Platform::Linux, "Generated.cpp"),
-    ] {
+    let shared_apple =
+        fixture.natives.contains(&Platform::Ios) && fixture.natives.contains(&Platform::Macos);
+    for &platform in fixture.natives {
+        let view = match platform {
+            Platform::Ios if shared_apple => continue,
+            Platform::Ios | Platform::Macos => "Generated.swift",
+            Platform::Android => "src/main/kotlin/Generated.kt",
+            Platform::Windows => "Generated.cs",
+            Platform::Linux => "Generated.cpp",
+            Platform::Web | Platform::Wechat => panic!("{platform} is not native"),
+        };
         let native = generated_files(fixture.compile(platform));
         let mut expected = [js.as_str(), dts.as_str(), "layout.json", view];
         expected.sort_unstable();
@@ -253,7 +268,7 @@ fn check_native(fixture: &Fixture, wechat: &BTreeMap<String, String>, layout: &s
             "{name}/{platform}/layout.json"
         );
         // iOS and macOS share one SwiftUI backend; differences live in WeftKit.
-        if platform == Platform::Macos {
+        if platform == Platform::Macos && shared_apple {
             let ios = generated_files(fixture.compile(Platform::Ios));
             assert_eq!(ios, native, "{name}/ios differs from macos");
         }

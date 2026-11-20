@@ -1,6 +1,14 @@
 // Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit.
 
-use super::{Children, Css, CssUnit, ElementSpec, PropKind, PropSpec, PropType};
+use super::{Children, Css, CssUnit, ElementSpec, FeatureSpec, PropKind, PropSpec, PropType};
+
+/// Support exceptions for a target platform; omitted entries are supported.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Level {
+    No,
+    #[allow(dead_code, reason = "the catalog may omit ignored entries")]
+    Ignored,
+}
 
 /// Built-in elements available in Weft views.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -33,6 +41,7 @@ const PROPS_0: &[PropSpec] = &[
             unit: CssUnit::Px,
         }),
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "gap",
@@ -44,6 +53,7 @@ const PROPS_0: &[PropSpec] = &[
             unit: CssUnit::Px,
         }),
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "width",
@@ -55,6 +65,7 @@ const PROPS_0: &[PropSpec] = &[
             unit: CssUnit::Px,
         }),
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "height",
@@ -66,6 +77,7 @@ const PROPS_0: &[PropSpec] = &[
             unit: CssUnit::Px,
         }),
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "background",
@@ -77,6 +89,7 @@ const PROPS_0: &[PropSpec] = &[
             unit: CssUnit::Color,
         }),
         controlled_by: None,
+        support: &[],
     },
 ];
 
@@ -88,6 +101,7 @@ const PROPS_1: &[PropSpec] = &[
         required: true,
         css: None,
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "color",
@@ -99,6 +113,7 @@ const PROPS_1: &[PropSpec] = &[
             unit: CssUnit::Color,
         }),
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "size",
@@ -110,6 +125,7 @@ const PROPS_1: &[PropSpec] = &[
             unit: CssUnit::Px,
         }),
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "bold",
@@ -121,6 +137,7 @@ const PROPS_1: &[PropSpec] = &[
             unit: CssUnit::Bold,
         }),
         controlled_by: None,
+        support: &[],
     },
 ];
 
@@ -132,6 +149,7 @@ const PROPS_2: &[PropSpec] = &[
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "disabled",
@@ -140,6 +158,7 @@ const PROPS_2: &[PropSpec] = &[
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
 ];
 
@@ -151,6 +170,7 @@ const PROPS_3: &[PropSpec] = &[
         required: true,
         css: None,
         controlled_by: Some("onChange"),
+        support: &[],
     },
     PropSpec {
         name: "onChange",
@@ -161,6 +181,7 @@ const PROPS_3: &[PropSpec] = &[
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "placeholder",
@@ -169,6 +190,7 @@ const PROPS_3: &[PropSpec] = &[
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "disabled",
@@ -177,6 +199,7 @@ const PROPS_3: &[PropSpec] = &[
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
 ];
 
@@ -188,6 +211,7 @@ const PROPS_4: &[PropSpec] = &[
         required: true,
         css: None,
         controlled_by: Some("onChange"),
+        support: &[],
     },
     PropSpec {
         name: "onChange",
@@ -198,6 +222,7 @@ const PROPS_4: &[PropSpec] = &[
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "disabled",
@@ -206,6 +231,7 @@ const PROPS_4: &[PropSpec] = &[
         required: false,
         css: None,
         controlled_by: None,
+        support: &[],
     },
 ];
 
@@ -217,6 +243,7 @@ const PROPS_5: &[PropSpec] = &[
         required: true,
         css: None,
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "width",
@@ -228,6 +255,7 @@ const PROPS_5: &[PropSpec] = &[
             unit: CssUnit::Px,
         }),
         controlled_by: None,
+        support: &[],
     },
     PropSpec {
         name: "height",
@@ -239,6 +267,7 @@ const PROPS_5: &[PropSpec] = &[
             unit: CssUnit::Px,
         }),
         controlled_by: None,
+        support: &[],
     },
 ];
 
@@ -248,41 +277,60 @@ pub(crate) const ELEMENTS: [ElementSpec; 7] = [
         name: "Column",
         props: PROPS_0,
         children: Children::Any,
+        support: &[],
     },
     ElementSpec {
         element: Element::Row,
         name: "Row",
         props: PROPS_0,
         children: Children::Any,
+        support: &[],
     },
     ElementSpec {
         element: Element::Text,
         name: "Text",
         props: PROPS_1,
         children: Children::None,
+        support: &[],
     },
     ElementSpec {
         element: Element::Button,
         name: "Button",
         props: PROPS_2,
         children: Children::Any,
+        support: &[],
     },
     ElementSpec {
         element: Element::Input,
         name: "Input",
         props: PROPS_3,
         children: Children::None,
+        support: &[],
     },
     ElementSpec {
         element: Element::Checkbox,
         name: "Checkbox",
         props: PROPS_4,
         children: Children::None,
+        support: &[],
     },
     ElementSpec {
         element: Element::Image,
         name: "Image",
         props: PROPS_5,
         children: Children::None,
+        support: &[],
+    },
+];
+
+#[expect(dead_code, reason = "feature checks land in L6 and R7")]
+pub(crate) const FEATURES: [FeatureSpec; 2] = [
+    FeatureSpec {
+        name: "theme",
+        support: &[],
+    },
+    FeatureSpec {
+        name: "assets",
+        support: &[],
     },
 ];

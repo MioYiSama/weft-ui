@@ -22,6 +22,7 @@ mod protocol;
 mod report;
 mod sema;
 mod style;
+mod support;
 mod swiftui;
 pub mod transform;
 pub mod view;
@@ -111,7 +112,17 @@ pub fn compile_app(parsed: ParsedProgram, platform: Platform) -> AppOutput {
         layout: None,
     };
     if let Some(program) = &output.compilation.program {
-        (output.logic, output.views, output.layout) = transform_program(program, platform);
+        let diagnostics = support::check(program, platform);
+        if diagnostics.is_empty() {
+            (output.logic, output.views, output.layout) = transform_program(program, platform);
+        } else {
+            output.compilation.program = None;
+            output.compilation.diagnostics.extend(diagnostics);
+            output
+                .compilation
+                .diagnostics
+                .sort_by_key(|d| (d.span.file, d.span.start));
+        }
     }
     output
 }

@@ -53,11 +53,7 @@ Row(gap = 8, padding = 12, background = "#EEF2FF") {
 }
 ```
 
-- `Text` takes a required `String` named `value` and accepts `size`, `bold`, and `color`.
-- `Button` can render a block of child nodes, such as a `Text` label. Use `disabled` to disable it and `onClick` to handle clicks.
-- `Input` takes a required `String` named `value`. It accepts `placeholder` and `disabled`, and `onChange` provides the new text.
-- `Checkbox` takes a required `Bool` named `checked`. It accepts `disabled`, and `onChange` provides the new checked state.
-- `Image` takes a required URL string named `src` and accepts `width` and `height`.
+See the [built-in element reference](/reference/elements/) for each element’s properties, events, and platform support.
 
 The required value for `Text`, `Input`, `Checkbox`, or `Image` can be the first positional argument, as shown above. Lengths, including text `size`, are `Int` values in logical pixels, with no unit suffix. These map to pt on iOS and macOS, dp on Android, DIP on Windows, CSS px on the web, and `px` (not `rpx`) in mini programs. Layout semantics are shared, but controls can look different across platforms.
 

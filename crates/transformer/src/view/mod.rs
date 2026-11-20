@@ -437,6 +437,7 @@ mod tests {
             required: false,
             css: None,
             controlled_by: None,
+            support: &[],
         };
         let spec = ElementSpec {
             element: Element::Button,
@@ -452,6 +453,7 @@ mod tests {
                 },
             ],
             children: Children::Any,
+            support: &[],
         };
         let mut template = Template {
             label: "Test".into(),

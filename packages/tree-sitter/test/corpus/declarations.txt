@@ -101,6 +101,52 @@ component App(model: Model, body: Children, title: String = "x") {
           (identifier))))))
 
 ========================================
+Type aliases and literal unions
+========================================
+
+type Kind = "text" | "image" | "video"
+type History = Kind[]
+model Item { kind: Kind }
+component App(type: "compact" | "full" = "full") {
+  state selected: Kind? = null
+  Text(type)
+}
+
+----------------------------------------
+
+(source_file
+  (type_alias
+    (identifier)
+    (union_type
+      (string (string_content))
+      (string (string_content))
+      (string (string_content))))
+  (type_alias
+    (identifier)
+    (array_type (type_identifier)))
+  (model_declaration
+    (identifier)
+    (field_list
+      (field (identifier) (type_identifier))))
+  (component_declaration
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (union_type
+          (string (string_content))
+          (string (string_content)))
+        (string (string_content))))
+    (component_body
+      (state_declaration
+        (identifier)
+        (optional_type (type_identifier))
+        (null))
+      (element
+        (element_name (identifier))
+        (arguments (argument (identifier)))))))
+
+========================================
 Comments
 ========================================
 

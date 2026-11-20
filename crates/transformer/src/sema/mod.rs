@@ -5,8 +5,8 @@ pub(crate) mod builtins;
 mod lower;
 pub(crate) mod record;
 
-use std::cell::RefCell;
-use std::collections::{BTreeSet, HashMap};
+use std::cell::{Cell, OnceCell, RefCell};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use weft_ui_ast as ast;
 use weft_ui_ast::span::offset;
@@ -19,7 +19,7 @@ use crate::ir::{
     Program, Type, type_display,
 };
 use lower::{Instance, Lowerer};
-use record::{ProbeContext, RawCall, RawProbe, Recorder, Target};
+use record::{AliasSymbol, ProbeContext, RawCall, RawProbe, Recorder, Target};
 
 /// Name of the slot parameter type.
 const CHILDREN: &str = "Children";
@@ -30,6 +30,7 @@ pub(crate) enum DeclKind {
     Model(ModelId),
     Event(EventId),
     Component(ComponentId),
+    TypeAlias(usize),
 }
 
 impl DeclKind {
@@ -38,6 +39,7 @@ impl DeclKind {
             DeclKind::Model(_) => "model",
             DeclKind::Event(_) => "event",
             DeclKind::Component(_) => "component",
+            DeclKind::TypeAlias(_) => "type alias",
         }
     }
 }
@@ -49,10 +51,17 @@ struct Decl {
     span: Span,
 }
 
+struct Alias<'a> {
+    decl: &'a ast::TypeAlias,
+    resolving: Cell<bool>,
+    ty: OnceCell<Type>,
+}
+
 /// Program-wide declarations shared by every component being checked.
 pub(crate) struct Checker<'a> {
     sources: &'a SourceMap,
     decls: HashMap<String, Decl>,
+    aliases: Vec<Alias<'a>>,
     /// Per file: the file itself plus its direct imports.
     visible: Vec<Vec<FileId>>,
     pub models: Vec<Model>,
@@ -142,7 +151,7 @@ impl Checker<'_> {
     }
 
     pub(crate) fn type_name(&self, ty: &Type) -> String {
-        type_display(ty, &self.models).to_string()
+        type_display(ty, &self.models, "{error}").to_string()
     }
 
     /// Reports a type probe at `name`; `Children` is offered for parameters.
@@ -154,8 +163,27 @@ impl Checker<'_> {
             .into_iter()
             .chain(children.then_some(CHILDREN))
             .map(|name| Target::Type(name.to_owned()));
-        let models = self.visible_decls(file, |k| matches!(k, DeclKind::Model(_)));
-        self.set_probe(ProbeContext::Type, builtins.chain(models).collect());
+        let types = self.visible_decls(file, |k| {
+            matches!(k, DeclKind::Model(_) | DeclKind::TypeAlias(_))
+        });
+        self.set_probe(ProbeContext::Type, builtins.chain(types).collect());
+    }
+
+    fn alias_type(&self, id: usize, span: Span, diags: &mut Vec<Diagnostic>) -> &Type {
+        let alias = &self.aliases[id];
+        if alias.resolving.get() {
+            diags.push(Diagnostic::error(
+                span,
+                format!("type alias `{}` refers to itself", alias.decl.name.name),
+            ));
+            return &Type::Error;
+        }
+        alias.ty.get_or_init(|| {
+            alias.resolving.set(true);
+            let ty = self.resolve_type(alias.decl.span.file, &alias.decl.ty, diags);
+            alias.resolving.set(false);
+            ty
+        })
     }
 
     pub(crate) fn resolve_type(
@@ -172,6 +200,7 @@ impl Checker<'_> {
         }
         match &ty.kind {
             ast::TypeExprKind::Error => Type::Error,
+            ast::TypeExprKind::Union(members) => check_union(members, diags),
             ast::TypeExprKind::Array(elem) => {
                 Type::Array(Box::new(self.resolve_type(file, elem, diags)))
             }
@@ -196,6 +225,7 @@ impl Checker<'_> {
                 }
                 other => match self.global(file, other, name.span, diags) {
                     Some(DeclKind::Model(id)) => Type::Model(id),
+                    Some(DeclKind::TypeAlias(id)) => self.alias_type(id, name.span, diags).clone(),
                     Some(kind) => {
                         diags.push(Diagnostic::error(
                             name.span,
@@ -244,11 +274,29 @@ impl Checker<'_> {
     }
 }
 
+fn check_union(members: &[(String, Span)], diags: &mut Vec<Diagnostic>) -> Type {
+    let mut seen = HashSet::with_capacity(members.len());
+    for (member, span) in members {
+        if !seen.insert(member.as_str()) {
+            diags.push(Diagnostic::error(
+                *span,
+                format!("duplicate member `{member:?}` in union"),
+            ));
+        }
+    }
+    if seen.len() == members.len() {
+        Type::Union(members.iter().map(|(member, _)| member.clone()).collect())
+    } else {
+        Type::Error
+    }
+}
+
 fn decl_target(kind: DeclKind) -> Target {
     match kind {
         DeclKind::Model(id) => Target::Model(id),
         DeclKind::Event(id) => Target::Event(id),
         DeclKind::Component(id) => Target::Component(id),
+        DeclKind::TypeAlias(id) => Target::TypeAlias(id),
     }
 }
 
@@ -257,6 +305,7 @@ pub(crate) fn article(kind: DeclKind) -> &'static str {
         DeclKind::Model(_) => "a model",
         DeclKind::Event(_) => "an event",
         DeclKind::Component(_) => "a component",
+        DeclKind::TypeAlias(_) => "a type alias",
     }
 }
 
@@ -314,6 +363,7 @@ fn check(
     let mut cx = Checker {
         sources,
         decls: HashMap::new(),
+        aliases: Vec::new(),
         visible: files
             .iter()
             .enumerate()
@@ -340,6 +390,10 @@ fn check(
         item_ids.push(ids);
     }
     report_handler_name_clashes(&cx.events, diags);
+    // Check even unused aliases, once each, in their declaring files.
+    for (id, alias) in cx.aliases.iter().enumerate() {
+        cx.alias_type(id, alias.decl.name.span, diags);
+    }
 
     let items = || {
         files.iter().enumerate().flat_map(|(fi, f)| {
@@ -428,6 +482,7 @@ fn check(
                     DeclKind::Model(m) => module.models.push(m),
                     DeclKind::Event(e) => module.events.push(e),
                     DeclKind::Component(c) => module.components.push(c),
+                    DeclKind::TypeAlias(_) => {}
                 }
             }
             module
@@ -441,13 +496,27 @@ fn check(
         events: cx.events,
         components: cx.components,
     };
+    if let Some(recorder) = &cx.recorder {
+        recorder.borrow_mut().aliases = cx
+            .aliases
+            .into_iter()
+            .map(|alias| AliasSymbol {
+                name: alias.decl.name.name.clone(),
+                def: alias.decl.name.span,
+                ty: alias
+                    .ty
+                    .into_inner()
+                    .expect("all type aliases were resolved"),
+            })
+            .collect();
+    }
     (program, cx.recorder)
 }
 
-fn declare(
-    cx: &mut Checker<'_>,
+fn declare<'a>(
+    cx: &mut Checker<'a>,
     file: FileId,
-    item: &ast::Item,
+    item: &'a ast::Item,
     diags: &mut Vec<Diagnostic>,
 ) -> Option<DeclKind> {
     let name = item.name();
@@ -474,7 +543,7 @@ fn declare(
             .with_label("redeclared here")
             .with_secondary(prev.span, "first declared here")
             .with_note(
-                "models, events and components share one namespace across all imported files",
+                "models, events, components and type aliases share one namespace across all imported files",
             ),
         );
         return None;
@@ -514,6 +583,15 @@ fn declare(
                 reachable_events: Vec::new(),
             });
             DeclKind::Component(ComponentId(offset(cx.components.len() - 1)))
+        }
+        ast::Item::TypeAlias(decl) => {
+            let id = cx.aliases.len();
+            cx.aliases.push(Alias {
+                decl,
+                resolving: Cell::new(false),
+                ty: OnceCell::new(),
+            });
+            DeclKind::TypeAlias(id)
         }
     };
     cx.record(name.span, || decl_target(kind));

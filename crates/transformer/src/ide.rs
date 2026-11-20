@@ -15,10 +15,10 @@ use std::fmt;
 use weft_ui_ast::{Diagnostic, FileId, ParsedProgram, SourceMap, Span};
 
 use crate::elements::{Children, ElementSpec, PropKind, PropSpec, PropType};
-use crate::ir::{ComponentId, ParamKind, Program, Type};
+use crate::ir::{ComponentId, ParamKind, Program, Type, type_display};
 use crate::sema;
 use crate::sema::builtins::{MemberKind, MemberSig};
-use crate::sema::record::{LocalBinding, Recorder, Target};
+use crate::sema::record::{AliasSymbol, LocalBinding, Recorder, Target};
 
 pub use crate::sema::record::ProbeContext;
 
@@ -50,6 +50,7 @@ pub fn analyze(parsed: ParsedProgram, probe: Option<&str>) -> IdeAnalysis {
     let resolve = Resolver {
         program: &program,
         sources: &analysis.sources,
+        aliases: &recorder.aliases,
     };
     let index = Index {
         occurrences: recorder
@@ -170,7 +171,7 @@ pub enum SymbolKind {
     Prop,
     /// Built-in member such as `length` or `trim()`.
     Member,
-    /// Built-in type such as `Int` or `Children`.
+    /// A built-in type or a user-declared type alias.
     Type,
 }
 
@@ -253,37 +254,17 @@ fn element_symbol(spec: &ElementSpec) -> Symbol {
     }
 }
 
-/// Displays a type, with `unknown` for types that failed to resolve.
-fn display_type(ty: &Type, program: &Program, out: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match ty {
-        Type::Int => out.write_str("Int"),
-        Type::Float => out.write_str("Float"),
-        Type::Bool => out.write_str("Bool"),
-        Type::String => out.write_str("String"),
-        Type::Model(id) => out.write_str(&program.model(*id).name),
-        Type::Array(elem) => {
-            display_type(elem, program, out)?;
-            out.write_str("[]")
-        }
-        Type::Optional(elem) => {
-            display_type(elem, program, out)?;
-            out.write_str("?")
-        }
-        Type::Null => out.write_str("null"),
-        Type::Error => out.write_str("unknown"),
-    }
-}
-
 // ---- resolution ----------------------------------------------------------
 
 struct Resolver<'a> {
     program: &'a Program,
     sources: &'a SourceMap,
+    aliases: &'a [AliasSymbol],
 }
 
 impl Resolver<'_> {
     fn ty<'a>(&'a self, ty: &'a Type) -> impl fmt::Display + 'a {
-        fmt::from_fn(move |out| display_type(ty, self.program, out))
+        type_display(ty, &self.program.models, "unknown")
     }
 
     fn member_symbol(&self, name: String, sig: MemberSig) -> Symbol {
@@ -317,6 +298,15 @@ impl Resolver<'_> {
             Target::Prop { owner, prop } => prop_symbol(owner, prop),
             Target::Member { name, signature } => self.member_symbol(name, signature),
             Target::Type(name) => type_symbol(name),
+            Target::TypeAlias(id) => {
+                let alias = &self.aliases[id];
+                Symbol {
+                    kind: SymbolKind::Type,
+                    name: alias.name.clone(),
+                    detail: format!("type {} = {}", alias.name, self.ty(&alias.ty)),
+                    def: Some(alias.def),
+                }
+            }
             Target::Local {
                 binding,
                 name,
@@ -422,7 +412,7 @@ impl Resolver<'_> {
     fn component_param(&self, id: ComponentId, index: usize) -> String {
         let param = &self.program.component(id).params[index];
         let ty = fmt::from_fn(|out| match &param.kind {
-            ParamKind::Value(ty) => display_type(ty, self.program, out),
+            ParamKind::Value(ty) => write!(out, "{}", self.ty(ty)),
             ParamKind::Children => out.write_str("Children"),
         });
         match &param.default {
@@ -518,6 +508,21 @@ component App(model: Model) {
                 .detail
                 .starts_with("Text(value: String")
         );
+    }
+
+    #[test]
+    fn type_aliases_have_definitions_and_type_completion() {
+        let app = r#"type Kind = "text" | "image"
+component Example(kind: Kind) { Text(kind) }"#;
+        let analysis = analyze_app(app, None);
+        let alias = at(&analysis, app, "Kind)");
+        assert_eq!(alias.detail, r#"type Kind = "text" | "image""#);
+        assert_eq!(alias.def, at(&analysis, app, "Kind =").def);
+        assert_eq!(alias.kind, SymbolKind::Type);
+
+        let probe = probe(&app.replace("Kind)", "__probe)"));
+        assert_eq!(probe.context, ProbeContext::Type);
+        assert!(names(&probe).contains(&"Kind"));
     }
 
     #[test]

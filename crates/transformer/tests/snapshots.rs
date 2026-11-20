@@ -56,6 +56,11 @@ const GALLERY: Fixture = Fixture {
     source: include_str!("fixtures/Gallery.weft"),
     natives: ALL_NATIVES,
 };
+const LANGUAGE: Fixture = Fixture {
+    name: "Language",
+    source: include_str!("fixtures/Language.weft"),
+    natives: ALL_NATIVES,
+};
 
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
@@ -127,6 +132,11 @@ fn todo_list() {
 #[test]
 fn gallery() {
     check_fixture(&GALLERY);
+}
+
+#[test]
+fn language() {
+    check_fixture(&LANGUAGE);
 }
 
 fn check_fixture(fixture: &Fixture) {

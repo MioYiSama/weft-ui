@@ -33,6 +33,86 @@ fn diagnostics(files: &[(&str, &str)]) -> Vec<String> {
 }
 
 #[test]
+fn unions_require_multiple_distinct_string_literals() {
+    assert_eq!(
+        diagnostics(&[("c.weft", r#"type Single = "a""#)]),
+        ["c.weft:1:18: expected `|`, found end of file"]
+    );
+    assert_eq!(
+        diagnostics(&[("c.weft", r#"type Kind = "text" | "\u{74}ext""#)]),
+        [r#"c.weft:1:22: duplicate member `"text"` in union"#]
+    );
+    assert_eq!(
+        diagnostics(&[("c.weft", r#"type Kind = "${value}" | "text""#)]),
+        ["c.weft:1:13: union members cannot contain interpolation"]
+    );
+}
+
+#[test]
+fn unions_check_literals_in_assignments_branches_fallbacks_and_equality() {
+    let src = r#"type Kind = "text" | "image"
+component C(value: Kind, fallback: Kind?, plain: String) {
+  state invalid: Kind = "other"
+  state branches: Kind = if (true) "unknown" else "missing"
+  state defaulted: Kind = fallback ?? "unknown"
+  state converted: Kind = plain
+  Text(if ("unknown" != value) "yes" else "no")
+  Text(if (value == "missing") "yes" else "no")
+}"#;
+    assert_eq!(
+        diagnostics(&[("c.weft", src)]),
+        [
+            r#"c.weft:3:25: `"other"` is not a member of `"text" | "image"`"#,
+            r#"c.weft:4:36: `"unknown"` is not a member of `"text" | "image"`"#,
+            r#"c.weft:4:51: `"missing"` is not a member of `"text" | "image"`"#,
+            r#"c.weft:5:39: `"unknown"` is not a member of `"text" | "image"`"#,
+            r#"c.weft:6:27: mismatched types: expected `"text" | "image"`, found `String`"#,
+            r#"c.weft:7:12: `"unknown"` is not a member of `"text" | "image"`"#,
+            r#"c.weft:8:21: `"missing"` is not a member of `"text" | "image"`"#,
+        ]
+    );
+}
+
+#[test]
+fn union_assignment_is_directional_and_aliases_expand_across_files() {
+    let library = r#"type Short = "image" | "text"
+type Wide = "text" | "video" | "image"
+type OptionalKind = Short?
+type Name = String"#;
+    let valid = r#"import "./library.weft"
+component C(short: Short, fallback: OptionalKind, text: Name) {
+  state wide: Wide = if (short == "text") short else fallback ?? "video"
+  state narrow: Short = if (true || false) "text" else "image"
+  Text(wide)
+  Text(text + "${narrow}")
+}"#;
+    assert!(diagnostics(&[("c.weft", valid), ("library.weft", library)]).is_empty());
+
+    let invalid = r#"import "./library.weft"
+component C(wide: Wide) {
+  state short: Short = wide
+}"#;
+    assert_eq!(
+        diagnostics(&[("c.weft", invalid), ("library.weft", library)]),
+        [
+            r#"c.weft:3:24: mismatched types: expected `"image" | "text"`, found `"text" | "video" | "image"`"#
+        ]
+    );
+}
+
+#[test]
+fn type_alias_cycles_report_the_reference_that_closes_the_cycle() {
+    let src = "type First = Second[]\ntype Second = First?\ntype Self = Self";
+    assert_eq!(
+        diagnostics(&[("c.weft", src)]),
+        [
+            "c.weft:2:15: type alias `First` refers to itself",
+            "c.weft:3:13: type alias `Self` refers to itself",
+        ]
+    );
+}
+
+#[test]
 fn color_literals_accept_hex_formats() {
     let src = r##"
 component C() {

@@ -152,6 +152,11 @@ impl Code {
 /// Double-quoted JS string literal.
 pub fn string(value: &str) -> String {
     let mut out = String::with_capacity(value.len() + 2);
+    push_string(&mut out, value);
+    out
+}
+
+pub(super) fn push_string(out: &mut String, value: &str) {
     out.push('"');
     for c in value.chars() {
         match c {
@@ -170,7 +175,6 @@ pub fn string(value: &str) -> String {
         }
     }
     out.push('"');
-    out
 }
 
 /// Words that cannot name a JS binding or a TS type in a module.

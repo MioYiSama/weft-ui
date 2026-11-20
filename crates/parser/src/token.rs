@@ -12,7 +12,7 @@ pub enum TokenKind {
     /// Whole string literal including quotes and interpolations.
     Str,
 
-    // Reserved keywords. `import`, `model`, `event`, `component` and `state`
+    // Reserved keywords. `import`, `model`, `event`, `component`, `type` and `state`
     // are contextual and lexed as identifiers.
     If,
     Else,
@@ -52,6 +52,7 @@ pub enum TokenKind {
     Percent,
     Bang,
     AndAnd,
+    Pipe,
     OrOr,
     Arrow,
 
@@ -120,6 +121,7 @@ impl TokenKind {
             Percent => "`%`",
             Bang => "`!`",
             AndAnd => "`&&`",
+            Pipe => "`|`",
             OrOr => "`||`",
             Arrow => "`->`",
             Unknown => "unknown token",

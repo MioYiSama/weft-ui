@@ -135,7 +135,7 @@ impl<'src> Printer<'src, '_> {
         self.doc.comment(text);
     }
 
-    fn binary_gap(&mut self) {
+    fn operator_gap(&mut self) {
         let token_start = self.current().span.start;
         let mut comment = self.comment_before(token_start);
         if comment.is_none() {
@@ -284,6 +284,15 @@ impl<'src> Printer<'src, '_> {
                 }
             }
             Item::Component(component) => self.component(component),
+            Item::TypeAlias(alias) => {
+                self.token(TokenKind::Ident)?;
+                self.operator_gap();
+                self.ident(&alias.name)?;
+                self.operator_gap();
+                self.token(TokenKind::Eq)?;
+                self.operator_gap();
+                self.ty(&alias.ty)
+            }
         }
     }
 
@@ -389,6 +398,17 @@ impl<'src> Printer<'src, '_> {
     fn ty(&mut self, ty: &TypeExpr) -> Printed {
         match &ty.kind {
             TypeExprKind::Named(name) => self.ident(name),
+            TypeExprKind::Union(members) => {
+                for (index, (_, span)) in members.iter().enumerate() {
+                    if index != 0 {
+                        self.operator_gap();
+                        self.token(TokenKind::Pipe)?;
+                        self.operator_gap();
+                    }
+                    self.spanned_token(TokenKind::Str, *span)?;
+                }
+                Ok(())
+            }
             TypeExprKind::Array(inner) => {
                 self.ty(inner)?;
                 self.token(TokenKind::LBracket)?;
@@ -572,7 +592,7 @@ impl<'src> Printer<'src, '_> {
             }
             ExprKind::Binary { op, lhs, rhs } => {
                 self.expr(lhs)?;
-                self.binary_gap();
+                self.operator_gap();
                 let token = self.current();
                 if text_at(self.source, token.span) != op.symbol() {
                     return Err(FormatError::Internal(format!(
@@ -582,7 +602,7 @@ impl<'src> Printer<'src, '_> {
                     )));
                 }
                 self.token(token.kind)?;
-                self.binary_gap();
+                self.operator_gap();
                 self.expr(rhs)?;
             }
             ExprKind::If { cond, then, else_ } => {

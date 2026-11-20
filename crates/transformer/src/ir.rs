@@ -91,7 +91,7 @@ impl Program {
     /// Displays a type using the program's model names.
     #[must_use]
     pub fn display_type<'a>(&'a self, ty: &'a Type) -> impl fmt::Display + 'a {
-        type_display(ty, &self.models)
+        type_display(ty, &self.models, "{error}")
     }
 }
 
@@ -136,6 +136,8 @@ pub enum Type {
     Float,
     Bool,
     String,
+    /// A set of string literals in declaration order.
+    Union(Vec<String>),
     Model(ModelId),
     Array(Box<Type>),
     Optional(Box<Type>),
@@ -169,43 +171,67 @@ impl Type {
         matches!(self, Type::Int | Type::Float)
     }
 
-    /// `Int`, `Float`, `Bool` or `String`.
+    /// `Int`, `Float`, `Bool`, `String`, or a string literal union.
     #[must_use]
     pub fn is_scalar(&self) -> bool {
-        matches!(self, Type::Int | Type::Float | Type::Bool | Type::String)
+        matches!(
+            self,
+            Type::Int | Type::Float | Type::Bool | Type::String | Type::Union(_)
+        )
     }
 }
 
 struct TypeDisplay<'a> {
     ty: &'a Type,
     models: &'a [Model],
+    error: &'static str,
+}
+
+impl TypeDisplay<'_> {
+    fn suffix(&self, f: &mut fmt::Formatter<'_>, ty: &Type, suffix: &str) -> fmt::Result {
+        let display = TypeDisplay { ty, ..*self };
+        if matches!(ty, Type::Union(_)) {
+            write!(f, "({display}){suffix}")
+        } else {
+            write!(f, "{display}{suffix}")
+        }
+    }
 }
 
 impl fmt::Display for TypeDisplay<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let inner = |ty| TypeDisplay {
-            ty,
-            models: self.models,
-        };
         match self.ty {
             Type::Int => f.write_str("Int"),
             Type::Float => f.write_str("Float"),
             Type::Bool => f.write_str("Bool"),
             Type::String => f.write_str("String"),
+            Type::Union(members) => {
+                for (index, member) in members.iter().enumerate() {
+                    if index != 0 {
+                        f.write_str(" | ")?;
+                    }
+                    write!(f, "{member:?}")?;
+                }
+                Ok(())
+            }
             Type::Model(id) => match self.models.get(id.index()) {
                 Some(model) => f.write_str(&model.name),
                 None => write!(f, "<model {}>", id.0),
             },
-            Type::Array(elem) => write!(f, "{}[]", inner(elem)),
-            Type::Optional(elem) => write!(f, "{}?", inner(elem)),
+            Type::Array(elem) => self.suffix(f, elem, "[]"),
+            Type::Optional(elem) => self.suffix(f, elem, "?"),
             Type::Null => f.write_str("null"),
-            Type::Error => f.write_str("{error}"),
+            Type::Error => f.write_str(self.error),
         }
     }
 }
 
-pub(crate) fn type_display<'a>(ty: &'a Type, models: &'a [Model]) -> impl fmt::Display + 'a {
-    TypeDisplay { ty, models }
+pub(crate) fn type_display<'a>(
+    ty: &'a Type,
+    models: &'a [Model],
+    error: &'static str,
+) -> impl fmt::Display + 'a {
+    TypeDisplay { ty, models, error }
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -94,6 +94,10 @@
       {
         "type": "type_identifier",
         "named": true
+      },
+      {
+        "type": "union_type",
+        "named": true
       }
     ]
   },
@@ -147,7 +151,15 @@
         "required": true,
         "types": [
           {
-            "type": "_type",
+            "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "optional_type",
+            "named": true
+          },
+          {
+            "type": "type_identifier",
             "named": true
           }
         ]
@@ -760,7 +772,15 @@
         "required": true,
         "types": [
           {
-            "type": "_type",
+            "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "optional_type",
+            "named": true
+          },
+          {
+            "type": "type_identifier",
             "named": true
           }
         ]
@@ -857,6 +877,10 @@
         {
           "type": "model_declaration",
           "named": true
+        },
+        {
+          "type": "type_alias",
+          "named": true
         }
       ]
     }
@@ -926,6 +950,32 @@
     "fields": {}
   },
   {
+    "type": "type_alias",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_type",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "unary_expression",
     "named": true,
     "fields": {
@@ -953,6 +1003,21 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "union_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1158,11 +1223,19 @@
     "named": true
   },
   {
+    "type": "type",
+    "named": false
+  },
+  {
     "type": "type_identifier",
     "named": true
   },
   {
     "type": "{",
+    "named": false
+  },
+  {
+    "type": "|",
     "named": false
   },
   {

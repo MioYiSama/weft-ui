@@ -1,0 +1,30 @@
+type Kind = "text" | "image"
+
+type Mode = "compact" | "full"
+
+model LanguageItem {
+  id: Int,
+  kind: Kind,
+}
+
+model LanguageModel {
+  items: LanguageItem[],
+  mode: Mode,
+}
+
+component ModeLabel(mode: "compact" | "full" = "full") {
+  Text(if (mode == "compact") "C" else "F")
+}
+
+component Language(model: LanguageModel) {
+  Column {
+    ModeLabel(model.mode)
+    for (item in model.items; key = item.id) {
+      if (item.kind == "image") {
+        Text("image")
+      } else {
+        Text("text")
+      }
+    }
+  }
+}

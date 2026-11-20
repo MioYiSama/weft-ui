@@ -18,7 +18,7 @@ pub enum ProbeContext {
     Handler,
     /// After `.` / `?.`: fields and built-in members of the receiver.
     Member,
-    /// A type annotation: built-in types and models.
+    /// A type annotation: built-in types, models and type aliases.
     Type,
     /// The target of an assignment in a lambda: states.
     AssignTarget,
@@ -49,6 +49,14 @@ pub(crate) enum Target {
         signature: MemberSig,
     },
     Type(String),
+    TypeAlias(usize),
+}
+
+#[derive(Debug)]
+pub(crate) struct AliasSymbol {
+    pub name: String,
+    pub ty: Type,
+    pub def: Span,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -78,6 +86,7 @@ pub(crate) struct RawProbe {
 #[derive(Debug, Default)]
 pub(crate) struct Recorder {
     pub probe_name: Option<String>,
+    pub aliases: Vec<AliasSymbol>,
     pub refs: Vec<(Span, Target)>,
     pub calls: Vec<RawCall>,
     pub probe: Option<RawProbe>,

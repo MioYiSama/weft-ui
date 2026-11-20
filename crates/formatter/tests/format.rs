@@ -89,6 +89,24 @@ component C(foo: Int = 0007, bar: Float = 1.20E+02) {
 }
 
 #[test]
+fn type_aliases_and_literal_unions() {
+    golden(
+        r#"type Kind="text"/* medium */| "image" |"\u{2603}"
+        type Kinds = Kind [ ]
+        component App(type:"compact"|"full"="full") {Text(type)}"#,
+        r#"type Kind = "text" /* medium */ | "image" | "\u{2603}"
+
+type Kinds = Kind[]
+
+component App(type: "compact" | "full" = "full") {
+    Text(type)
+}
+"#,
+        Options::default(),
+    );
+}
+
+#[test]
 fn nodes_expressions_and_parentheses() {
     golden(
         r#"component C(){

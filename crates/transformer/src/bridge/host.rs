@@ -181,9 +181,19 @@ pub(crate) fn ts_type(program: &Program, ty: &Type) -> String {
         Type::Int | Type::Float => "number".to_owned(),
         Type::Bool => "boolean".to_owned(),
         Type::String => "string".to_owned(),
+        Type::Union(members) => {
+            let mut out = String::new();
+            for (index, member) in members.iter().enumerate() {
+                if index != 0 {
+                    out.push_str(" | ");
+                }
+                js::push_string(&mut out, member);
+            }
+            out
+        }
         Type::Model(id) => model_binding(program, *id),
         Type::Array(elem) => match **elem {
-            Type::Array(_) | Type::Optional(_) => {
+            Type::Array(_) | Type::Optional(_) | Type::Union(_) => {
                 format!("readonly ({})[]", ts_type(program, elem))
             }
             _ => format!("readonly {}[]", ts_type(program, elem)),

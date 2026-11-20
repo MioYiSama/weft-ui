@@ -168,6 +168,7 @@ impl<'src, 'd> Lexer<'src, 'd> {
             (b'>', b'=') => (GtEq, 2),
             (b'&', b'&') => (AndAnd, 2),
             (b'|', b'|') => (OrOr, 2),
+            (b'|', _) => (Pipe, 1),
             (b'(', _) => (LParen, 1),
             (b')', _) => (RParen, 1),
             (b'{', _) => (LBrace, 1),

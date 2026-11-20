@@ -36,6 +36,7 @@ pub enum Item {
     Model(ModelDecl),
     Event(EventDecl),
     Component(ComponentDecl),
+    TypeAlias(TypeAlias),
 }
 
 impl Item {
@@ -45,8 +46,17 @@ impl Item {
             Item::Model(m) => &m.name,
             Item::Event(e) => &e.name,
             Item::Component(c) => &c.name,
+            Item::TypeAlias(alias) => &alias.name,
         }
     }
+}
+
+/// A top-level `type Name = Type` declaration.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TypeAlias {
+    pub name: Ident,
+    pub ty: TypeExpr,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -105,6 +115,8 @@ pub struct TypeExpr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeExprKind {
     Named(Ident),
+    /// Decoded string literals and their source spans, in declaration order.
+    Union(Vec<(String, Span)>),
     Array(Box<TypeExpr>),
     Optional(Box<TypeExpr>),
     Error,

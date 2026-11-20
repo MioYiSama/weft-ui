@@ -2,7 +2,7 @@
  * @file Tree-sitter grammar for Weft UI (`.weft`), following crates/parser/GRAMMAR.md.
  *
  * Used for syntax highlighting and structure in editors; the compiler has its
- * own parser. `import`, `model`, `event`, `component`, `state` and `key` are
+ * own parser. `import`, `model`, `event`, `component`, `type`, `state` and `key` are
  * contextual: tree-sitter only treats them as keywords where the grammar
  * expects them, so `model` still works as a parameter name.
  */
@@ -50,6 +50,7 @@ export default grammar({
       $.model_declaration,
       $.event_declaration,
       $.component_declaration,
+      $.type_alias,
     )),
 
     import: $ => seq('import', field('path', $.string)),
@@ -107,15 +108,21 @@ export default grammar({
 
     // ---- types ------------------------------------------------------------
 
-    _type: $ => choice(
+    type_alias: $ => seq('type', field('name', $.identifier), '=', field('type', $._type)),
+
+    _type: $ => choice($._named_type, $.union_type),
+
+    _named_type: $ => choice(
       alias($.identifier, $.type_identifier),
       $.array_type,
       $.optional_type,
     ),
 
-    array_type: $ => seq(field('element', $._type), '[', ']'),
+    union_type: $ => seq($.string, repeat1(seq('|', $.string))),
 
-    optional_type: $ => seq(field('inner', $._type), '?'),
+    array_type: $ => seq(field('element', $._named_type), '[', ']'),
+
+    optional_type: $ => seq(field('inner', $._named_type), '?'),
 
     // ---- nodes ------------------------------------------------------------
 

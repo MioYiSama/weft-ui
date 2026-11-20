@@ -37,6 +37,11 @@ pub(crate) fn member(recv: &Type, name: &str) -> Option<MemberSig> {
         params,
         ret,
     };
+    let recv = if matches!(recv, Type::Union(_)) {
+        &Type::String
+    } else {
+        recv
+    };
     Some(match (recv, name) {
         (Type::String | Type::Array(_), "length") => {
             sig(Member::Length, Property, vec![], Type::Int)

@@ -11,13 +11,13 @@
 - 标识符：`[A-Za-z_][A-Za-z0-9_]*`。
 - 保留关键字：`if` `else` `for` `in` `true` `false` `null`。
 - 上下文关键字（其他位置是普通标识符，例如 Demo 中的参数 `model`）：
-  - `import`（后跟字符串）、`model` / `event` / `component`（后跟标识符）只在顶层开启声明；
+  - `import`（后跟字符串）、`model` / `event` / `component` / `type`（后跟标识符）只在顶层开启声明；
   - `state`（后跟标识符）只在组件体内开启状态声明；
   - `key` 只在 `for` 头部出现。
 - 整数：`[0-9]+`，范围为 `i64`。浮点：`[0-9]+ "." [0-9]+ ([eE] [+-]? [0-9]+)?` 或 `[0-9]+ [eE] [+-]? [0-9]+`。
 - 字符串：`"..."`，转义 `\n` `\r` `\t` `\0` `\\` `\"` `\$` `\u{XXXX}`。
   `${ 表达式 }` 为插值，插值内部可以再写字符串。字符串不能跨行。
-- 符号：`( ) { } [ ] , : ; . ?. ? ?? = += -= == != < <= > >= + - * / % ! && || ->`
+- 符号：`( ) { } [ ] , : ; . ?. ? ?? = += -= == != < <= > >= + - * / % ! && | || ->`
 
 ## 文法
 
@@ -26,7 +26,8 @@ EBNF 记法：`X?` 可选，`X*` 零或多次，`X+` 一或多次，`"tok"` 为 
 ```text
 File        = Import* Item* EOF ;
 Import      = "import" STRING ;               (* 不允许插值 *)
-Item        = Model | Event | Component ;
+Item        = Model | Event | Component | TypeAlias ;
+TypeAlias   = "type" IDENT "=" Type ;
 
 Model       = "model" IDENT "{" FieldList? "}" ;
 Event       = "event" IDENT ( "(" FieldList? ")" )? ;
@@ -38,7 +39,8 @@ ParamList   = Param ( "," Param )* ","? ;
 Param       = IDENT ":" Type ( "=" Expr )? ;
 StateDecl   = "state" IDENT ( ":" Type )? "=" Expr ;
 
-Type        = IDENT TypeSuffix* ;
+Type        = UnionType | IDENT TypeSuffix* ;
+UnionType   = STRING ( "|" STRING )+ ;       (* 不允许插值 *)
 TypeSuffix  = "[" "]" | "?" ;
 
 Block       = "{" Node* "}" ;
@@ -87,7 +89,7 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 
 解析器在出错后继续解析，尽量报告所有错误：
 
-- 顶层：跳到下一个 `import` / `model` / `event` / `component`。
+- 顶层：跳到下一个 `import` / `model` / `event` / `component` / `type`。
 - 节点块：跳过无法识别的 token（括号成对跳过），直到下一个节点起始 token 或 `}`。
 - 参数/字段列表：跳到下一个 `,` 或右括号。
 - 同一位置只报告第一个错误。
@@ -99,7 +101,7 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 ### 作用域与导入
 
 - 每个文件可见：本文件声明 + 直接 `import` 的文件声明。导入不传递。
-- 导入闭包内 `model`、`event`、`component` 共用一个命名空间，任何重名都报错；也不能与内置元素重名。
+- 导入闭包内 `model`、`event`、`component`、`type` 共用一个命名空间，任何重名都报错；也不能与内置元素重名。
 - 宿主侧的事件注册方法由事件名派生（`onFooBar` / `on_foo_bar`），因此忽略大小写和下划线后相同的两个事件名（如 `FooBar` 与 `foo_bar`）也报错。
 - 循环导入、找不到的文件都报错。
 - 组件内名称查找顺序：lambda 参数 → `for` 变量 → `state` → 组件参数。组件内不允许遮蔽已有名称。
@@ -108,11 +110,14 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 
 - 基础类型 `Int` `Float` `Bool` `String`，复合类型 `T[]`、`T?`，以及 `model` 名。
 - 组件参数还可以是 `Children`（插槽，每个组件至多一个）。调用方用尾随块填充，组件体内以参数名作为节点使用。
-- 赋值兼容：相同类型；`Int` → `Float`；`null` → `T?`；`T` → `T?`。
+- `type` 为其他类型声明别名，例如 `type Kind = "text" | "image"`。类型检查时展开别名；别名不能直接或间接引用自身。可用别名书写可空联合（`Kind?`）和联合数组（`Kind[]`）。
+- 字面量联合至少有两个不同的字符串字面量，转义解码后比较是否重复。联合值在运行时就是字符串，在 TypeScript 声明里保留为字面量联合。
+- 赋值兼容：相同类型；`Int` → `Float`；`null` → `T?`；`T` → `T?`。字符串字面量可以赋给包含它的联合，普通 `String` 值不可以。联合可以赋给包含其全部成员的联合，也可以赋给 `String`。
+- 期望类型为联合时，`if` 表达式的两个分支和 `??` 的右侧按该联合检查。联合值与字符串字面量用 `==` 或 `!=` 比较时，字面量必须是联合的成员。
 - 算术：`Int op Int → Int`（整除），含 `Float` 时为 `Float`；`String + String → String`。
 - 比较 `< <= > >=` 只用于数值或字符串；`== !=` 只用于标量及其可空类型。
 - `a ?? b` 要求 `a: T?`；`a?.f` 要求 `a` 可空，结果可空。对非空值用 `?.` 给出警告。
-- 字符串插值只接受 `Int` `Float` `Bool` `String`。
+- 字符串插值只接受 `Int`、`Float`、`Bool`、`String` 和字符串字面量联合。
 - `model` 不允许不经过数组或可空类型的直接递归。
 
 ### 内置成员
@@ -124,7 +129,7 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 | `Int` `Bool`     | `toString(): String`                                         |
 | `Float`          | `toString(): String` `toFixed(Int): String`                  |
 
-`length` / `isEmpty` 是属性，其余是方法。
+`length` / `isEmpty` 是属性，其余是方法。字符串字面量联合与 `String` 的成员相同。
 
 ### 事件参数
 
@@ -138,7 +143,7 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 ### 视图
 
 - `if` 条件为 `Bool`。
-- `for` 必须有 `key`，类型为 `Int` 或 `String`；被迭代对象必须是数组。
+- `for` 必须有 `key`，类型为 `Int`、`String` 或字符串字面量联合；被迭代对象必须是数组。
 - 自定义组件不允许不经过 `if` / `for` 的递归实例化。
 
 ### 内置元素与布局

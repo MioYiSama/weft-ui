@@ -89,20 +89,21 @@ impl Lowerer<'_, '_> {
             .ty
             .as_ref()
             .map(|ty| self.cx.resolve_type(self.file, ty, self.diags));
-        let init = self.expr(&decl.init);
-        let (ty, init) = match annotated {
-            Some(ty) => {
-                let init = self.coerce_to(init, &ty);
-                (ty, init)
-            }
-            None if init.ty == Type::Null => {
+        let (ty, init) = if let Some(ty) = annotated {
+            let init = self.expr_as(&decl.init, &ty);
+            (ty, init)
+        } else {
+            let init = self.expr(&decl.init);
+            let ty = if init.ty == Type::Null {
                 self.error(
                     decl.init.span,
                     "cannot infer the type of `null`; add a type annotation like `state x: Int? = null`",
                 );
-                (Type::Error, init)
-            }
-            None => (init.ty.clone(), init),
+                Type::Error
+            } else {
+                init.ty.clone()
+            };
+            (ty, init)
         };
         let id = StateId(offset(self.states.len()));
         self.declare(

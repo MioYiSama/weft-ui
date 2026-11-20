@@ -13,11 +13,23 @@ use super::scope::LocalKind;
 impl Lowerer<'_, '_> {
     /// Lowers `e` and checks that it can be used where `ty` is expected.
     pub(crate) fn expr_as(&mut self, e: &ast::Expr, ty: &Type) -> Expr {
-        let expr = self.expr(e);
+        let expr = self.expr_inner(e, union_type(ty));
         self.coerce_to(expr, ty)
     }
 
     pub(super) fn coerce_to(&mut self, expr: Expr, ty: &Type) -> Expr {
+        if expr.ty == Type::String
+            && let ExprKind::Str(value) = &expr.kind
+            && let Some(union @ Type::Union(members)) = union_type(ty)
+            && !members.contains(value)
+        {
+            let name = self.type_name(union);
+            self.error(
+                expr.span,
+                format!("`{value:?}` is not a member of `{name}`"),
+            );
+            return error_expr(expr.span);
+        }
         match coerce(expr, ty) {
             Ok(expr) => expr,
             Err(expr) => {
@@ -36,6 +48,21 @@ impl Lowerer<'_, '_> {
     }
 
     pub(super) fn expr(&mut self, e: &ast::Expr) -> Expr {
+        self.expr_inner(e, None)
+    }
+
+    /// Applies a union hint to result positions without deciding their nullability.
+    fn expr_with_union(&mut self, e: &ast::Expr, union: Option<&Type>) -> Expr {
+        let expr = self.expr_inner(e, union);
+        if let Some(union) = union
+            && !matches!(expr.ty, Type::Null | Type::Optional(_))
+        {
+            return self.coerce_to(expr, union);
+        }
+        expr
+    }
+
+    fn expr_inner(&mut self, e: &ast::Expr, union: Option<&Type>) -> Expr {
         let span = e.span;
         let (kind, ty) = match &e.kind {
             ast::ExprKind::Int(v) => (ExprKind::Int(*v), Type::Int),
@@ -50,11 +77,19 @@ impl Lowerer<'_, '_> {
             }
             ast::ExprKind::Call { callee, args } => return self.call(callee, args, span),
             ast::ExprKind::Unary { op, expr } => return self.unary(*op, expr, span),
+            ast::ExprKind::Binary {
+                op: BinaryOp::Coalesce,
+                lhs,
+                rhs,
+            } => {
+                let lhs = self.expr(lhs);
+                return self.coalesce(lhs, rhs, union, span);
+            }
             ast::ExprKind::Binary { op, lhs, rhs } => return self.binary(*op, lhs, rhs, span),
             ast::ExprKind::If { cond, then, else_ } => {
                 let cond = self.expr_as(cond, &Type::Bool);
-                let then = self.expr(then);
-                let else_ = self.expr(else_);
+                let then = self.expr_with_union(then, union);
+                let else_ = self.expr_with_union(else_, union);
                 let Some(ty) = unify(&then.ty, &else_.ty) else {
                     let msg = format!(
                         "`if` branches have different types: `{}` and `{}`",
@@ -144,6 +179,7 @@ impl Lowerer<'_, '_> {
                 format!("event `{name}` can only be used as an event handler value")
             }
             Some(DeclKind::Model(_)) => format!("`{name}` is a model type, not a value"),
+            Some(DeclKind::TypeAlias(_)) => format!("`{name}` is a type alias, not a value"),
             Some(DeclKind::Component(_)) => {
                 format!("component `{name}` can only be used as a node")
             }
@@ -348,8 +384,15 @@ impl Lowerer<'_, '_> {
     }
 
     fn binary(&mut self, op: BinaryOp, lhs: &ast::Expr, rhs: &ast::Expr, span: Span) -> Expr {
-        let lhs = self.expr(lhs);
-        let rhs = self.expr(rhs);
+        let mut lhs = self.expr(lhs);
+        let mut rhs = self.expr(rhs);
+        if matches!(op, BinaryOp::Eq | BinaryOp::Ne) {
+            if matches!(rhs.kind, ExprKind::Str(_)) && union_type(&lhs.ty).is_some() {
+                rhs = self.coerce_to(rhs, &lhs.ty);
+            } else if matches!(lhs.kind, ExprKind::Str(_)) && union_type(&rhs.ty).is_some() {
+                lhs = self.coerce_to(lhs, &rhs.ty);
+            }
+        }
         let make = |lhs: Expr, rhs: Expr, ty: Type| Expr {
             kind: ExprKind::Binary {
                 op,
@@ -363,7 +406,7 @@ impl Lowerer<'_, '_> {
             return make(lhs, rhs, Type::Error);
         }
         let numeric = lhs.ty.is_numeric() && rhs.ty.is_numeric();
-        let both_strings = lhs.ty == Type::String && rhs.ty == Type::String;
+        let both_strings = assignable(&lhs.ty, &Type::String) && assignable(&rhs.ty, &Type::String);
         let float_or_int = if lhs.ty == Type::Float || rhs.ty == Type::Float {
             Type::Float
         } else {
@@ -388,7 +431,6 @@ impl Lowerer<'_, '_> {
             BinaryOp::And | BinaryOp::Or if lhs.ty == Type::Bool && rhs.ty == Type::Bool => {
                 Some((Type::Bool, Type::Bool))
             }
-            BinaryOp::Coalesce => return self.coalesce(lhs, rhs, span),
             _ => None,
         };
         let Some((operand_ty, result_ty)) = ok else {
@@ -406,19 +448,31 @@ impl Lowerer<'_, '_> {
         make(lhs, rhs, result_ty)
     }
 
-    fn coalesce(&mut self, lhs: Expr, rhs: Expr, span: Span) -> Expr {
-        let ty = match &lhs.ty {
+    fn coalesce(&mut self, lhs: Expr, rhs: &ast::Expr, union: Option<&Type>, span: Span) -> Expr {
+        let present = match &lhs.ty {
+            Type::Optional(inner) => inner,
+            ty => ty,
+        };
+        let target = union
+            .filter(|ty| assignable(present, ty))
+            .unwrap_or(present);
+        let rhs = self.expr_with_union(rhs, union.or_else(|| union_type(present)));
+        let ty = if lhs.ty.has_error() || rhs.ty.has_error() {
+            Type::Error
+        } else if matches!(lhs.ty, Type::Optional(_)) {
             // A nullable fallback keeps the result nullable.
-            Type::Optional(_) if matches!(rhs.ty, Type::Optional(_) | Type::Null) => lhs.ty.clone(),
-            Type::Optional(inner) => (**inner).clone(),
-            ty => {
-                let ty_name = self.type_name(ty);
-                self.diags.push(Diagnostic::warning(
-                    lhs.span,
-                    format!("left side of `??` has type `{ty_name}` and is never null"),
-                ));
-                ty.clone()
+            if matches!(rhs.ty, Type::Optional(_) | Type::Null) {
+                target.clone().optional()
+            } else {
+                target.clone()
             }
+        } else {
+            let ty_name = self.type_name(&lhs.ty);
+            self.diags.push(Diagnostic::warning(
+                lhs.span,
+                format!("left side of `??` has type `{ty_name}` and is never null"),
+            ));
+            target.clone()
         };
         let rhs = self.coerce_to(rhs, &ty);
         Expr {
@@ -441,6 +495,19 @@ pub(super) fn error_expr(span: Span) -> Expr {
     }
 }
 
+/// The expected union, ignoring an optional wrapper.
+fn union_type(ty: &Type) -> Option<&Type> {
+    match ty {
+        Type::Union(_) => Some(ty),
+        Type::Optional(inner) if matches!(**inner, Type::Union(_)) => Some(inner),
+        _ => None,
+    }
+}
+
+fn includes_union(members: &[String], other: &[String]) -> bool {
+    other.iter().all(|member| members.contains(member))
+}
+
 fn is_comparable(ty: &Type) -> bool {
     match ty {
         Type::Optional(inner) => inner.is_scalar(),
@@ -454,7 +521,10 @@ pub(super) fn assignable(from: &Type, to: &Type) -> bool {
     match (from, to) {
         _ if from == to => true,
         _ if from.has_error() || to.has_error() => true,
-        (Type::Null, Type::Optional(_)) | (Type::Int, Type::Float) => true,
+        (Type::Null, Type::Optional(_))
+        | (Type::Int, Type::Float)
+        | (Type::Union(_), Type::String) => true,
+        (Type::Union(from), Type::Union(to)) => includes_union(to, from),
         (Type::Optional(_), _) => false,
         (_, Type::Optional(inner)) => assignable(from, inner),
         _ => false,
@@ -481,6 +551,21 @@ fn coerce(expr: Expr, to: &Type) -> Result<Expr, Expr> {
             ..expr
         }),
         (Type::Int, Type::Float) => Ok(wrap(Coercion::IntToFloat, expr, Type::Float)),
+        (Type::Union(_), Type::String) => Ok(Expr {
+            ty: Type::String,
+            ..expr
+        }),
+        (Type::Union(from), Type::Union(to_members)) if includes_union(to_members, from) => {
+            Ok(Expr {
+                ty: to.clone(),
+                ..expr
+            })
+        }
+        // `coerce_to` has checked the literal against the union members.
+        (Type::String, Type::Union(_)) if matches!(expr.kind, ExprKind::Str(_)) => Ok(Expr {
+            ty: to.clone(),
+            ..expr
+        }),
         (Type::Optional(_), _) => Err(expr),
         (_, Type::Optional(inner)) => {
             coerce(expr, inner).map(|e| wrap(Coercion::WrapOptional, e, to.clone()))
@@ -496,6 +581,11 @@ fn unify(a: &Type, b: &Type) -> Option<Type> {
         _ if a.has_error() || b.has_error() => Some(Type::Error),
         (Type::Null, other) | (other, Type::Null) => Some(other.clone().optional()),
         (Type::Int, Type::Float) | (Type::Float, Type::Int) => Some(Type::Float),
+        (Type::Union(x), Type::Union(y)) if includes_union(x, y) => Some(a.clone()),
+        (Type::Union(x), Type::Union(y)) if includes_union(y, x) => Some(b.clone()),
+        (Type::Union(_), Type::Union(_) | Type::String) | (Type::String, Type::Union(_)) => {
+            Some(Type::String)
+        }
         (Type::Optional(x), Type::Optional(y)) => {
             // Optionals only unify when their contents are identical; a coercion
             // under `?` would require mapping the value.

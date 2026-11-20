@@ -400,7 +400,10 @@ impl Lowerer<'_, '_> {
         let key = match &node.key {
             Some(key) => {
                 let key = self.expr(key);
-                if !matches!(key.ty, Type::Int | Type::String | Type::Error) {
+                if !matches!(
+                    key.ty,
+                    Type::Int | Type::String | Type::Union(_) | Type::Error
+                ) {
                     let found = self.type_name(&key.ty);
                     self.error(
                         key.span,

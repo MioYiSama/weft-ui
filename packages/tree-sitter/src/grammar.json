@@ -23,6 +23,10 @@
           {
             "type": "SYMBOL",
             "name": "component_declaration"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "type_alias"
           }
         ]
       }
@@ -469,7 +473,49 @@
         }
       ]
     },
+    "type_alias": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "type"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "="
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_type"
+          }
+        }
+      ]
+    },
     "_type": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_named_type"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "union_type"
+        }
+      ]
+    },
+    "_named_type": {
       "type": "CHOICE",
       "members": [
         {
@@ -491,6 +537,31 @@
         }
       ]
     },
+    "union_type": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "string"
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "|"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "string"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "array_type": {
       "type": "SEQ",
       "members": [
@@ -499,7 +570,7 @@
           "name": "element",
           "content": {
             "type": "SYMBOL",
-            "name": "_type"
+            "name": "_named_type"
           }
         },
         {
@@ -520,7 +591,7 @@
           "name": "inner",
           "content": {
             "type": "SYMBOL",
-            "name": "_type"
+            "name": "_named_type"
           }
         },
         {

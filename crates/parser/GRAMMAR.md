@@ -11,13 +11,13 @@ This document defines the normative grammar of the `.weft` language. The parser 
 - Identifiers: `[A-Za-z_][A-Za-z0-9_]*`.
 - Reserved keywords: `if` `else` `for` `in` `true` `false` `null`.
 - Contextual keywords (ordinary identifiers elsewhere, such as the `model` parameter in Demo):
-  - `import` (followed by a string) and `model` / `event` / `component` (followed by an identifier) begin declarations only at the top level;
+  - `import` (followed by a string) and `model` / `event` / `component` / `type` (followed by an identifier) begin declarations only at the top level;
   - `state` (followed by an identifier) begins a state declaration only in a component body;
   - `key` appears only in a `for` header.
 - Integers: `[0-9]+`, within the range of `i64`. Floating-point numbers: `[0-9]+ "." [0-9]+ ([eE] [+-]? [0-9]+)?` or `[0-9]+ [eE] [+-]? [0-9]+`.
 - Strings: `"..."`, with escapes `\n` `\r` `\t` `\0` `\\` `\"` `\$` `\u{XXXX}`.
   `${ expression }` interpolates an expression, which may itself contain strings. Strings cannot span multiple lines.
-- Symbols: `( ) { } [ ] , : ; . ?. ? ?? = += -= == != < <= > >= + - * / % ! && || ->`
+- Symbols: `( ) { } [ ] , : ; . ?. ? ?? = += -= == != < <= > >= + - * / % ! && | || ->`
 
 ## Grammar
 
@@ -26,7 +26,8 @@ EBNF notation: `X?` means optional, `X*` means zero or more occurrences, `X+` me
 ```text
 File        = Import* Item* EOF ;
 Import      = "import" STRING ;               (* no interpolation *)
-Item        = Model | Event | Component ;
+Item        = Model | Event | Component | TypeAlias ;
+TypeAlias   = "type" IDENT "=" Type ;
 
 Model       = "model" IDENT "{" FieldList? "}" ;
 Event       = "event" IDENT ( "(" FieldList? ")" )? ;
@@ -38,7 +39,8 @@ ParamList   = Param ( "," Param )* ","? ;
 Param       = IDENT ":" Type ( "=" Expr )? ;
 StateDecl   = "state" IDENT ( ":" Type )? "=" Expr ;
 
-Type        = IDENT TypeSuffix* ;
+Type        = UnionType | IDENT TypeSuffix* ;
+UnionType   = STRING ( "|" STRING )+ ;       (* no interpolation *)
 TypeSuffix  = "[" "]" | "?" ;
 
 Block       = "{" Node* "}" ;
@@ -87,7 +89,7 @@ Notes:
 
 The parser continues after an error to report as many errors as possible:
 
-- Top level: Skip to the next `import` / `model` / `event` / `component`.
+- Top level: Skip to the next `import` / `model` / `event` / `component` / `type`.
 - Node blocks: Skip unrecognized tokens, skipping over matched delimiters as a unit, until the next token that can start a node or `}`.
 - Argument and field lists: Skip to the next `,` or closing delimiter.
 - Report only the first error at a given location.
@@ -99,7 +101,7 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 ### Scope and imports
 
 - Each file can see its own declarations and those of files it directly imports with `import`. Imports are not transitive.
-- Within the import closure, `model`, `event`, and `component` declarations share one namespace. Duplicate names and names that collide with built-in elements are errors.
+- Within the import closure, `model`, `event`, `component`, and `type` declarations share one namespace. Duplicate names and names that collide with built-in elements are errors.
 - Host-side event registration methods are derived from event names (`onFooBar` / `on_foo_bar`). Two event names that differ only in case and underscores (such as `FooBar` and `foo_bar`) are therefore also an error.
 - Import cycles and missing files are errors.
 - Name lookup within a component proceeds in this order: lambda parameters → `for` variables → `state` → component parameters. Names may not shadow existing names within a component.
@@ -108,11 +110,14 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 
 - Primitive types are `Int` `Float` `Bool` `String`. Other types are compound types `T[]` and `T?` and `model` names.
 - A component parameter can also be `Children` (a slot, at most one per component). The caller fills it with a trailing block, and the component body uses the parameter name as a node.
-- Assignment compatibility: identical types; `Int` → `Float`; `null` → `T?`; `T` → `T?`.
+- `type` declares an alias for another type, such as `type Kind = "text" | "image"`. Aliases are expanded for type checking and cannot refer to themselves directly or indirectly. Use an alias to write a nullable union (`Kind?`) or an array of unions (`Kind[]`).
+- A literal union must contain at least two distinct string literals, compared after decoding escapes. Its values are ordinary strings at runtime and become a string literal union in TypeScript declarations.
+- Assignment compatibility: identical types; `Int` → `Float`; `null` → `T?`; `T` → `T?`. A string literal can be assigned to a union that contains it, but an arbitrary `String` value cannot. A union can be assigned to another union containing all its members or to `String`.
+- Where a union is expected, both arms of an `if` expression and the fallback of `??` are checked against that union. When a union is compared with a string literal using `==` or `!=`, the literal must be a member.
 - Arithmetic: `Int op Int → Int` (integer division); the result is `Float` if either operand is `Float`. `String + String → String`.
 - Comparisons `< <= > >=` apply only to numbers or strings. `== !=` apply only to scalar types and their nullable forms.
 - `a ?? b` requires `a: T?`. `a?.f` requires a nullable receiver and produces a nullable result. Using `?.` on a non-nullable value emits a warning.
-- String interpolation accepts only `Int` `Float` `Bool` `String`.
+- String interpolation accepts only `Int`, `Float`, `Bool`, `String`, and string literal unions.
 - A `model` cannot refer directly to itself except through an array or a nullable type.
 
 ### Built-in members
@@ -124,7 +129,7 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 | `Int` `Bool`     | `toString(): String`                                         |
 | `Float`          | `toString(): String` `toFixed(Int): String`                  |
 
-`length` / `isEmpty` are properties; the rest are methods.
+`length` / `isEmpty` are properties; the rest are methods. A string literal union has the same members as `String`.
 
 ### Event arguments
 
@@ -138,7 +143,7 @@ Element event arguments have payload types (`onClick` has no payload; `Input.onC
 ### Views
 
 - An `if` condition must be `Bool`.
-- A `for` must have a `key` of type `Int` or `String`. The value being iterated must be an array.
+- A `for` must have a `key` of type `Int`, `String`, or a string literal union. The value being iterated must be an array.
 - Custom components cannot be instantiated recursively except through an `if` / `for`.
 
 ### Built-in elements and layout

@@ -4,7 +4,8 @@ use weft_ui_ast::span::offset;
 use weft_ui_ast::{
     Arg, Assign, AssignOp, BinaryOp, Block, ComponentDecl, Diagnostic, ElementNode, EventDecl,
     Expr, ExprKind, Field, File, FileId, ForNode, Ident, IfBranch, IfNode, Import, Item, Lambda,
-    ModelDecl, Node, NodeKind, Param, Span, StateDecl, StrPart, TypeExpr, TypeExprKind, UnaryOp,
+    ModelDecl, Node, NodeKind, Param, Span, StateDecl, StrPart, TypeAlias, TypeExpr, TypeExprKind,
+    UnaryOp,
 };
 
 use crate::lexer::{lex, scan_interpolation};
@@ -51,6 +52,7 @@ enum ItemKeyword {
     Model,
     Event,
     Component,
+    TypeAlias,
 }
 
 struct Parser<'src> {
@@ -119,7 +121,7 @@ impl<'src> Parser<'src> {
         &self.text[span.start as usize..span.end as usize]
     }
 
-    /// Recognizes `import "..."`, `model Name`, `event Name` and `component Name`.
+    /// Recognizes `import "..."` and declaration keywords followed by a name.
     ///
     /// The keywords are contextual, so `model.draft` is still an expression.
     fn item_keyword(&self) -> Option<ItemKeyword> {
@@ -132,6 +134,7 @@ impl<'src> Parser<'src> {
             "model" => ItemKeyword::Model,
             "event" => ItemKeyword::Event,
             "component" => ItemKeyword::Component,
+            "type" => ItemKeyword::TypeAlias,
             _ => return None,
         };
         let next = if keyword == ItemKeyword::Import {
@@ -143,7 +146,12 @@ impl<'src> Parser<'src> {
     }
 
     fn at_item_start(&self) -> bool {
-        self.item_keyword().is_some()
+        match self.item_keyword() {
+            // A bare node named `type` followed by another node is not an alias.
+            Some(ItemKeyword::TypeAlias) => self.peek_at(2) == TokenKind::Eq,
+            Some(_) => true,
+            None => false,
+        }
     }
 
     /// `state name ...`; `state` is a contextual keyword.
@@ -294,10 +302,13 @@ impl<'src> Parser<'src> {
                 Some(ItemKeyword::Component) => {
                     items.extend(self.component().map(Item::Component));
                 }
+                Some(ItemKeyword::TypeAlias) => {
+                    items.extend(self.type_alias().map(Item::TypeAlias));
+                }
                 None if self.at(TokenKind::Eof) => break,
                 None => {
-                    self.error_expected("`model`, `event`, `component` or `import`");
-                    while !self.at_item_start() && !self.at(TokenKind::Eof) {
+                    self.error_expected("`model`, `event`, `component`, `type` or `import`");
+                    while self.item_keyword().is_none() && !self.at(TokenKind::Eof) {
                         self.skip_balanced();
                     }
                 }
@@ -313,15 +324,7 @@ impl<'src> Parser<'src> {
             return None;
         }
         let token = self.bump();
-        let parts = self.string_parts(token.span);
-        let path = match parts.as_slice() {
-            [] => String::new(),
-            [StrPart::Lit(s)] => s.clone(),
-            _ => {
-                self.error(token.span, "import path cannot contain interpolation");
-                return None;
-            }
-        };
+        let path = self.literal_string(token.span, "import path cannot contain interpolation")?;
         Some(Import {
             path,
             path_span: token.span,
@@ -440,8 +443,29 @@ impl<'src> Parser<'src> {
         })
     }
 
+    fn type_alias(&mut self) -> Option<TypeAlias> {
+        let start = self.bump().span;
+        let name = self.ident("type alias name")?;
+        self.expect(TokenKind::Eq)?;
+        let ty = self.type_expr();
+        Some(TypeAlias {
+            name,
+            ty,
+            span: self.span_from(start),
+        })
+    }
+
     fn type_expr(&mut self) -> TypeExpr {
         let start = self.token().span;
+        if self.at(TokenKind::Str) {
+            let kind = self
+                .union_members()
+                .map_or(TypeExprKind::Error, TypeExprKind::Union);
+            return TypeExpr {
+                kind,
+                span: self.span_from(start),
+            };
+        }
         let Some(name) = self.ident("type") else {
             return TypeExpr {
                 kind: TypeExprKind::Error,
@@ -467,6 +491,25 @@ impl<'src> Parser<'src> {
                 };
             } else {
                 return ty;
+            }
+        }
+    }
+
+    fn union_members(&mut self) -> Option<Vec<(String, Span)>> {
+        let mut members = Vec::new();
+        let mut valid = true;
+        let mut first = true;
+        loop {
+            let span = self.expect(TokenKind::Str)?.span;
+            match self.literal_string(span, "union members cannot contain interpolation") {
+                Some(value) => members.push((value, span)),
+                None => valid = false,
+            }
+            if first {
+                self.expect(TokenKind::Pipe)?;
+                first = false;
+            } else if !self.eat(TokenKind::Pipe) {
+                return valid.then_some(members);
             }
         }
     }
@@ -836,6 +879,18 @@ impl<'src> Parser<'src> {
     }
 
     // ---- strings -------------------------------------------------------
+
+    fn literal_string(&mut self, span: Span, interpolation_error: &str) -> Option<String> {
+        let mut parts = self.string_parts(span).into_iter();
+        match (parts.next(), parts.next()) {
+            (None, None) => Some(String::new()),
+            (Some(StrPart::Lit(text)), None) => Some(text),
+            _ => {
+                self.error(span, interpolation_error);
+                None
+            }
+        }
+    }
 
     /// Decodes a string token into literal and interpolated parts.
     fn string_parts(&mut self, span: Span) -> Vec<StrPart> {

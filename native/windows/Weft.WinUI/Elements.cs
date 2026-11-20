@@ -4,7 +4,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Windows.UI;
 
 namespace Weft.WinUI;
 
@@ -12,12 +11,46 @@ namespace Weft.WinUI;
 // element's properties under their PascalCase names; properties never set
 // keep the platform's defaults. Lengths are DIPs.
 
+/// <summary>An element that can paint a fixed color or a theme token.</summary>
+public abstract class WeftPaintedElement
+{
+    private WeftColor color;
+    private SolidColorBrush? brush;
+    private WeftSession? session;
+
+    internal void AttachTheme(WeftSession owner) => session = owner;
+
+    internal void ReapplyColors()
+    {
+        if (color.IsToken) brush!.Color = Resolve();
+    }
+
+    protected void Paint(WeftColor value)
+    {
+        color = value;
+        if (brush is null)
+        {
+            brush = new SolidColorBrush(Resolve());
+            SetColorBrush(brush);
+        }
+        else
+        {
+            brush.Color = Resolve();
+        }
+    }
+
+    private Windows.UI.Color Resolve() =>
+        color.Resolve(session?.Theme, session?.ActualTheme ?? ElementTheme.Light);
+
+    protected abstract void SetColorBrush(SolidColorBrush brush);
+}
+
 /// <summary>
 /// <c>Column</c> / <c>Row</c>: a <see cref="StackPanel"/>. Children start at
 /// the leading edge of the cross axis without stretching; a fixed width or
 /// height sizes the content box, with the padding around it, as CSS boxes do.
 /// </summary>
-public sealed class WeftStack
+public sealed class WeftStack : WeftPaintedElement
 {
     private readonly StackPanel panel;
     private double padding;
@@ -67,10 +100,12 @@ public sealed class WeftStack
         }
     }
 
-    public Color Background
+    public WeftColor Background
     {
-        set => panel.Background = new SolidColorBrush(value);
+        set => Paint(value);
     }
+
+    protected override void SetColorBrush(SolidColorBrush brush) => panel.Background = brush;
 
     private void Resize()
     {
@@ -80,7 +115,7 @@ public sealed class WeftStack
 }
 
 /// <summary><c>Text</c>: a <see cref="TextBlock"/>.</summary>
-public sealed class WeftText
+public sealed class WeftText : WeftPaintedElement
 {
     private readonly TextBlock block = new();
 
@@ -91,10 +126,12 @@ public sealed class WeftText
         set => block.Text = value;
     }
 
-    public Color Color
+    public WeftColor Color
     {
-        set => block.Foreground = new SolidColorBrush(value);
+        set => Paint(value);
     }
+
+    protected override void SetColorBrush(SolidColorBrush brush) => block.Foreground = brush;
 
     public double Size
     {

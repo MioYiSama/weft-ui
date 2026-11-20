@@ -69,7 +69,25 @@ fn generate(layout: &ViewLayout) -> String {
     out.writer.line(
         "/// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>",
     );
-    out.writer.line("public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);");
+    let has_theme = !layout.theme().is_empty();
+    if has_theme {
+        out.writer
+            .line("public static Microsoft.UI.Xaml.UIElement Start() =>");
+        out.writer.indent();
+        out.open("WeftSession.Start(LayoutHash, MakeScope, WeftTheme.Register(new()");
+        for (name, light, dark) in layout.theme() {
+            out.writer.line(format_args!(
+                "[{}] = ({}, {}),",
+                csharp::string(name),
+                csharp::rgba(*light),
+                csharp::rgba(*dark)
+            ));
+        }
+        out.close("));");
+        out.writer.dedent();
+    } else {
+        out.writer.line("public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);");
+    }
     out.writer.blank();
     out.writer
         .line("/// <summary>Scope of a <c>create</c> op.</summary>");
@@ -86,13 +104,13 @@ fn generate(layout: &ViewLayout) -> String {
         out.writer
             .line(format_args!("// {index} {}", template.label));
         out.writer.blank();
-        scope(&mut out, index, template);
+        scope(&mut out, index, template, has_theme);
     }
     out.writer.finish()
 }
 
 /// The scope class `S{index}` of `template`.
-fn scope(out: &mut Code, index: usize, template: &Template) {
+fn scope(out: &mut Code, index: usize, template: &Template, has_theme: bool) {
     out.open(format_args!("file sealed class S{index} : WeftScope"));
     for (node, view) in template.nodes.iter().enumerate() {
         let mut slots = template
@@ -126,7 +144,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
     out.open(format_args!(
         "public S{index}(uint id, WeftSession session) : base(id, session{points})"
     ));
-    view::body(out, template);
+    view::body(out, template, has_theme);
     out.close("");
     if !template.values.is_empty() {
         out.writer.blank();

@@ -35,6 +35,21 @@ public abstract class WeftScope
         Points = new WeftPoint[points];
     }
 
+    private List<WeftPaintedElement>? painted;
+
+    /// <summary>Tracks an element whose colors can refer to theme tokens.</summary>
+    protected void TrackColors(WeftPaintedElement element)
+    {
+        element.AttachTheme(Session);
+        (painted ??= []).Add(element);
+    }
+
+    internal void ReapplyColors()
+    {
+        if (painted is null) return;
+        foreach (var element in painted) element.ReapplyColors();
+    }
+
     /// <summary>Writes value slot <paramref name="slot"/> (a <c>set</c> op).</summary>
     public virtual void Apply(int slot, WeftValue value) { }
 

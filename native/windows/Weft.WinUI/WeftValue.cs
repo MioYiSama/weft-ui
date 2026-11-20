@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Weft.WinUI.Protocol;
-using Windows.UI;
 
 namespace Weft.WinUI;
 
@@ -48,17 +47,7 @@ public readonly struct WeftValue : IEquatable<WeftValue>
     public IReadOnlyList<string> Strings => kind == Kind.Strings ? (IReadOnlyList<string>)reference! : Array.Empty<string>();
 
     /// <summary>The value of a <c>Color</c> slot; invalid colors are transparent.</summary>
-    public Color Color
-    {
-        get
-        {
-            if (WeftColor.TryParse(String, out var color)) return color;
-#if DEBUG
-            WeftLog.Write(Native.LogWarn, $"weft: invalid color {String}, using transparent");
-#endif
-            return default;
-        }
-    }
+    public WeftColor Color => WeftColor.Parse(String);
 
     /// <summary>Appends the binary encoding of an event payload: a tag byte and the data.</summary>
     internal void Encode(List<byte> bytes)
@@ -130,30 +119,3 @@ public readonly struct WeftValue : IEquatable<WeftValue>
     };
 }
 
-/// <summary>Colors of the views.</summary>
-public static class WeftColor
-{
-    /// <summary>A constant color of the generated views, written as <c>0xRRGGBBAA</c>.</summary>
-    public static Color Rgba(uint rgba) =>
-        Color.FromArgb((byte)rgba, (byte)(rgba >> 24), (byte)(rgba >> 16), (byte)(rgba >> 8));
-
-    /// <summary>Parses <c>#RGB</c>, <c>#RRGGBB</c> or <c>#RRGGBBAA</c> in either hex case.</summary>
-    public static bool TryParse(string text, out Color color)
-    {
-        color = default;
-        if (text.Length is not (4 or 7 or 9) || text[0] != '#') return false;
-        var digits = text.AsSpan(1);
-        foreach (var c in digits)
-        {
-            if (!char.IsAsciiHexDigit(c)) return false;
-        }
-        var value = uint.Parse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
-        color = digits.Length switch
-        {
-            3 => Rgba((value >> 8 & 0xf) * 17 << 24 | (value >> 4 & 0xf) * 17 << 16 | (value & 0xf) * 17 << 8 | 0xff),
-            6 => Rgba(value << 8 | 0xff),
-            _ => Rgba(value),
-        };
-        return true;
-    }
-}

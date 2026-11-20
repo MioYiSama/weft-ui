@@ -1,18 +1,18 @@
 //! Imperative construction of a template's elements and mount points.
 
 use crate::elements::Element;
-use crate::view::{Constant, Template, ViewNodeKind};
+use crate::view::{Constant, Template, ValueType, ViewNodeKind};
 
 use super::csharp::{self, Code};
 
 /// Constructs the template's roots in pre-order.
-pub(crate) fn body(out: &mut Code, template: &Template) {
+pub(crate) fn body(out: &mut Code, template: &Template, has_theme: bool) {
     for &root in &template.roots {
-        node(out, template, root, None);
+        node(out, template, has_theme, root, None);
     }
 }
 
-fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
+fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent: Option<u32>) {
     let region = match parent {
         Some(parent) => format!("n{parent}.Children"),
         None => "Roots".to_owned(),
@@ -23,11 +23,12 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             props,
             children,
         } => {
-            let declaration = if template.values.iter().any(|v| v.node == index) {
-                ""
-            } else {
-                "var "
-            };
+            let mut slots = template
+                .values
+                .iter()
+                .filter(|v| v.node == index)
+                .peekable();
+            let declaration = if slots.peek().is_some() { "" } else { "var " };
             let args = match element {
                 Element::Column => "vertical: true".to_owned(),
                 Element::Row => "vertical: false".to_owned(),
@@ -45,6 +46,13 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                 "{declaration}n{index} = new {}({args});",
                 wrapper(*element)
             ));
+            // Fixed colors and apps without a token table never need repainting.
+            if has_theme
+                && (props.iter().any(|p| matches!(p.value, Constant::Token(_)))
+                    || slots.any(|v| v.ty == ValueType::Color))
+            {
+                out.writer.line(format_args!("TrackColors(n{index});"));
+            }
             for prop in props {
                 out.writer.line(format_args!(
                     "n{index}.{} = {};",
@@ -55,7 +63,7 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             out.writer
                 .line(format_args!("{region}.Add(n{index}.Element);"));
             for &child in children {
-                node(out, template, child, Some(index));
+                node(out, template, has_theme, child, Some(index));
             }
         }
         ViewNodeKind::Point(point) => out
@@ -87,10 +95,7 @@ fn literal(value: &Constant) -> String {
         Constant::Int(v) => v.to_string(),
         Constant::Bool(v) => v.to_string(),
         Constant::String(s) => csharp::string(s),
-        Constant::Token(_) => unreachable!("platform support rejects theme tokens"),
-        Constant::Color(c) => format!(
-            "WeftColor.Rgba(0x{:02x}{:02x}{:02x}{:02x}u)",
-            c.r, c.g, c.b, c.a
-        ),
+        Constant::Token(name) => format!("WeftColor.Token({})", csharp::string(name)),
+        Constant::Color(c) => format!("WeftColor.Rgba({})", csharp::rgba(*c)),
     }
 }

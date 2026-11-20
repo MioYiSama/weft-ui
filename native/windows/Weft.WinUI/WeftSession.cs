@@ -9,6 +9,7 @@ using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Weft.WinUI.Protocol;
 
@@ -33,6 +34,7 @@ public sealed class WeftSession
     private readonly Dictionary<uint, WeftScope> scopes = [];
     private readonly Panel root;
     private readonly FrameworkElement view;
+    private ElementTheme appliedTheme;
     private WindowEnvironment environment;
     private readonly ArrayBufferWriter<byte> environmentJson = new(192);
     private XamlRoot? xamlRoot;
@@ -52,29 +54,35 @@ public sealed class WeftSession
     /// <summary>The bytecode, 16-byte aligned, alive as long as the runtime.</summary>
     private readonly unsafe byte* bytecode;
 
+    internal WeftTheme? Theme { get; }
+    internal ElementTheme ActualTheme => view.ActualTheme;
+
     /// <summary>
     /// Starts the app compiled to <c>weft/bundle.hbc</c> next to the executable,
     /// whose views implement the layout with hash <paramref name="layoutHash"/>,
     /// and returns its root view: a vertically scrolling page whose content
     /// starts at the top left corner, or why the app failed.
     /// </summary>
-    public static UIElement Start(ulong layoutHash, Factory make)
+    public static UIElement Start(ulong layoutHash, Factory make, WeftTheme? theme = null)
     {
         var page = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-        var view = new ScrollViewer { Content = page };
-        if (Application.Current?.Resources.TryGetValue("ApplicationPageBackgroundThemeBrush", out var brush) == true)
-        {
-            view.Background = (Brush)brush;
-        }
-        _ = new WeftSession(Path.Combine(AppContext.BaseDirectory, "weft", "bundle.hbc"), layoutHash, make, page, view);
+        // A ThemeResource stays live when the appearance changes, unlike a resource dictionary lookup.
+        var view = (ScrollViewer)XamlReader.Load("""
+            <ScrollViewer xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+            """);
+        view.Content = page;
+        _ = new WeftSession(Path.Combine(AppContext.BaseDirectory, "weft", "bundle.hbc"), layoutHash, make, page, view, theme);
         return view;
     }
 
-    private unsafe WeftSession(string bundle, ulong layoutHash, Factory make, Panel root, FrameworkElement view)
+    private unsafe WeftSession(string bundle, ulong layoutHash, Factory make, Panel root, FrameworkElement view, WeftTheme? theme)
     {
         this.make = make;
         this.root = root;
         this.view = view;
+        Theme = theme;
+        appliedTheme = ActualTheme;
         queue = DispatcherQueue.GetForCurrentThread()
             ?? throw new InvalidOperationException("weft: the session must start on a UI thread");
         timer = queue.CreateTimer();
@@ -155,8 +163,14 @@ public sealed class WeftSession
     {
         environmentQueued = false;
         if (xamlRoot is null) return;
+        var appearance = ActualTheme;
+        if (appliedTheme != appearance)
+        {
+            appliedTheme = appearance;
+            foreach (var scope in scopes.Values) scope.ReapplyColors();
+        }
         var size = xamlRoot.Size;
-        var updated = new WindowEnvironment(view.ActualTheme == ElementTheme.Dark,
+        var updated = new WindowEnvironment(appearance == ElementTheme.Dark,
             size.Width, size.Height, xamlRoot.RasterizationScale);
         if (environment == updated) return;
         environment = updated;

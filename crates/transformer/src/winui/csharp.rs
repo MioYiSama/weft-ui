@@ -3,6 +3,7 @@
 use std::fmt::{Display, Write as _};
 
 use crate::code::Indented;
+use crate::color::Color;
 
 /// C# source written line by line, with Allman braces.
 #[derive(Debug)]
@@ -29,6 +30,12 @@ impl Code {
         self.writer.dedent();
         self.writer.line(format_args!("}}{suffix}"));
     }
+}
+
+/// A C# unsigned integer literal in RGBA channel order.
+pub(crate) fn rgba(color: Color) -> impl Display {
+    let value = u32::from_be_bytes([color.r, color.g, color.b, color.a]);
+    std::fmt::from_fn(move |out| write!(out, "0x{value:08x}u"))
 }
 
 /// A regular C# string literal; braces never start interpolation.

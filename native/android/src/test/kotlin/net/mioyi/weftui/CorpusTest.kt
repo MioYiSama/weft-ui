@@ -129,6 +129,14 @@ class CorpusTest {
     }
 
     @Test
+    fun borderAndPaddingAreOutsideAspectRatioAndFixedSize() {
+        val padding = WeftEdges(top = 3.0, end = 5.0, bottom = 7.0, start = 9.0)
+        val sizing = WeftSizing(width = 60.0, aspectRatio = 2.0)
+        val result = sizing.resolve(WeftProposal(), padding, border = 2.0)
+        assertEquals(WeftProposal(WeftLimit.exact(78.0), WeftLimit.exact(44.0)), result)
+    }
+
+    @Test
     fun atMostZeroDoesNotEstablishAnAspectRatio() {
         val proposal = WeftProposal(width = WeftLimit(0.0))
         assertEquals(proposal, WeftSizing(aspectRatio = 2.0).resolve(proposal, WeftEdges()))

@@ -65,7 +65,7 @@ impl Body<'_> {
                     "VERTICAL"
                 };
                 args.push(format_args!("axis = WeftAxis.{axis}"));
-                &["gap", "align", "justify", "background"]
+                &["gap", "align", "justify"]
             }
             Element::Button => {
                 match self.template.event(node, "onClick") {
@@ -109,7 +109,7 @@ impl Body<'_> {
             };
             args.push(format_args!("{name} = {}", KotlinProp(value, union)));
         }
-        layout_modifier(&mut args, prop);
+        modifiers(&mut args, prop);
         args.finish(element == Element::Spacer);
         match element {
             Element::Input => {
@@ -192,8 +192,23 @@ const CHILD: &[&str] = &[
     "marginEnd",
 ];
 
-fn layout_modifier<'t>(args: &mut CallArgs<'_>, prop: impl Fn(&str) -> Option<PropSource<'t>>) {
-    let groups = [("weftSize", SIZE), ("weftChild", CHILD)];
+const APPEARANCE: &[&str] = &[
+    "opacity",
+    "hidden",
+    "background",
+    "radius",
+    "border",
+    "borderColor",
+    "shadow",
+    "clip",
+];
+
+fn modifiers<'t>(args: &mut CallArgs<'_>, prop: impl Fn(&str) -> Option<PropSource<'t>>) {
+    let groups = [
+        ("weftSize", SIZE),
+        ("weftChild", CHILD),
+        ("weftAppearance", APPEARANCE),
+    ];
     if !groups
         .iter()
         .any(|(_, names)| names.iter().any(|name| prop(name).is_some()))
@@ -212,7 +227,8 @@ fn layout_modifier<'t>(args: &mut CallArgs<'_>, prop: impl Fn(&str) -> Option<Pr
                 } else {
                     f.write_str(", ")?;
                 }
-                write!(f, "{name} = {}", KotlinProp(value, None))?;
+                let union = (name == "shadow").then_some("Shadow");
+                write!(f, "{name} = {}", KotlinProp(value, union))?;
             }
             if !first {
                 f.write_char(')')?;

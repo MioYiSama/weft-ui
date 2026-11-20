@@ -213,15 +213,17 @@ internal data class WeftSizing(
     val maxHeight: Double? = null,
     val aspectRatio: Double? = null,
 ) {
-    fun resolve(proposal: WeftProposal, padding: WeftEdges): WeftProposal {
-        var w = proposal.width.constrain(width, minWidth, maxWidth, padding.horizontal)
-        var h = proposal.height.constrain(height, minHeight, maxHeight, padding.vertical)
+    fun resolve(proposal: WeftProposal, padding: WeftEdges, border: Double = 0.0): WeftProposal {
+        val horizontal = padding.horizontal + 2 * border
+        val vertical = padding.vertical + 2 * border
+        var w = proposal.width.constrain(width, minWidth, maxWidth, horizontal)
+        var h = proposal.height.constrain(height, minHeight, maxHeight, vertical)
         val ratio = aspectRatio
         if (ratio != null && ratio > 0) {
             if (w.exact && height == null) {
-                h = proposal.height.constrain((w.maximum - padding.horizontal).coerceAtLeast(0.0) / ratio, minHeight, maxHeight, padding.vertical)
+                h = proposal.height.constrain((w.maximum - horizontal).coerceAtLeast(0.0) / ratio, minHeight, maxHeight, vertical)
             } else if (h.exact && width == null) {
-                w = proposal.width.constrain((h.maximum - padding.vertical).coerceAtLeast(0.0) * ratio, minWidth, maxWidth, padding.horizontal)
+                w = proposal.width.constrain((h.maximum - vertical).coerceAtLeast(0.0) * ratio, minWidth, maxWidth, horizontal)
             }
         }
         return WeftProposal(w, h)

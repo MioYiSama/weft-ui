@@ -116,9 +116,9 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V1(s: S1) {
-    WeftLinear(axis = WeftAxis.VERTICAL, gap = 8f, background = WeftColor.Fixed(Color(0xffeeeeffL)), padding = 12f, modifier = Modifier.weftSize(width = 320f, height = 280f)) {
+    WeftLinear(axis = WeftAxis.VERTICAL, gap = 8f, padding = 12f, modifier = Modifier.weftSize(width = 320f, height = 280f).weftAppearance(background = WeftColor.Fixed(Color(0xffeeeeffL)))) {
         WeftText("Gallery", color = WeftColor.Fixed(Color(0xff224466L)), size = 20f, bold = true)
-        WeftLinear(axis = WeftAxis.HORIZONTAL, gap = s.v4, background = s.v3, padding = s.v2, modifier = Modifier.weftSize(width = s.v0, height = s.v1)) {
+        WeftLinear(axis = WeftAxis.HORIZONTAL, gap = s.v4, padding = s.v2, modifier = Modifier.weftSize(width = s.v0, height = s.v1).weftAppearance(background = s.v3)) {
             WeftCheckbox(s.v5) { s.dispatch(0, WeftValue.Bool(it)) }
             WeftImage(s.v6, modifier = Modifier.weftSize(width = 32f, height = 32f))
             WeftText("Preview", color = s.v7, size = s.v8, bold = s.v9)

@@ -1,7 +1,6 @@
 package net.mioyi.weftui
 
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +20,8 @@ import kotlin.math.roundToInt
 private data class WeftParentData(
     val sizing: WeftSizing? = null,
     val padding: WeftEdges = WeftEdges(),
+    val border: Double = 0.0,
+    val hidden: Boolean = false,
     val child: WeftChild = WeftChild(),
     val explicitGrow: Boolean = false,
     val explicitFill: Boolean = false,
@@ -107,6 +108,19 @@ private data class WeftPaddingModifier(val padding: WeftEdges) : ParentDataModif
     override fun Density.modifyParentData(parentData: Any?): Any = parentData.weftData().copy(padding = padding.pixels(density))
 }
 
+internal fun Modifier.weftBorder(border: Float): Modifier = then(WeftBorderModifier(border))
+
+private data class WeftBorderModifier(val border: Float) : ParentDataModifier {
+    override fun Density.modifyParentData(parentData: Any?): Any =
+        parentData.weftData().copy(border = (border * density).roundToInt().toDouble())
+}
+
+internal fun Modifier.weftHidden(): Modifier = then(WeftHiddenModifier)
+
+private object WeftHiddenModifier : ParentDataModifier {
+    override fun Density.modifyParentData(parentData: Any?): Any = parentData.weftData().copy(hidden = true)
+}
+
 private object WeftScrollModifier : ParentDataModifier {
     override fun Density.modifyParentData(parentData: Any?): Any {
         val data = parentData.weftData()
@@ -150,12 +164,10 @@ fun WeftLinear(
     paddingBottom: Float? = null,
     paddingStart: Float? = null,
     paddingEnd: Float? = null,
-    background: WeftColor? = null,
     content: @Composable () -> Unit,
 ) {
     val insets = paddingEdges(padding, paddingX, paddingY, paddingTop, paddingBottom, paddingStart, paddingEnd)
-    val box = modifier.weftPadding(insets)
-    LinearContent(axis, gap, align, justify, insets, if (background == null) box else box.background(background.resolve()), content)
+    LinearContent(axis, gap, align, justify, insets, modifier.weftPadding(insets), content)
 }
 
 @Composable
@@ -265,15 +277,23 @@ private inline fun MeasureScope.placeWeft(
     flexChildren: Boolean = true,
     calculate: (List<WeftChild>, (Int, WeftProposal) -> WeftExtent) -> WeftPlacement,
 ): androidx.compose.ui.layout.MeasureResult {
-    val placeables = arrayOfNulls<Placeable>(measurables.size)
-    val children = measurables.map {
+    val firstHidden = measurables.indexOfFirst { it.parentData.weftData().hidden }
+    val visible = if (firstHidden < 0) measurables else buildList(measurables.size - 1) {
+        addAll(measurables.subList(0, firstHidden))
+        for (index in firstHidden + 1 until measurables.size) {
+            val measurable = measurables[index]
+            if (!measurable.parentData.weftData().hidden) add(measurable)
+        }
+    }
+    val placeables = arrayOfNulls<Placeable>(visible.size)
+    val children = visible.map {
         val child = it.parentData.weftData().child
         if (flexChildren || (child.grow == 0.0 && !child.fill)) child else child.copy(grow = 0.0, fill = false)
     }
     val result = calculate(children) { index, proposal ->
-        val measurable = measurables[index]
+        val measurable = visible[index]
         val data = measurable.parentData.weftData()
-        val constrained = data.sizing?.resolve(proposal, data.padding) ?: proposal
+        val constrained = data.sizing?.resolve(proposal, data.padding, data.border) ?: proposal
         val placeable = measurable.measure(constrained.constraints())
         placeables[index] = placeable
         WeftExtent(placeable.width.toDouble(), placeable.height.toDouble())

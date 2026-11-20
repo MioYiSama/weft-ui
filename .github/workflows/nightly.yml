@@ -1,6 +1,6 @@
-# The example's UI flows on the Android emulator and the iOS simulator, once a
-# day and on demand. The Windows flow (FlaUI, needs an interactive desktop) and
-# the Linux flow (VNC desktop in the container) still run only locally; see
+# Run the example's Android and iOS UI flows and the showcase's Web, iOS and
+# Android screenshot regressions nightly and on demand. WeChat and desktop
+# screenshots, and the Windows and Linux UI flows, run only locally; see
 # CONTRIBUTING.md.
 name: Nightly
 
@@ -121,3 +121,89 @@ jobs:
         env:
           WEFT_NATIVE: "0"
       - run: pnpm --filter example test:ios
+
+  web-shots:
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - run: pnpm --filter showcase exec playwright install --with-deps chromium
+      - run: pnpm --filter showcase shot:web
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: web-shots
+          path: |
+            showcase/screenshots/actual
+            showcase/screenshots/diff
+          retention-days: 7
+
+  ios-shots:
+    needs: wasm
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - run: brew install ninja
+      - uses: actions/cache@v6
+        with:
+          path: |
+            native/core/build
+            native/apple/build
+          key: apple-ios-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake', 'native/apple/build-core.sh') }}
+          restore-keys: apple-ios-${{ env.HERMES_TAG }}-
+      - run: native/apple/build-core.sh
+        env:
+          WEFT_APPLE_SDKS: iphonesimulator
+      - run: pnpm --filter showcase shot:ios
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: ios-shots
+          path: |
+            showcase/screenshots/actual
+            showcase/screenshots/diff
+          retention-days: 7
+
+  android-shots:
+    needs: wasm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/cache@v6
+        with:
+          path: |
+            native/core/build
+            native/android/build
+          key: android-${{ env.HERMES_TAG }}-${{ hashFiles('native/core/hermes.cmake', 'native/android/CMakeLists.txt', 'native/android/build-core.sh') }}
+          restore-keys: android-${{ env.HERMES_TAG }}-
+      - run: native/android/build-core.sh
+        env:
+          WEFT_ANDROID_ABIS: x86_64
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: pnpm --filter showcase shot:android
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: android-shots
+          path: |
+            showcase/screenshots/actual
+            showcase/screenshots/diff
+          retention-days: 7

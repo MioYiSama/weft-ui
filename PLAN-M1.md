@@ -913,8 +913,8 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | S2 | ☑ | e13bdf0 | 仅小程序快照与 example 小程序产物变化，已重新录制 C-apps 基线；原生 conformance 驱动同步转发事件名 |
 | S3 | ☑ | 58ccbc3 | 无产物变化；临时禁用 Linux 的 `Image` 时构建报 `` `Image` is not supported on linux `` |
 | P1 | ☑ | ddae077 | 快照、黄金文件不变；C-apps 中 6 个非 Web 平台的 `js/index.js` 有差异（见执行中发现），已重新录制基线 |
-| P2 | ☑ | （本提交） | Web、iOS、Android 上切换深浅色与旋转时日志随之变化；协议版本不变 |
-| L1 | ☑ | （本提交） | 新增 `Language` 快照与 `language.ops`；C-core 含 `conformance.language` 通过；C-apps 无差异 |
+| P2 | ☑ | bf3519f | Web、iOS、Android 上切换深浅色与旋转时日志随之变化；协议版本不变 |
+| L1 | ☑ | 7768759 | 新增 `Language` 快照与 `language.ops`；C-core 含 `conformance.language` 通过；C-apps 无差异 |
 | L2 | ☐ | | |
 | L3 | ☐ | | |
 | L4 | ☐ | | |
@@ -924,8 +924,8 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | L6.d | ☐ | | |
 | L6.n | ☐ | | |
 | L6.g | ☐ | | |
-| T1 | ☑ | （本提交） | 截图待维护者确认（`hello`：web、ios、android、wechat）；C-shot 差异 0.000%，小程序 0.006%；macOS、Windows、Linux 截图已查看；小程序 AppID 放在忽略的 `project.private.config.json` |
-| T2 | ☐ | | |
+| T1 | ☑ | f282243 | 截图待维护者确认（`hello`：web、ios、android、wechat）；C-shot 差异 0.000%，小程序 0.006%；macOS、Windows、Linux 截图已查看；小程序 AppID 放在忽略的 `project.private.config.json` |
+| T2 | ⏸ | （本提交） | actionlint 通过；等待维护者推送并手动触发一次 nightly（对外操作需确认） |
 | R1.w | ☐ | | |
 | R1.a | ☐ | | |
 | R1.d | ☐ | | |

@@ -11,7 +11,7 @@ use crate::ir::{Component, ComponentId, NodeId, NodeKind, Program};
 use crate::style::{COLUMN_STYLE, ROW_STYLE};
 use crate::view::ViewLayout;
 
-use super::elements::{Target, Value, event_attr, prop_value, target};
+use super::elements::{Target, Value, event_key, event_type, prop_value, target};
 
 /// Template rendering the children a component call passes to a slot.
 pub(crate) fn slot_template(comp: &Component, node: NodeId) -> String {
@@ -171,11 +171,12 @@ impl Markup<'_> {
                 }
             }
         }
-        if self.layout.event_slot(self.id, id).is_some() {
-            let event = event_attr(element);
+        let (template, local) = self.layout.location(self.id, id);
+        for (k, (_, event)) in self.layout.template(template).events(local).enumerate() {
+            let kind = event_type(element, event.event);
+            let key = event_key(id, k);
             attrs.push_str(&format!(
-                " {event}=\"$e\" data-h=\"{{{{{prefix}e{}}}}}\"",
-                id.0
+                " bind{kind}=\"$e\" data-e{kind}=\"{{{{{prefix}{key}}}}}\""
             ));
         }
         out.push('<');

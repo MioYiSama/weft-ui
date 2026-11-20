@@ -114,9 +114,11 @@ export class Renderer extends OpWriter implements Sink {
     return out;
   }
 
-  /** Fires the element's event without a payload (`onClick`). */
-  click(element: ViewElement): void {
-    const [scope, slot] = this.#event(element);
+  /** Fires the named event (or the element's first event) without a payload. */
+  click(element: ViewElement, event?: string): void {
+    const [scope, node] = this.#node(element);
+    const slot = scope.template.events.findIndex((e) => e.node === node && (event === undefined || e.event === event));
+    if (slot < 0) throw new Error(`<${element.type}> has no event${event === undefined ? "" : ` ${event}`}`);
     this.#session!.dispatch(scope.id, slot, undefined);
   }
 
@@ -126,9 +128,10 @@ export class Renderer extends OpWriter implements Sink {
    * Returns whether the edit was accepted.
    */
   edit(element: ViewElement, value: Value): boolean {
-    const [scope, slot] = this.#event(element);
-    const controls = scope.template.events[slot].controls;
-    if (controls === null) throw new Error(`<${element.type}> is not controlled`);
+    const [scope, local] = this.#node(element);
+    const slot = scope.template.events.findIndex((e) => e.node === local && e.controls !== null);
+    if (slot < 0) throw new Error(`<${element.type}> is not controlled`);
+    const controls = scope.template.events[slot].controls!;
     const { node, prop } = scope.template.values[controls];
     scope.props[node][prop] = value;
     const accepted = this.#session!.dispatch(scope.id, slot, value);
@@ -138,13 +141,10 @@ export class Renderer extends OpWriter implements Sink {
     return accepted;
   }
 
-  #event(element: ViewElement): [Scope, number] {
+  #node(element: ViewElement): [Scope, number] {
     const found = this.#elements.get(element);
     if (!found) throw new Error("weft: the element is not part of the current tree");
-    const [scope, node] = found;
-    const slot = scope.template.events.findIndex((e) => e.node === node);
-    if (slot < 0) throw new Error(`<${element.type}> has no event`);
-    return [scope, slot];
+    return found;
   }
 
   #expandScope(scope: Scope): ViewElement[] {

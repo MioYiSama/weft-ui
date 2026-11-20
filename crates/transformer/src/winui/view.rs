@@ -31,8 +31,8 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             let args = match element {
                 Element::Column => "vertical: true".to_owned(),
                 Element::Row => "vertical: false".to_owned(),
-                Element::Button => match template.event(index) {
-                    Some((slot, _)) => format!("() => Dispatch({slot})"),
+                Element::Button => match template.event(index, "onClick") {
+                    Some(slot) => format!("() => Dispatch({slot})"),
                     None => "null".to_owned(),
                 },
                 Element::Input | Element::Checkbox => {

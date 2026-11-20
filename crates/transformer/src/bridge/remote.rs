@@ -50,13 +50,6 @@ pub(crate) fn component(
     out.close("}");
 }
 
-/// The handler property of an element, excluding lifecycle events.
-fn handler_prop(props: &[Prop]) -> Option<&Prop> {
-    props.iter().find(|p| {
-        matches!(p.value, PropValue::Handler(_)) && !matches!(p.name, "onMount" | "onUnmount")
-    })
-}
-
 struct Gen<'a> {
     layout: &'a ViewLayout,
     id: ComponentId,
@@ -87,24 +80,33 @@ impl Backend for Gen<'_> {
                     .line(format!("if ({cond}) {var}.set({slot}, {value});"));
             }
         }
-        if let Some(event) = self.layout.event_slot(self.id, id) {
-            let template = self.layout.template(self.layout.location(self.id, id).0);
-            let controls = template.events[event as usize]
+        let template = self.layout.template(self.layout.location(self.id, id).0);
+        let mut unhandled_edit = self.layout.edit_slot(self.id, id);
+        for (index, prop) in props.iter().enumerate() {
+            let Some(slot) = self.layout.event_slot(self.id, id, index) else {
+                continue;
+            };
+            if unhandled_edit == Some(slot) {
+                unhandled_edit = None;
+            }
+            let PropValue::Handler(handler) = &prop.value else {
+                unreachable!("only handlers have event slots in the property map");
+            };
+            let event = &template.events[slot as usize];
+            let param = if event.payload.is_some() { "$a" } else { "" };
+            let body = handler_body(ir.program, handler);
+            let controls = event.controls.map_or(-1, i64::from);
+            parts.create.line(format!(
+                "{var}.on({slot}, ({param}) => {{ {body} }}, {controls});"
+            ));
+        }
+        if let Some(slot) = unhandled_edit {
+            let controls = template.events[slot as usize]
                 .controls
-                .map_or_else(|| "-1".to_owned(), |slot| slot.to_string());
-            let handler = handler_prop(props).map_or_else(
-                || "null".to_owned(),
-                |prop| {
-                    let PropValue::Handler(handler) = &prop.value else {
-                        unreachable!("handler_prop only returns handlers");
-                    };
-                    let param = if prop.name == "onClick" { "" } else { "$a" };
-                    format!("({param}) => {{ {} }}", handler_body(ir.program, handler))
-                },
-            );
+                .expect("the edit event controls a value slot");
             parts
                 .create
-                .line(format!("{var}.on({event}, {handler}, {controls});"));
+                .line(format!("{var}.on({slot}, null, {controls});"));
         }
         var
     }

@@ -99,8 +99,8 @@ impl Body<'_> {
                 }
             }
             Element::Button => {
-                match self.template.event(node) {
-                    Some((slot, _)) => {
+                match self.template.event(node, "onClick") {
+                    Some(slot) => {
                         out.open("Button {");
                         out.writer.line(format_args!("_ = s.dispatch({slot})"));
                         out.reopen("} label: {");

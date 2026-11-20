@@ -136,11 +136,13 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 | key             | 内容                                                                     |
 | --------------- | ------------------------------------------------------------------------ |
 | `n{N}_{i}`      | 属性值、文本                                                             |
-| `e{N}`          | 事件处理器 id（sink 分配），WXML 中写成 `data-h`，由视图组件的 `$e` 分发 |
+| `e{N}_{k}`      | 元素第 `k` 个事件的处理器 id（从 0 开始，由 sink 分配）。WXML 写成 `bind<type>="$e"` 和 `data-e<type>="{{e{N}_{k}}}"`，`type` 是小写的小程序事件名 |
 | `i{N}` / `b{N}` | `if` 当前分支下标 / 分支数据                                             |
 | `l{N}`          | `for` 的行数组，每行带 `k`（行的 scope id，用作 `wx:key`）               |
 | `c{N}`          | 组件实例数据                                                             |
 | `y{N}`          | 插槽数据，`t` 是插槽模板名（`{组件}-s{N}`）                              |
+
+`$e` 从 `currentTarget.dataset["e" + event.type]` 取处理器 id。`tap` 不带 payload，`input` 和 `change` 的 payload 为 `detail.value`。
 
 `setData` 规则：
 

@@ -17,7 +17,7 @@ use crate::bridge::js::{self, Code};
 use crate::ir::{NodeKind, Program, Prop};
 use crate::view::{PointKind, Template, TemplateKind, ViewLayout, ViewNodeKind};
 
-use super::elements::{Target, inline, target, value_key};
+use super::elements::{Target, event_key, inline, target, value_key};
 use super::wxml::slot_template;
 
 /// The table object literal passed to the view runtime.
@@ -80,11 +80,14 @@ fn entry(program: &Program, template: &Template) -> String {
     if !template.events.is_empty() {
         let events: Vec<String> = template
             .events
-            .iter()
-            .map(|slot| {
-                let n = template.nodes[slot.node as usize].source.0;
-                let controls = slot.controls.map_or(-1, i64::from);
-                format!("[\"e{n}\", {controls}]")
+            .chunk_by(|left, right| left.node == right.node)
+            .flat_map(|slots| {
+                let node = template.nodes[slots[0].node as usize].source;
+                slots.iter().enumerate().map(move |(k, slot)| {
+                    let key = event_key(node, k);
+                    let controls = slot.controls.map_or(-1, i64::from);
+                    format!("[\"{key}\", {controls}]")
+                })
             })
             .collect();
         fields.push(format!("e: [{}]", events.join(", ")));

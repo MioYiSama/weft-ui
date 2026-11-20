@@ -26,8 +26,8 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             let args = match element {
                 Element::Column => "weft::Axis::Vertical".to_owned(),
                 Element::Row => "weft::Axis::Horizontal".to_owned(),
-                Element::Button => match template.event(index) {
-                    Some((slot, _)) => format!("[this] {{ dispatch({slot}); }}"),
+                Element::Button => match template.event(index, "onClick") {
+                    Some(slot) => format!("[this] {{ dispatch({slot}); }}"),
                     None => "nullptr".to_owned(),
                 },
                 Element::Input => {

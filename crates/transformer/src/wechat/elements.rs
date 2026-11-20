@@ -5,12 +5,14 @@
 //! | Key        | Value                                                  |
 //! | ---------- | ------------------------------------------------------ |
 //! | `n{N}_{i}` | property `i` of an element                             |
-//! | `e{N}`     | handler id of an element (`data-h`)                    |
+//! | `e{N}_{k}` | handler id for event `k` of an element (`data-e<type>`) |
 //! | `i{N}`     | index of the active `if` branch, `-1` for none         |
 //! | `b{N}`     | data of the active `if` branch, or `null`              |
 //! | `l{N}`     | rows of a `for` loop; each row has its scope id in `k` |
 //! | `c{N}`     | data of a component instance                           |
 //! | `y{N}`     | data of slot content; its template name is in `t`      |
+
+use std::fmt;
 
 use crate::elements::{Css, CssUnit, Element};
 use crate::ir::{ComponentId, NodeId, Prop, PropValue};
@@ -43,14 +45,19 @@ pub(crate) fn target(element: Element, prop: &str) -> Target {
     }
 }
 
-/// The WXML event attribute reporting an element's event slot.
-pub(crate) fn event_attr(element: Element) -> &'static str {
-    match element {
-        Element::Input => "bindinput",
-        Element::Checkbox => "bindchange",
-        Element::Button => "bindtap",
-        element => unreachable!("`{}` has no events", element.name()),
+/// The mini program event type bound to an element's handler.
+pub(crate) fn event_type(element: Element, event: &str) -> &'static str {
+    match (element, event) {
+        (Element::Input, "onChange") => "input",
+        (Element::Checkbox, "onChange") => "change",
+        (Element::Button, "onClick") => "tap",
+        _ => unreachable!("`{}` has no handler `{event}`", element.name()),
     }
+}
+
+/// Data key of event `index` on element `node`.
+pub(crate) fn event_key(node: NodeId, index: usize) -> impl fmt::Display {
+    fmt::from_fn(move |f| write!(f, "e{}_{index}", node.0))
 }
 
 /// Data key of property `index` of element `node`.

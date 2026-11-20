@@ -136,11 +136,13 @@ WXML renders only `{{key}}`. The `setData` paths are paths in the block data tre
 | Key             | Contents |
 | --------------- | -------- |
 | `n{N}_{i}`      | Property value or text. |
-| `e{N}`          | Event handler ID (assigned by the sink), written as `data-h` in WXML and dispatched by the view component's `$e`. |
+| `e{N}_{k}`      | Handler ID (assigned by the sink) for the element's `k`-th event, zero-based. WXML binds `bind<type>="$e"` and `data-e<type>="{{e{N}_{k}}}"`, where `type` is the lowercase mini program event name. |
 | `i{N}` / `b{N}` | Current `if` branch index / branch data. |
 | `l{N}`          | Array of `for` rows. Each row carries `k` (the row's scope ID, used as `wx:key`). |
 | `c{N}`          | Component instance data. |
 | `y{N}`          | Slot data. `t` is the slot template name (`{Component}-s{N}`). |
+
+`$e` reads `currentTarget.dataset["e" + event.type]`. `tap` carries no payload; `input` and `change` carry `detail.value`.
 
 `setData` rules:
 

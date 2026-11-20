@@ -81,8 +81,8 @@ impl Body<'_> {
                 optional(args, &["gap", "padding", "width", "height", "background"]);
             }
             Element::Button => {
-                match self.template.event(node) {
-                    Some((slot, _)) => {
+                match self.template.event(node, "onClick") {
+                    Some(slot) => {
                         args.push(format_args!("onClick = {{ s.dispatch({slot}) }}"));
                     }
                     None => args.push("onClick = {}"),

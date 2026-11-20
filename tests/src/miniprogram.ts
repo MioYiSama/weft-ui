@@ -61,6 +61,8 @@ export interface TestView {
   texts(): string[];
   /** Rendered elements with tag `tag`, in document order. */
   all(tag: string): Element[];
+  /** Fires an event bound on the element. */
+  fire(element: Element, type: string, value?: unknown): unknown;
   /** Fires the element's `bindtap`. */
   tap(element: Element): void;
   /** Fires `bindinput`; returns what the handler returned (the replacement text, if any). */
@@ -237,11 +239,12 @@ function createView(options: ViewOptions, templates: Templates): TestView {
     render: () => renderNodes(templates.root, view.data, templates),
     texts: () => texts(view.render()),
     all: (tag) => all(view.render(), tag),
+    fire: (element, type, value) => fire(view, element, type, value),
     tap: (element) => {
-      fire(view, element, "bindtap", undefined);
+      view.fire(element, "tap");
     },
-    input: (element, value) => fire(view, element, "bindinput", value),
-    change: (element, value) => fire(view, element, "bindchange", value),
+    input: (element, value) => view.fire(element, "input", value),
+    change: (element, value) => view.fire(element, "change", value),
     detach: () => options.lifetimes.detached.call(view),
   };
   for (const [name, method] of Object.entries(options.methods)) view[name] = method;
@@ -249,13 +252,16 @@ function createView(options: ViewOptions, templates: Templates): TestView {
   return view;
 }
 
-function fire(view: TestView & Data, element: Element, attr: string, value: unknown): unknown {
+function fire(view: TestView & Data, element: Element, type: string, value: unknown): unknown {
+  const attr = `bind${type}`;
   const method = element.attrs[attr];
   if (typeof method !== "string") throw new Error(`<${element.tag}> has no ${attr}`);
   const handler = view[method];
   if (typeof handler !== "function") throw new Error(`the view has no method ${method}`);
+  const key = `e${type}`;
   return handler.call(view, {
-    currentTarget: { dataset: { h: element.attrs["data-h"] } },
+    type,
+    currentTarget: { dataset: { [key]: element.attrs[`data-${key}`] } },
     detail: { value },
   });
 }

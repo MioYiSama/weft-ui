@@ -57,6 +57,7 @@ pub struct Template {
     /// Top-level nodes in source order.
     pub roots: Vec<u32>,
     pub values: Vec<ValueSlot>,
+    /// Event slots, grouped by ascending local node index.
     pub events: Vec<EventSlot>,
     pub points: Vec<MountPoint>,
 }
@@ -199,7 +200,10 @@ enum Role {
     Element {
         /// Value slot of each IR property, by property index.
         values: Vec<Option<u32>>,
-        event: Option<u32>,
+        /// Event slot of each IR handler property, by property index.
+        events: Vec<Option<u32>>,
+        /// Control event slot, even when no handler was supplied.
+        edit: Option<u32>,
     },
     Point {
         index: u32,
@@ -252,15 +256,28 @@ impl ViewLayout {
         }
     }
 
-    /// Event slot of the element `node`, if it has one.
+    /// Event slot of IR property `prop` on `node`, if it has one.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `node` is not an element or `prop` is out of bounds.
+    #[must_use]
+    pub fn event_slot(&self, component: ComponentId, node: NodeId, prop: usize) -> Option<u32> {
+        match &self.node(component, node).role {
+            Role::Element { events, .. } => events[prop],
+            Role::Point { .. } => panic!("node {} is not an element", node.0),
+        }
+    }
+
+    /// Control event slot of an element, even if it has no handler.
     ///
     /// # Panics
     ///
     /// Panics if `node` is not an element.
     #[must_use]
-    pub fn event_slot(&self, component: ComponentId, node: NodeId) -> Option<u32> {
+    pub fn edit_slot(&self, component: ComponentId, node: NodeId) -> Option<u32> {
         match &self.node(component, node).role {
-            Role::Element { event, .. } => *event,
+            Role::Element { edit, .. } => *edit,
             Role::Point { .. } => panic!("node {} is not an element", node.0),
         }
     }
@@ -319,14 +336,21 @@ impl Template {
             .map(|prop| PropSource::Constant(&prop.value))
     }
 
-    /// Returns an element's event slot and the value slot it controls, if any.
+    /// Returns the slot of a named event on `node`, if present.
     #[must_use]
-    pub fn event(&self, node: u32) -> Option<(usize, Option<u32>)> {
+    pub fn event(&self, node: u32, name: &str) -> Option<usize> {
+        self.events(node)
+            .find_map(|(slot, event)| (event.event == name).then_some(slot))
+    }
+
+    /// Iterates over an element's events in slot order, with their slot indices.
+    pub fn events(&self, node: u32) -> impl Iterator<Item = (usize, &EventSlot)> {
+        let start = self.events.partition_point(|event| event.node < node);
         self.events
             .iter()
             .enumerate()
-            .find(|(_, event)| event.node == node)
-            .map(|(slot, event)| (slot, event.controls))
+            .skip(start)
+            .take_while(move |(_, event)| event.node == node)
     }
 
     /// Returns the edit event and value slots of a controlled element.
@@ -336,10 +360,9 @@ impl Template {
     /// Panics if `node` does not have an event that controls a value slot.
     #[must_use]
     pub fn controlled(&self, node: u32) -> (usize, u32) {
-        match self.event(node) {
-            Some((event, Some(slot))) => (event, slot),
-            _ => unreachable!("controlled elements have an edit event with a value slot"),
-        }
+        self.events(node)
+            .find_map(|(slot, event)| event.controls.map(|value| (slot, value)))
+            .expect("controlled elements have an edit event with a value slot")
     }
 }
 
@@ -391,9 +414,90 @@ mod tests {
     fn finds_click_and_controlled_events_in_slot_order() {
         let layout = layout();
         let template = &layout.templates()[0];
-        assert_eq!(template.event(template.roots[0]), None);
-        assert_eq!(template.event(template.roots[1]), Some((0, None)));
+        assert_eq!(template.events(template.roots[0]).next(), None);
+        assert_eq!(template.event(template.roots[1], "onClick"), Some(0));
+        assert_eq!(template.events[0].controls, None);
         assert_eq!(template.controlled(template.roots[2]), (1, 1));
+        let button = template.nodes[template.roots[1] as usize].source;
+        let input = template.nodes[template.roots[2] as usize].source;
+        assert_eq!(layout.event_slot(template.component, button, 0), Some(0));
+        assert_eq!(layout.event_slot(template.component, input, 0), None);
+        assert_eq!(layout.edit_slot(template.component, input), Some(1));
+    }
+
+    #[test]
+    fn allocates_multiple_handlers_for_one_element() {
+        use crate::elements::{Children, ElementSpec, PropKind, PropSpec, PropType};
+        use crate::ir::{Handler, Prop, PropValue};
+
+        const CLICK: PropSpec = PropSpec {
+            name: "onClick",
+            kind: PropKind::Handler { payload: None },
+            positional: false,
+            required: false,
+            css: None,
+            controlled_by: None,
+        };
+        let spec = ElementSpec {
+            element: Element::Button,
+            name: "Button",
+            props: &[
+                CLICK,
+                PropSpec {
+                    name: "onSecondary",
+                    kind: PropKind::Handler {
+                        payload: Some(PropType::Bool),
+                    },
+                    ..CLICK
+                },
+            ],
+            children: Children::Any,
+        };
+        let mut template = Template {
+            label: "Test".into(),
+            component: ComponentId(0),
+            kind: TemplateKind::Component,
+            nodes: vec![ViewNode {
+                source: NodeId(0),
+                kind: ViewNodeKind::Element {
+                    element: Element::Button,
+                    props: Vec::new(),
+                    children: Vec::new(),
+                },
+            }],
+            roots: vec![0],
+            values: Vec::new(),
+            events: Vec::new(),
+            points: Vec::new(),
+        };
+        let props = ["onClick", "onMount", "onSecondary"].map(|name| Prop {
+            name,
+            value: PropValue::Handler(Handler::Lambda {
+                param: None,
+                body: Vec::new(),
+            }),
+            binding: None,
+            span: Default::default(),
+        });
+        let (slots, edit) = build::element_events(&mut template.events, 0, &spec, &props, None);
+        assert_eq!(slots, [Some(0), None, Some(1)]);
+        assert_eq!(edit, None);
+        assert_eq!(template.event(0, "onClick"), Some(0));
+        assert_eq!(template.event(0, "onSecondary"), Some(1));
+        assert_eq!(template.event(0, "onMount"), None);
+        assert_eq!(template.events[1].payload, Some(ValueType::Bool));
+
+        template.events.clear();
+        let (slots, edit) = build::element_events(
+            &mut template.events,
+            0,
+            &spec,
+            &props,
+            Some(("onSecondary", 0, ValueType::Bool)),
+        );
+        assert_eq!(slots, [Some(1), None, Some(0)]);
+        assert_eq!(edit, Some(0));
+        assert_eq!(template.controlled(0), (0, 0));
     }
 
     #[test]

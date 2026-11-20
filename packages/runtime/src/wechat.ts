@@ -8,7 +8,7 @@
  * template to a data key. At the end of every batch the changed keys become
  * `setData` paths such as `r.b8.l7[2].n3_0`, and paths below another changed
  * path are dropped. Event handlers stay in the logic layer: the view only
- * carries handler ids (`data-h`) that the sink maps back to
+ * carries handler ids (`data-e<type>`) that the sink maps back to
  * `(scope, event slot)`.
  */
 
@@ -50,7 +50,8 @@ export interface View {
 
 /** The event object of `bindtap` / `bindinput` / `bindchange`. */
 interface ViewEvent {
-  currentTarget: { dataset: { h?: unknown } };
+  type: string;
+  currentTarget: { dataset: Data };
   detail?: { value?: unknown };
 }
 
@@ -248,11 +249,11 @@ export class WechatSink implements Sink {
    * calls, because the view's data still holds the bound value.
    */
   event(event: ViewEvent): string | undefined {
-    const found = this.#handlers.get(Number(event.currentTarget.dataset.h));
+    const found = this.#handlers.get(Number(event.currentTarget.dataset[`e${event.type}`]));
     const session = this.#session;
     if (!found || !session) return undefined;
     const [scope, slot] = found;
-    const value = event.detail?.value;
+    const value = event.type === "input" || event.type === "change" ? event.detail?.value : undefined;
     if (session.dispatch(scope.id, slot, value) || scope.dead) return undefined;
     const controls = scope.keys.e![slot][1];
     const key = scope.keys.v![controls][0];

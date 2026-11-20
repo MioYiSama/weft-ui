@@ -58,6 +58,7 @@ struct Slot {
 
 struct Event {
   uint32_t node;
+  std::string name;
   std::optional<uint32_t> controls;
 };
 
@@ -99,7 +100,8 @@ Layout load_layout(const json::Value &root) {
     for (auto &v : t["values"].array()) tpl.values.push_back({v["node"].u32(), v["prop"].string(), v["type"].string()});
     for (auto &e : t["events"].array()) {
       auto &controls = e["controls"];
-      tpl.events.push_back({e["node"].u32(), controls.is_null() ? std::nullopt : std::optional(controls.u32())});
+      tpl.events.push_back({e["node"].u32(), e["event"].string(),
+                            controls.is_null() ? std::nullopt : std::optional(controls.u32())});
     }
     for (auto &p : t["points"].array()) {
       Point point{p["kind"].string(), {}};
@@ -151,13 +153,14 @@ class Renderer {
     return found[index];
   }
 
-  /// The event slot of an element node.
-  uint32_t event_of(uint32_t scope, uint32_t node) const {
+  /// The first event slot on the element matching the predicate.
+  template <typename Filter>
+  uint32_t event_of(uint32_t scope, uint32_t node, Filter matches) const {
     auto &events = layout_.templates[at(scope).tpl].events;
     for (uint32_t i = 0; i < events.size(); i++) {
-      if (events[i].node == node) return i;
+      if (events[i].node == node && matches(events[i])) return i;
     }
-    throw Protocol("the element has no event");
+    throw Protocol("the element has no matching event");
   }
 
   const Scope *get(uint32_t id) const {
@@ -411,14 +414,13 @@ struct Host {
 
   /// Edits a controlled element like a user; a rejected edit shows the last value received again.
   void edit(uint32_t scope_id, uint32_t node, const json::Value &value) {
-    uint32_t slot = renderer.event_of(scope_id, node);
+    uint32_t slot = renderer.event_of(scope_id, node, [](const Event &event) { return event.controls.has_value(); });
     Scope &scope = renderer.at(scope_id);
-    auto controls = renderer.layout().templates[scope.tpl].events[slot].controls;
-    if (!controls) throw Protocol("the element is not controlled");
-    scope.shown[*controls] = own(value);
+    uint32_t controls = *renderer.layout().templates[scope.tpl].events[slot].controls;
+    scope.shown[controls] = own(value);
     bool accepted = dispatch(scope_id, slot, encode(value));
     const Scope *after = renderer.get(scope_id);
-    if (!accepted && after) renderer.at(scope_id).shown[*controls] = after->values[*controls];
+    if (!accepted && after) renderer.at(scope_id).shown[controls] = after->values[controls];
   }
 
   void handle(const Call &call) {
@@ -427,7 +429,11 @@ struct Host {
       step(args["name"].string());
     } else if (call.method == "click") {
       auto [scope, node] = renderer.find(args["type"].string(), args["index"].u32());
-      dispatch(scope, renderer.event_of(scope, node), {});
+      const std::string *name = args.has("event") ? &args["event"].string() : nullptr;
+      uint32_t slot = renderer.event_of(scope, node, [name](const Event &event) {
+        return !name || event.name == *name;
+      });
+      dispatch(scope, slot, {});
     } else if (call.method == "edit") {
       auto [scope, node] = renderer.find(args["type"].string(), args["index"].u32());
       edit(scope, node, args["value"]);

@@ -13,12 +13,13 @@
 import { run } from "@weft-ui/platform";
 import { kernel } from "@weft-ui/runtime/native";
 import { tick } from "@weft-ui/runtime/remote";
-import type { Actions, AppLike, Script } from "../test/harness.ts";
+import type { Actions, AppLike, Script } from "../harness.ts";
 
 interface Action {
   method: "click" | "edit";
   type: string;
   index: number;
+  event?: string;
   value?: string | boolean;
 }
 
@@ -36,7 +37,7 @@ async function play<A extends AppLike>(script: Script<A>): Promise<void> {
     // Steps are synchronous, so the host performs their user actions afterwards, in order.
     const actions: Action[] = [];
     const ui: Actions = {
-      click: (type, index) => void actions.push({ method: "click", type, index }),
+      click: (type, index, event) => void actions.push({ method: "click", type, index, event }),
       edit: (type, index, value) => void actions.push({ method: "edit", type, index, value }),
     };
     step.run(ui, app.model);

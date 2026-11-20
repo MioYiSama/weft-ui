@@ -57,7 +57,7 @@ export const script: Script<Gallery> = {
         model.labels = [...model.labels].reverse();
       },
     },
-    { name: "click the panel button", run: (ui) => ui.click("Button", 0) },
+    { name: "click the panel button", run: (ui) => ui.click("Button", 0, "onClick") },
     { name: "uncheck to hide the slot list", run: (ui) => ui.edit("Checkbox", 0, false) },
   ],
 };

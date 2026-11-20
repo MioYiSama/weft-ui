@@ -34,7 +34,8 @@ export type AppClass<A extends AppLike> = new (model: A["model"]) => A;
 
 /** User actions, addressing elements by type and document order. */
 export interface Actions {
-  click(type: string, index: number): void;
+  /** Fires the named event, or the element's first event, without a payload. */
+  click(type: string, index: number, event?: string): void;
   /** Edits a controlled `Input` or `Checkbox`. */
   edit(type: string, index: number, value: string | boolean): void;
 }
@@ -108,6 +109,18 @@ function nth<R>(found: [R, string][], type: string, index: number): R {
   return raw;
 }
 
+function actionEvent(type: string, name?: string): { dom: string; wechat: string } {
+  const first = type === "Input" || type === "Checkbox" ? "onChange" : "onClick";
+  switch (name ?? first) {
+    case "onClick": return { dom: "click", wechat: "tap" };
+    case "onChange": {
+      const event = type === "Input" ? "input" : "change";
+      return { dom: event, wechat: event };
+    }
+    default: throw new Error(`no mapping for ${type}.${name}`);
+  }
+}
+
 /** Output of the mini program build shared by the headless and WXML drivers. */
 export interface Built<A extends AppLike> {
   out: string;
@@ -154,7 +167,7 @@ export function headless<A extends AppLike>(script: Script<A>, built: Built<A>):
     app,
     log,
     tree: () => reduce(renderer.tree(), classify),
-    click: (type, index) => renderer.click(find(type, index)),
+    click: (type, index, event) => renderer.click(find(type, index), event),
     edit: (type, index, value) => {
       renderer.edit(find(type, index), value);
     },
@@ -200,7 +213,9 @@ export async function wechat<A extends AppLike>(script: Script<A>, built: Built<
     app,
     log,
     tree: () => reduce(view.render(), wxClassify),
-    click: (type, index) => view.tap(find(type, index)),
+    click: (type, index, event) => {
+      view.fire(find(type, index), actionEvent(type, event).wechat);
+    },
     edit: (type, index, value) => {
       const element = find(type, index);
       if (type === "Input") view.input(element, value as string);
@@ -249,7 +264,12 @@ export function web<A extends AppLike>(script: Script<A>): Driver<A> {
     app,
     log,
     tree: () => reduce([...target.children], domClassify),
-    click: (type, index) => (find(type, index) as HTMLElement).click(),
+    click: (type, index, name) => {
+      const element = find(type, index) as HTMLElement;
+      const { dom } = actionEvent(type, name);
+      if (dom === "click") element.click();
+      else element.dispatchEvent(new window.Event(dom) as unknown as Event);
+    },
     edit: (type, index, value) => {
       const input = find(type, index) as HTMLInputElement;
       if (type === "Input") input.value = value as string;

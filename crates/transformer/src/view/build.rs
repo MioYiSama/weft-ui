@@ -1,6 +1,8 @@
 use crate::color::Color;
-use crate::elements::PropType;
-use crate::ir::{Component, ComponentId, Expr, ExprKind, NodeId, NodeKind, Program, PropValue};
+use crate::elements::{ElementSpec, PropKind, PropType};
+use crate::ir::{
+    Component, ComponentId, Expr, ExprKind, NodeId, NodeKind, Program, Prop, PropValue,
+};
 
 use super::json::fnv1a;
 use super::{
@@ -86,6 +88,44 @@ fn constant(expr: &Expr, ty: PropType) -> Option<Constant> {
     }
 }
 
+/// Allocates the control event first, then other handlers in IR property order.
+pub(super) fn element_events(
+    slots: &mut Vec<EventSlot>,
+    node: u32,
+    spec: &ElementSpec,
+    props: &[Prop],
+    edited: Option<(&'static str, u32, ValueType)>,
+) -> (Vec<Option<u32>>, Option<u32>) {
+    let mut allocate = |event, payload, controls| {
+        let slot = offset(slots.len());
+        slots.push(EventSlot {
+            node,
+            event,
+            payload,
+            controls,
+        });
+        slot
+    };
+    let edit = edited.map(|(name, value, ty)| allocate(name, Some(ty), Some(value)));
+    let events = props
+        .iter()
+        .map(|prop| {
+            if !matches!(prop.value, PropValue::Handler(_)) {
+                return None;
+            }
+            if edited.is_some_and(|(event, ..)| event == prop.name) {
+                return edit;
+            }
+            // Lifecycle hooks are not part of the element's schema or view.
+            let PropKind::Handler { payload } = spec.prop(prop.name)?.kind else {
+                return None;
+            };
+            Some(allocate(prop.name, payload.map(ValueType::of), None))
+        })
+        .collect();
+    (events, edit)
+}
+
 struct Builder<'p> {
     program: &'p Program,
     /// Reserved templates are `None` until built.
@@ -165,16 +205,10 @@ impl Builder<'_> {
                 let spec = element.spec();
                 let mut statics = Vec::new();
                 let mut values = Vec::with_capacity(props.len());
-                let mut handler = None;
                 let mut edited = None;
                 for prop in props {
                     let slot = match &prop.value {
-                        PropValue::Handler(_) => {
-                            if !matches!(prop.name, "onMount" | "onUnmount") {
-                                handler = Some(prop.name);
-                            }
-                            None
-                        }
+                        PropValue::Handler(_) => None,
                         PropValue::Expr(value) => {
                             let prop_spec = spec
                                 .prop(prop.name)
@@ -210,25 +244,7 @@ impl Builder<'_> {
                     };
                     values.push(slot);
                 }
-                let event = match (handler, edited) {
-                    (_, Some((event, slot, ty))) => Some(EventSlot {
-                        node: local,
-                        event,
-                        payload: Some(ty),
-                        controls: Some(slot),
-                    }),
-                    (Some(name), None) => Some(EventSlot {
-                        node: local,
-                        event: name,
-                        payload: None,
-                        controls: None,
-                    }),
-                    (None, None) => None,
-                };
-                let event = event.map(|slot| {
-                    draft.events.push(slot);
-                    offset(draft.events.len() - 1)
-                });
+                let (events, edit) = element_events(&mut draft.events, local, spec, props, edited);
                 let children: Vec<u32> = children.iter().map(|&c| self.node(draft, c)).collect();
                 if let ViewNodeKind::Element {
                     props, children: c, ..
@@ -237,7 +253,11 @@ impl Builder<'_> {
                     *props = statics;
                     *c = children;
                 }
-                Role::Element { values, event }
+                Role::Element {
+                    values,
+                    events,
+                    edit,
+                }
             }
             kind => {
                 let index = offset(draft.points.len());

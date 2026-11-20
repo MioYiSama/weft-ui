@@ -21,8 +21,8 @@ typealias WeftMake = (template: Int, id: Int, session: WeftSession) -> WeftScope
  * The kernel runs on the main thread: `commit` applies each batch of ops to
  * the scopes as it arrives, timers are posted to the main looper, and
  * platform calls complete on a background thread and resolve on the main
- * thread. The session lives as long as the process, so the app survives
- * activity recreation.
+ * thread. Each composed root owns its session; a recreated activity starts
+ * a new session.
  */
 class WeftSession private constructor(context: Context, layoutHash: Long, private val make: WeftMake) {
     /** The root component instance. */
@@ -104,6 +104,16 @@ class WeftSession private constructor(context: Context, layoutHash: Long, privat
         return Native.dispatch(runtime, scope, slot, payload?.encode())
     }
 
+    @MainThread
+    internal fun close() {
+        val handle = runtime
+        runtime = 0L
+        main.removeCallbacksAndMessages(null)
+        if (handle != 0L) Native.free(handle)
+        scopes.clear()
+        root = null
+    }
+
     private fun commit(ops: ByteBuffer) {
         committing = true
         try {
@@ -161,15 +171,13 @@ class WeftSession private constructor(context: Context, layoutHash: Long, privat
         /** Asset path of the app's bytecode, packaged by the generated module. */
         const val BUNDLE = "weft/bundle.hbc"
 
-        private var shared: WeftSession? = null
-
         /**
-         * The process's session, started on first use with the bundle in the
-         * app's assets. The generated views implement the layout with hash
-         * [layoutHash] and create their scopes with [make].
+         * Starts a session with the bundle in the app's assets. The generated
+         * views implement the layout with hash [layoutHash] and create their
+         * scopes with [make].
          */
         @MainThread
         fun start(context: Context, layoutHash: Long, make: WeftMake): WeftSession =
-            shared ?: WeftSession(context.applicationContext, layoutHash, make).also { shared = it }
+            WeftSession(context.applicationContext, layoutHash, make)
     }
 }

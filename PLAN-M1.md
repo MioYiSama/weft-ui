@@ -914,7 +914,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | S3 | ☑ | 58ccbc3 | 无产物变化；临时禁用 Linux 的 `Image` 时构建报 `` `Image` is not supported on linux `` |
 | P1 | ☑ | ddae077 | 快照、黄金文件不变；C-apps 中 6 个非 Web 平台的 `js/index.js` 有差异（见执行中发现），已重新录制基线 |
 | P2 | ☑ | （本提交） | Web、iOS、Android 上切换深浅色与旋转时日志随之变化；协议版本不变 |
-| L1 | ☐ | | |
+| L1 | ☑ | （本提交） | 新增 `Language` 快照与 `language.ops`；C-core 含 `conformance.language` 通过；C-apps 无差异 |
 | L2 | ☐ | | |
 | L3 | ☐ | | |
 | L4 | ☐ | | |
@@ -924,7 +924,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | L6.d | ☐ | | |
 | L6.n | ☐ | | |
 | L6.g | ☐ | | |
-| T1 | ☐ | | 截图待维护者确认 |
+| T1 | ☑ | （本提交） | 截图待维护者确认（`hello`：web、ios、android、wechat）；C-shot 差异 0.000%，小程序 0.006%；macOS、Windows、Linux 截图已查看；小程序 AppID 放在忽略的 `project.private.config.json` |
 | T2 | ☐ | | |
 | R1.w | ☐ | | |
 | R1.a | ☐ | | |

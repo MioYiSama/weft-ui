@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 fun WeftRoot(layoutHash: ULong, make: WeftMake) {
     val context = LocalContext.current
     val session = remember { WeftSession.start(context, layoutHash.toLong(), make) }
+    DisposableEffect(session) { onDispose { session.close() } }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val safe = WindowInsets.safeDrawing

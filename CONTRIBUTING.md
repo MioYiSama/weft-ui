@@ -44,6 +44,8 @@ Run the checks of the code you touched before opening a pull request. CI runs ev
 | C-windows | On Windows: `native/windows/build-core.ps1`, the kernel tests with `-DWEFT_CORE_SHARED=ON` (as C-core), then `dotnet test native/windows/Weft.WinUI.Tests` |
 | C-linux | In the container (below): `native/linux/build-core.sh`, then `cmake -S native/linux -B /tmp/weft-linux-tests -G Ninja -DWEFT_LINUX_TESTS=ON && cmake --build /tmp/weft-linux-tests && ctest --test-dir /tmp/weft-linux-tests --output-on-failure` |
 | C-ui | `pnpm --filter example test:<platform>` after `pnpm --filter example build:<platform>` |
+| C-shot | `pnpm --filter showcase shot:web && pnpm --filter showcase shot:ios && pnpm --filter showcase shot:android`; at most 0.1% of pixels may differ in each screenshot |
+| C-shot-local | `pnpm --filter showcase shot:wechat`, `shot:macos`, `shot:windows` (via `/tmp/weft-win.sh` on macOS), and `shot:linux` (in the container); compare WeChat and open the three desktop screenshots for manual review |
 
 `WEFT_UPDATE_SNAPSHOTS=1` rewrites the Rust snapshots and the conformance goldens. Only do so when the change is meant to alter generated code, and review the diff.
 
@@ -54,6 +56,18 @@ CI runs the Android and iOS flows nightly (`nightly.yml`). The other platforms r
 - **macOS**: `pnpm --filter example test:macos`. Switch to an English input source (ABC) first; other input methods intercept XCUITest's typing.
 - **Windows**: `pnpm --filter example build:windows`, then `pnpm --filter example test:windows` from an interactive desktop session (FlaUI drives the real window).
 - **Linux**: build the compiler WASM on the host (`pnpm build:wasm`), then start the container (`docker compose -f native/linux/docker/compose.yaml up -d --build`), then in `docker compose -f native/linux/docker/compose.yaml exec linux bash`: `pnpm install`, `native/linux/build-core.sh`, `pnpm --filter example build:linux` and `pnpm --filter example test:linux`. The desktop is on `vnc://localhost:5901` (password `weft`).
+
+## Screenshot regression
+
+The [showcase](showcase/README.md) records screenshots in `showcase/screenshots/actual/<platform>/` and writes failed comparisons to `showcase/screenshots/diff/<platform>/`. Run one platform at a time in a checkout. When a visual change is intentional, run `WEFT_UPDATE_SNAPSHOTS=1 pnpm --filter showcase shot:<platform>` and review each updated image under `showcase/screenshots/baseline/` before committing it. macOS, Windows and Linux screenshots are for manual review only.
+
+- **Web:** run `pnpm --filter showcase exec playwright install chromium` once locally and on CI (`--with-deps` also installs Chromium's system dependencies on Linux).
+- **iOS:** install the `iPhone 17` simulator (`WEFT_IOS_DEVICE` can override its name or UDID). The driver boots it and fixes the status bar for the shots.
+- **Android:** start a single emulator before running `shot:android`; `adb` must be on `PATH`.
+- **WeChat:** install and sign in to WeChat DevTools, then enable Settings → Security → Service Port (设置 → 安全设置 → 服务端口). Set `WEFT_WECHAT_CLI` to the DevTools CLI if it is not at `/Applications/wechatwebdevtools.app/Contents/MacOS/cli`. If the CLI rejects `touristappid`, add `{"appid": "<your AppID>"}` to the ignored `showcase/apps/wechat/project.private.config.json` using an AppID the signed-in account can access.
+- **macOS:** run `shot:macos` in a graphical desktop session. Open the resulting window captures to check the page rendered.
+- **Windows:** run `shot:windows` in an interactive Windows desktop. On the development Mac it calls `/tmp/weft-win.sh` with `/tmp/win-sync.ps1` to sync first, runs the tests in the guest's interactive session, and copies back the images. See the [Windows VM setup](PLAN.md#附录windows-虚拟机脚本).
+- **Linux:** use the same Docker desktop and kernel setup as C-ui, then run `docker compose -f native/linux/docker/compose.yaml exec linux pnpm --filter showcase shot:linux`.
 
 ## Conventions
 

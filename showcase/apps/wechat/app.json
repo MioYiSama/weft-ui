@@ -1,0 +1,6 @@
+{
+  "pages": ["weft/index"],
+  "window": {
+    "navigationBarTitleText": "Weft Showcase"
+  }
+}

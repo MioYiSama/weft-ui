@@ -41,6 +41,7 @@ services:
       - native_windows_modules:/workspace/native/windows/node_modules
       - native_linux_modules:/workspace/native/linux/node_modules
       - example_modules:/workspace/example/node_modules
+      - showcase_modules:/workspace/showcase/node_modules
       - tests_modules:/workspace/tests/node_modules
       - pnpm_store:/home/ubuntu/.local/share/pnpm
 
@@ -55,5 +56,6 @@ volumes:
   native_windows_modules:
   native_linux_modules:
   example_modules:
+  showcase_modules:
   tests_modules:
   pnpm_store:

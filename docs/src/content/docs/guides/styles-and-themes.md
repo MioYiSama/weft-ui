@@ -45,7 +45,16 @@ component Panel() {
 
 The color before `dark` is the light appearance; omit `dark` to use the same color in both modes. `Int` and `Float` tokens always have one value, substituted at compile time. Colors follow the system appearance automatically; there is no Weft setting to force a mode.
 
-Theme tokens are currently supported on the Web and in WeChat mini programs. New mini program projects opt in to WeChat dark mode automatically. If your project already has an `app.json`, add `"darkmode": true` to it. See the [element and feature support matrix](/reference/elements/).
+Theme tokens work on every platform and follow the system appearance while the app runs:
+
+- **Web**: CSS variables and the `prefers-color-scheme` media query.
+- **WeChat mini programs**: the same CSS variables. New mini program projects opt in to WeChat dark mode automatically. If your project already has an `app.json`, add `"darkmode": true` to it.
+- **iOS and macOS**: dynamic `UIColor` / `NSColor` values.
+- **Android**: colors are resolved during composition from `isSystemInDarkTheme()`.
+- **Windows**: colors are reapplied when the window's `ActualTheme` changes.
+- **Linux**: the color scheme comes from the XDG desktop portal (`org.freedesktop.appearance` `color-scheme`). Without a portal, apps use light colors.
+
+See the [element and feature support matrix](/reference/elements/).
 
 ## Pass a `Color` through a component
 

@@ -191,12 +191,12 @@ impl Display for Argument<'_> {
                 Constant::Int(v) => v.fmt(f),
                 Constant::Bool(v) => v.fmt(f),
                 Constant::String(s) => swift::string(f, s),
-                Constant::Token(_) => unreachable!("platform support rejects theme tokens"),
-                Constant::Color(c) => write!(
-                    f,
-                    "Color(weftRGBA: 0x{:02x}{:02x}{:02x}{:02x})",
-                    c.r, c.g, c.b, c.a
-                ),
+                Constant::Token(name) => {
+                    f.write_str("WeftColor.token(")?;
+                    swift::string(f, name)?;
+                    f.write_str(")")
+                }
+                Constant::Color(c) => write!(f, "WeftColor.rgba({})", swift::rgba(*c)),
             },
         }
     }

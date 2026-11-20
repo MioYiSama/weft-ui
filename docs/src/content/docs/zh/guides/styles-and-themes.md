@@ -45,7 +45,16 @@ component Panel() {
 
 `dark` 前的颜色用于浅色外观；不写 `dark` 时，深浅色共用同一个值。`Int` 和 `Float` 令牌只有一个值，在编译期替换为字面量。颜色自动跟随系统外观，Weft 不提供应用内切换开关。
 
-目前 Web 和微信小程序支持主题令牌。新建的小程序项目已默认开启微信深色模式；已有项目可在 `app.json` 中加上 `"darkmode": true`。各平台的支持情况见[元素与功能参考](/zh/reference/elements/)。
+所有平台都支持主题令牌，应用运行时随系统外观切换：
+
+- **Web**：CSS 变量与 `prefers-color-scheme` 媒体查询。
+- **微信小程序**：同样的 CSS 变量。新建的小程序项目已默认开启微信深色模式；已有项目可在 `app.json` 中加上 `"darkmode": true`。
+- **iOS 与 macOS**：动态的 `UIColor` / `NSColor`。
+- **Android**：在组合时按 `isSystemInDarkTheme()` 取值。
+- **Windows**：窗口的 `ActualTheme` 变化时重新应用颜色。
+- **Linux**：从 XDG 桌面门户（`org.freedesktop.appearance` 的 `color-scheme`）读取深浅色；没有门户时使用浅色。
+
+各平台的支持情况见[元素与功能参考](/zh/reference/elements/)。
 
 ## 在组件间传递 `Color`
 

@@ -217,7 +217,7 @@ private struct V4: View {
             if let c = s.p6 { V3(s: c) }
             ForEach(s.p7) { c in V10(s: c) }
             Text(verbatim: "note")
-            .weftText(color: Color(weftRGBA: 0x6b7280ff), size: 14, bold: nil)
+            .weftText(color: WeftColor.rgba(0x6b7280ff), size: 14, bold: nil)
         }
     }
 }

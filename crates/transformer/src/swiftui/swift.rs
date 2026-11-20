@@ -3,6 +3,7 @@
 use std::fmt::{self, Display, Write as _};
 
 use crate::code::Indented;
+use crate::color::Color;
 
 /// Swift source written line by line, indented by nesting depth.
 #[derive(Debug)]
@@ -34,6 +35,17 @@ impl Code {
         self.close(line);
         self.writer.indent();
     }
+}
+
+/// An sRGB hexadecimal literal with all four channels (`0xRRGGBBAA`).
+pub(super) fn rgba(color: Color) -> impl Display {
+    fmt::from_fn(move |f| {
+        write!(
+            f,
+            "0x{:02x}{:02x}{:02x}{:02x}",
+            color.r, color.g, color.b, color.a
+        )
+    })
 }
 
 /// A Swift string literal of `s`. Backslashes are escaped, so `\(` never

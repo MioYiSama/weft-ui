@@ -56,13 +56,33 @@ fn generate(layout: &ViewLayout) -> String {
     out.writer.line(
         "/// The app's kernel session, started on first use with the bundle of this package.",
     );
-    out.open("@MainActor private let session = WeftSession(");
+    let theme = layout.theme();
+    if !theme.is_empty() {
+        out.open("@MainActor private let session: WeftSession = {");
+        out.open("WeftTheme.register([");
+        for (name, light, dark) in theme {
+            // Theme names are ASCII identifiers, so they never need escaping.
+            let (light, dark) = (swift::rgba(*light), swift::rgba(*dark));
+            out.writer
+                .line(format_args!("\"{name}\": ({light}, {dark}),"));
+        }
+        out.close("])");
+    }
+    let session = if theme.is_empty() {
+        "@MainActor private let session = WeftSession("
+    } else {
+        "return WeftSession("
+    };
+    out.open(session);
     out.writer
         .line("bytecode: Bundle.module.url(forResource: \"bundle\", withExtension: \"hbc\"),");
     out.writer
         .line(format_args!("layoutHash: 0x{:016x},", layout.hash()));
     out.writer.line("make: makeScope");
     out.close(")");
+    if !theme.is_empty() {
+        out.close("}()");
+    }
     out.writer.blank();
     out.writer.line("/// Root view of the app.");
     out.open("public struct WeftAppView: View {");
@@ -114,7 +134,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
             ValueType::Int => "CGFloat = 0",
             ValueType::Bool => "Bool = false",
             ValueType::String => "String = \"\"",
-            ValueType::Color => "Color = .clear",
+            ValueType::Color => "WeftColor = .clear",
         };
         out.writer.line(format_args!("var v{slot}: {declaration}"));
     }

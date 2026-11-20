@@ -28,12 +28,8 @@ public enum WeftValue: Equatable, Sendable {
     }
 
     /// The value of a `Color` slot; invalid colors are transparent.
-    public var color: Color {
-        if let color = Color(weftHex: string) { return color }
-        #if DEBUG
-        logger.warning("weft: invalid color \(string, privacy: .public), using transparent")
-        #endif
-        return .clear
+    public var color: WeftColor {
+        WeftColor.parse(string)
     }
 
     /// Appends the binary encoding of an event payload: a tag byte and the data.
@@ -55,34 +51,3 @@ public enum WeftValue: Equatable, Sendable {
     }
 }
 
-extension Color {
-    /// A constant color of the generated views, written as `0xRRGGBBAA`.
-    public init(weftRGBA rgba: UInt32) {
-        self.init(
-            .sRGB,
-            red: Double(rgba >> 24 & 0xff) / 255,
-            green: Double(rgba >> 16 & 0xff) / 255,
-            blue: Double(rgba >> 8 & 0xff) / 255,
-            opacity: Double(rgba & 0xff) / 255
-        )
-    }
-
-    /// Parses `#RGB`, `#RRGGBB` or `#RRGGBBAA` in either hex case.
-    init?(weftHex text: String) {
-        let digits = Array(text.utf8.dropFirst())
-        guard text.utf8.first == UInt8(ascii: "#"),
-              [3, 6, 8].contains(digits.count),
-              digits.allSatisfy({ Character(Unicode.Scalar($0)).isHexDigit }),
-              let value = UInt32(String(decoding: digits, as: UTF8.self), radix: 16)
-        else { return nil }
-        switch digits.count {
-        case 3:
-            let r = value >> 8 & 0xf, g = value >> 4 & 0xf, b = value & 0xf
-            self.init(weftRGBA: (r * 17) << 24 | (g * 17) << 16 | (b * 17) << 8 | 0xff)
-        case 6:
-            self.init(weftRGBA: value << 8 | 0xff)
-        default:
-            self.init(weftRGBA: value)
-        }
-    }
-}

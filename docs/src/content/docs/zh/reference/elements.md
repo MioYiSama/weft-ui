@@ -104,7 +104,3 @@ title: 内置元素
 | `src` (位置参数) | `String` | 必填 | 图片的 URL。 | — |
 | `width` | `Int` | — | 设置图片宽度。 | — |
 | `height` | `Int` | — | 设置图片高度。 | — |
-
-## 功能支持
-
-- `theme`: 主题声明和颜色令牌。 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux`.

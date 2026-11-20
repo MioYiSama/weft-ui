@@ -50,15 +50,15 @@ public struct WeftRoot: View {
 extension View {
     /// Layout properties of `Column` and `Row`: a fixed content size, then
     /// padding around it, then the background behind both, as CSS boxes do.
-    public func weftBox(padding: CGFloat?, width: CGFloat?, height: CGFloat?, background: Color?) -> some View {
+    public func weftBox(padding: CGFloat?, width: CGFloat?, height: CGFloat?, background: WeftColor?) -> some View {
         frame(width: width, height: height, alignment: .topLeading)
             .padding(padding ?? 0)
-            .background(background ?? .clear)
+            .background(background?.resolved ?? .clear)
     }
 
     /// Style properties of `Text`; unset ones keep the platform's defaults.
-    public func weftText(color: Color?, size: CGFloat?, bold: Bool?) -> some View {
-        foregroundStyle(color ?? .primary)
+    public func weftText(color: WeftColor?, size: CGFloat?, bold: Bool?) -> some View {
+        foregroundStyle(color?.resolved ?? .primary)
             .font(size.map { Font.system(size: $0) })
             .bold(bold ?? false)
     }

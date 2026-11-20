@@ -65,7 +65,13 @@ const LANGUAGE: Fixture = Fixture {
 const THEME: Fixture = Fixture {
     name: "Theme",
     source: include_str!("fixtures/Theme.weft"),
-    natives: &[],
+    natives: &[
+        Platform::Ios,
+        Platform::Macos,
+        Platform::Android,
+        Platform::Windows,
+        Platform::Linux,
+    ],
 };
 
 /// Every generated file of the app, as the platform's output directory would

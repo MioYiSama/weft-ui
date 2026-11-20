@@ -84,13 +84,13 @@ private struct V0: View {
     /// Row.height
     var v3: CGFloat = 0
     /// Row.background
-    var v4: Color = .clear
+    var v4: WeftColor = .clear
     /// Checkbox.checked
     var v5: Bool = false
     /// Image.src
     var v6: String = ""
     /// Text.color
-    var v7: Color = .clear
+    var v7: WeftColor = .clear
     /// Text.size
     var v8: CGFloat = 0
     /// Text.bold
@@ -132,7 +132,7 @@ private struct V1: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(verbatim: "Gallery")
-            .weftText(color: Color(weftRGBA: 0x224466ff), size: 20, bold: true)
+            .weftText(color: WeftColor.rgba(0x224466ff), size: 20, bold: true)
             HStack(alignment: .top, spacing: s.v1) {
                 WeftCheckbox(checked: s.v5) { s.dispatch(0, .bool($0)) ? nil : s.v5 }
                 WeftImage(src: s.v6, width: 32, height: 32)
@@ -143,7 +143,7 @@ private struct V1: View {
             WeftInput(text: s.v10, placeholder: "Caption") { s.dispatch(1, .string($0)) ? nil : s.v10 }
             if let c = s.p0 { V0(s: c) }
         }
-        .weftBox(padding: 12, width: 320, height: 280, background: Color(weftRGBA: 0xeeeeffff))
+        .weftBox(padding: 12, width: 320, height: 280, background: WeftColor.rgba(0xeeeeffff))
     }
 }
 

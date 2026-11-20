@@ -36,5 +36,6 @@ void container_set_justify(GtkWidget *widget, Justify justify);
 void container_set_alignment(GtkWidget *widget, Alignment alignment);
 void container_set_padding(GtkWidget *widget, Edge edge, double value);
 void container_set_background(GtkWidget *widget, const GdkRGBA &color);
+void container_on_allocate(GtkWidget *widget, void (*callback)(GtkWidget *));
 
 }  // namespace weft

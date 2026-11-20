@@ -62,7 +62,7 @@ Web 以外平台的逻辑层打包在 `weft/js/index.js` 中。原生平台还�
 
 ## Web
 
-[示例的 `index.html`](https://github.com/weft-ui/weft-ui/blob/master/example/index.html) 通过模块脚本加载 `/src/index.ts`，由 `run(app)` 把应用挂载到 `id="app"` 的元素上。用 Vite 开发服务器在浏览器里查看改动，再把静态站点构建到 `apps/web/`：
+[示例的 `index.html`](https://github.com/weft-ui/weft-ui/blob/master/example/index.html) 通过模块脚本加载 `/src/index.ts`，由 `run(app)` 把应用挂载到 `id="app"` 的元素上。将挂载点的高度设为 `100dvh`、`body` 的外边距设为 `0`，让应用占满窗口。用 Vite 开发服务器在浏览器里查看改动，再把静态站点构建到 `apps/web/`：
 
 ```sh
 pnpm --filter example exec vite

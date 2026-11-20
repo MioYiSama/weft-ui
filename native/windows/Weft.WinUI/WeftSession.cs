@@ -33,7 +33,6 @@ public sealed class WeftSession
     private readonly Factory make;
     private readonly Dictionary<uint, WeftScope> scopes = [];
     private readonly Panel root;
-    private readonly FrameworkElement view;
     private ElementTheme appliedTheme;
     private WindowEnvironment environment;
     private readonly ArrayBufferWriter<byte> environmentJson = new(192);
@@ -55,34 +54,32 @@ public sealed class WeftSession
     private readonly unsafe byte* bytecode;
 
     internal WeftTheme? Theme { get; }
-    internal ElementTheme ActualTheme => view.ActualTheme;
+    internal ElementTheme ActualTheme => root.ActualTheme;
 
     /// <summary>
     /// Starts the app compiled to <c>weft/bundle.hbc</c> next to the executable,
     /// whose views implement the layout with hash <paramref name="layoutHash"/>,
-    /// and returns its root view: a vertically scrolling page whose content
-    /// starts at the top left corner, or why the app failed.
+    /// and returns its root layout, showing the startup error if the app failed.
     /// </summary>
     public static UIElement Start(ulong layoutHash, Factory make, WeftTheme? theme = null)
     {
-        var page = new WeftLinearPanel(WeftAxis.Vertical, scrolling: true);
         // A ThemeResource stays live when the appearance changes, unlike a resource dictionary lookup.
-        var view = (ScrollViewer)XamlReader.Load("""
-            <ScrollViewer xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                          HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
-                          HorizontalContentAlignment="Stretch"
-                          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
-            """);
-        view.Content = page;
-        _ = new WeftSession(Path.Combine(AppContext.BaseDirectory, "weft", "bundle.hbc"), layoutHash, make, page, view, theme);
-        return view;
+        var root = new WeftLinearPanel(WeftAxis.Vertical, fillAvailable: true)
+        {
+            Style = (Style)XamlReader.Load("""
+                <Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" TargetType="Panel">
+                    <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+                </Style>
+                """),
+        };
+        _ = new WeftSession(Path.Combine(AppContext.BaseDirectory, "weft", "bundle.hbc"), layoutHash, make, root, theme);
+        return root;
     }
 
-    private unsafe WeftSession(string bundle, ulong layoutHash, Factory make, Panel root, FrameworkElement view, WeftTheme? theme)
+    private unsafe WeftSession(string bundle, ulong layoutHash, Factory make, Panel root, WeftTheme? theme)
     {
         this.make = make;
         this.root = root;
-        this.view = view;
         Theme = theme;
         appliedTheme = ActualTheme;
         queue = DispatcherQueue.GetForCurrentThread()
@@ -137,20 +134,20 @@ public sealed class WeftSession
             return;
         }
 
-        view.Loaded += (_, _) =>
+        root.Loaded += (_, _) =>
         {
             if (xamlRoot is not null) xamlRoot.Changed -= OnXamlRootChanged;
-            xamlRoot = view.XamlRoot;
+            xamlRoot = root.XamlRoot;
             if (xamlRoot is not null) xamlRoot.Changed += OnXamlRootChanged;
             QueueEnvironment();
         };
-        view.Unloaded += (_, _) =>
+        root.Unloaded += (_, _) =>
         {
             if (xamlRoot is not null) xamlRoot.Changed -= OnXamlRootChanged;
             xamlRoot = null;
         };
-        view.SizeChanged += (_, _) => QueueEnvironment();
-        view.ActualThemeChanged += (_, _) => QueueEnvironment();
+        root.SizeChanged += (_, _) => QueueEnvironment();
+        root.ActualThemeChanged += (_, _) => QueueEnvironment();
     }
 
     private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => QueueEnvironment();

@@ -247,7 +247,8 @@ pub(crate) const CSS_PROPS: &[Css<'static>] = &[
     },
 ];
 
-pub(crate) const CSS: &str = r#".w-column{display:flex;flex-direction:column;align-items:flex-start}
+pub(crate) const CSS: &str = r#".w-root{display:flex;flex-direction:column;align-items:flex-start;box-sizing:border-box;width:100%;height:100%;overflow:hidden}
+.w-column{display:flex;flex-direction:column;align-items:flex-start}
 .w-row{display:flex;flex-direction:row;align-items:flex-start}
 .w-stack{display:grid;position:relative;grid-template:minmax(0,1fr)/minmax(0,1fr);place-items:start start}
 .w-in-stack{grid-area:1/1/2/2;position:relative}

@@ -14,17 +14,23 @@ final class Screenshots: XCTestCase {
             let dark = parts[1] == "dark"
             let app = XCUIApplication()
             app.launchEnvironment["WEFT_SHOT_APPEARANCE"] = dark ? "dark" : "light"
+            app.launchArguments = ["-NSQuitAlwaysKeepsWindows", "NO"]
             app.launch()
             defer { app.terminate() }
+            app.activate()
 
-            let button = app.buttons["page:\(id)"]
+            let window = app.windows.firstMatch
+            if !window.exists { app.typeKey("n", modifierFlags: .command) }
+            XCTAssertTrue(window.waitForExistence(timeout: 5), "No showcase window")
+            let button = window.buttons["page:\(id)"]
             XCTAssertTrue(button.waitForExistence(timeout: 5), "No catalog button page:\(id)")
-            for _ in 0..<10 where !button.isHittable { app.scroll(byDeltaX: 0, deltaY: -250) }
+            let catalog = window.scrollViews.firstMatch
+            for _ in 0..<10 where !button.isHittable { catalog.scroll(byDeltaX: 0, deltaY: -250) }
             XCTAssertTrue(button.isHittable, "Catalog button page:\(id) is off screen")
             button.click()
             Thread.sleep(forTimeInterval: 1)
 
-            let screenshot = app.windows.firstMatch.screenshot()
+            let screenshot = window.screenshot()
             let suffix = dark ? "-dark" : ""
             let attachment = XCTAttachment(data: screenshot.pngRepresentation, uniformTypeIdentifier: "public.png")
             attachment.name = "weft-\(id)\(suffix)"

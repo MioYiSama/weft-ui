@@ -16,38 +16,6 @@
 #include "weft/gtk.hpp"
 #include "weft/protocol.hpp"
 
-// GtkWidget has no width/height notifications. Observe allocation of a
-// single-child viewport while leaving the scroll view's layout unchanged.
-struct WeftViewport {
-  GtkWidget parent_instance;
-  void (*changed)(GtkWidget *);
-};
-using WeftViewportClass = GtkWidgetClass;
-G_DEFINE_TYPE(WeftViewport, weft_viewport, GTK_TYPE_WIDGET)
-
-static void weft_viewport_class_init(WeftViewportClass *klass) {
-  klass->get_request_mode = [](GtkWidget *view) {
-    return gtk_widget_get_request_mode(gtk_widget_get_first_child(view));
-  };
-  klass->measure = [](GtkWidget *view, GtkOrientation orientation, int size, int *minimum, int *natural,
-                      int *minimum_baseline, int *natural_baseline) {
-    gtk_widget_measure(gtk_widget_get_first_child(view), orientation, size, minimum, natural,
-                       minimum_baseline, natural_baseline);
-  };
-  klass->size_allocate = [](GtkWidget *view, int width, int height, int baseline) {
-    gtk_widget_allocate(gtk_widget_get_first_child(view), width, height, baseline, nullptr);
-    auto *viewport = reinterpret_cast<WeftViewport *>(view);
-    if (viewport->changed) viewport->changed(view);
-  };
-  G_OBJECT_CLASS(klass)->dispose = [](GObject *object) {
-    if (GtkWidget *child = gtk_widget_get_first_child(GTK_WIDGET(object))) gtk_widget_unparent(child);
-    G_OBJECT_CLASS(weft_viewport_parent_class)->dispose(object);
-  };
-  gtk_widget_class_set_accessible_role(klass, GTK_ACCESSIBLE_ROLE_GENERIC);
-}
-
-static void weft_viewport_init(WeftViewport *) {}
-
 namespace weft {
 
 namespace {
@@ -146,29 +114,25 @@ struct Session::Environment {
 };
 
 GtkWidget *Session::start(uint64_t layout_hash, Factory make) {
-  GtkWidget *page = linear_new(Axis::Vertical, CrossAlign::Start, true);
-  GtkWidget *scroll = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroll), page);
-  auto *viewport = static_cast<WeftViewport *>(g_object_new(weft_viewport_get_type(), nullptr));
-  GtkWidget *view = GTK_WIDGET(viewport);
-  gtk_widget_set_parent(scroll, view);
+  GtkWidget *page = linear_new(Axis::Vertical);
+  gtk_widget_set_overflow(page, GTK_OVERFLOW_HIDDEN);
   // The session ends with the root widget.
-  auto *session = new Session(view, page, make);
-  g_object_set_data_full(G_OBJECT(view), "weft-session", session,
+  auto *session = new Session(page, make);
+  g_object_set_data_full(G_OBJECT(page), "weft-session", session,
                          [](gpointer session) { delete static_cast<Session *>(session); });
-  viewport->changed = [](GtkWidget *view) {
-    static_cast<Session *>(g_object_get_data(G_OBJECT(view), "weft-session"))->queue_environment();
-  };
-  g_signal_connect(view, "notify::scale-factor", G_CALLBACK(+[](GtkWidget *, GParamSpec *, gpointer data) {
+  // GTK has no width/height notifications; observe the root's allocation.
+  container_on_allocate(page, [](GtkWidget *widget) {
+    static_cast<Session *>(g_object_get_data(G_OBJECT(widget), "weft-session"))->queue_environment();
+  });
+  g_signal_connect(page, "notify::scale-factor", G_CALLBACK(+[](GtkWidget *, GParamSpec *, gpointer data) {
     static_cast<Session *>(data)->queue_environment();
   }), session);
   session->open(bundle_path(), layout_hash);
-  return view;
+  return page;
 }
 
-Session::Session(GtkWidget *view, GtkWidget *page, Factory make)
-    : make_(make), page_(page), environment_(std::make_unique<Environment>(view)), cancellable_(g_cancellable_new()) {
+Session::Session(GtkWidget *page, Factory make)
+    : make_(make), page_(page), environment_(std::make_unique<Environment>(page)), cancellable_(g_cancellable_new()) {
   scopes_[0] = std::make_unique<RootScope>(*this, page);
 }
 

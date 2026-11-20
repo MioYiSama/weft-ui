@@ -5,12 +5,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -30,9 +28,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 /**
- * Starts the app's session on first use and renders its root component, or
- * why the app failed. The page scrolls vertically, its content starts at the
- * top start corner inside the system bars.
+ * Starts the app's session and renders its root component or startup failure inside the system bars.
  */
 @Composable
 fun WeftRoot(layoutHash: ULong, theme: WeftTheme = WeftTheme.Empty, make: WeftMake) {
@@ -55,7 +51,7 @@ fun WeftRoot(layoutHash: ULong, theme: WeftTheme = WeftTheme.Empty, make: WeftMa
         LaunchedEffect(session, environment) { session.updateEnvironment(environment) }
         WeftLinear(
             WeftAxis.VERTICAL,
-            Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).fillMaxWidth(),
+            Modifier.fillMaxSize().safeDrawingPadding().clipToBounds(),
         ) {
             val failure = session.failure
             val root = session.root

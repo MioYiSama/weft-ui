@@ -393,6 +393,7 @@ export class App extends AppBase {
       base.textContent = `${CSS}\n:root{color-scheme:light dark}`;
       doc.head.append(base);
     }
+    if (target.nodeType === 1) (target as Element).classList.add("w-root");
     const root = this.#create(this, this.$args, [], 0);
     root.mount(target, null);
     this.#root = root;

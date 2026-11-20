@@ -62,7 +62,7 @@ Set `WEFT_NATIVE=0` to generate the native project without running its build too
 
 ## Web
 
-In the [example’s `index.html`](https://github.com/weft-ui/weft-ui/blob/master/example/index.html), the module script loads `/src/index.ts` and `run(app)` mounts into the element with `id="app"`. Use Vite’s dev server to try changes in a browser, then build the static site into `apps/web/`:
+In the [example’s `index.html`](https://github.com/weft-ui/weft-ui/blob/master/example/index.html), the module script loads `/src/index.ts` and `run(app)` mounts into the element with `id="app"`. Set the mount point’s height to `100dvh` and the body’s margin to `0` for a full-window app. Use Vite’s dev server to try changes in a browser, then build the static site into `apps/web/`:
 
 ```sh
 pnpm --filter example exec vite

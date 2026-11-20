@@ -411,7 +411,7 @@ class Session {
   bool dispatch(uint32_t scope, uint32_t slot, const std::string &payload);
 
  private:
-  Session(GtkWidget *view, GtkWidget *page, Factory make);
+  Session(GtkWidget *page, Factory make);
   void open(const std::string &bundle, uint64_t layout_hash);
   void queue_environment();
   struct Environment;

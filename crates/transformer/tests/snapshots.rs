@@ -281,6 +281,7 @@ component C(color: String) {
                 "index.js",
                 "index.json",
                 "index.wxml",
+                "index.wxss",
                 "view.js",
                 "view.json",
                 "view.wxml",

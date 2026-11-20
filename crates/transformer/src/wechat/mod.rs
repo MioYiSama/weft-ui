@@ -7,7 +7,7 @@
 //! The view layer ([`transform`]) generates files relative to the app's
 //! `weft/` directory: the `view.*` files define one component containing
 //! every app template, the sink's layout table, and the shared stylesheet.
-//! `index.js`, `index.json`, and `index.wxml` define the page hosting it.
+//! The `index.*` files define the page hosting it.
 //! The component and page use `getApp().weft`, registered by the bundled
 //! `@weft-ui/platform` entry, without importing logic or runtime files.
 
@@ -72,7 +72,11 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
         },
         OutputFile {
             path: "index.wxml".to_owned(),
-            contents: "<weft-view id=\"weft\"/>\n".to_owned(),
+            contents: "<weft-view id=\"weft\" class=\"w-root\"/>\n".to_owned(),
+        },
+        OutputFile {
+            path: "index.wxss".to_owned(),
+            contents: "@import \"./view.wxss\";\npage{height:100%;overflow:hidden}\n".to_owned(),
         },
     ]
 }

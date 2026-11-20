@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Renders the root component of a session, or why the app failed. The page
-/// scrolls vertically and its content starts at the top leading corner.
+/// Renders the root component or startup failure in the window's safe area.
 public struct WeftRoot: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
@@ -14,18 +13,17 @@ public struct WeftRoot: View {
     public var body: some View {
         GeometryReader { geometry in
             let environment = windowEnvironment(geometry)
-            ScrollView(.vertical) {
-                weftLinear(axis: .vertical) {
-                    if let failure = session.failure {
-                        Text(verbatim: failure)
-                            .foregroundStyle(.red)
-                            .padding()
-                    } else if let root = session.root {
-                        root.view.id(root.id)
-                    }
+            weftLinear(axis: .vertical) {
+                if let failure = session.failure {
+                    Text(verbatim: failure)
+                        .foregroundStyle(.red)
+                        .padding()
+                } else if let root = session.root {
+                    root.view.id(root.id)
                 }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
+            .weftFrame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
             .environment(\.layoutDirection, .leftToRight)
             .onChange(of: environment, initial: true) { _, updated in
                 session.update(environment: updated)

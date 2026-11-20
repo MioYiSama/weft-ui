@@ -38,6 +38,7 @@ G_DEFINE_TYPE(WeftStackLayout, weft_stack_layout, weft_linear_layout_get_type())
 struct WeftLinear {
   GtkWidget parent_instance;
   GdkRGBA background;
+  void (*on_allocate)(GtkWidget *);
 };
 struct WeftLinearClass { GtkWidgetClass parent_class; };
 G_DEFINE_TYPE(WeftLinear, weft_linear, GTK_TYPE_WIDGET)
@@ -192,6 +193,7 @@ void allocate(GtkLayoutManager *manager, GtkWidget *widget, int width, int heigh
                              pixels(frame.y + frame.size.height) - y + pixels(margin.vertical())};
     gtk_widget_size_allocate(native, &allocation, -1);
   }
+  if (const auto callback = reinterpret_cast<WeftLinear *>(widget)->on_allocate) callback(widget);
 }
 
 void finalize_layout(GObject *object) {
@@ -302,6 +304,10 @@ void container_set_padding(GtkWidget *widget, Edge edge, double value) {
 void container_set_background(GtkWidget *widget, const GdkRGBA &color) {
   reinterpret_cast<WeftLinear *>(widget)->background = color;
   gtk_widget_queue_draw(widget);
+}
+
+void container_on_allocate(GtkWidget *widget, void (*callback)(GtkWidget *)) {
+  reinterpret_cast<WeftLinear *>(widget)->on_allocate = callback;
 }
 
 }  // namespace weft

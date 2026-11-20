@@ -42,4 +42,42 @@ final class UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Eggs"].exists)
         XCTAssertEqual(app.switches.element(boundBy: 0).value as? String, "0")
     }
+
+    @MainActor
+    func testScrollViewport() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launch()
+
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.scrollViews.count, 1, "Only the explicit Scroll should scroll")
+        let field = scroll.textFields["New todo"]
+        let add = scroll.buttons["Add"]
+        field.tap()
+        for _ in 0..<24 {
+            field.typeText("x")
+            add.tap()
+        }
+
+        let footer = scroll.staticTexts["24 todos"]
+        XCTAssertFalse(footer.isHittable)
+        capture("ios-example-before-scroll")
+        for _ in 0..<12 where !footer.isHittable { scroll.swipeUp() }
+        XCTAssertTrue(footer.isHittable)
+        scroll.swipeUp()
+        let bottom = footer.frame
+        capture("ios-example-bottom")
+        scroll.swipeUp()
+        XCTAssertEqual(footer.frame, bottom)
+        capture("ios-example-after-extra-swipe")
+    }
+
+    @MainActor
+    private func capture(_ name: String) {
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 }

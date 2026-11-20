@@ -927,11 +927,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | T1 | ☑ | f282243 | 截图待维护者确认（`hello`：web、ios、android、wechat）；C-shot 差异 0.000%，小程序 0.006%；macOS、Windows、Linux 截图已查看；小程序 AppID 放在忽略的 `project.private.config.json` |
 | T2 | ⏸ | 91d3a60 | actionlint 通过；等待维护者推送并手动触发一次 nightly（对外操作需确认） |
 | R1.w | ☑ | a08fb6e | 截图待维护者确认（`layout`：web、wechat）；32 个 Chromium 布局样例通过；`gallery.ops` 与 `Gallery` 原生快照因成员顺序变化（见执行中发现）；C-apps 全部 7 个平台有差异，已重新录制基线 |
-| R1.a | ☑ | （本提交） | 截图待维护者确认（`layout`：ios）；C-apple 8 项含 32 个布局样例；iOS、macOS 的 C-ui 通过；macOS 截图已查看；含本批共用的 schema、夹具、`pages.json` 与指南改动 |
+| R1.a | ☑ | 21c86c8 | 截图待维护者确认（`layout`：ios）；C-apple 8 项含 32 个布局样例；iOS、macOS 的 C-ui 通过；macOS 截图已查看；含本批共用的 schema、夹具、`pages.json` 与指南改动 |
 | R1.d | ☑ | b7f8b0f | 截图待维护者确认（`layout`：android）；C-android 12 项含 32 个布局样例；C-ui 通过；截图回归 0.000% |
 | R1.n | ☑ | 1db9a6b | C-windows（core 18、WinUI 9，含 32 个布局样例）、C-ui 通过；Windows 截图已查看；已有 Windows 快照未变 |
 | R1.g | ☑ | 7f2d2e3 | C-linux 4 组含 32 个布局样例、C-ui 通过；Linux 截图已查看；已有 GTK 快照仅把 `Column`/`Row` 的包装从 `Stack` 改名为 `Linear` |
-| R1.z | ☐ | | |
+| R1.z | ☑ | （本提交） | C-ui 7 个平台、C-shot 与 C-shot-local 通过，页面基线不变；iOS 与 Web 上 example 能滚动到底部，没有外层二次滚动（证据 `/tmp/weft-m1/r1z-evidence/`）；C-apps 7 个平台有差异，已重新录制基线 |
 | R2.w | ☐ | | |
 | R2.a | ☐ | | |
 | R2.d | ☐ | | |
@@ -988,3 +988,5 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R1.a] 当前 SDK 中 SwiftUI `Layout` 要求 `Sendable`，生成的 Swift 联合枚举因此加上 `Sendable`（`protocol/elements.ts` 仅改 Swift 模板）。macOS 的 XCUITest 曾因系统要求认证「Enable UI Automation」而超时，维护者授权后 C-ui 与 `shot:macos` 通过。结论：接受
 - [R1.n] WinUI 在 arrange 阶段重新 measure 子元素会抛出 `LayoutCycleException`，改为复用 measure 阶段的结果；截图模式使用更高的窗口以显示整页。结论：接受
 - [R1.a–R1.g] C-apps：example 在 ios、macos、android、linux 的生成代码改用新的布局容器；windows 生成代码与 web、wechat 产物不变。已重新录制基线。结论：接受
+- [R1.z] 预期变化写的是「全部 web、wechat 快照」，实际只有小程序快照变化（`index.wxml`、`view.wxss`，新增 `index.wxss`）；根的 CSS 随 runtime 发布，不在生成的 Web 快照里，所以 Web 快照不变。仓库里没有 `packages/vite/templates/web/index.html`，Web 入口只改了 `example/index.html` 与 `showcase/index.html`，`apps/web/index.html` 由 Vite 生成。根不再滚动后，macOS 截图窗口调高，以便不滚动也能看到页面最后一节。结论：接受
+- [R1.z] 维护者发现 macOS 的 example 启动时总是显示 "You clicked!"：C-ui 点击后 `storage` 写入的 `weft.storage.clicked = true` 留在沙盒容器的 `UserDefaults` 里（`~/Library/Containers/net.mioyi.weftui/…`），删除 app 也不会清除。这是示例的持久化行为，不是 bug。结论：不处理（已告知清除命令；是否让 UI 测试不留状态待维护者决定）

@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import automator from "miniprogram-automator";
 import type Element from "miniprogram-automator/out/Element.js";
+import type { ScrollViewElement } from "miniprogram-automator/out/Element.js";
 import { build, prepareShots, settleMs } from "./cases.ts";
 import { compare } from "./compare.ts";
 
@@ -40,10 +41,11 @@ try {
     } while (Date.now() < deadline);
     if (!button) throw new Error(`No catalog button page:${id}`);
 
-    const { top } = await button.offset();
-    const viewportHeight = (await miniProgram.systemInfo()).windowHeight;
-    if (top < 0 || top + Number((await button.size()).height) > viewportHeight) {
-      await miniProgram.pageScrollTo(Number(await page.scrollTop()) + Number(top));
+    const viewport = await view.$("scroll-view") as ScrollViewElement | null;
+    if (!viewport) throw new Error("Could not find the catalog Scroll");
+    const top = Number((await button.offset()).top) - Number((await viewport.offset()).top);
+    if (top < 0 || top + Number((await button.size()).height) > Number((await viewport.size()).height)) {
+      await viewport.scrollTo(0, top);
     }
     await button.tap();
     await setTimeout(settleMs);

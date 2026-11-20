@@ -18,39 +18,41 @@ event Toggle(id: Int)
 event Remove(id: Int)
 
 component App(model: Model) {
-    Column(onMount = Mount, padding = 16, gap = 12) {
-        Row(gap = 8) {
-            Image("https://avatars.githubusercontent.com/u/69631?s=64", width = 32, height = 32)
-            Text("Weft", size = 24, bold = true, color = "#3b82f6")
-        }
-
-        if (model.clicked) {
-            Text("You clicked!")
-        } else {
-            Text("Hello, world!")
-        }
-
-        Button(onClick = Click) {
-            Text("Click me")
-        }
-
-        Row(gap = 8) {
-            Input(model.draft, onChange = Draft, placeholder = "New todo")
-            Button(onClick = Add, disabled = model.draft.trim().isEmpty) {
-                Text("Add")
-            }
-        }
-
-        for (todo in model.todos; key = todo.id) {
+    Scroll {
+        Column(onMount = Mount, padding = 16, gap = 12) {
             Row(gap = 8) {
-                Checkbox(todo.done, onChange = Toggle(todo.id))
-                Text(todo.name, color = if (todo.done) "#9ca3af" else "#22c55e")
-                Button(onClick = Remove(todo.id)) {
-                    Text("Remove")
+                Image("https://avatars.githubusercontent.com/u/69631?s=64", width = 32, height = 32)
+                Text("Weft", size = 24, bold = true, color = "#3b82f6")
+            }
+
+            if (model.clicked) {
+                Text("You clicked!")
+            } else {
+                Text("Hello, world!")
+            }
+
+            Button(onClick = Click) {
+                Text("Click me")
+            }
+
+            Row(gap = 8) {
+                Input(model.draft, onChange = Draft, placeholder = "New todo")
+                Button(onClick = Add, disabled = model.draft.trim().isEmpty) {
+                    Text("Add")
                 }
             }
-        }
 
-        Text("${model.todos.length} todos", color = "#6b7280")
+            for (todo in model.todos; key = todo.id) {
+                Row(gap = 8) {
+                    Checkbox(todo.done, onChange = Toggle(todo.id))
+                    Text(todo.name, color = if (todo.done) "#9ca3af" else "#22c55e")
+                    Button(onClick = Remove(todo.id)) {
+                        Text("Remove")
+                    }
+                }
+            }
+
+            Text("${model.todos.length} todos", color = "#6b7280")
+        }
     }
 }

@@ -164,7 +164,8 @@ internal abstract class WeftPanel : Panel
     internal static LayoutInsets Insets(Thickness value) => new(value.Top, value.Right, value.Bottom, value.Left);
 }
 
-internal sealed class WeftLinearPanel(WeftAxis axis, bool scrolling = false, bool flexibleChildren = true) : WeftPanel
+internal sealed class WeftLinearPanel(
+    WeftAxis axis, bool scrolling = false, bool flexibleChildren = true, bool fillAvailable = false) : WeftPanel
 {
     private double gap;
     private WeftCrossAlign align;
@@ -176,7 +177,9 @@ internal sealed class WeftLinearPanel(WeftAxis axis, bool scrolling = false, boo
 
     protected override bool FlexibleChildren => flexibleChildren;
 
-    protected override LayoutProposal MeasureProposal(Size available) => UnboundScrollAxis(base.MeasureProposal(available));
+    protected override LayoutProposal MeasureProposal(Size available) => fillAvailable
+        ? new(new(available.Width, double.IsFinite(available.Width)), new(available.Height, double.IsFinite(available.Height)))
+        : UnboundScrollAxis(base.MeasureProposal(available));
 
     protected override LayoutProposal ArrangeProposal(Size final) => UnboundScrollAxis(base.ArrangeProposal(final));
 

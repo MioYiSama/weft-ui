@@ -235,7 +235,7 @@ test("WEFT_PLATFORM=wechat generates a mini program project that runs", async ()
   const project = join(root, "apps/wechat");
   expect((await readdir(project)).sort()).toEqual([".gitignore", "app.js", "app.json", "project.config.json", "weft"]);
   expect((await readdir(join(project, "weft"))).sort())
-    .toEqual(["index.js", "index.json", "index.wxml", "js", "view.js", "view.json", "view.wxml", "view.wxss"]);
+    .toEqual(["index.js", "index.json", "index.wxml", "index.wxss", "js", "view.js", "view.json", "view.wxml", "view.wxss"]);
   expect(await readdir(join(project, "weft/js"))).toEqual(["index.js"]);
   expect(JSON.parse(await readFile(join(project, "app.json"), "utf8")).window.navigationBarTitleText).toBe("Test \"App\"");
   expect(existsSync(join(root, "apps/web"))).toBe(false);

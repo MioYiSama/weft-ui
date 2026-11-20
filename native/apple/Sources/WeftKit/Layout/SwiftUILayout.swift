@@ -16,6 +16,10 @@ private enum WeftMargin: LayoutValueKey {
     static let defaultValue = WeftInsets()
 }
 
+private enum WeftHidden: LayoutValueKey {
+    static let defaultValue = false
+}
+
 private enum WeftSpacerKey: LayoutValueKey {
     static let defaultValue: WeftSpacerValue? = nil
 }
@@ -29,6 +33,10 @@ private enum WeftParent: Sendable {
 private struct WeftGrowth: Sendable {
     var grow: CGFloat = 0
     var fill = false
+}
+
+extension EnvironmentValues {
+    @Entry var weftBorder: CGFloat = 0
 }
 
 private extension EnvironmentValues {
@@ -66,10 +74,19 @@ extension View {
             .layoutValue(key: WeftMargin.self, value: edges)
     }
 
+    /// Removes a hidden child from Weft layout, rendering, and interaction without destroying its state.
+    @MainActor public func weftVisibility(hidden: Bool) -> some View {
+        opacity(hidden ? 0 : 1)
+            .allowsHitTesting(!hidden)
+            .accessibilityHidden(hidden)
+            .layoutValue(key: WeftHidden.self, value: hidden)
+    }
+
     fileprivate func weftChildren(of parent: WeftParent) -> some View {
         environment(\.weftParent, parent)
             .environment(\.weftSize, WeftSizeConstraints())
             .environment(\.weftGrowth, WeftGrowth())
+            .environment(\.weftBorder, 0)
     }
 }
 
@@ -110,13 +127,17 @@ private extension WeftProposal {
 
 private struct WeftBox: Equatable {
     var constraints = WeftSizeConstraints()
-    var padding = WeftInsets()
+    let insets: WeftInsets
+    let border: CGFloat
     var exactWidth = false
     var exactHeight = false
 
-    init(constraints: WeftSizeConstraints = .init(), padding: WeftInsets, exact: (width: Bool, height: Bool)) {
+    init(constraints: WeftSizeConstraints = .init(), padding: WeftInsets, border: CGFloat = 0,
+         exact: (width: Bool, height: Bool)) {
         self.constraints = constraints
-        self.padding = padding
+        self.border = border
+        insets = WeftInsets(top: padding.top + border, right: padding.right + border,
+                            bottom: padding.bottom + border, left: padding.left + border)
         (exactWidth, exactHeight) = exact
     }
 
@@ -125,17 +146,17 @@ private struct WeftBox: Equatable {
     }
 
     func content(of outer: WeftProposal) -> WeftProposal {
-        constraints.contentProposal(outer, padding: padding)
+        constraints.contentProposal(outer, padding: insets)
     }
 
     func outer(_ content: WeftProposal) -> WeftProposal {
-        WeftProposal(width: content.width.inset(-padding.horizontal), height: content.height.inset(-padding.vertical))
+        WeftProposal(width: content.width.inset(-insets.horizontal), height: content.height.inset(-insets.vertical))
     }
 
     func clamp(_ outerSize: CGSize) -> CGSize {
         let content = constraints.clamp(CGSize(
-            width: outerSize.width - padding.horizontal, height: outerSize.height - padding.vertical))
-        return CGSize(width: content.width + padding.horizontal, height: content.height + padding.vertical)
+            width: outerSize.width - insets.horizontal, height: outerSize.height - insets.vertical))
+        return CGSize(width: content.width + insets.horizontal, height: content.height + insets.vertical)
     }
 }
 
@@ -146,6 +167,13 @@ private extension LayoutSubview {
                                grow: participates ? self[WeftGrow.self] : 0,
                                fill: participates && self[WeftFill.self],
                                margin: self[WeftMargin.self], spacer: self[WeftSpacerKey.self])
+    }
+}
+
+private extension LayoutSubviews {
+    var weftVisible: Self {
+        guard contains(where: { $0[WeftHidden.self] }) else { return self }
+        return self[indices.lazy.filter { !self[$0][WeftHidden.self] }]
     }
 }
 
@@ -165,21 +193,22 @@ extension WeftContainer {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout WeftLayoutCache) -> CGSize {
         let outer = box.proposal(proposal)
         let inner = box.outer(box.content(of: outer))
-        let result = layout(proposal: inner, subviews: subviews)
+        let result = layout(proposal: inner, subviews: subviews.weftVisible)
         cache.proposal = inner
         cache.result = result
         return box.clamp(result.size)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout WeftLayoutCache) {
+        let visible = subviews.weftVisible
         let inner = box.outer(box.content(of: box.proposal(proposal)))
         let measured = cache.proposal == inner ? cache.result : nil
-        let current = measured ?? layout(proposal: inner, subviews: subviews)
+        let current = measured ?? layout(proposal: inner, subviews: visible)
         // A minimum constraint can enlarge the box after its ideal size was measured.
         let result = current.size == bounds.size ? current : layout(
-            proposal: WeftProposal(width: .exact(bounds.width), height: .exact(bounds.height)), subviews: subviews)
-        for (index, placement) in result.placements.enumerated() {
-            subviews[index].place(
+            proposal: WeftProposal(width: .exact(bounds.width), height: .exact(bounds.height)), subviews: visible)
+        for (subview, placement) in zip(visible, result.placements) {
+            subview.place(
                 at: CGPoint(x: bounds.minX + placement.frame.minX, y: bounds.minY + placement.frame.minY),
                 anchor: .topLeading, proposal: placement.proposal.swiftUI)
         }
@@ -196,9 +225,9 @@ private struct WeftLinear: WeftContainer {
 
     func layout(proposal: WeftProposal, subviews: Subviews) -> WeftLayoutResult {
         WeftLayoutAlgorithm.linear(axis: axis, gap: gap, align: align, justify: justify,
-                                   padding: box.padding, proposal: proposal,
+                                   padding: box.insets, proposal: proposal,
                                    children: subviews.map { $0.weftChild(participates: participates) }) {
-            subviews[$0].sizeThatFits($1.swiftUI)
+            subviews[subviews.startIndex + $0].sizeThatFits($1.swiftUI)
         }
     }
 }
@@ -208,9 +237,9 @@ private struct WeftStackLayout: WeftContainer {
     let box: WeftBox
 
     func layout(proposal: WeftProposal, subviews: Subviews) -> WeftLayoutResult {
-        WeftLayoutAlgorithm.stack(alignment: alignment, padding: box.padding, proposal: proposal,
+        WeftLayoutAlgorithm.stack(alignment: alignment, padding: box.insets, proposal: proposal,
                                   children: subviews.map { $0.weftChild() }) {
-            subviews[$0].sizeThatFits($1.swiftUI)
+            subviews[subviews.startIndex + $0].sizeThatFits($1.swiftUI)
         }
     }
 }
@@ -221,12 +250,12 @@ private struct WeftLeafLayout: Layout {
     var viewport = false
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        box.constraints.measure(box.proposal(proposal), padding: box.padding) { content in
+        box.constraints.measure(box.proposal(proposal), padding: box.insets) { content in
             guard let view = subviews.first else { return .zero }
             if !viewport { return view.sizeThatFits(content.swiftUI) }
             let size = view.sizeThatFits(box.outer(content).swiftUI)
-            return CGSize(width: max(0, size.width - box.padding.horizontal),
-                          height: max(0, size.height - box.padding.vertical))
+            return CGSize(width: max(0, size.width - box.insets.horizontal),
+                          height: max(0, size.height - box.insets.vertical))
         }
     }
 
@@ -234,12 +263,13 @@ private struct WeftLeafLayout: Layout {
         // Preserve the intrinsic measurement proposal for text and controls, but give scroll views their viewport.
         let content = box.content(of: box.proposal(proposal)).swiftUI
         subviews.first?.place(
-            at: viewport ? bounds.origin : CGPoint(x: bounds.minX + box.padding.left, y: bounds.minY + box.padding.top),
+            at: viewport ? bounds.origin : CGPoint(x: bounds.minX + box.insets.left, y: bounds.minY + box.insets.top),
             anchor: .topLeading, proposal: viewport ? ProposedViewSize(bounds.size) : content)
     }
 }
 
 private struct WeftConfiguredBox<Content: View>: View {
+    @Environment(\.weftBorder) private var border
     private var sizing = WeftSizing()
     let padding: WeftInsets
     let content: (WeftBox) -> Content
@@ -250,7 +280,7 @@ private struct WeftConfiguredBox<Content: View>: View {
     }
 
     var body: some View {
-        content(WeftBox(constraints: sizing.frame, padding: padding, exact: sizing.exactAxes))
+        content(WeftBox(constraints: sizing.frame, padding: padding, border: border, exact: sizing.exactAxes))
     }
 }
 
@@ -309,6 +339,8 @@ private struct WeftConfiguredBox<Content: View>: View {
                     children.weftChildren(of: .linear(direction, align))
                 }
             }
+            // Padding can scroll with the content; the border stays outside the viewport.
+            .padding(box.border)
         }
     }
 }

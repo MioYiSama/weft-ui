@@ -159,10 +159,26 @@ impl Body<'_> {
         if leaf {
             out.close("}");
         }
-        if let Some(background) = prop("background") {
-            let background = Argument::Property(background);
+        let decoration = Properties::new(DECORATION, |name| {
+            let source = prop(name)?;
+            Some(match name {
+                "shadow" => Argument::Union(Some(source), "Shadow", ".none"),
+                _ => Argument::Property(source),
+            })
+        });
+        if !decoration.is_empty() {
             out.writer
-                .line(format_args!(".background({background}.resolved)"));
+                .line(format_args!(".weftDecoration({decoration})"));
+        }
+        if let Some(opacity) = prop("opacity") {
+            let opacity = Argument::Property(opacity);
+            out.writer
+                .line(format_args!(".weftOpacity(opacity: {opacity})"));
+        }
+        if let Some(hidden) = prop("hidden") {
+            let hidden = Argument::Property(hidden);
+            out.writer
+                .line(format_args!(".weftVisibility(hidden: {hidden})"));
         }
         if let Some(disabled) = prop("disabled")
             && !matches!(disabled, PropSource::Constant(Constant::Bool(false)))
@@ -229,6 +245,14 @@ const PADDING: [&str; 7] = [
     "paddingBottom",
     "paddingStart",
     "paddingEnd",
+];
+const DECORATION: [&str; 6] = [
+    "background",
+    "radius",
+    "border",
+    "borderColor",
+    "shadow",
+    "clip",
 ];
 const FRAME: [&str; 7] = [
     "width",

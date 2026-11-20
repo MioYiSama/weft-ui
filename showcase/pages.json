@@ -1,6 +1,6 @@
 [
   { "id": "hello", "title": "Hello" },
   { "id": "layout", "title": "Layout" },
-  { "id": "appearance", "title": "Appearance", "pending": ["ios", "macos", "android", "windows", "linux"] },
-  { "id": "theme", "title": "Theme", "dark": true, "pending": ["ios", "macos", "android", "windows", "linux"] }
+  { "id": "appearance", "title": "Appearance" },
+  { "id": "theme", "title": "Theme", "dark": true }
 ]

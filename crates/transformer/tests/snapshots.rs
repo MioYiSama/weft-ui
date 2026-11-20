@@ -89,7 +89,7 @@ const LAYOUT: Fixture = Fixture {
 const APPEARANCE: Fixture = Fixture {
     name: "Appearance",
     source: include_str!("fixtures/Appearance.weft"),
-    natives: &[],
+    natives: ALL_NATIVES,
 };
 
 /// Every generated file of the app, as the platform's output directory would

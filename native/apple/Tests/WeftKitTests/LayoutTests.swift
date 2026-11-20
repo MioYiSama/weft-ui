@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import WeftKit
 
@@ -109,4 +110,51 @@ private func edges(_ values: [CGFloat]) -> WeftInsets {
         return CGSize(width: 3, height: 4)
     }
     #expect(size == CGSize(width: 64, height: 18))
+}
+
+private struct LayoutProbe: Layout {
+    let size: CGSize
+    var onPlace: () -> Void = {}
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        onPlace()
+    }
+}
+
+@Test @MainActor func hiddenLinearChildIsSkippedAndBorderWrapsPadding() throws {
+    var placedFirst = false
+    var placedLast = false
+    let renderer = ImageRenderer(content: weftLinear(axis: .vertical, gap: 7, padding: .init(padding: 3)) {
+        LayoutProbe(size: CGSize(width: 8, height: 12), onPlace: { placedFirst = true }) { Color.red }
+        Color.red.frame(width: 100, height: 100)
+            .weftVisibility(hidden: true)
+        LayoutProbe(size: CGSize(width: 5, height: 9), onPlace: { placedLast = true }) { Color.red }
+    }.weftDecoration(border: 2))
+    let image = try #require(renderer.nsImage)
+    #expect(image.size == CGSize(width: 18, height: 38))
+    #expect(placedFirst)
+    #expect(placedLast)
+}
+
+@Test @MainActor func hiddenStackChildDoesNotSetTheStackSize() throws {
+    var placedVisible = false
+    let renderer = ImageRenderer(content: weftStack(alignment: .bottomEnd) {
+        Color.red.frame(width: 100, height: 100)
+            .weftVisibility(hidden: true)
+        LayoutProbe(size: CGSize(width: 8, height: 12), onPlace: { placedVisible = true }) { Color.red }
+    })
+    let image = try #require(renderer.nsImage)
+    #expect(image.size == CGSize(width: 8, height: 12))
+    #expect(placedVisible)
+}
+
+@Test func roundedClippingUsesTheInsideOfTheBorder() {
+    let path = WeftPaddingShape(radius: 12, border: 4).path(in: CGRect(x: 0, y: 0, width: 40, height: 30))
+    #expect(path.boundingRect == CGRect(x: 4, y: 4, width: 32, height: 22))
+    #expect(!path.contains(CGPoint(x: 5, y: 5)))
+    #expect(path.contains(CGPoint(x: 8, y: 8)))
 }

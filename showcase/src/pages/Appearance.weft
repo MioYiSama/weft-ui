@@ -41,9 +41,12 @@ component Appearance() {
                 Text("Rounded clipping", style = AppearanceTitle)
                 Stack(fill = true, height = 112, alignment = "center", clip = true, radius = 20,
                       background = "#f6c879", shadow = "small") {
-                    // An inline image keeps the screenshot independent of the network.
-                    Image("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0NjAiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgNDYwIDEyOCI+PHBhdGggZmlsbD0iI2Y2Yzg3OSIgZD0iTTAgMGg0NjB2MTI4SDB6Ii8+PGNpcmNsZSBjeD0iMjEzIiBjeT0iMzciIHI9IjE5IiBmaWxsPSIjZmZmMmM4Ii8+PHBhdGggZmlsbD0iIzMwNzk4MSIgZD0ibTAgMTE2IDk1LTc4IDU5IDUzIDQ4LTMyIDgyIDY5SDB6Ii8+PHBhdGggZmlsbD0iIzE4NGU1OCIgZD0ibTgxIDEyOCA2Mi01NCA0MiAzMiA2Ny02MCAxMTEgODJ6Ii8+PHBhdGggZmlsbD0iIzI3NzA2YSIgZD0ibTIwOSAxMjggMTE1LTI1IDEzNi02MXY4NnoiLz48L3N2Zz4=",
-                          width = 460, height = 128)
+                    // Blocks larger than the card show the rounded clip without loading an image.
+                    Row(width = 560, height = 160) {
+                        Column(width = 200, height = 160, background = "#307981")
+                        Column(width = 160, height = 160, background = "#184e58")
+                        Column(width = 200, height = 160, background = "#27706a")
+                    }
                 }
             }
             Column(fill = true, gap = 10) {

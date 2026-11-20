@@ -80,14 +80,12 @@
       {
         "name": "opacity", "type": "Float", "default": 1,
         "css": { "property": "opacity", "unit": "number" },
-        "doc": { "en": "Sets the opacity of the element and its children.", "zh": "设置整个元素及其子元素的不透明度。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Sets the opacity of the element and its children.", "zh": "设置整个元素及其子元素的不透明度。" }
       },
       {
         "name": "hidden", "type": "Bool", "default": false,
         "css": { "unit": "custom", "custom": "hidden" },
-        "doc": { "en": "Hides the element and removes it from layout.", "zh": "隐藏元素，使其不参与布局。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Hides the element and removes it from layout.", "zh": "隐藏元素，使其不参与布局。" }
       }
     ],
     "padding": [
@@ -127,38 +125,32 @@
       {
         "name": "background", "type": "Color",
         "css": { "property": "background-color", "unit": "color" },
-        "doc": { "en": "Fills the padding box, including the area underneath the border.", "zh": "为内边距盒填充背景色，边框下方也会着色。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Fills the padding box, including the area underneath the border.", "zh": "为内边距盒填充背景色，边框下方也会着色。" }
       },
       {
         "name": "radius", "type": "Int", "default": 0,
         "css": { "property": "border-radius", "unit": "px" },
-        "doc": { "en": "Rounds the corners of the background and border.", "zh": "为背景和边框设置圆角。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Rounds the corners of the background and border.", "zh": "为背景和边框设置圆角。" }
       },
       {
         "name": "border", "type": "Int", "default": 0,
         "css": { "unit": "custom", "custom": "border" },
-        "doc": { "en": "Draws a solid border of the given width outside the padding box.", "zh": "在内边距盒外绘制指定宽度的实线边框。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Draws a solid border of the given width outside the padding box.", "zh": "在内边距盒外绘制指定宽度的实线边框。" }
       },
       {
         "name": "borderColor", "type": "Color", "default": "#0000001f",
         "css": { "property": "border-color", "unit": "color" },
-        "doc": { "en": "Sets the border color; the dark-mode default is `#ffffff26`.", "zh": "设置边框颜色；深色模式默认使用 `#ffffff26`。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Sets the border color; the dark-mode default is `#ffffff26`.", "zh": "设置边框颜色；深色模式默认使用 `#ffffff26`。" }
       },
       {
         "name": "shadow", "type": "Shadow", "default": "none",
         "css": { "unit": "custom", "custom": "shadow" },
-        "doc": { "en": "Draws a preset shadow outside the border box.", "zh": "在边框盒外绘制预设阴影。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Draws a preset shadow outside the border box.", "zh": "在边框盒外绘制预设阴影。" }
       },
       {
         "name": "clip", "type": "Bool", "default": false,
         "css": { "property": "overflow", "unit": "keyword", "keywords": { "true": "hidden", "false": "visible" } },
-        "doc": { "en": "Clips overflowing content to the rounded padding box.", "zh": "将溢出的内容裁剪到带圆角的内边距盒内。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Clips overflowing content to the rounded padding box.", "zh": "将溢出的内容裁剪到带圆角的内边距盒内。" }
       }
     ]
   },

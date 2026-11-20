@@ -4,7 +4,6 @@ use super::{
     Children, Css, CssTarget, CssUnit, CustomCss, ElementSpec, FeatureSpec, PropKind, PropSpec,
     PropType,
 };
-use crate::protocol::Platform;
 
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -480,13 +479,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "hidden",
@@ -496,13 +489,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "padding",
@@ -592,13 +579,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(26),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "border",
@@ -608,13 +589,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(27),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "borderColor",
@@ -624,13 +599,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(28),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "shadow",
@@ -640,13 +609,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(29),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "clip",
@@ -656,13 +619,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: Some(30),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "gap",
@@ -865,13 +822,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "hidden",
@@ -881,13 +832,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "padding",
@@ -967,13 +912,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(25),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "radius",
@@ -983,13 +922,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(26),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "border",
@@ -999,13 +932,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(27),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "borderColor",
@@ -1015,13 +942,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(28),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "shadow",
@@ -1031,13 +952,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(29),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "clip",
@@ -1047,13 +962,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(30),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "value",
@@ -1266,13 +1175,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "hidden",
@@ -1282,13 +1185,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "onClick",
@@ -1481,13 +1378,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "hidden",
@@ -1497,13 +1388,7 @@ const PROPS_3: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "value",
@@ -1718,13 +1603,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "hidden",
@@ -1734,13 +1613,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "checked",
@@ -1945,13 +1818,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "hidden",
@@ -1961,13 +1828,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "background",
@@ -1977,13 +1838,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(25),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "radius",
@@ -1993,13 +1848,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(26),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "border",
@@ -2009,13 +1858,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(27),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "borderColor",
@@ -2025,13 +1868,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(28),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "shadow",
@@ -2041,13 +1878,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(29),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "clip",
@@ -2057,13 +1888,7 @@ const PROPS_5: &[PropSpec] = &[
         constant: false,
         css: Some(30),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "src",
@@ -2246,13 +2071,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "hidden",
@@ -2262,13 +2081,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "padding",
@@ -2348,13 +2161,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(25),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "radius",
@@ -2364,13 +2171,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(26),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "border",
@@ -2380,13 +2181,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(27),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "borderColor",
@@ -2396,13 +2191,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(28),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "shadow",
@@ -2412,13 +2201,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(29),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "clip",
@@ -2428,13 +2211,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(30),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "alignment",
@@ -2617,13 +2394,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(16),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "hidden",
@@ -2633,13 +2404,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(17),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "padding",
@@ -2719,13 +2484,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(25),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "radius",
@@ -2735,13 +2494,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(26),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "border",
@@ -2751,13 +2504,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(27),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "borderColor",
@@ -2767,13 +2514,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(28),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "shadow",
@@ -2783,13 +2524,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(29),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "clip",
@@ -2799,13 +2534,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: Some(30),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "direction",

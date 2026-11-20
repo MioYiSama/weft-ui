@@ -24,6 +24,25 @@ final class Screenshots: XCTestCase {
 
             let screenshot = XCUIScreen.main.screenshot()
             try screenshot.pngRepresentation.write(to: directory.appendingPathComponent("\(id)\(suffix).png"))
+            if id == "appearance" { checkVisibility(in: app) }
         }
+    }
+
+    @MainActor
+    private func checkVisibility(in app: XCUIApplication) {
+        let card = app.staticTexts["This card leaves no gap when hidden."]
+        let end = app.staticTexts["End of grid"]
+        XCTAssertTrue(card.exists)
+        XCTAssertTrue(end.exists)
+        let shownEnd = end.frame.minY
+        let cardHeight = card.frame.height
+
+        app.buttons["Hide card"].tap()
+        XCTAssertTrue(card.waitForNonExistence(timeout: 5))
+        XCTAssertGreaterThan(shownEnd - end.frame.minY, cardHeight)
+
+        app.buttons["Show card"].tap()
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertEqual(end.frame.minY, shownEnd, accuracy: 1)
     }
 }

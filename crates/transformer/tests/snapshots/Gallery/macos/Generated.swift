@@ -150,14 +150,14 @@ private struct V1: View {
                     .weftText(color: s.v7, size: s.v8, bold: s.v9)
                 }
             }
-            .background(s.v3.resolved)
+            .weftDecoration(background: s.v3)
             .weftFrame(width: s.v0, height: s.v1)
             weftLeaf {
                 WeftInput(text: s.v10, placeholder: "Caption") { s.dispatch(1, .string($0)) ? nil : s.v10 }
             }
             if let c = s.p0 { V0(s: c) }
         }
-        .background(WeftColor.rgba(0xeeeeffff).resolved)
+        .weftDecoration(background: WeftColor.rgba(0xeeeeffff))
         .weftFrame(width: 320, height: 280)
     }
 }

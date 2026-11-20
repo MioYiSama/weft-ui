@@ -31,8 +31,8 @@ Stacks children vertically.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
 | `padding` | `Int` | `0` | Sets the inset on all four sides. | — |
 | `paddingX` | `Int` | `0` | Sets the left and right insets. | — |
 | `paddingY` | `Int` | `0` | Sets the top and bottom insets. | — |
@@ -41,11 +41,11 @@ Stacks children vertically.
 | `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | — |
 | `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | — |
 | `background` | `Color` | — | Fills the padding box, including the area underneath the border. | — |
-| `radius` | `Int` | `0` | Rounds the corners of the background and border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `radius` | `Int` | `0` | Rounds the corners of the background and border. | — |
+| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | — |
+| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | — |
+| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
+| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `gap` | `Int` | `0` | Adds space between neighboring children. | — |
 | `align` | `CrossAlign` | `"start"` | Positions children on the horizontal cross axis. | — |
 | `justify` | `Justify` | `"start"` | Distributes remaining space on the vertical main axis. | — |
@@ -74,8 +74,8 @@ Places children side by side.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
 | `padding` | `Int` | `0` | Sets the inset on all four sides. | — |
 | `paddingX` | `Int` | `0` | Sets the left and right insets. | — |
 | `paddingY` | `Int` | `0` | Sets the top and bottom insets. | — |
@@ -84,11 +84,11 @@ Places children side by side.
 | `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | — |
 | `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | — |
 | `background` | `Color` | — | Fills the padding box, including the area underneath the border. | — |
-| `radius` | `Int` | `0` | Rounds the corners of the background and border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `radius` | `Int` | `0` | Rounds the corners of the background and border. | — |
+| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | — |
+| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | — |
+| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
+| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `gap` | `Int` | `0` | Adds space between neighboring children. | — |
 | `align` | `CrossAlign` | `"start"` | Positions children on the vertical cross axis. | — |
 | `justify` | `Justify` | `"start"` | Distributes remaining space on the horizontal main axis. | — |
@@ -117,8 +117,8 @@ Displays text.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
 | `padding` | `Int` | `0` | Sets the inset on all four sides. | — |
 | `paddingX` | `Int` | `0` | Sets the left and right insets. | — |
 | `paddingY` | `Int` | `0` | Sets the top and bottom insets. | — |
@@ -126,12 +126,12 @@ Displays text.
 | `paddingBottom` | `Int` | `0` | Sets the bottom inset. | — |
 | `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | — |
 | `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | — |
-| `background` | `Color` | — | Fills the padding box, including the area underneath the border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `radius` | `Int` | `0` | Rounds the corners of the background and border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `background` | `Color` | — | Fills the padding box, including the area underneath the border. | — |
+| `radius` | `Int` | `0` | Rounds the corners of the background and border. | — |
+| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | — |
+| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | — |
+| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
+| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `value` (positional) | `String` | Required | The text to display. | — |
 | `color` | `Color` | — | Sets the text color. | — |
 | `size` | `Int` | — | Sets the font size in logical pixels. | — |
@@ -161,8 +161,8 @@ Renders a clickable control with child nodes for its content.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
 | `disabled` | `Bool` | — | Disables the button. | — |
 
 | Event | Payload | Description | Platform exceptions |
@@ -193,8 +193,8 @@ Displays an editable text field.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
 | `value` (positional) | `String` | Required | The current text. | — |
 | `placeholder` | `String` | — | Shows a hint when the field is empty. | — |
 | `disabled` | `Bool` | — | Disables the input field. | — |
@@ -227,8 +227,8 @@ Displays a checkable control.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
 | `checked` (positional) | `Bool` | Required | The current checked state. | — |
 | `disabled` | `Bool` | — | Disables the checkbox. | — |
 
@@ -260,14 +260,14 @@ Displays an image from a URL.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `background` | `Color` | — | Fills the padding box, including the area underneath the border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `radius` | `Int` | `0` | Rounds the corners of the background and border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
+| `background` | `Color` | — | Fills the padding box, including the area underneath the border. | — |
+| `radius` | `Int` | `0` | Rounds the corners of the background and border. | — |
+| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | — |
+| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | — |
+| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
+| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `src` (positional) | `String` | Required | The image URL. | — |
 
 ## Stack
@@ -294,8 +294,8 @@ Overlays children in declaration order.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
 | `padding` | `Int` | `0` | Sets the inset on all four sides. | — |
 | `paddingX` | `Int` | `0` | Sets the left and right insets. | — |
 | `paddingY` | `Int` | `0` | Sets the top and bottom insets. | — |
@@ -303,12 +303,12 @@ Overlays children in declaration order.
 | `paddingBottom` | `Int` | `0` | Sets the bottom inset. | — |
 | `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | — |
 | `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | — |
-| `background` | `Color` | — | Fills the padding box, including the area underneath the border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `radius` | `Int` | `0` | Rounds the corners of the background and border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `background` | `Color` | — | Fills the padding box, including the area underneath the border. | — |
+| `radius` | `Int` | `0` | Rounds the corners of the background and border. | — |
+| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | — |
+| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | — |
+| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
+| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `alignment` | `Alignment` | `"topStart"` | Positions children along both axes of the stack. | — |
 
 ## Scroll
@@ -335,8 +335,8 @@ Lays out children linearly and scrolls along its main axis.
 | `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
 | `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
 | `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
-| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
 | `padding` | `Int` | `0` | Sets the inset on all four sides. | — |
 | `paddingX` | `Int` | `0` | Sets the left and right insets. | — |
 | `paddingY` | `Int` | `0` | Sets the top and bottom insets. | — |
@@ -344,12 +344,12 @@ Lays out children linearly and scrolls along its main axis.
 | `paddingBottom` | `Int` | `0` | Sets the bottom inset. | — |
 | `paddingStart` | `Int` | `0` | Sets the left inset in left-to-right layout. | — |
 | `paddingEnd` | `Int` | `0` | Sets the right inset in left-to-right layout. | — |
-| `background` | `Color` | — | Fills the padding box, including the area underneath the border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `radius` | `Int` | `0` | Rounds the corners of the background and border. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `background` | `Color` | — | Fills the padding box, including the area underneath the border. | — |
+| `radius` | `Int` | `0` | Rounds the corners of the background and border. | — |
+| `border` | `Int` | `0` | Draws a solid border of the given width outside the padding box. | — |
+| `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | — |
+| `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
+| `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `direction` | `Axis` | `"vertical"` | Selects the scrolling axis at compile time. | — |
 | `gap` | `Int` | `0` | Adds space between neighboring children. | — |
 | `align` | `CrossAlign` | `"start"` | Positions children on the non-scrolling cross axis. | — |

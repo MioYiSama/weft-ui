@@ -71,6 +71,20 @@ You can supply the required value for `Text`, `Input`, `Checkbox`, or `Image` as
 
 Colors such as `Text.color` or `Row.background` are strings in `#RGB`, `#RRGGBB`, or `#RRGGBBAA` form. Invalid literals are compile errors. Invalid dynamic colors render as transparent and warn in development builds.
 
+## Set appearance and visibility
+
+On the web and in WeChat mini programs, layout containers, `Text`, and `Image` can take `background`, `radius`, `border`, `borderColor`, `shadow`, and `clip`. `border` is a width in logical pixels. If you omit `borderColor`, it defaults to `#0000001f` in light mode and `#ffffff26` in dark mode.
+
+```weft
+Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "medium", clip = true) {
+  Text("Preview")
+}
+```
+
+The border adds to the element's outer size, not to its content size. The background extends under the border, and `radius` rounds both. Use `clip = true` to keep children inside the rounded padding box. The `"small"`, `"medium"`, and `"large"` shadows paint outside the border box; the default is `"none"`.
+
+`opacity` fades the whole element, including its children, without changing its size. Use `hidden = true` to hide an element and remove its space in the layout. See the [built-in element reference](/reference/elements/) for the available properties on each element.
+
 ## Reuse element styles
 
 Declare a `style` at the top level and pass its name to a built-in element:

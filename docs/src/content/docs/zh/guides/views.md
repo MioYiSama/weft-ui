@@ -71,6 +71,20 @@ Column(width = 240, padding = 12, gap = 8) {
 
 `Text.color`、`Row.background` 等颜色属性接收 `#RGB`、`#RRGGBB` 或 `#RRGGBBAA` 格式的字符串。非法颜色字面量会在编译时报错；非法的动态颜色值按透明处理，并在开发构建中发出警告。
 
+## 设置元素外观与可见性
+
+在 Web 和微信小程序中，可以为布局容器、`Text` 和 `Image` 设置 `background`、`radius`、`border`、`borderColor`、`shadow` 和 `clip`。`border` 用逻辑像素指定边框宽度。省略 `borderColor` 时，浅色模式默认使用 `#0000001f`，深色模式默认使用 `#ffffff26`。
+
+```weft
+Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "medium", clip = true) {
+  Text("预览")
+}
+```
+
+边框增加元素的外部尺寸，不改变内容盒大小。背景延伸到边框下方，`radius` 同时为背景和边框设置圆角。`clip = true` 将子元素裁剪在带圆角的内边距盒内。`"small"`、`"medium"` 和 `"large"` 阴影画在边框盒外，默认为 `"none"`。
+
+`opacity` 改变整个元素及其子元素的不透明度，但不影响布局。要隐藏元素且不留空位，设置 `hidden = true`。各元素可用的属性见[内置元素参考](/zh/reference/elements/)。
+
 ## 复用元素样式
 
 在文件顶层声明 `style`，再把样式名传给内置元素：

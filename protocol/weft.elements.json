@@ -3,7 +3,8 @@
     "CrossAlign": ["start", "center", "end", "stretch"],
     "Justify": ["start", "center", "end", "spaceBetween", "spaceAround", "spaceEvenly"],
     "Alignment": ["topStart", "top", "topEnd", "start", "center", "end", "bottomStart", "bottom", "bottomEnd"],
-    "Axis": ["vertical", "horizontal"]
+    "Axis": ["vertical", "horizontal"],
+    "Shadow": ["none", "small", "medium", "large"]
   },
   "groups": {
     "layout": [
@@ -75,6 +76,20 @@
         "doc": { "en": "Sets the right margin in left-to-right layout.", "zh": "设置从左到右布局中的右外边距。" }
       }
     ],
+    "visibility": [
+      {
+        "name": "opacity", "type": "Float", "default": 1,
+        "css": { "property": "opacity", "unit": "number" },
+        "doc": { "en": "Sets the opacity of the element and its children.", "zh": "设置整个元素及其子元素的不透明度。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "hidden", "type": "Bool", "default": false,
+        "css": { "unit": "custom", "custom": "hidden" },
+        "doc": { "en": "Hides the element and removes it from layout.", "zh": "隐藏元素，使其不参与布局。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      }
+    ],
     "padding": [
       {
         "name": "padding", "type": "Int", "default": 0,
@@ -107,6 +122,44 @@
         "name": "paddingEnd", "type": "Int", "default": 0, "css": { "property": "padding-right", "unit": "px" },
         "doc": { "en": "Sets the right inset in left-to-right layout.", "zh": "设置从左到右布局中的右内边距。" }
       }
+    ],
+    "decoration": [
+      {
+        "name": "background", "type": "Color",
+        "css": { "property": "background-color", "unit": "color" },
+        "doc": { "en": "Fills the padding box, including the area underneath the border.", "zh": "为内边距盒填充背景色，边框下方也会着色。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "radius", "type": "Int", "default": 0,
+        "css": { "property": "border-radius", "unit": "px" },
+        "doc": { "en": "Rounds the corners of the background and border.", "zh": "为背景和边框设置圆角。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "border", "type": "Int", "default": 0,
+        "css": { "unit": "custom", "custom": "border" },
+        "doc": { "en": "Draws a solid border of the given width outside the padding box.", "zh": "在内边距盒外绘制指定宽度的实线边框。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "borderColor", "type": "Color", "default": "#0000001f",
+        "css": { "property": "border-color", "unit": "color" },
+        "doc": { "en": "Sets the border color; the dark-mode default is `#ffffff26`.", "zh": "设置边框颜色；深色模式默认使用 `#ffffff26`。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "shadow", "type": "Shadow", "default": "none",
+        "css": { "unit": "custom", "custom": "shadow" },
+        "doc": { "en": "Draws a preset shadow outside the border box.", "zh": "在边框盒外绘制预设阴影。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "clip", "type": "Bool", "default": false,
+        "css": { "property": "overflow", "unit": "keyword", "keywords": { "true": "hidden", "false": "visible" } },
+        "doc": { "en": "Clips overflowing content to the rounded padding box.", "zh": "将溢出的内容裁剪到带圆角的内边距盒内。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      }
     ]
   },
   "features": {
@@ -121,14 +174,10 @@
     {
       "name": "Column",
       "doc": { "en": "Stacks children vertically.", "zh": "将子节点纵向排列。" },
-      "groups": ["layout", "padding"],
-      "memberSupport": { "padding": {}, "width": {}, "height": {} },
+      "groups": ["layout", "visibility", "padding", "decoration"],
+      "memberSupport": { "padding": {}, "width": {}, "height": {}, "background": {} },
       "children": "any",
       "members": [
-        {
-          "name": "background", "type": "Color", "css": { "property": "background", "unit": "color" },
-          "doc": { "en": "Sets the background color.", "zh": "设置背景色。" }
-        },
         {
           "name": "gap", "type": "Int", "default": 0, "css": { "property": "gap", "unit": "px" },
           "doc": { "en": "Adds space between neighboring children.", "zh": "设置相邻子节点之间的距离。" }
@@ -148,14 +197,10 @@
     {
       "name": "Row",
       "doc": { "en": "Places children side by side.", "zh": "将子节点横向排列。" },
-      "groups": ["layout", "padding"],
-      "memberSupport": { "padding": {}, "width": {}, "height": {} },
+      "groups": ["layout", "visibility", "padding", "decoration"],
+      "memberSupport": { "padding": {}, "width": {}, "height": {}, "background": {} },
       "children": "any",
       "members": [
-        {
-          "name": "background", "type": "Color", "css": { "property": "background", "unit": "color" },
-          "doc": { "en": "Sets the background color.", "zh": "设置背景色。" }
-        },
         {
           "name": "gap", "type": "Int", "default": 0, "css": { "property": "gap", "unit": "px" },
           "doc": { "en": "Adds space between neighboring children.", "zh": "设置相邻子节点之间的距离。" }
@@ -175,7 +220,7 @@
     {
       "name": "Text",
       "doc": { "en": "Displays text.", "zh": "显示文本。" },
-      "groups": ["layout", "padding"],
+      "groups": ["layout", "visibility", "padding", "decoration"],
       "members": [
         {
           "name": "value",
@@ -206,7 +251,7 @@
     },
     {
       "name": "Button",
-      "groups": ["layout"],
+      "groups": ["layout", "visibility"],
       "doc": { "en": "Renders a clickable control with child nodes for its content.", "zh": "显示可点击的控件，用子节点提供按钮内容。" },
       "children": "any",
       "members": [
@@ -224,7 +269,7 @@
     },
     {
       "name": "Input",
-      "groups": ["layout"],
+      "groups": ["layout", "visibility"],
       "doc": { "en": "Displays an editable text field.", "zh": "显示可编辑的文本框。" },
       "members": [
         {
@@ -255,7 +300,7 @@
     },
     {
       "name": "Checkbox",
-      "groups": ["layout"],
+      "groups": ["layout", "visibility"],
       "doc": { "en": "Displays a checkable control.", "zh": "显示可勾选的控件。" },
       "members": [
         {
@@ -282,7 +327,7 @@
     {
       "name": "Image",
       "doc": { "en": "Displays an image from a URL.", "zh": "显示指定 URL 的图片。" },
-      "groups": ["layout"],
+      "groups": ["layout", "visibility", "decoration"],
       "memberSupport": { "width": {}, "height": {} },
       "members": [
         {
@@ -297,7 +342,7 @@
     {
       "name": "Stack",
       "doc": { "en": "Overlays children in declaration order.", "zh": "按声明顺序叠放子元素。" },
-      "groups": ["layout", "padding"],
+      "groups": ["layout", "visibility", "padding", "decoration"],
       "children": "any",
       "members": [
         {
@@ -314,7 +359,7 @@
     {
       "name": "Scroll",
       "doc": { "en": "Lays out children linearly and scrolls along its main axis.", "zh": "线性排列子元素，并可沿主轴滚动。" },
-      "groups": ["layout", "padding"],
+      "groups": ["layout", "visibility", "padding", "decoration"],
       "children": "any",
       "members": [
         {

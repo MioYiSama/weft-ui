@@ -1,0 +1,33 @@
+type Preset = "none" | "small" | "medium" | "large"
+
+model AppearanceModel {
+  opacity: Float,
+  hidden: Bool,
+  background: Color,
+  radius: Int,
+  border: Int,
+  borderColor: Color,
+  shadow: Preset,
+  clip: Bool,
+}
+
+component Appearance(model: AppearanceModel) {
+  Column(width = 260, padding = 12, gap = 8, opacity = 0.9,
+         background = "#f7f8f9", radius = 16, border = 1, shadow = "small", clip = false) {
+    Row(hidden = model.hidden, opacity = model.opacity, background = model.background,
+        radius = model.radius, border = model.border, borderColor = model.borderColor,
+        shadow = model.shadow, clip = model.clip) {
+      Text("Label", padding = 6, background = "#f4c989", radius = 4)
+    }
+    Stack(width = 160, height = 80, radius = 12, clip = true, background = "#daf1ef",
+          border = 2, borderColor = "#4c888a", shadow = "medium") {
+      Image("wide.png", width = 240, height = 96, opacity = 0.8, radius = 6)
+    }
+    Scroll(height = 64, radius = 8, border = 1, clip = model.clip, shadow = "large") {
+      Text("Scroll", height = 96)
+    }
+    Button(hidden = model.hidden) { Text("Action") }
+    Input("", opacity = model.opacity)
+    Checkbox(false, hidden = true)
+  }
+}

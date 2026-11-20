@@ -216,7 +216,7 @@ test("WeChat generates a theme stylesheet and resolves dynamic theme colors", as
   const config: { darkmode?: boolean } = JSON.parse(await readFile(join(project, "app.json"), "utf8"));
   expect(config.darkmode).toBe(true);
   expect(await readFile(join(project, "weft/view.wxss"), "utf8")).toBe(
-    `${CSS}:host{--weft-accent:#0a84ffff;}\n@media (prefers-color-scheme: dark){:host{--weft-accent:#409cffff;}}\n`,
+    `${CSS}.w-root{--weft-accent:#0a84ffff;}\n@media (prefers-color-scheme: dark){.w-root{--weft-accent:#409cffff;}}\n`,
   );
   const program = launch(project, { wx: fakeWx() });
   try {

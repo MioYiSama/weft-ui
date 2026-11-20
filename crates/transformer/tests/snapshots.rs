@@ -86,6 +86,12 @@ const LAYOUT: Fixture = Fixture {
     ],
 };
 
+const APPEARANCE: Fixture = Fixture {
+    name: "Appearance",
+    source: include_str!("fixtures/Appearance.weft"),
+    natives: &[],
+};
+
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
 fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
@@ -173,6 +179,11 @@ fn layout() {
     check_fixture(&LAYOUT);
 }
 
+#[test]
+fn appearance() {
+    check_fixture(&APPEARANCE);
+}
+
 fn check_fixture(fixture: &Fixture) {
     let web = generated_files(fixture.compile(Platform::Web));
     check(fixture, Platform::Web, &web);
@@ -250,7 +261,7 @@ component C(color: String) {
         let code = &output.logic[0].code;
         if platform == Platform::Web {
             assert_eq!(code.matches("$.style(").count(), 4);
-            assert!(code.contains("background:#aabbcc"));
+            assert!(code.contains("background-color:#aabbcc"));
             assert!(code.contains("color:#12345680"));
             assert_eq!(code.matches("w-column").count(), 1);
             assert_eq!(code.matches("w-row").count(), 1);
@@ -296,7 +307,7 @@ component C(color: String) {
         )));
         assert!(!files["view.js"].contains("import "));
         assert!(!files["view.js"].contains("require("));
-        assert!(files["view.wxml"].contains("background:#aabbcc"));
+        assert!(files["view.wxml"].contains("background-color:#aabbcc"));
         assert!(files["view.wxml"].contains("color:#12345680"));
         assert_eq!(files["view.wxml"].matches("w-column").count(), 1);
         assert_eq!(files["view.wxml"].matches("w-row").count(), 1);

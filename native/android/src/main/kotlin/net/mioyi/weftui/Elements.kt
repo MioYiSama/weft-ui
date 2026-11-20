@@ -75,3 +75,19 @@ enum class WeftAxis {
         }
     }
 }
+
+enum class WeftShadow {
+    NONE,
+    SMALL,
+    MEDIUM,
+    LARGE;
+
+    companion object {
+        fun parse(value: String): WeftShadow = when (value) {
+            "small" -> SMALL
+            "medium" -> MEDIUM
+            "large" -> LARGE
+            else -> NONE
+        }
+    }
+}

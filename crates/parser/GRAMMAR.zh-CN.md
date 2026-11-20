@@ -210,6 +210,7 @@ Call        = IDENT "(" ArgList? ")" ;
 
 - **长度**：`Int`，单位是逻辑像素：iOS / macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px；小程序用 `px`，不用 `rpx`。
 - **盒模型**：`width`、`height` 及对应的 `min*`、`max*` 限制作用于内容盒，内容盒外依次是内边距、元素的边框（如果有）和外边距。`padding` 设置四边，`paddingX` 设置左右，`paddingY` 设置上下，单边属性覆盖前两种写法。`margin` 按相同规则处理。边距属性中的 `Start` 和 `End` 分别指左边和右边。
+- **外观**：`background` 填充内边距盒，也延伸到边框下方。`border` 添加指定宽度的实线边框，`radius` 为边框盒、背景和边框设置圆角。`shadow`（`"none"`、`"small"`、`"medium"` 或 `"large"`）绘制在边框盒外。`clip = true` 将子内容裁剪到带圆角的内边距盒内。`opacity` 作用于整个元素及其后代；`hidden = true` 时元素不显示，也不参与布局。
 - **`Column` / `Row`**：子元素沿主轴依次排列，`Column` 的主轴为纵向，`Row` 为横向。`gap` 是相邻子元素的间距，子元素的外边距另计。`justify` 分配主轴剩余空间，`align` 决定交叉轴对齐方式，两者默认都是 `"start"`。设 `align = "stretch"` 时，没有固定交叉轴尺寸的子元素会撑满容器的交叉轴内容尺寸。
 - **`grow`**：在 `Column`、`Row` 或 `Scroll` 中，主轴剩余空间按 `grow` 的比例分给 `grow > 0` 的子元素，不计这些子元素在主轴上的自然尺寸。主轴无界时按自然尺寸测量。其他父元素忽略 `grow`。
 - **`fill`**：在 `Column`、`Row` 或 `Scroll` 中撑满交叉轴，在 `Stack` 中撑满两个方向，在根上撑满可用窗口宽度。固定的 `width` 或 `height` 在对应轴上优先于 `fill`。线性布局中要占满主轴剩余空间，应使用 `grow`。

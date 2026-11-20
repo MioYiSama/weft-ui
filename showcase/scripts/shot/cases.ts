@@ -18,7 +18,7 @@ export function prepareShots(platform: Platform): { directory: string; shots: Sh
   const shots: Shot[] = [];
   for (const { id, dark } of pages(platform)) {
     shots.push({ id, scheme: "light", name: `${id}.png`, path: join(directory, `${id}.png`) });
-    if (dark && platform !== "wechat") {
+    if (dark) {
       shots.push({ id, scheme: "dark", name: `${id}-dark.png`, path: join(directory, `${id}-dark.png`) });
     }
   }

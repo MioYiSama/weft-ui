@@ -47,4 +47,13 @@ enum class Axis { Vertical, Horizontal };
     return Axis::Vertical;
 }
 
+enum class Shadow { None, Small, Medium, Large };
+
+[[nodiscard]] constexpr Shadow parse_shadow(std::string_view value) noexcept {
+    if (value == "small") return Shadow::Small;
+    if (value == "medium") return Shadow::Medium;
+    if (value == "large") return Shadow::Large;
+    return Shadow::None;
+}
+
 } // namespace weft

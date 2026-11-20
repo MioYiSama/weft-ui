@@ -21,7 +21,9 @@ pub(crate) fn theme_styles(colors: &[(String, Color, Color)]) -> String {
         colors: &[(String, Color, Color)],
         color: impl Fn(Color, Color) -> Color,
     ) {
-        out.push_str(":host{");
+        // The page imports the stylesheet and styles the component host by class.
+        // WXSS lifts `:host` declarations out of their media query.
+        out.push_str(".w-root{");
         for (name, light, dark) in colors {
             let _ = write!(out, "--weft-{name}:{};", color(*light, *dark).rgba_hex());
         }

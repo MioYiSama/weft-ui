@@ -31,6 +31,8 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `padding` | `Int` | `0` | 设置四边的内边距。 | — |
 | `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
 | `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
@@ -38,7 +40,12 @@ title: 内置元素
 | `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
 | `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
 | `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
-| `background` | `Color` | — | 设置背景色。 | — |
+| `background` | `Color` | — | 为内边距盒填充背景色，边框下方也会着色。 | — |
+| `radius` | `Int` | `0` | 为背景和边框设置圆角。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `border` | `Int` | `0` | 在内边距盒外绘制指定宽度的实线边框。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `borderColor` | `Color` | `"#0000001f"` | 设置边框颜色；深色模式默认使用 `#ffffff26`。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `gap` | `Int` | `0` | 设置相邻子节点之间的距离。 | — |
 | `align` | `CrossAlign` | `"start"` | 设置子元素在水平交叉轴上的位置。 | — |
 | `justify` | `Justify` | `"start"` | 分配纵向主轴上的剩余空间。 | — |
@@ -67,6 +74,8 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `padding` | `Int` | `0` | 设置四边的内边距。 | — |
 | `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
 | `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
@@ -74,7 +83,12 @@ title: 内置元素
 | `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
 | `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
 | `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
-| `background` | `Color` | — | 设置背景色。 | — |
+| `background` | `Color` | — | 为内边距盒填充背景色，边框下方也会着色。 | — |
+| `radius` | `Int` | `0` | 为背景和边框设置圆角。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `border` | `Int` | `0` | 在内边距盒外绘制指定宽度的实线边框。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `borderColor` | `Color` | `"#0000001f"` | 设置边框颜色；深色模式默认使用 `#ffffff26`。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `gap` | `Int` | `0` | 设置相邻子节点之间的距离。 | — |
 | `align` | `CrossAlign` | `"start"` | 设置子元素在纵向交叉轴上的位置。 | — |
 | `justify` | `Justify` | `"start"` | 分配横向主轴上的剩余空间。 | — |
@@ -103,6 +117,8 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `padding` | `Int` | `0` | 设置四边的内边距。 | — |
 | `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
 | `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
@@ -110,6 +126,12 @@ title: 内置元素
 | `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
 | `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
 | `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
+| `background` | `Color` | — | 为内边距盒填充背景色，边框下方也会着色。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `radius` | `Int` | `0` | 为背景和边框设置圆角。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `border` | `Int` | `0` | 在内边距盒外绘制指定宽度的实线边框。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `borderColor` | `Color` | `"#0000001f"` | 设置边框颜色；深色模式默认使用 `#ffffff26`。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `value` (位置参数) | `String` | 必填 | 要显示的文本。 | — |
 | `color` | `Color` | — | 设置文字颜色。 | — |
 | `size` | `Int` | — | 用逻辑像素设置字号。 | — |
@@ -139,6 +161,8 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `disabled` | `Bool` | — | 禁用按钮。 | — |
 
 | 事件 | 载荷 | 说明 | 平台例外 |
@@ -169,6 +193,8 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `value` (位置参数) | `String` | 必填 | 当前输入的文本。 | — |
 | `placeholder` | `String` | — | 输入框为空时显示提示文字。 | — |
 | `disabled` | `Bool` | — | 禁用输入框。 | — |
@@ -201,6 +227,8 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `checked` (位置参数) | `Bool` | 必填 | 当前的选中状态。 | — |
 | `disabled` | `Bool` | — | 禁用复选框。 | — |
 
@@ -232,6 +260,14 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `background` | `Color` | — | 为内边距盒填充背景色，边框下方也会着色。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `radius` | `Int` | `0` | 为背景和边框设置圆角。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `border` | `Int` | `0` | 在内边距盒外绘制指定宽度的实线边框。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `borderColor` | `Color` | `"#0000001f"` | 设置边框颜色；深色模式默认使用 `#ffffff26`。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `src` (位置参数) | `String` | 必填 | 图片的 URL。 | — |
 
 ## Stack
@@ -258,6 +294,8 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `padding` | `Int` | `0` | 设置四边的内边距。 | — |
 | `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
 | `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
@@ -265,6 +303,12 @@ title: 内置元素
 | `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
 | `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
 | `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
+| `background` | `Color` | — | 为内边距盒填充背景色，边框下方也会着色。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `radius` | `Int` | `0` | 为背景和边框设置圆角。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `border` | `Int` | `0` | 在内边距盒外绘制指定宽度的实线边框。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `borderColor` | `Color` | `"#0000001f"` | 设置边框颜色；深色模式默认使用 `#ffffff26`。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `alignment` | `Alignment` | `"topStart"` | 设置子元素在堆叠容器两个轴上的位置。 | — |
 
 ## Scroll
@@ -291,6 +335,8 @@ title: 内置元素
 | `marginBottom` | `Int` | `0` | 设置下外边距。 | — |
 | `marginStart` | `Int` | `0` | 设置从左到右布局中的左外边距。 | — |
 | `marginEnd` | `Int` | `0` | 设置从左到右布局中的右外边距。 | — |
+| `opacity` | `Float` | `1` | 设置整个元素及其子元素的不透明度。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `hidden` | `Bool` | `false` | 隐藏元素，使其不参与布局。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `padding` | `Int` | `0` | 设置四边的内边距。 | — |
 | `paddingX` | `Int` | `0` | 设置左右内边距。 | — |
 | `paddingY` | `Int` | `0` | 设置上下内边距。 | — |
@@ -298,6 +344,12 @@ title: 内置元素
 | `paddingBottom` | `Int` | `0` | 设置下内边距。 | — |
 | `paddingStart` | `Int` | `0` | 设置从左到右布局中的左内边距。 | — |
 | `paddingEnd` | `Int` | `0` | 设置从左到右布局中的右内边距。 | — |
+| `background` | `Color` | — | 为内边距盒填充背景色，边框下方也会着色。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `radius` | `Int` | `0` | 为背景和边框设置圆角。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `border` | `Int` | `0` | 在内边距盒外绘制指定宽度的实线边框。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `borderColor` | `Color` | `"#0000001f"` | 设置边框颜色；深色模式默认使用 `#ffffff26`。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `direction` | `Axis` | `"vertical"` | 在编译时选择滚动轴。 | — |
 | `gap` | `Int` | `0` | 设置相邻子节点之间的距离。 | — |
 | `align` | `CrossAlign` | `"start"` | 设置子元素在非滚动交叉轴上的位置。 | — |

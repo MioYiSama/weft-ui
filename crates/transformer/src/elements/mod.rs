@@ -80,24 +80,12 @@ pub(crate) enum CssTarget {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CustomCss {
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "first used by appearance props")
-    )]
     Hidden,
     #[cfg_attr(not(test), expect(dead_code, reason = "first used by text styling"))]
     MaxLines,
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "first used by appearance props")
-    )]
     Shadow,
     Grow,
     Fill,
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "first used by appearance props")
-    )]
     Border,
     Spacer,
 }

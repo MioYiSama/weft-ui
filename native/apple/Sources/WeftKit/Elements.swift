@@ -78,3 +78,21 @@ public enum WeftAxis: String, Sendable {
         }
     }
 }
+
+public enum WeftShadow: String, Sendable {
+    case none
+    case small
+    case medium
+    case large
+
+    public init(weft: String) {
+        if let value = Self(rawValue: weft) {
+            self = value
+        } else {
+            #if DEBUG
+            NSLog("weft: invalid Shadow value: %@", weft)
+            #endif
+            self = .none
+        }
+    }
+}

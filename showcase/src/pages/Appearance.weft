@@ -1,0 +1,60 @@
+type AppearanceShadow = "none" | "small" | "medium" | "large"
+
+style AppearanceLabel { size = 14, color = "#29484b" }
+style AppearanceTitle { size = 17, bold = true, color = "#153b3d" }
+
+component ShadowCard(preset: AppearanceShadow) {
+    Column(grow = 1, padding = 10, gap = 8, background = "#ffffff", radius = 12, shadow = preset) {
+        Row(width = 26, height = 26, background = "#cee9e1", radius = 7)
+        Text(preset, style = AppearanceLabel)
+    }
+}
+
+component Appearance() {
+    state hidden = false
+
+    Scroll(background = "#f5f8f6", indicators = false) {
+        Column(fill = true, padding = 22, gap = 22) {
+            Column(gap = 4) {
+                Text("Appearance", size = 30, bold = true, color = "#153b3d")
+                Text("Shadows, borders, clipping and visibility", style = AppearanceLabel)
+            }
+            Column(fill = true, gap = 10) {
+                Text("Shadow presets", style = AppearanceTitle)
+                Row(fill = true, gap = 16) {
+                    ShadowCard("small")
+                    ShadowCard("medium")
+                    ShadowCard("large")
+                }
+            }
+            Column(fill = true, gap = 10) {
+                Text("Borders and opacity", style = AppearanceTitle)
+                Row(fill = true, gap = 12) {
+                    Text("1 px · default", grow = 1, padding = 10, background = "#ffffff",
+                         radius = 8, border = 1, style = AppearanceLabel)
+                    Text("2 px · 50% opacity", grow = 1, padding = 10, background = "#c9e5dd",
+                         radius = 16, border = 2, borderColor = "#27706a", opacity = 0.5,
+                         style = AppearanceLabel)
+                }
+            }
+            Column(fill = true, gap = 10) {
+                Text("Rounded clipping", style = AppearanceTitle)
+                Stack(fill = true, height = 112, alignment = "center", clip = true, radius = 20,
+                      background = "#f6c879", shadow = "small") {
+                    // An inline image keeps the screenshot independent of the network.
+                    Image("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0NjAiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgNDYwIDEyOCI+PHBhdGggZmlsbD0iI2Y2Yzg3OSIgZD0iTTAgMGg0NjB2MTI4SDB6Ii8+PGNpcmNsZSBjeD0iMjEzIiBjeT0iMzciIHI9IjE5IiBmaWxsPSIjZmZmMmM4Ii8+PHBhdGggZmlsbD0iIzMwNzk4MSIgZD0ibTAgMTE2IDk1LTc4IDU5IDUzIDQ4LTMyIDgyIDY5SDB6Ii8+PHBhdGggZmlsbD0iIzE4NGU1OCIgZD0ibTgxIDEyOCA2Mi01NCA0MiAzMiA2Ny02MCAxMTEgODJ6Ii8+PHBhdGggZmlsbD0iIzI3NzA2YSIgZD0ibTIwOSAxMjggMTE1LTI1IDEzNi02MXY4NnoiLz48L3N2Zz4=",
+                          width = 460, height = 128)
+                }
+            }
+            Column(fill = true, gap = 10) {
+                Text("Visibility", style = AppearanceTitle)
+                Button(onClick = { hidden = !hidden }) {
+                    Text(if (hidden) "Show card" else "Hide card")
+                }
+                Text("This card leaves no gap when hidden.", fill = true, padding = 10,
+                     background = "#e4f1ec", radius = 8, hidden = hidden, style = AppearanceLabel)
+                Text("End of grid", style = AppearanceLabel)
+            }
+        }
+    }
+}

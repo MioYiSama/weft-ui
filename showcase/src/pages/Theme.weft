@@ -1,0 +1,45 @@
+theme {
+    surface = "#f4f8f6" dark "#142322",
+    text = "#183936" dark "#e5f4ef",
+    accent = "#21645b" dark "#83d6c4",
+    border = "#b6d1ca" dark "#456560",
+    card = "#ffffff" dark "#213634",
+}
+
+style ThemeCard { padding = 14, radius = 14, border = 1, background = theme.card, borderColor = theme.border }
+style ThemeLabel { size = 15, color = theme.text }
+style ThemeValue { size = 15, color = theme.accent }
+
+component ThemeSetting(label: String, detail: String) {
+    Row(fill = true, gap = 12, align = "center", justify = "spaceBetween") {
+        Text(label, style = ThemeLabel)
+        Text(detail, style = ThemeValue)
+    }
+}
+
+component Theme() {
+    Scroll(background = theme.surface, indicators = false) {
+        Column(fill = true, padding = 22, gap = 22) {
+            Column(gap = 4) {
+                Text("Settings", size = 30, bold = true, color = theme.text)
+                Text("Colors follow your system appearance.", style = ThemeValue)
+            }
+            Column(fill = true, gap = 8) {
+                Text("Display", size = 17, bold = true, color = theme.text)
+                Column(fill = true, gap = 12, style = ThemeCard) {
+                    ThemeSetting("Appearance", "System")
+                    Row(fill = true, border = 1)
+                    ThemeSetting("Text size", "Default")
+                }
+            }
+            Column(fill = true, gap = 8) {
+                Text("Accessibility", size = 17, bold = true, color = theme.text)
+                Column(fill = true, gap = 12, style = ThemeCard) {
+                    ThemeSetting("Contrast", "Standard")
+                    Row(fill = true, border = 1)
+                    ThemeSetting("Reduce motion", "Off")
+                }
+            }
+        }
+    }
+}

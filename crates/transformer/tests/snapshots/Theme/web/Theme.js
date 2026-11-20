@@ -21,10 +21,10 @@ export function Badge$c(app, args, children, depth) {
   c.pw[0] = $.watch($s0, c, args[0]);
   const f = $t0();
   const n0 = f.firstChild;
-  $.style(n0, 27, c.p[0]);
+  $.style(n0, 34, c.p[0]);
   c.init(f);
   c.u = () => {
-    if (c.d[0] & 1) $.style(n0, 27, c.p[0]);
+    if (c.d[0] & 1) $.style(n0, 34, c.p[0]);
   };
   return c;
 }
@@ -43,13 +43,13 @@ export function Theme$c(app, args, children, depth) {
   const n2 = n1.nextSibling;
   const n3 = n2.nextSibling;
   const n4 = n3.nextSibling;
-  $.style(n2, 27, (c.p[0].$v[0] ? "@accent" : "#000000"));
+  $.style(n2, 34, (c.p[0].$v[0] ? "@accent" : "#000000"));
   n3.textContent = $.str((-1.25));
   const k4 = Badge$c(c.app, ["@accent"], [], c.depth + 1);
   k4.mount(n4.parentNode, n4);
   c.init(f);
   c.u = () => {
-    if (c.d[0] & 1) $.style(n2, 27, (c.p[0].$v[0] ? "@accent" : "#000000"));
+    if (c.d[0] & 1) $.style(n2, 34, (c.p[0].$v[0] ? "@accent" : "#000000"));
   };
   c.x = () => {
     k4.destroy(false);

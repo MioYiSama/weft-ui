@@ -931,8 +931,8 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R1.d | ☑ | b7f8b0f | 截图待维护者确认（`layout`：android）；C-android 12 项含 32 个布局样例；C-ui 通过；截图回归 0.000% |
 | R1.n | ☑ | 1db9a6b | C-windows（core 18、WinUI 9，含 32 个布局样例）、C-ui 通过；Windows 截图已查看；已有 Windows 快照未变 |
 | R1.g | ☑ | 7f2d2e3 | C-linux 4 组含 32 个布局样例、C-ui 通过；Linux 截图已查看；已有 GTK 快照仅把 `Column`/`Row` 的包装从 `Stack` 改名为 `Linear` |
-| R1.z | ☑ | （本提交） | C-ui 7 个平台、C-shot 与 C-shot-local 通过，页面基线不变；iOS 与 Web 上 example 能滚动到底部，没有外层二次滚动（证据 `/tmp/weft-m1/r1z-evidence/`）；C-apps 7 个平台有差异，已重新录制基线 |
-| R2.w | ☐ | | |
+| R1.z | ☑ | 8e6f4f6 | C-ui 7 个平台、C-shot 与 C-shot-local 通过，页面基线不变；iOS 与 Web 上 example 能滚动到底部，没有外层二次滚动（证据 `/tmp/weft-m1/r1z-evidence/`）；C-apps 7 个平台有差异，已重新录制基线 |
+| R2.w | ☑ | （本提交） | 截图待维护者确认（`appearance`、`theme`、`theme-dark`：web、wechat）；Web 与基线一致，小程序最大差异 0.021%；隐藏卡片时让出布局空间；C-apps 仅 web、wechat 有差异，已重新录制基线 |
 | R2.a | ☐ | | |
 | R2.d | ☐ | | |
 | R2.n | ☐ | | |
@@ -990,3 +990,5 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R1.a–R1.g] C-apps：example 在 ios、macos、android、linux 的生成代码改用新的布局容器；windows 生成代码与 web、wechat 产物不变。已重新录制基线。结论：接受
 - [R1.z] 预期变化写的是「全部 web、wechat 快照」，实际只有小程序快照变化（`index.wxml`、`view.wxss`，新增 `index.wxss`）；根的 CSS 随 runtime 发布，不在生成的 Web 快照里，所以 Web 快照不变。仓库里没有 `packages/vite/templates/web/index.html`，Web 入口只改了 `example/index.html` 与 `showcase/index.html`，`apps/web/index.html` 由 Vite 生成。根不再滚动后，macOS 截图窗口调高，以便不滚动也能看到页面最后一节。结论：接受
 - [R1.z] 维护者发现 macOS 的 example 启动时总是显示 "You clicked!"：C-ui 点击后 `storage` 写入的 `weft.storage.clicked = true` 留在沙盒容器的 `UserDefaults` 里（`~/Library/Containers/net.mioyi.weftui/…`），删除 app 也不会清除。这是示例的持久化行为，不是 bug。结论：不处理（已告知清除命令；是否让 UI 测试不留状态待维护者决定）
+- [R2.w] 小程序把主题变量写在 `weft/view.wxss` 的 `:host` 上时，深浅色两种模式都渲染成深色值；改为写在页面的 `.w-root` 上后两种模式正确区分（规范 §4 写的是 `:host`）。纵向 `Scroll` 的内容节点需要显式的视口宽度，设置页卡片才能撑满。`background` 的 CSS 属性按规范改为 `background-color`，`Gallery` 的 Web JS 与小程序 `view.wxml` 随之变化；`CSS_PROPS` 下标变化使 `Gallery`、`Layout`、`Theme` 的 Web JS 与小程序 `view.js` 快照变化，共享样式表使 5 个夹具的 `view.wxss` 变化；原生快照与 conformance 黄金文件不变。结论：接受
+- [R2.w] 微信开发者工具的截图包含模拟器外框圆角外的残影（左上、左下角的零星文字），T1 以来的小程序基线都有，比对差异在阈值内。结论：不处理

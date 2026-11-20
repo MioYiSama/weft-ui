@@ -10,6 +10,8 @@ export type Alignment = "topStart" | "top" | "topEnd" | "start" | "center" | "en
 
 export type Axis = "vertical" | "horizontal";
 
+export type Shadow = "none" | "small" | "medium" | "large";
+
 export const ELEMENTS: Record<string, { main: string | null; children: "any" | "none" | readonly string[] }> = {
   Column: { main: null, children: "any" },
   Row: { main: null, children: "any" },
@@ -40,6 +42,8 @@ export const CSS_PROPS: readonly Css[] = [
   {"property":"margin-bottom","unit":"px"},
   {"property":"margin-left","unit":"px"},
   {"property":"margin-right","unit":"px"},
+  {"property":"opacity","unit":"number"},
+  {"unit":"custom","custom":"hidden"},
   {"properties":["padding-top","padding-right","padding-bottom","padding-left"],"unit":"px"},
   {"properties":["padding-left","padding-right"],"unit":"px"},
   {"properties":["padding-top","padding-bottom"],"unit":"px"},
@@ -47,7 +51,12 @@ export const CSS_PROPS: readonly Css[] = [
   {"property":"padding-bottom","unit":"px"},
   {"property":"padding-left","unit":"px"},
   {"property":"padding-right","unit":"px"},
-  {"property":"background","unit":"color"},
+  {"property":"background-color","unit":"color"},
+  {"property":"border-radius","unit":"px"},
+  {"unit":"custom","custom":"border"},
+  {"property":"border-color","unit":"color"},
+  {"unit":"custom","custom":"shadow"},
+  {"property":"overflow","unit":"keyword","keywords":{"true":"hidden","false":"visible"}},
   {"property":"gap","unit":"px"},
   {"property":"align-items","unit":"keyword","keywords":{"start":"flex-start","end":"flex-end"}},
   {"property":"justify-content","unit":"keyword","keywords":{"start":"flex-start","end":"flex-end","spaceBetween":"space-between","spaceAround":"space-around","spaceEvenly":"space-evenly"}},
@@ -59,4 +68,4 @@ export const CSS_PROPS: readonly Css[] = [
   {"unit":"custom","custom":"spacer"},
 ];
 
-export const CSS = ".w-root{display:flex;flex-direction:column;align-items:flex-start;box-sizing:border-box;width:100%;height:100%;overflow:hidden}\n.w-column{display:flex;flex-direction:column;align-items:flex-start}\n.w-row{display:flex;flex-direction:row;align-items:flex-start}\n.w-stack{display:grid;position:relative;grid-template:minmax(0,1fr)/minmax(0,1fr);place-items:start start}\n.w-in-stack{grid-area:1/1/2/2;position:relative}\n.w-in-stack.w-fill{position:absolute;inset:0}\n.w-scroll-v,.w-scroll-h{display:flex;align-items:flex-start;flex:1 1 0px;align-self:stretch;min-width:0;min-height:0}\n.w-scroll-v{flex-direction:column;overflow-x:hidden;overflow-y:auto}\n.w-scroll-h{flex-direction:row;overflow-x:auto;overflow-y:hidden}\n.w-in-scroll{flex-shrink:0}\n/* A percentage basis falls back to content when the main size is indefinite. */\n.w-grow{flex-basis:0%!important}\n.w-spacer{width:0;height:0;flex:1 1 0px}\n.w-text{display:inline-block}\n.w-button.w-wx{margin:0}\n.w-input.w-wx{border:1px solid #ccc;padding:4px 8px}\n/* The mini program scroll-view owns its viewport; its child owns the layout. */\n.w-scroll-content-v,.w-scroll-content-h{display:flex;align-items:flex-start;flex:none}\n.w-scroll-content-v{flex-direction:column;min-height:100%}\n.w-scroll-content-h{flex-direction:row;width:max-content;min-width:100%;height:100%}\n";
+export const CSS = ".w-root{display:flex;flex-direction:column;align-items:flex-start;box-sizing:border-box;width:100%;height:100%;overflow:hidden}\n.w-column{display:flex;flex-direction:column;align-items:flex-start}\n.w-row{display:flex;flex-direction:row;align-items:flex-start}\n.w-stack{display:grid;position:relative;grid-template:minmax(0,1fr)/minmax(0,1fr);place-items:start start}\n.w-in-stack{grid-area:1/1/2/2;position:relative}\n.w-in-stack.w-fill{position:absolute;inset:0}\n.w-scroll-v,.w-scroll-h{display:flex;align-items:flex-start;flex:1 1 0px;align-self:stretch;min-width:0;min-height:0}\n/* A Scroll viewport must keep its scrolling axis even when clip is specified. */\n.w-scroll-v{flex-direction:column;overflow-x:hidden!important;overflow-y:auto!important}\n.w-scroll-h{flex-direction:row;overflow-x:auto!important;overflow-y:hidden!important}\n.w-in-scroll{flex-shrink:0}\n/* A percentage basis falls back to content when the main size is indefinite. */\n.w-grow{flex-basis:0%!important}\n.w-spacer{width:0;height:0;flex:1 1 0px}\n.w-text{display:inline-block}\n.w-button.w-wx{margin:0}\n.w-input.w-wx{border:1px solid #ccc;padding:4px 8px}\n/* The mini program scroll-view owns its viewport; its child owns the layout. */\n.w-scroll-content-v,.w-scroll-content-h{display:flex;align-items:flex-start;flex:none}\n.w-scroll-content-v{flex-direction:column;width:100%;min-height:100%}\n.w-scroll-content-h{flex-direction:row;width:max-content;min-width:100%;height:100%}\n.w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#0000001f}\n@media (prefers-color-scheme:dark){\n  .w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#ffffff26}\n}\n";

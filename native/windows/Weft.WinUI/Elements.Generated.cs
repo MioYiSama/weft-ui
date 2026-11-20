@@ -39,6 +39,14 @@ public enum WeftAxis
     Horizontal,
 }
 
+public enum WeftShadow
+{
+    None,
+    Small,
+    Medium,
+    Large,
+}
+
 public static class WeftUnions
 {
     public static WeftCrossAlign ParseCrossAlign(string value) => value switch
@@ -76,5 +84,13 @@ public static class WeftUnions
     {
         "horizontal" => WeftAxis.Horizontal,
         _ => WeftAxis.Vertical,
+    };
+
+    public static WeftShadow ParseShadow(string value) => value switch
+    {
+        "small" => WeftShadow.Small,
+        "medium" => WeftShadow.Medium,
+        "large" => WeftShadow.Large,
+        _ => WeftShadow.None,
     };
 }

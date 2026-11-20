@@ -19,7 +19,7 @@ use crate::ir::{
     Program, Type, type_display,
 };
 use lower::{Instance, Lowerer};
-use record::{AliasSymbol, ProbeContext, RawCall, RawProbe, Recorder, Target};
+use record::{AliasSymbol, ProbeContext, RawCall, RawProbe, Recorder, StyleSymbol, Target};
 
 /// Name of the slot parameter type.
 const CHILDREN: &str = "Children";
@@ -32,6 +32,7 @@ pub(crate) enum DeclKind {
     Event(EventId),
     Component(ComponentId),
     TypeAlias(usize),
+    Style(usize),
 }
 
 impl DeclKind {
@@ -41,6 +42,7 @@ impl DeclKind {
             DeclKind::Event(_) => "event",
             DeclKind::Component(_) => "component",
             DeclKind::TypeAlias(_) => "type alias",
+            DeclKind::Style(_) => "style",
         }
     }
 }
@@ -63,6 +65,7 @@ pub(crate) struct Checker<'a> {
     sources: &'a SourceMap,
     decls: HashMap<String, Decl>,
     aliases: Vec<Alias<'a>>,
+    styles: Vec<&'a ast::StyleDecl>,
     /// Per file: the file itself plus its direct imports.
     visible: Vec<Vec<FileId>>,
     pub models: Vec<Model>,
@@ -312,6 +315,7 @@ fn decl_target(kind: DeclKind) -> Target {
         DeclKind::Event(id) => Target::Event(id),
         DeclKind::Component(id) => Target::Component(id),
         DeclKind::TypeAlias(id) => Target::TypeAlias(id),
+        DeclKind::Style(id) => Target::Style(id),
     }
 }
 
@@ -321,6 +325,7 @@ pub(crate) fn article(kind: DeclKind) -> &'static str {
         DeclKind::Event(_) => "an event",
         DeclKind::Component(_) => "a component",
         DeclKind::TypeAlias(_) => "a type alias",
+        DeclKind::Style(_) => "a style",
     }
 }
 
@@ -379,6 +384,7 @@ fn check(
         sources,
         decls: HashMap::new(),
         aliases: Vec::new(),
+        styles: Vec::new(),
         visible: files
             .iter()
             .enumerate()
@@ -497,7 +503,7 @@ fn check(
                     DeclKind::Model(m) => module.models.push(m),
                     DeclKind::Event(e) => module.events.push(e),
                     DeclKind::Component(c) => module.components.push(c),
-                    DeclKind::TypeAlias(_) => {}
+                    DeclKind::TypeAlias(_) | DeclKind::Style(_) => {}
                 }
             }
             module
@@ -512,7 +518,16 @@ fn check(
         components: cx.components,
     };
     if let Some(recorder) = &cx.recorder {
-        recorder.borrow_mut().aliases = cx
+        let mut recorder = recorder.borrow_mut();
+        recorder.styles = cx
+            .styles
+            .iter()
+            .map(|style| StyleSymbol {
+                def: style.name.span,
+                declaration: style.span,
+            })
+            .collect();
+        recorder.aliases = cx
             .aliases
             .into_iter()
             .map(|alias| AliasSymbol {
@@ -560,7 +575,7 @@ fn declare<'a>(
             .with_label("redeclared here")
             .with_secondary(prev.span, "first declared here")
             .with_note(
-                "models, events, components and type aliases share one namespace across all imported files",
+                "models, events, components, type aliases and styles share one namespace across all imported files",
             ),
         );
         return None;
@@ -609,6 +624,20 @@ fn declare<'a>(
                 ty: OnceCell::new(),
             });
             DeclKind::TypeAlias(id)
+        }
+        ast::Item::Style(decl) => {
+            for entry in &decl.entries {
+                let name = &entry.name.name;
+                if !elements::is_style_property(name) {
+                    diags.push(Diagnostic::error(
+                        entry.name.span,
+                        format!("unknown style property `{name}`"),
+                    ));
+                }
+            }
+            let id = cx.styles.len();
+            cx.styles.push(decl);
+            DeclKind::Style(id)
         }
     };
     cx.record(name.span, || decl_target(kind));

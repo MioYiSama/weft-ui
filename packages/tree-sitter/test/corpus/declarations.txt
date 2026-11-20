@@ -249,3 +249,39 @@ component Choice(onSelect: Event<Int>, onClose: Event) {
               (call_statement
                 (identifier)
                 (arguments)))))))))
+
+========================================
+Reusable styles and literal entries
+========================================
+
+style Muted {
+  color = "#6b7280"
+  size = -12,
+  bold = false
+  gap = -1.25
+  background = "$$5 \${literal} {"
+}
+component Screen(style: String) {
+  Text(style, style = Muted, size = 14)
+}
+
+----------------------------------------
+
+(source_file
+  (style_declaration
+    (identifier)
+    (style_entry (identifier) (string))
+    (style_entry (identifier) (signed_number (integer)))
+    (style_entry (identifier) (false))
+    (style_entry (identifier) (signed_number (float)))
+    (style_entry (identifier) (string)))
+  (component_declaration
+    (identifier)
+    (parameters (parameter (identifier) (type_identifier)))
+    (component_body
+      (element
+        (element_name (identifier))
+        (arguments
+          (argument (identifier))
+          (argument (identifier) (identifier))
+          (argument (identifier) (integer)))))))

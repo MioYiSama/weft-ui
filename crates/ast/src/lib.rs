@@ -37,6 +37,7 @@ pub enum Item {
     Event(EventDecl),
     Component(ComponentDecl),
     TypeAlias(TypeAlias),
+    Style(StyleDecl),
 }
 
 impl Item {
@@ -47,8 +48,25 @@ impl Item {
             Item::Event(e) => &e.name,
             Item::Component(c) => &c.name,
             Item::TypeAlias(alias) => &alias.name,
+            Item::Style(style) => &style.name,
         }
     }
+}
+
+/// A named set of default properties for built-in elements.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StyleDecl {
+    pub name: Ident,
+    pub entries: Vec<StyleEntry>,
+    pub span: Span,
+}
+
+/// `property = literal` in a style declaration.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StyleEntry {
+    pub name: Ident,
+    pub value: Expr,
+    pub span: Span,
 }
 
 /// A top-level `type Name = Type` declaration.

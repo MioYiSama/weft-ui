@@ -2,7 +2,7 @@
 
 use weft_ui_parser::{MemoryLoader, load};
 use weft_ui_transformer::ir::{
-    BindingKind, EmitTarget, Handler, NodeKind, ParamId, PropValue, SlotRef, Stmt,
+    BindingKind, EmitTarget, ExprKind, Handler, NodeKind, ParamId, PropValue, SlotRef, Stmt,
 };
 use weft_ui_transformer::{Compilation, check, dependency_report};
 
@@ -32,6 +32,94 @@ fn diagnostics(files: &[(&str, &str)]) -> Vec<String> {
             )
         })
         .collect()
+}
+
+#[test]
+fn styles_require_named_value_properties_and_built_in_elements() {
+    let source = r#"style Bad { bogus = 7, value = "text", onClick = true }
+style Card { gap = 8 }
+component Custom() {}
+component Screen() {
+  Text("x", style = "Card")
+  Text("x", style = Missing)
+  Text("x", style = (Card))
+  Text("x", style = Card)
+  Custom(style = Card)
+}"#;
+    assert_eq!(
+        diagnostics(&[("styles.weft", source)]),
+        [
+            "styles.weft:1:13: unknown style property `bogus`",
+            "styles.weft:1:24: unknown style property `value`",
+            "styles.weft:1:40: unknown style property `onClick`",
+            "styles.weft:5:21: `style` expects a style name",
+            "styles.weft:6:21: `style` expects a style name",
+            "styles.weft:7:21: `style` expects a style name",
+            "styles.weft:8:13: style `Card` sets `gap`, which `Text` does not accept",
+            "styles.weft:9:10: `style` only applies to built-in elements",
+        ]
+    );
+}
+
+#[test]
+fn style_values_must_be_literal() {
+    let source = r#"style Invalid {
+  size = 1 + 2
+  color = "${name}"
+  color = Other
+  size = -(4)
+}"#;
+    assert_eq!(
+        diagnostics(&[("styles.weft", source)]),
+        [
+            "styles.weft:2:10: style values must be literals or theme tokens",
+            "styles.weft:3:11: style values must be literals or theme tokens",
+            "styles.weft:4:11: style values must be literals or theme tokens",
+            "styles.weft:5:10: style values must be literals or theme tokens",
+        ]
+    );
+}
+
+#[test]
+fn remaining_style_values_are_checked_at_the_element_argument() {
+    let app = r#"import "styles.weft"
+component Screen() {
+  Text("override", style = WrongType, size = 14)
+  Text("wrong type", style = WrongType)
+  Text("invalid color", style = WrongColor)
+}"#;
+    let styles = r#"style WrongType { size = false }
+style WrongColor { color = "not a color" }"#;
+    assert_eq!(
+        diagnostics(&[("screen.weft", app), ("styles.weft", styles)]),
+        [
+            "screen.weft:4:22: mismatched types: expected `Int`, found `Bool`",
+            "screen.weft:5:25: invalid color `not a color`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`",
+        ]
+    );
+}
+
+#[test]
+fn signed_style_values_lower_to_literals_without_bindings() {
+    let source = "style Tight { gap = -3 }\ncomponent Screen() { Row(style = Tight) }";
+    let compilation = compile(&[("style.weft", source)]);
+    let program = compilation
+        .program
+        .as_ref()
+        .unwrap_or_else(|| panic!("{}", compilation.render_diagnostics()));
+    let screen = program.component_named("Screen").expect("Screen component");
+    let NodeKind::Element { props, .. } = &screen.node(screen.roots[0]).kind else {
+        panic!("expected a built-in element");
+    };
+    let [gap] = props.as_slice() else {
+        panic!("expected only gap in the lowered properties");
+    };
+    assert_eq!(gap.name, "gap");
+    assert!(gap.binding.is_none());
+    let PropValue::Expr(value) = &gap.value else {
+        panic!("expected a value property");
+    };
+    assert!(matches!(value.kind, ExprKind::Int(-3)));
 }
 
 #[test]

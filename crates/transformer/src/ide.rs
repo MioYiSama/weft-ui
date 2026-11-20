@@ -18,7 +18,7 @@ use crate::elements::{Children, ElementSpec, PropKind, PropSpec, PropType};
 use crate::ir::{ComponentId, ParamKind, Program, Type, type_display};
 use crate::sema;
 use crate::sema::builtins::{MemberKind, MemberSig};
-use crate::sema::record::{AliasSymbol, LocalBinding, Recorder, Target};
+use crate::sema::record::{AliasSymbol, LocalBinding, Recorder, StyleSymbol, Target};
 
 pub use crate::sema::record::ProbeContext;
 
@@ -51,6 +51,7 @@ pub fn analyze(parsed: ParsedProgram, probe: Option<&str>) -> IdeAnalysis {
         program: &program,
         sources: &analysis.sources,
         aliases: &recorder.aliases,
+        styles: &recorder.styles,
     };
     let index = Index {
         occurrences: recorder
@@ -174,6 +175,8 @@ pub enum SymbolKind {
     Member,
     /// A built-in type or a user-declared type alias.
     Type,
+    /// A compile-time style declaration.
+    Style,
 }
 
 /// An argument list; `args` spans from the callee name to the end of the
@@ -261,6 +264,7 @@ struct Resolver<'a> {
     program: &'a Program,
     sources: &'a SourceMap,
     aliases: &'a [AliasSymbol],
+    styles: &'a [StyleSymbol],
 }
 
 impl Resolver<'_> {
@@ -306,6 +310,15 @@ impl Resolver<'_> {
                     name: alias.name.clone(),
                     detail: format!("type {} = {}", alias.name, self.ty(&alias.ty)),
                     def: Some(alias.def),
+                }
+            }
+            Target::Style(id) => {
+                let style = &self.styles[id];
+                Symbol {
+                    kind: SymbolKind::Style,
+                    name: self.sources.snippet(style.def).to_owned(),
+                    detail: self.sources.snippet(style.declaration).to_owned(),
+                    def: Some(style.def),
                 }
             }
             Target::Local {

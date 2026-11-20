@@ -17,6 +17,27 @@ impl Lowerer<'_, '_> {
         self.coerce_to(expr, ty)
     }
 
+    /// Lowers a style entry to a constant and checks it at the application site.
+    pub(super) fn style_expr_as(&mut self, value: &ast::Expr, ty: &Type, span: Span) -> Expr {
+        let mut expr = if let ast::ExprKind::Unary {
+            op: UnaryOp::Neg,
+            expr: operand,
+        } = &value.kind
+        {
+            let mut expr = self.expr(operand);
+            expr.kind = match expr.kind {
+                ExprKind::Int(v) => ExprKind::Int(-v),
+                ExprKind::Float(v) => ExprKind::Float(-v),
+                _ => unreachable!("a style value can only negate a numeric literal"),
+            };
+            expr
+        } else {
+            self.expr(value)
+        };
+        expr.span = span;
+        self.coerce_to(expr, ty)
+    }
+
     pub(super) fn coerce_to(&mut self, expr: Expr, ty: &Type) -> Expr {
         if expr.ty == Type::String
             && let ExprKind::Str(value) = &expr.kind
@@ -195,6 +216,7 @@ impl Lowerer<'_, '_> {
             }
             Some(DeclKind::Model(_)) => format!("`{name}` is a model type, not a value"),
             Some(DeclKind::TypeAlias(_)) => format!("`{name}` is a type alias, not a value"),
+            Some(DeclKind::Style(_)) => format!("`{name}` is a style, not a value"),
             Some(DeclKind::Component(_)) => {
                 format!("component `{name}` can only be used as a node")
             }

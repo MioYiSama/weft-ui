@@ -1,5 +1,5 @@
 Component(getApp().weft.view({
-  hash: "c9566ac30b2d948f",
+  hash: "59a0d6b25720bc8a",
   templates: [
     { n: "ModeLabel", v: [["n0_0", 0]] },
     { n: "Rating", v: [["n0_0", 0]], e: [["e2_0", -1], ["e4_0", -1], ["e6_0", -1]] },

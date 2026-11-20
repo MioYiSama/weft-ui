@@ -17,7 +17,7 @@ use crate::server::Server;
 /// Cannot clash with user code: `.weft` names don't start with `__weft`.
 const PROBE: &str = "__weft_complete__";
 
-const TOP_LEVEL_KEYWORDS: [&str; 5] = ["import", "model", "event", "component", "type"];
+const TOP_LEVEL_KEYWORDS: [&str; 6] = ["import", "model", "event", "component", "type", "style"];
 const NODE_KEYWORDS: [&str; 4] = ["if", "for", "state", "let"];
 const VALUE_KEYWORDS: [&str; 4] = ["true", "false", "null", "if"];
 
@@ -109,6 +109,7 @@ fn kind(symbol: &Symbol) -> CompletionItemKind {
     match symbol.kind {
         SymbolKind::Model => CompletionItemKind::STRUCT,
         SymbolKind::Event => CompletionItemKind::EVENT,
+        SymbolKind::Style => CompletionItemKind::CONSTANT,
         SymbolKind::Component | SymbolKind::Element => CompletionItemKind::CLASS,
         SymbolKind::Field => CompletionItemKind::FIELD,
         SymbolKind::Param

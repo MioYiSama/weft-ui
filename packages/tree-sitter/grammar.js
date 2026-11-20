@@ -2,8 +2,8 @@
  * @file Tree-sitter grammar for Weft UI (`.weft`), following crates/parser/GRAMMAR.md.
  *
  * Used for syntax highlighting and structure in editors; the compiler has its
- * own parser. `import`, `model`, `event`, `component`, `type`, `state`, `let` and `key` are
- * contextual: tree-sitter only treats them as keywords where the grammar
+ * own parser. `import`, `model`, `event`, `component`, `type`, `style`, `state`,
+ * `let` and `key` are contextual: tree-sitter only treats them as keywords where the grammar
  * expects them, so `model` still works as a parameter name.
  */
 
@@ -51,6 +51,7 @@ export default grammar({
       $.event_declaration,
       $.component_declaration,
       $.type_alias,
+      $.style_declaration,
     )),
 
     import: $ => seq('import', field('path', $.string)),
@@ -114,6 +115,32 @@ export default grammar({
       '=',
       field('value', $._expression),
     ),
+
+    style_declaration: $ => seq(
+      'style',
+      field('name', $.identifier),
+      '{',
+      repeat(seq($.style_entry, optional(','))),
+      '}',
+    ),
+
+    style_entry: $ => seq(
+      field('name', $.identifier),
+      '=',
+      field('value', choice(
+        alias($._constant_string, $.string),
+        $.integer,
+        $.float,
+        $.signed_number,
+        $.true,
+        $.false,
+      )),
+    ),
+
+    signed_number: $ => seq('-', choice($.integer, $.float)),
+
+    // Unlike `string`, a constant string cannot contain an unescaped `${`.
+    _constant_string: _ => token(/"(?:\$*(?:[^"\\\n${]|\\(?:[nrt0\\"$]|u\{[0-9a-fA-F]+\}))|\{)*\$*"/),
 
     // ---- types ------------------------------------------------------------
 

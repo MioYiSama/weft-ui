@@ -168,7 +168,7 @@ impl<'cx> Lowerer<'cx, '_> {
                 required: true,
             })
             .collect();
-        let matched = self.match_args(name, &specs, args, span);
+        let matched = self.match_args(name, &specs, args.iter(), span);
         if let EmitTarget::Event(event) = target {
             let call_span = Span::new(self.file, name_span.end, span.end);
             self.record_args(call_span, &matched, |i| Target::EventParam(event, i));

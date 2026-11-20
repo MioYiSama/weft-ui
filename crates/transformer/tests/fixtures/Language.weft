@@ -2,6 +2,8 @@ type Kind = "text" | "image"
 
 type Mode = "compact" | "full"
 
+style Muted { color = "#6b7280", size = 12 }
+
 model LanguageItem {
   id: Int,
   kind: Kind,
@@ -73,5 +75,6 @@ component Language(model: LanguageModel) {
         Text("text")
       }
     }
+    Text("note", style = Muted, size = 14)
   }
 }

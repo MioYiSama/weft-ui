@@ -41,7 +41,7 @@ const $t0 = $.template("<span></span>");
 const $t1 = $.template("<div style=\"display:flex;flex-direction:row;align-items:flex-start\"><span></span><button type=\"button\"><span>1</span></button><button type=\"button\"><span>2</span></button><button type=\"button\"><span>Repeat</span></button></div>");
 const $t2 = $.template("<!----><!---->");
 const $t3 = $.template("<div style=\"display:flex;flex-direction:column;align-items:flex-start\"><!----><!----><!----></div>");
-const $t4 = $.template("<div style=\"display:flex;flex-direction:column;align-items:flex-start\"><span></span><!----><!----><!----><!----><!----><!----><!----><!----></div>");
+const $t4 = $.template("<div style=\"display:flex;flex-direction:column;align-items:flex-start\"><span></span><!----><!----><!----><!----><!----><!----><!----><!----><span style=\"color:#6b7280;font-size:14px\">note</span></div>");
 const $t5 = $.template("<!---->");
 const $t6 = $.template("<span>Footer only</span>");
 const $t7 = $.template("<span></span><!---->");
@@ -145,8 +145,8 @@ export function Language$c(app, args, children, depth) {
   c.s[0] = 0;
   c.sw[0] = $.watch($s2, c, c.s[0]);
   const f = $t4();
-  const n17 = f.firstChild;
-  const n0 = n17.firstChild;
+  const n18 = f.firstChild;
+  const n0 = n18.firstChild;
   const n1 = n0.nextSibling;
   const n2 = n1.nextSibling;
   const n3 = n2.nextSibling;
@@ -155,6 +155,7 @@ export function Language$c(app, args, children, depth) {
   const n9 = n5.nextSibling;
   const n11 = n9.nextSibling;
   const n16 = n11.nextSibling;
+  const n17 = n16.nextSibling;
   n0.textContent = ($.str(c.p[0].$v[0]) + " (" + $.str(c.p[0].$v[1].length) + ")");
   const k1 = ModeLabel$c(c.app, [c.p[0].$v[2]], [], c.depth + 1);
   k1.mount(n1.parentNode, n1);

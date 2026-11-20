@@ -1,5 +1,5 @@
 {
-  "hash": "c9566ac30b2d948f",
+  "hash": "59a0d6b25720bc8a",
   "templates": [
     {
       "label": "ModeLabel",
@@ -74,7 +74,7 @@
       "kind": "component",
       "roots": [0],
       "nodes": [
-        {"element": "Column", "props": {}, "children": [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+        {"element": "Column", "props": {}, "children": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
         {"element": "Text", "props": {}, "children": []},
         {"point": 0},
         {"point": 1},
@@ -83,7 +83,8 @@
         {"point": 4},
         {"point": 5},
         {"point": 6},
-        {"point": 7}
+        {"point": 7},
+        {"element": "Text", "props": {"value": "note", "color": "#6b7280", "size": 14}, "children": []}
       ],
       "values": [
         {"node": 1, "prop": "value", "type": "String"}

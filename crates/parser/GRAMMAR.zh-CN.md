@@ -11,7 +11,7 @@
 - 标识符：`[A-Za-z_][A-Za-z0-9_]*`。
 - 保留关键字：`if` `else` `for` `in` `true` `false` `null`。
 - 上下文关键字（其他位置是普通标识符，例如 Demo 中的参数 `model`）：
-  - `import`（后跟字符串）、`model` / `event` / `component` / `type`（后跟标识符）只在顶层开启声明；
+  - `import`（后跟字符串）、`model` / `event` / `component` / `type` / `style`（后跟标识符）只在顶层开启声明；
   - `state`（后跟标识符）只在组件体内开启状态声明；
   - `let`（后跟标识符）在组件体或块的开头开启局部声明；
   - `key` 只在 `for` 头部出现。
@@ -27,8 +27,11 @@ EBNF 记法：`X?` 可选，`X*` 零或多次，`X+` 一或多次，`"tok"` 为 
 ```text
 File        = Import* Item* EOF ;
 Import      = "import" STRING ;               (* 不允许插值 *)
-Item        = Model | Event | Component | TypeAlias ;
+Item        = Model | Event | Component | TypeAlias | Style ;
 TypeAlias   = "type" IDENT "=" Type ;
+Style       = "style" IDENT "{" ( StyleEntry ","? )* "}" ;
+StyleEntry  = IDENT "=" ConstValue ;
+ConstValue  = STRING | "-"? INT | "-"? FLOAT | "true" | "false" ;   (* 不允许插值 *)
 
 Model       = "model" IDENT "{" FieldList? "}" ;
 Event       = "event" IDENT ( "(" FieldList? ")" )? ;
@@ -108,7 +111,7 @@ Call        = IDENT "(" ArgList? ")" ;
 ### 作用域与导入
 
 - 每个文件可见：本文件声明 + 直接 `import` 的文件声明。导入不传递。
-- 导入闭包内 `model`、`event`、`component`、`type` 共用一个命名空间，任何重名都报错；也不能与内置元素重名。
+- 导入闭包内 `model`、`event`、`component`、`type`、`style` 共用一个命名空间，任何重名都报错；也不能与内置元素重名。
 - 宿主侧的事件注册方法由事件名派生（`onFooBar` / `on_foo_bar`），因此忽略大小写和下划线后相同的两个事件名（如 `FooBar` 与 `foo_bar`）也报错。
 - 循环导入、找不到的文件都报错。
 - 组件内名称查找顺序：lambda 参数 → `let` 绑定（由内向外） → `for` 变量 → `state` → 组件参数。组件内不允许遮蔽已有名称。
@@ -161,6 +164,12 @@ Call        = IDENT "(" ArgList? ")" ;
 - `if` 条件为 `Bool`。
 - `for` 必须有 `key`，类型为 `Int`、`String` 或字符串字面量联合；被迭代对象必须是数组。
 - 自定义组件不允许不经过 `if` / `for` 的递归实例化。
+
+### 样式
+
+- 顶层声明 `style Muted { color = "#6b7280", size = 12 }` 为内置元素的具名值属性设置默认值。样式不能设置位置属性或事件，不能引用其他样式，也不能使用计算表达式。
+- `Text("note", style = Muted, size = 14)` 只应用一个可见的样式。元素必须接受样式中的每个属性。显式参数覆盖样式默认值（这里的 `size` 为 `14`），其余值按普通元素参数检查类型。类型错误会报在 `style = Muted` 参数处。
+- 只有内置元素能使用 `style`，组件调用不能使用。
 
 ### 内置元素与布局
 

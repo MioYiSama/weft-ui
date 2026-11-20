@@ -59,6 +59,23 @@ The required value for `Text`, `Input`, `Checkbox`, or `Image` can be the first 
 
 Colors such as `Text.color` or `Row.background` are strings in `#RGB`, `#RRGGBB`, or `#RRGGBBAA` form. Invalid literals are compile errors. Invalid dynamic colors render as transparent and warn in development builds.
 
+## Reuse element styles
+
+Declare a `style` at the top level and pass its name to a built-in element:
+
+```weft
+style Muted { color = "#6b7280", size = 12 }
+
+component Notes() {
+  Column {
+    Text("Hint", style = Muted)
+    Text("Note", style = Muted, size = 14)
+  }
+}
+```
+
+Both labels use the same color, but the second is larger because explicit arguments override style defaults. Every property in the style must be a named value property accepted by the element. Use literals, not expressions or interpolated strings. An element can apply one style; component calls cannot apply styles.
+
 ## Compute property values
 
 Use expressions directly in arguments. Numeric arithmetic supports `+`, `-`, `*`, `/`, and `%`; division between two `Int` values is integer division. `+` also joins two strings. Use `==` and `!=` for scalar equality, `<`, `<=`, `>`, and `>=` to order numbers or strings, and `!`, `&&`, and `||` for Boolean logic.

@@ -6,7 +6,7 @@ import WeftKit
 /// The app's kernel session, started on first use with the bundle of this package.
 @MainActor private let session = WeftSession(
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
-    layoutHash: 0xc9566ac30b2d948f,
+    layoutHash: 0x59a0d6b25720bc8a,
     make: makeScope
 )
 
@@ -216,6 +216,8 @@ private struct V4: View {
             if let c = s.p5 { V3(s: c) }
             if let c = s.p6 { V3(s: c) }
             ForEach(s.p7) { c in V10(s: c) }
+            Text(verbatim: "note")
+            .weftText(color: Color(weftRGBA: 0x6b7280ff), size: 14, bold: nil)
         }
     }
 }

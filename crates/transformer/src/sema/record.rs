@@ -18,6 +18,8 @@ pub enum ProbeContext {
     Value,
     /// An event handler value: events.
     Handler,
+    /// The value of `style =`: visible style declarations.
+    Style,
     /// After `.` / `?.`: fields and built-in members of the receiver.
     Member,
     /// A type annotation: built-in types, models and type aliases.
@@ -52,6 +54,7 @@ pub(crate) enum Target {
     },
     Type(String),
     TypeAlias(usize),
+    Style(usize),
 }
 
 #[derive(Debug)]
@@ -59,6 +62,12 @@ pub(crate) struct AliasSymbol {
     pub name: String,
     pub ty: Type,
     pub def: Span,
+}
+
+#[derive(Debug)]
+pub(crate) struct StyleSymbol {
+    pub def: Span,
+    pub declaration: Span,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -90,6 +99,7 @@ pub(crate) struct RawProbe {
 pub(crate) struct Recorder {
     pub probe_name: Option<String>,
     pub aliases: Vec<AliasSymbol>,
+    pub styles: Vec<StyleSymbol>,
     pub refs: Vec<(Span, Target)>,
     pub calls: Vec<RawCall>,
     pub probe: Option<RawProbe>,

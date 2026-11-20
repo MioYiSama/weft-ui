@@ -917,8 +917,8 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | L1 | ☑ | 7768759 | 新增 `Language` 快照与 `language.ops`；C-core 含 `conformance.language` 通过；C-apps 无差异 |
 | L2 | ☑ | cd1e466 | 仅 `Language` 快照与 `language.ops` 变化；C-core 17/17；C-apps 无差异 |
 | L3 | ☑ | 3212932 | 三个驱动的宿主事件日志均含 `Rated`；C-core 17/17；C-apps 无差异 |
-| L4 | ☑ | （本提交） | `Gallery` 仅生成的 JS 变化（`TodoList` 没有组件调用，不变）；C-apps 仅各平台打包 JS 变化，已重新录制基线；未改原生壳 |
-| L5 | ☐ | | |
+| L4 | ☑ | 0179814 | `Gallery` 仅生成的 JS 变化（`TodoList` 没有组件调用，不变）；C-apps 仅各平台打包 JS 变化，已重新录制基线；未改原生壳 |
+| L5 | ☑ | （本提交） | `Text("note")` 的 `size` 为 14；`language.ops` 不变；C-apps 无差异 |
 | L6.w | ☐ | | |
 | L6.a | ☐ | | |
 | L6.d | ☐ | | |
@@ -978,3 +978,4 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [P1] C-apps 的差异不只是版本常量：wechat、ios、macos、android、windows、linux 的 `js/index.js` 都打包了 runtime 的数组去重代码，5 个原生平台另外内联了标签 4 的写入器与版本号 2；Web 不变。结论：接受（运行时随协议升级的必然变化），已重新录制 C-apps 基线
 - [P2] Apple 的 `JSONEncoder` 按键名排序输出，无法保持规范 §5 的字段顺序；壳改为比较解码后的环境值来去重，内容相同不推送的语义不变。另外启动时读取 `UIWindow.safeAreaInsets` 会重入 SwiftUI，安全区的首次值改由 `GeometryReader` 提供。结论：接受（JS 侧按 JSON 解析，与字段顺序无关）
 - [L3] 规范 §7 允许 `Event<Color>`，但 `Color` 类型在 L6.w 才引入；L3 的 payload 检查复用 `Type::is_scalar()`，L6.w 加入 `Type::Color` 时需让它计入标量。结论：在 L6.w 中完成
+- [L5] 验收写快照里的颜色常量为 `#6b7280ff`；实际原生快照为 `0x6b7280ff`，Web 与布局 JSON 沿用现有的不透明颜色简写 `#6b7280`。`theme.x` 作为样式值留给 L6.w 解析。结论：不处理（沿用现有颜色输出约定）

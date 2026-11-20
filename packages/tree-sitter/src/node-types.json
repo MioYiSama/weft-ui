@@ -970,6 +970,25 @@
     }
   },
   {
+    "type": "signed_number",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "float",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "slot_fill",
     "named": true,
     "fields": {
@@ -1018,6 +1037,10 @@
         },
         {
           "type": "model_declaration",
+          "named": true
+        },
+        {
+          "type": "style_declaration",
           "named": true
         },
         {
@@ -1090,6 +1113,78 @@
     "type": "string_content",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "style_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "style_entry",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "style_entry",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "false",
+            "named": true
+          },
+          {
+            "type": "float",
+            "named": true
+          },
+          {
+            "type": "integer",
+            "named": true
+          },
+          {
+            "type": "signed_number",
+            "named": true
+          },
+          {
+            "type": "string",
+            "named": true
+          },
+          {
+            "type": "true",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "type_alias",
@@ -1362,6 +1457,10 @@
   },
   {
     "type": "state",
+    "named": false
+  },
+  {
+    "type": "style",
     "named": false
   },
   {

@@ -11,7 +11,7 @@ This document defines the normative grammar of the `.weft` language. The parser 
 - Identifiers: `[A-Za-z_][A-Za-z0-9_]*`.
 - Reserved keywords: `if` `else` `for` `in` `true` `false` `null`.
 - Contextual keywords (ordinary identifiers elsewhere, such as the `model` parameter in Demo):
-  - `import` (followed by a string) and `model` / `event` / `component` / `type` (followed by an identifier) begin declarations only at the top level;
+  - `import` (followed by a string) and `model` / `event` / `component` / `type` / `style` (followed by an identifier) begin declarations only at the top level;
   - `state` (followed by an identifier) begins a state declaration only in a component body;
   - `let` (followed by an identifier) begins a local declaration at the start of a component body or block;
   - `key` appears only in a `for` header.
@@ -27,8 +27,11 @@ EBNF notation: `X?` means optional, `X*` means zero or more occurrences, `X+` me
 ```text
 File        = Import* Item* EOF ;
 Import      = "import" STRING ;               (* no interpolation *)
-Item        = Model | Event | Component | TypeAlias ;
+Item        = Model | Event | Component | TypeAlias | Style ;
 TypeAlias   = "type" IDENT "=" Type ;
+Style       = "style" IDENT "{" ( StyleEntry ","? )* "}" ;
+StyleEntry  = IDENT "=" ConstValue ;
+ConstValue  = STRING | "-"? INT | "-"? FLOAT | "true" | "false" ;   (* no interpolation *)
 
 Model       = "model" IDENT "{" FieldList? "}" ;
 Event       = "event" IDENT ( "(" FieldList? ")" )? ;
@@ -108,7 +111,7 @@ Every AST node carries a source span (file and byte offsets). Diagnostics are lo
 ### Scope and imports
 
 - Each file can see its own declarations and those of files it directly imports with `import`. Imports are not transitive.
-- Within the import closure, `model`, `event`, `component`, and `type` declarations share one namespace. Duplicate names and names that collide with built-in elements are errors.
+- Within the import closure, `model`, `event`, `component`, `type`, and `style` declarations share one namespace. Duplicate names and names that collide with built-in elements are errors.
 - Host-side event registration methods are derived from event names (`onFooBar` / `on_foo_bar`). Two event names that differ only in case and underscores (such as `FooBar` and `foo_bar`) are therefore also an error.
 - Import cycles and missing files are errors.
 - Name lookup within a component proceeds in this order: lambda parameters → `let` bindings (innermost block first) → `for` variables → `state` → component parameters. Names may not shadow existing names within a component.
@@ -161,6 +164,12 @@ For example, a `Rating(value: Int, onSelect: Event<Int>)` component can use `But
 - An `if` condition must be `Bool`.
 - A `for` must have a `key` of type `Int`, `String`, or a string literal union. The value being iterated must be an array.
 - Custom components cannot be instantiated recursively except through an `if` / `for`.
+
+### Styles
+
+- A top-level `style Muted { color = "#6b7280", size = 12 }` groups defaults for named value properties declared by built-in elements. A style cannot set positional properties or events, refer to other styles, or contain computed values.
+- Apply a single visible style with `Text("note", style = Muted, size = 14)`. Every property in the style must be accepted by the element. Explicit arguments override the defaults (here, `size` is `14`), and the remaining values are checked as ordinary element arguments. Style values that fail type checking are reported at the `style = Muted` argument.
+- `style` is only available on built-in elements, not on component calls.
 
 ### Built-in elements and layout
 

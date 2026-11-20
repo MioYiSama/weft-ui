@@ -1,6 +1,6 @@
 use weft_ui_ast::{
     Arg, AssignOp, Block, ComponentDecl, Expr, ExprKind, Field, File, Ident, Item, Lambda,
-    LambdaStmt, LetDecl, Node, NodeKind, Param, Span, TypeExpr, TypeExprKind, UnaryOp,
+    LambdaStmt, LetDecl, Node, NodeKind, Param, Span, StyleDecl, TypeExpr, TypeExprKind, UnaryOp,
 };
 use weft_ui_parser::token::{Token, TokenKind};
 
@@ -293,7 +293,37 @@ impl<'src> Printer<'src, '_> {
                 self.operator_gap();
                 self.ty(&alias.ty)
             }
+            Item::Style(style) => self.style_decl(style),
         }
+    }
+
+    fn style_decl(&mut self, style: &StyleDecl) -> Printed {
+        self.token(TokenKind::Ident)?;
+        self.doc.text(" ");
+        self.ident(&style.name)?;
+        self.doc.text(" ");
+        self.token(TokenKind::LBrace)?;
+        if style.entries.is_empty() && self.comment_before(self.current().span.start).is_none() {
+            return self.token(TokenKind::RBrace);
+        }
+        self.doc.indent();
+        let mut gap = Gap::First;
+        for entry in &style.entries {
+            self.boundary(Line::Hard, gap);
+            self.ident(&entry.name)?;
+            self.operator_gap();
+            self.token(TokenKind::Eq)?;
+            self.operator_gap();
+            self.expr(&entry.value)?;
+            // Style entries may be adjacent without a comma. Preserve the choice.
+            if self.at(TokenKind::Comma) {
+                self.optional_separator(TokenKind::Comma);
+                self.doc.text(",");
+            }
+            self.trailing_comments();
+            gap = Gap::Preserve;
+        }
+        self.close(TokenKind::RBrace, Line::Hard, gap)
     }
 
     fn component(&mut self, component: &ComponentDecl) -> Printed {

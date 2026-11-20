@@ -24,6 +24,7 @@ use super::{Instance, Lowerer};
 
 /// Placeholder until the owning node is pushed and its bindings are patched.
 const PENDING_NODE: NodeId = NodeId(u32::MAX);
+const STYLE: &str = "style";
 
 /// One expected argument when matching call arguments.
 pub(super) struct ArgSlot<'n> {
@@ -32,7 +33,7 @@ pub(super) struct ArgSlot<'n> {
     pub(super) required: bool,
 }
 
-impl Lowerer<'_, '_> {
+impl<'cx> Lowerer<'cx, '_> {
     fn bind(&mut self, kind: BindingKind, mut deps: Vec<Dep>) -> Option<BindingId> {
         if deps.is_empty() {
             return None;
@@ -168,8 +169,14 @@ impl Lowerer<'_, '_> {
                 positional: p.positional,
                 required: p.required,
             })
+            .chain([ArgSlot {
+                name: STYLE,
+                positional: false,
+                required: false,
+            }])
             .collect();
-        let matched = self.match_args(spec.name, &slots, &e.args, span);
+        let mut matched = self.match_args(spec.name, &slots, e.args.iter(), span);
+        let style_arg = matched.pop().flatten();
         self.record_args(args_span(e, span), &matched, |i| {
             let owner = (i < spec.props.len()).then_some(spec);
             Target::Prop {
@@ -180,22 +187,32 @@ impl Lowerer<'_, '_> {
 
         let first_binding = self.bindings.len();
         let mut props = Vec::new();
+        let style = style_arg.and_then(|arg| self.element_style(spec, arg));
         for (prop, arg) in props_spec.iter().zip(matched) {
-            let Some(arg) = arg else { continue };
+            let Some(arg) = arg else {
+                if let Some((style, span)) = style
+                    && prop.is_style_property()
+                    && let Some(entry) = style
+                        .entries
+                        .iter()
+                        .find(|entry| entry.name.name == prop.name)
+                {
+                    let ty = prop.prop_type();
+                    let expr = self.style_expr_as(&entry.value, &ty.to_type(), span);
+                    self.check_element_color(&expr, ty);
+                    props.push(Prop {
+                        name: prop.name,
+                        value: PropValue::Expr(expr),
+                        binding: None,
+                        span,
+                    });
+                }
+                continue;
+            };
             let (value, binding) = match prop.kind {
                 PropKind::Value(ty) => {
                     let expr = self.expr_as(&arg.value, &ty.to_type());
-                    if ty == PropType::Color
-                        && let ExprKind::Str(value) = &expr.kind
-                        && Color::parse(value).is_none()
-                    {
-                        self.error(
-                            arg.value.span,
-                            format!(
-                                "invalid color `{value}`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`"
-                            ),
-                        );
-                    }
+                    self.check_element_color(&expr, ty);
                     let binding = self.bind(BindingKind::Prop(prop.name), expr_deps(&expr));
                     (PropValue::Expr(expr), binding)
                 }
@@ -261,6 +278,64 @@ impl Lowerer<'_, '_> {
         )
     }
 
+    fn check_element_color(&mut self, expr: &Expr, ty: PropType) {
+        if ty == PropType::Color
+            && let ExprKind::Str(value) = &expr.kind
+            && Color::parse(value).is_none()
+        {
+            self.error(
+                expr.span,
+                format!("invalid color `{value}`: expected `#RGB`, `#RRGGBB` or `#RRGGBBAA`"),
+            );
+        }
+    }
+
+    fn element_style(
+        &mut self,
+        spec: &ElementSpec,
+        arg: &ast::Arg,
+    ) -> Option<(&'cx ast::StyleDecl, Span)> {
+        let cx = self.cx;
+        if matches!(arg.value.kind, ast::ExprKind::Error) {
+            return None;
+        }
+        if let ast::ExprKind::Ident(name) = &arg.value.kind
+            && arg.value.span.end - arg.value.span.start == offset(name.len())
+        {
+            if cx.is_probe(name) {
+                cx.set_probe(
+                    ProbeContext::Style,
+                    cx.visible_decls(self.file, |kind| matches!(kind, DeclKind::Style(_))),
+                );
+            }
+            if let Some(DeclKind::Style(id)) =
+                cx.global(self.file, name, arg.value.span, self.diags)
+            {
+                let style = cx.styles[id];
+                for entry in &style.entries {
+                    let property = &entry.name.name;
+                    if !spec
+                        .props
+                        .iter()
+                        .any(|p| p.name == property && p.is_style_property())
+                        && elements::is_style_property(property)
+                    {
+                        self.error(
+                            arg.span,
+                            format!(
+                                "style `{name}` sets `{property}`, which `{}` does not accept",
+                                spec.name
+                            ),
+                        );
+                    }
+                }
+                return Some((style, arg.span));
+            }
+        }
+        self.error(arg.value.span, "`style` expects a style name");
+        None
+    }
+
     fn component_call(&mut self, id: ComponentId, e: &ast::ElementNode, span: Span) -> NodeId {
         let cx = self.cx;
         let callee = &cx.components[id.index()];
@@ -291,7 +366,12 @@ impl Lowerer<'_, '_> {
             positional: false,
             required: false,
         }));
-        let matched = self.match_args(&callee.name, &slots, &e.args, span);
+        let is_style = |arg: &ast::Arg| arg.name.as_ref().is_some_and(|name| name.name == STYLE);
+        for arg in e.args.iter().filter(|arg| is_style(arg)) {
+            self.error(arg.span, "`style` only applies to built-in elements");
+        }
+        let args = e.args.iter().filter(|arg| !is_style(arg));
+        let matched = self.match_args(&callee.name, &slots, args, span);
         self.record_args(args_span(e, span), &matched, |i| match params.get(i) {
             Some(&(param, _)) => Target::ComponentParam(id, param.index()),
             None => Target::Prop {
@@ -542,7 +622,7 @@ impl Lowerer<'_, '_> {
         &mut self,
         callee: &str,
         params: &[ArgSlot<'_>],
-        args: &'a [ast::Arg],
+        args: impl Iterator<Item = &'a ast::Arg>,
         span: Span,
     ) -> Vec<Option<&'a ast::Arg>> {
         let mut out: Vec<Option<&ast::Arg>> = vec![None; params.len()];

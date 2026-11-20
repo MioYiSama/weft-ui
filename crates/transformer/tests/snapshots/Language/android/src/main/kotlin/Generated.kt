@@ -14,7 +14,7 @@ import net.mioyi.weftui.*
 /** Root view of the app: starts the kernel with the bundle and renders the root component. */
 @Composable
 fun WeftApp() {
-    WeftRoot(layoutHash = 0xc9566ac30b2d948fuL, make = ::makeScope)
+    WeftRoot(layoutHash = 0x59a0d6b25720bc8auL, make = ::makeScope)
 }
 
 /** Scope of a `create` op. */
@@ -185,6 +185,7 @@ private fun V4(s: S4) {
         s.p5?.let { V3(it) }
         s.p6?.let { V3(it) }
         for (c in s.p7) key(c.id) { V10(c) }
+        WeftText("note", color = Color(0xff6b7280L), size = 14f)
     }
 }
 

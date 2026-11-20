@@ -240,6 +240,35 @@ fn editor_session() {
             .any(|label| label == "onSelect")
     );
 
+    std::fs::write(
+        dir.join("styles.weft"),
+        "style Muted { color = \"#6b7280\", size = 12 }\n",
+    )
+    .expect("write imported style");
+    let styles =
+        "import \"styles.weft\"\ncomponent Screen() { Text(\"note\", style = Muted, size = 14) }\n";
+    client.notify(
+        "textDocument/didChange",
+        json!({ "textDocument": { "uri": uri, "version": 7 }, "contentChanges": [{ "text": styles }] }),
+    );
+    assert!(client.diagnostics(&uri).is_empty());
+
+    let (line, col) = after(styles, "style = Mu");
+    let items = client.request("textDocument/completion", position(&uri, line, col));
+    assert_eq!(crate::labels(&items), ["Muted"]);
+    let hover = client.request("textDocument/hover", position(&uri, line, col));
+    assert_eq!(
+        hover["contents"]["value"],
+        "```weft\nstyle Muted { color = \"#6b7280\", size = 12 }\n```"
+    );
+    let definition = client.request("textDocument/definition", position(&uri, line, col));
+    let styles_uri = Url::from_file_path(dir.join("styles.weft")).expect("absolute path");
+    assert_eq!(definition["uri"], styles_uri.as_str());
+    assert_eq!(
+        definition["range"]["start"],
+        json!({ "line": 0, "character": 6 })
+    );
+
     client.request("shutdown", Value::Null);
     client.notify("exit", Value::Null);
     handle.join().expect("server thread");

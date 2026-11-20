@@ -507,6 +507,25 @@ line */
 }
 
 #[test]
+fn formats_style_declarations() {
+    golden(
+        r##"style Muted{color="#6b7280" size /* before */= - 12,bold=false,}
+        component Screen(){Text("note", style=Muted,size=14)}"##,
+        r##"style Muted {
+    color = "#6b7280"
+    size /* before */ = -12,
+    bold = false,
+}
+
+component Screen() {
+    Text("note", style = Muted, size = 14)
+}
+"##,
+        Options::default(),
+    );
+}
+
+#[test]
 fn formats_named_slot_fills() {
     golden(
         r#"component Screen() {Card {Text("body") footer :{} header : { // heading

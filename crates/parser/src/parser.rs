@@ -5,7 +5,7 @@ use weft_ui_ast::{
     Arg, Assign, AssignOp, BinaryOp, Block, CallStmt, ComponentDecl, Diagnostic, ElementNode,
     EventDecl, Expr, ExprKind, Field, File, FileId, ForNode, Ident, IfBranch, IfNode, Import, Item,
     Lambda, LambdaStmt, LetDecl, ModelDecl, Node, NodeKind, Param, SlotFill, Span, StateDecl,
-    StrPart, TypeAlias, TypeExpr, TypeExprKind, UnaryOp,
+    StrPart, StyleDecl, StyleEntry, TypeAlias, TypeExpr, TypeExprKind, UnaryOp,
 };
 
 use crate::lexer::{lex, scan_interpolation};
@@ -53,6 +53,7 @@ enum ItemKeyword {
     Event,
     Component,
     TypeAlias,
+    Style,
 }
 
 struct Parser<'src> {
@@ -135,6 +136,7 @@ impl<'src> Parser<'src> {
             "event" => ItemKeyword::Event,
             "component" => ItemKeyword::Component,
             "type" => ItemKeyword::TypeAlias,
+            "style" => ItemKeyword::Style,
             _ => return None,
         };
         let next = if keyword == ItemKeyword::Import {
@@ -149,6 +151,13 @@ impl<'src> Parser<'src> {
         match self.item_keyword() {
             // A bare node named `type` followed by another node is not an alias.
             Some(ItemKeyword::TypeAlias) => self.peek_at(2) == TokenKind::Eq,
+            // A node named `style` can precede a node with children. An
+            // assignment inside the braces distinguishes a style declaration.
+            Some(ItemKeyword::Style) => {
+                self.peek_at(2) == TokenKind::LBrace
+                    && self.peek_at(3) == TokenKind::Ident
+                    && self.peek_at(4) == TokenKind::Eq
+            }
             Some(_) => true,
             None => false,
         }
@@ -305,9 +314,12 @@ impl<'src> Parser<'src> {
                 Some(ItemKeyword::TypeAlias) => {
                     items.extend(self.type_alias().map(Item::TypeAlias));
                 }
+                Some(ItemKeyword::Style) => items.extend(self.style().map(Item::Style)),
                 None if self.at(TokenKind::Eof) => break,
                 None => {
-                    self.error_expected("`model`, `event`, `component`, `type` or `import`");
+                    self.error_expected(
+                        "`model`, `event`, `component`, `type`, `style` or `import`",
+                    );
                     while self.item_keyword().is_none() && !self.at(TokenKind::Eof) {
                         self.skip_balanced();
                     }
@@ -359,6 +371,79 @@ impl<'src> Parser<'src> {
             name,
             params,
             span: self.span_from(start),
+        })
+    }
+
+    fn style(&mut self) -> Option<StyleDecl> {
+        let start = self.bump().span;
+        let name = self.ident("style name")?;
+        self.expect(TokenKind::LBrace)?;
+        let mut entries = Vec::new();
+        while !matches!(self.peek(), TokenKind::RBrace | TokenKind::Eof) && !self.at_item_start() {
+            if let Some(entry) = self.style_entry() {
+                entries.push(entry);
+            } else {
+                loop {
+                    match self.peek() {
+                        TokenKind::Comma | TokenKind::RBrace | TokenKind::Eof => break,
+                        TokenKind::Ident if self.peek_at(1) == TokenKind::Eq => break,
+                        _ if self.at_item_start() => break,
+                        _ => self.skip_balanced(),
+                    }
+                }
+            }
+            self.eat(TokenKind::Comma);
+        }
+        self.expect(TokenKind::RBrace);
+        Some(StyleDecl {
+            name,
+            entries,
+            span: self.span_from(start),
+        })
+    }
+
+    fn style_entry(&mut self) -> Option<StyleEntry> {
+        const EXPECT_LITERAL: &str = "style values must be literals or theme tokens";
+        let name = self.ident("style property name")?;
+        self.expect(TokenKind::Eq)?;
+        let start = self.token();
+        // Leave a following entry intact if this entry is missing its value.
+        if self.at_item_start() || (self.at(TokenKind::Ident) && self.peek_at(1) == TokenKind::Eq) {
+            self.error(start.span, EXPECT_LITERAL);
+            return None;
+        }
+        use TokenKind as T;
+        let head = (start.kind, self.peek_at(1));
+        if !matches!(
+            head,
+            (T::Str | T::Int | T::Float | T::True | T::False, _) | (T::Minus, T::Int | T::Float)
+        ) {
+            self.error(start.span, EXPECT_LITERAL);
+            return None;
+        }
+        let value = self.expr();
+        let literal = match &value.kind {
+            ExprKind::Int(_) | ExprKind::Float(_) | ExprKind::Bool(_) => true,
+            ExprKind::Str(parts) => matches!(parts.as_slice(), [] | [StrPart::Lit(_)]),
+            ExprKind::Unary {
+                op: UnaryOp::Neg,
+                expr,
+            } => match expr.kind {
+                ExprKind::Int(_) | ExprKind::Float(_) => true,
+                ExprKind::Error => return None,
+                _ => false,
+            },
+            ExprKind::Error => return None,
+            _ => false,
+        };
+        if !literal {
+            self.error(value.span, EXPECT_LITERAL);
+            return None;
+        }
+        Some(StyleEntry {
+            span: self.span_from(name.span),
+            name,
+            value,
         })
     }
 

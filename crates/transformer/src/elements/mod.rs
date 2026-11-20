@@ -82,6 +82,11 @@ pub(crate) struct PropSpec {
 }
 
 impl PropSpec {
+    /// Whether a style can supply this property as a default.
+    pub(crate) fn is_style_property(&self) -> bool {
+        !self.positional && matches!(self.kind, PropKind::Value(_))
+    }
+
     /// Declared value type of a built-in element property.
     pub(crate) fn prop_type(&self) -> PropType {
         let PropKind::Value(ty) = self.kind else {
@@ -148,4 +153,13 @@ impl Element {
 
 pub(crate) fn element(name: &str) -> Option<&'static ElementSpec> {
     ELEMENTS.iter().find(|e| e.name == name)
+}
+
+pub(crate) fn is_style_property(name: &str) -> bool {
+    ELEMENTS.iter().any(|element| {
+        element
+            .props
+            .iter()
+            .any(|prop| prop.name == name && prop.is_style_property())
+    })
 }

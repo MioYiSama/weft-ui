@@ -7,6 +7,8 @@
 (model_declaration name: (identifier) @type)
 (event_declaration name: (identifier) @constructor)
 (component_declaration name: (identifier) @tag)
+(style_declaration name: (identifier) @constant)
+(style_entry name: (identifier) @property)
 
 (field name: (identifier) @property)
 (parameter name: (identifier) @variable.parameter)
@@ -29,6 +31,8 @@
 ; Events passed as handlers, by the PascalCase naming convention.
 ((argument value: (identifier) @constructor)
   (#match? @constructor "^[A-Z]"))
+((argument name: (identifier) @_name value: (identifier) @constant)
+  (#eq? @_name "style"))
 (call_expression function: (field_expression field: (identifier) @function.method))
 (lambda parameter: (identifier) @variable.parameter)
 (assignment target: (identifier) @variable)
@@ -52,6 +56,7 @@
   "model"
   "event"
   "component"
+  "style"
   "state"
   "key"
 ] @keyword

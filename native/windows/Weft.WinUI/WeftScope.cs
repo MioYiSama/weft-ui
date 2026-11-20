@@ -35,10 +35,10 @@ public abstract class WeftScope
         Points = new WeftPoint[points];
     }
 
-    private List<WeftPaintedElement>? painted;
+    private List<WeftDecoratedElement>? painted;
 
     /// <summary>Tracks an element whose colors can refer to theme tokens.</summary>
-    protected void TrackColors(WeftPaintedElement element)
+    protected void TrackColors(WeftDecoratedElement element)
     {
         element.AttachTheme(Session);
         (painted ??= []).Add(element);

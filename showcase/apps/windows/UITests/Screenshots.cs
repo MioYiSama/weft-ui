@@ -37,10 +37,7 @@ public sealed class Screenshots
                 var window = app.GetMainWindow(automation, TimeSpan.FromSeconds(10));
                 Assert.IsNotNull(window);
                 var label = $"page:{id}";
-                var button = Retry.WhileNull(() => window.FindAllDescendants(cf => cf.ByControlType(ControlType.Button))
-                    .FirstOrDefault(candidate => candidate.Properties.Name.ValueOrDefault == label ||
-                        candidate.FindFirstDescendant(cf => cf.ByName(label)) is not null),
-                    TimeSpan.FromSeconds(5), ignoreException: true).Result;
+                var button = FindButton(window, label);
                 if (button is null)
                 {
                     var tree = string.Join("\n", window.FindAllDescendants().Select(element =>
@@ -53,12 +50,46 @@ public sealed class Screenshots
 
                 var suffix = scheme == "dark" ? "-dark" : "";
                 CaptureWindow(window, Path.Combine(directory, $"{id}{suffix}.png"));
+                if (id == "appearance") VerifyVisibility(window);
             }
             finally
             {
                 app.Close();
             }
         }
+    }
+
+    private static AutomationElement? FindButton(Window window, string label) =>
+        Retry.WhileNull(() => window.FindAllDescendants(cf => cf.ByControlType(ControlType.Button))
+            .FirstOrDefault(candidate => candidate.Properties.Name.ValueOrDefault == label ||
+                candidate.FindFirstDescendant(cf => cf.ByName(label)) is not null),
+            TimeSpan.FromSeconds(5), ignoreException: true).Result;
+
+    private static void VerifyVisibility(Window window)
+    {
+        const string cardLabel = "This card leaves no gap when hidden.";
+        var hide = FindButton(window, "Hide card");
+        var card = window.FindFirstDescendant(cf => cf.ByName(cardLabel));
+        var end = window.FindFirstDescendant(cf => cf.ByName("End of grid"));
+        Assert.IsNotNull(hide);
+        Assert.IsNotNull(card);
+        Assert.IsNotNull(end);
+        var fixedGap = end.BoundingRectangle.Top - card.BoundingRectangle.Bottom;
+        var before = end.BoundingRectangle.Top;
+
+        hide.AsButton().Invoke();
+        var show = FindButton(window, "Show card");
+        Assert.IsNotNull(show);
+        var after = Retry.While(() => end.BoundingRectangle.Top, y => y >= before, TimeSpan.FromSeconds(5));
+        Assert.IsFalse(after.TimedOut, "The last label must move up when the card collapses");
+        Assert.IsNull(window.FindFirstDescendant(cf => cf.ByName(cardLabel)));
+        Assert.IsTrue(after.Result - show.BoundingRectangle.Bottom < fixedGap,
+            "The collapsed card must not leave its own gap after the button");
+
+        show.AsButton().Invoke();
+        Assert.IsNotNull(FindButton(window, "Hide card"));
+        Assert.IsNotNull(Retry.WhileNull(() => window.FindFirstDescendant(cf => cf.ByName(cardLabel)),
+            TimeSpan.FromSeconds(5)).Result);
     }
 
     private static void CaptureWindow(Window window, string path)

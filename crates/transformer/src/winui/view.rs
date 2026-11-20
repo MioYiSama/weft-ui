@@ -105,6 +105,15 @@ pub(super) fn union(element: Element, name: &str) -> Option<&'static str> {
         (Element::Column | Element::Row, "justify") => Some("Justify"),
         (Element::Stack, "alignment") => Some("Alignment"),
         (Element::Scroll, "direction") => Some("Axis"),
+        (
+            Element::Column
+            | Element::Row
+            | Element::Stack
+            | Element::Scroll
+            | Element::Text
+            | Element::Image,
+            "shadow",
+        ) => Some("Shadow"),
         _ => None,
     }
 }

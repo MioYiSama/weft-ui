@@ -39,28 +39,30 @@ public abstract class WeftElement
     public double MarginStart { set { margin.Start = value; UpdateMargin(); } }
     public double MarginEnd { set { margin.End = value; UpdateMargin(); } }
 
-    protected virtual Thickness ContentPadding => default;
+    public double Opacity { set => Control.Opacity = Math.Clamp(value, 0, 1); }
+    public bool Hidden { set => Control.Visibility = value ? Visibility.Collapsed : Visibility.Visible; }
+
+    private protected virtual LayoutInsets ContentInsets => default;
     private static double Nonnegative(double value) => Math.Max(0, value);
     private void UpdateMargin() => Control.Margin = margin.Resolve();
 
     protected virtual void Resize()
     {
         var control = Control;
-        var padding = WeftPanel.Insets(ContentPadding);
-        if (minWidth is double minW) control.MinWidth = minW + padding.Width;
-        if (maxWidth is double maxW) control.MaxWidth = maxW + padding.Width;
-        if (minHeight is double minH) control.MinHeight = minH + padding.Height;
-        if (maxHeight is double maxH) control.MaxHeight = maxH + padding.Height;
-        if (width is double w) control.Width = w + padding.Width;
-        if (height is double h) control.Height = h + padding.Height;
+        var insets = ContentInsets;
+        if (minWidth is double minW) control.MinWidth = minW + insets.Width;
+        if (maxWidth is double maxW) control.MaxWidth = maxW + insets.Width;
+        if (minHeight is double minH) control.MinHeight = minH + insets.Height;
+        if (maxHeight is double maxH) control.MaxHeight = maxH + insets.Height;
+        if (width is double w) control.Width = w + insets.Width;
+        if (height is double h) control.Height = h + insets.Height;
     }
 }
 
 /// <summary>A painted element with separately configurable padding on all four sides.</summary>
-public abstract class WeftPaddedElement : WeftPaintedElement
+public abstract class WeftPaddedElement : WeftDecoratedElement
 {
     private EdgeValues padding;
-    private Thickness effectivePadding;
 
     public double Padding { set { padding.All = Math.Max(0, value); UpdatePadding(); } }
     public double PaddingX { set { padding.X = Math.Max(0, value); UpdatePadding(); } }
@@ -70,15 +72,12 @@ public abstract class WeftPaddedElement : WeftPaintedElement
     public double PaddingStart { set { padding.Start = Math.Max(0, value); UpdatePadding(); } }
     public double PaddingEnd { set { padding.End = Math.Max(0, value); UpdatePadding(); } }
 
-    protected override Thickness ContentPadding => effectivePadding;
-    protected abstract void SetPadding(Thickness value);
-
     private void UpdatePadding()
     {
         var value = padding.Resolve();
-        if (value.Equals(effectivePadding)) return;
-        effectivePadding = value;
-        SetPadding(value);
+        if (value.Equals(Box.Border.Padding)) return;
+        Box.Border.Padding = value;
+        Box.UpdateClip();
         Resize();
     }
 }

@@ -11,40 +11,6 @@ namespace Weft.WinUI;
 // element's properties under their PascalCase names; properties never set
 // keep the platform's defaults. Lengths are DIPs.
 
-/// <summary>An element that can paint a fixed color or a theme token.</summary>
-public abstract class WeftPaintedElement : WeftElement
-{
-    private WeftColor color;
-    private SolidColorBrush? brush;
-    private WeftSession? session;
-
-    internal void AttachTheme(WeftSession owner) => session = owner;
-
-    internal void ReapplyColors()
-    {
-        if (color.IsToken) brush!.Color = Resolve();
-    }
-
-    protected void Paint(WeftColor value)
-    {
-        color = value;
-        if (brush is null)
-        {
-            brush = new SolidColorBrush(Resolve());
-            SetColorBrush(brush);
-        }
-        else
-        {
-            brush.Color = Resolve();
-        }
-    }
-
-    private Windows.UI.Color Resolve() =>
-        color.Resolve(session?.Theme, session?.ActualTheme ?? ElementTheme.Light);
-
-    protected abstract void SetColorBrush(SolidColorBrush brush);
-}
-
 /// <summary><c>Column</c> and <c>Row</c>: a linear panel with one main axis.</summary>
 public sealed class WeftStack : WeftPaddedElement
 {
@@ -53,19 +19,15 @@ public sealed class WeftStack : WeftPaddedElement
     public WeftStack(bool vertical)
     {
         panel = new WeftLinearPanel(vertical ? WeftAxis.Vertical : WeftAxis.Horizontal);
+        Box.Border.Child = panel;
         Children = new WeftRegion(panel);
     }
 
-    protected override FrameworkElement Control => panel;
     public WeftRegion Children { get; }
 
     public double Gap { set => panel.Gap = value; }
     public WeftCrossAlign Align { set => panel.Align = value; }
     public WeftJustify Justify { set => panel.Justify = value; }
-    public WeftColor Background { set => Paint(value); }
-
-    protected override void SetPadding(Thickness value) => panel.Padding = value;
-    protected override void SetColorBrush(SolidColorBrush brush) => panel.Background = brush;
 }
 
 /// <summary><c>Stack</c>: children occupy the same content box, ordered back to front.</summary>
@@ -73,14 +35,14 @@ public sealed class WeftOverlay : WeftPaddedElement
 {
     private readonly WeftStackPanel panel = new();
 
-    public WeftOverlay() => Children = new WeftRegion(panel);
+    public WeftOverlay()
+    {
+        Box.Border.Child = panel;
+        Children = new WeftRegion(panel);
+    }
 
-    protected override FrameworkElement Control => panel;
     public WeftRegion Children { get; }
     public WeftAlignment Alignment { set => panel.Alignment = value; }
-
-    protected override void SetPadding(Thickness value) => panel.Padding = value;
-    protected override void SetColorBrush(SolidColorBrush brush) => panel.Background = brush;
 }
 
 /// <summary><c>Scroll</c>: a one-axis viewport around a linear panel.</summary>
@@ -104,13 +66,13 @@ public sealed class WeftScroll : WeftPaddedElement
             VerticalContentAlignment = vertical ? VerticalAlignment.Top : VerticalAlignment.Stretch,
             ZoomMode = ZoomMode.Disabled,
         };
+        Box.Border.Child = scroll;
         Children = new WeftRegion(panel);
         Grow = 1;
         Fill = true;
         Indicators = true;
     }
 
-    protected override FrameworkElement Control => scroll;
     public WeftRegion Children { get; }
     public double Gap { set => panel.Gap = value; }
     public WeftCrossAlign Align { set => panel.Align = value; }
@@ -124,9 +86,6 @@ public sealed class WeftScroll : WeftPaddedElement
             scroll.HorizontalScrollBarVisibility = direction == WeftAxis.Horizontal ? bar : ScrollBarVisibility.Disabled;
         }
     }
-
-    protected override void SetPadding(Thickness value) => scroll.Padding = value;
-    protected override void SetColorBrush(SolidColorBrush brush) => scroll.Background = brush;
 }
 
 /// <summary><c>Spacer</c>: an empty element, fixed or flexible along its parent's main axis.</summary>
@@ -145,8 +104,9 @@ public sealed class WeftText : WeftPaddedElement
 {
     private readonly TextBlock block = new() { TextWrapping = TextWrapping.Wrap };
 
-    protected override FrameworkElement Control => block;
-    protected override void SetPadding(Thickness value) => block.Padding = value;
+    private WeftBrush foreground;
+
+    public WeftText() => Box.Border.Child = block;
 
     public string Value
     {
@@ -155,10 +115,14 @@ public sealed class WeftText : WeftPaddedElement
 
     public WeftColor Color
     {
-        set => Paint(value);
+        set => block.Foreground = foreground.Set(value, Theme, Appearance);
     }
 
-    protected override void SetColorBrush(SolidColorBrush brush) => block.Foreground = brush;
+    internal override void ReapplyColors()
+    {
+        base.ReapplyColors();
+        foreground.Reapply(Theme, Appearance);
+    }
 
     public double Size
     {
@@ -199,11 +163,11 @@ public sealed class WeftButton : WeftElement
 /// aspect ratio, with both the image fills them, and with neither it keeps
 /// its own size.
 /// </summary>
-public sealed class WeftImage : WeftElement
+public sealed class WeftImage : WeftDecoratedElement
 {
     private readonly Image image = new() { Stretch = Stretch.None };
 
-    protected override FrameworkElement Control => image;
+    public WeftImage() => Box.Border.Child = image;
 
     public string Src
     {
@@ -213,7 +177,7 @@ public sealed class WeftImage : WeftElement
     protected override void Resize()
     {
         base.Resize();
-        image.Stretch = (double.IsNaN(image.Width), double.IsNaN(image.Height)) switch
+        image.Stretch = (double.IsNaN(Box.Width), double.IsNaN(Box.Height)) switch
         {
             (true, true) => Stretch.None,
             (false, false) => Stretch.Fill,

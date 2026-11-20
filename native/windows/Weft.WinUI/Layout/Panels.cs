@@ -37,13 +37,6 @@ internal abstract class WeftPanel : Panel
     private bool exactWidth;
     private bool exactHeight;
 
-    private Thickness padding;
-    internal Thickness Padding
-    {
-        get => padding;
-        set => SetLayout(ref padding, value);
-    }
-
     protected WeftPanel()
     {
         measure = MeasureChild;
@@ -52,7 +45,7 @@ internal abstract class WeftPanel : Panel
 
     protected virtual bool FlexibleChildren => true;
 
-    private void SetProposal(LayoutProposal proposal)
+    internal void SetProposal(LayoutProposal proposal)
     {
         if (proposal.Width.IsExact == exactWidth && proposal.Height.IsExact == exactHeight) return;
         (exactWidth, exactHeight) = (proposal.Width.IsExact, proposal.Height.IsExact);
@@ -88,19 +81,15 @@ internal abstract class WeftPanel : Panel
         for (var i = 0; i < count; i++)
         {
             if (Children[i] is not FrameworkElement child || child.Visibility == Visibility.Collapsed) continue;
-            var insets = child switch
-            {
-                WeftPanel panel => panel.Padding,
-                TextBlock text => text.Padding,
-                ScrollViewer scroll => scroll.Padding,
-                _ => default,
-            };
+            var insets = child is WeftBox box ? box.ContentInsets : default;
             var bounds = new LayoutBounds(child.Width, child.Height, child.MinWidth, child.MaxWidth, child.MinHeight,
-                child.MaxHeight, (double)child.GetValue(WeftLayout.AspectRatioProperty), Insets(insets));
+                child.MaxHeight, (double)child.GetValue(WeftLayout.AspectRatioProperty), insets);
             var isSpacer = (bool)child.GetValue(WeftLayout.IsSpacerProperty);
             var spacer = isSpacer ? (double)child.GetValue(WeftLayout.SpacerSizeProperty) : double.NaN;
             if (isSpacer) child.Measure(new Size());
-            children[visible.Count] = new(bounds, Insets(child.Margin), flexible ? (double)child.GetValue(WeftLayout.GrowProperty) : 0,
+            var margin = child.Margin;
+            children[visible.Count] = new(bounds, new LayoutInsets(margin.Top, margin.Right, margin.Bottom, margin.Left),
+                flexible ? (double)child.GetValue(WeftLayout.GrowProperty) : 0,
                 flexible && (bool)child.GetValue(WeftLayout.FillProperty), isSpacer, double.IsNaN(spacer) ? null : spacer);
             visible.Add(child);
         }
@@ -125,18 +114,18 @@ internal abstract class WeftPanel : Panel
         return finalSize;
     }
 
-    protected abstract LayoutSize Compute(LayoutInsets padding, LayoutProposal proposal, ReadOnlySpan<LayoutChild> children,
+    protected abstract LayoutSize Compute(LayoutProposal proposal, ReadOnlySpan<LayoutChild> children,
         Func<int, LayoutProposal, LayoutSize> measure, Span<LayoutFrame> frames);
 
     private LayoutSize Compute(LayoutProposal proposal, Func<int, LayoutProposal, LayoutSize> measureChild) => Compute(
-        Insets(padding), proposal, children.AsSpan(0, visible.Count), measureChild, frames.AsSpan(0, visible.Count));
+        proposal, children.AsSpan(0, visible.Count), measureChild, frames.AsSpan(0, visible.Count));
 
     private LayoutSize MeasureChild(int index, LayoutProposal proposal)
     {
         var child = visible[index];
         ref readonly var data = ref children[index];
         var constrained = Constrain(index, proposal);
-        if (child is WeftPanel panel) panel.SetProposal(constrained);
+        if (child is WeftBox box && box.Border.Child is WeftPanel panel) panel.SetProposal(constrained);
         child.Measure(new Size(Math.Max(0, constrained.Width.Value + data.Margin.Width),
             Math.Max(0, constrained.Height.Value + data.Margin.Height)));
         var desired = child.DesiredSize;
@@ -160,8 +149,6 @@ internal abstract class WeftPanel : Panel
         }
         return constrained;
     }
-
-    internal static LayoutInsets Insets(Thickness value) => new(value.Top, value.Right, value.Bottom, value.Left);
 }
 
 internal sealed class WeftLinearPanel(
@@ -191,9 +178,9 @@ internal sealed class WeftLinearPanel(
                                          : proposal with { Width = LayoutLimit.Unbounded };
     }
 
-    protected override LayoutSize Compute(LayoutInsets padding, LayoutProposal proposal, ReadOnlySpan<LayoutChild> children,
+    protected override LayoutSize Compute(LayoutProposal proposal, ReadOnlySpan<LayoutChild> children,
         Func<int, LayoutProposal, LayoutSize> measure, Span<LayoutFrame> frames) =>
-        WeftLayoutAlgorithm.Linear(axis, gap, align, justify, padding, proposal, children, measure, frames);
+        WeftLayoutAlgorithm.Linear(axis, gap, align, justify, default, proposal, children, measure, frames);
 }
 
 internal sealed class WeftStackPanel : WeftPanel
@@ -202,7 +189,7 @@ internal sealed class WeftStackPanel : WeftPanel
 
     internal WeftAlignment Alignment { set => SetLayout(ref alignment, value); }
 
-    protected override LayoutSize Compute(LayoutInsets padding, LayoutProposal proposal, ReadOnlySpan<LayoutChild> children,
+    protected override LayoutSize Compute(LayoutProposal proposal, ReadOnlySpan<LayoutChild> children,
         Func<int, LayoutProposal, LayoutSize> measure, Span<LayoutFrame> frames) =>
-        WeftLayoutAlgorithm.Stack(alignment, padding, proposal, children, measure, frames);
+        WeftLayoutAlgorithm.Stack(alignment, default, proposal, children, measure, frames);
 }

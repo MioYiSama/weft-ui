@@ -8,6 +8,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import net.mioyi.weftui.*
 
@@ -52,7 +53,7 @@ private class S0(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V0(s: S0) {
-    WeftColumn {
+    WeftLinear(axis = WeftAxis.VERTICAL) {
         s.p0?.let { key(it.id) { it.Content() } }
         WeftButton(onClick = { s.dispatch(0) }) {
             WeftText(s.v0)
@@ -89,15 +90,15 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 
     override fun apply(slot: Int, value: WeftValue) {
         when (slot) {
-            0 -> v0 = value.length
-            1 -> v1 = value.length
-            2 -> v2 = value.length
+            0 -> v0 = value.number
+            1 -> v1 = value.number
+            2 -> v2 = value.number
             3 -> v3 = value.color
-            4 -> v4 = value.length
+            4 -> v4 = value.number
             5 -> v5 = value.bool
             6 -> v6 = value.string
             7 -> v7 = value.color
-            8 -> v8 = value.length
+            8 -> v8 = value.number
             9 -> v9 = value.bool
             10 -> v10 = value.string
         }
@@ -115,11 +116,11 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V1(s: S1) {
-    WeftColumn(gap = 8f, padding = 12f, width = 320f, height = 280f, background = WeftColor.Fixed(Color(0xffeeeeffL))) {
+    WeftLinear(axis = WeftAxis.VERTICAL, gap = 8f, background = WeftColor.Fixed(Color(0xffeeeeffL)), padding = 12f, modifier = Modifier.weftSize(width = 320f, height = 280f)) {
         WeftText("Gallery", color = WeftColor.Fixed(Color(0xff224466L)), size = 20f, bold = true)
-        WeftRow(gap = s.v4, padding = s.v2, width = s.v0, height = s.v1, background = s.v3) {
+        WeftLinear(axis = WeftAxis.HORIZONTAL, gap = s.v4, background = s.v3, padding = s.v2, modifier = Modifier.weftSize(width = s.v0, height = s.v1)) {
             WeftCheckbox(s.v5) { s.dispatch(0, WeftValue.Bool(it)) }
-            WeftImage(s.v6, width = 32f, height = 32f)
+            WeftImage(s.v6, modifier = Modifier.weftSize(width = 32f, height = 32f))
             WeftText("Preview", color = s.v7, size = s.v8, bold = s.v9)
         }
         WeftInput(s.v10, placeholder = "Caption") { if (s.dispatch(1, WeftValue.Text(it))) null else s.v10 }

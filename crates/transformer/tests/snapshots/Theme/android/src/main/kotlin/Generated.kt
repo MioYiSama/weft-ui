@@ -8,6 +8,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import net.mioyi.weftui.*
 
@@ -77,7 +78,7 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V1(s: S1) {
-    WeftColumn(gap = 8f) {
+    WeftLinear(axis = WeftAxis.VERTICAL, gap = 8f) {
         WeftText("accent", color = WeftColor.token("accent"))
         WeftText("styled", color = WeftColor.token("accent"))
         WeftText("flag", color = s.v0)

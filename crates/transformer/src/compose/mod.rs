@@ -53,6 +53,7 @@ fn generate(layout: &ViewLayout) -> String {
     out.writer
         .line("import androidx.compose.runtime.mutableStateOf");
     out.writer.line("import androidx.compose.runtime.setValue");
+    out.writer.line("import androidx.compose.ui.Modifier");
     out.writer.line("import androidx.compose.ui.graphics.Color");
     out.writer.line("import net.mioyi.weftui.*");
     out.writer.blank();
@@ -116,8 +117,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
         out.writer
             .line(format_args!("/** {}.{} */", element.name(), value.prop));
         let state = match value.ty {
-            ValueType::Int => "mutableFloatStateOf(0f)",
-            ValueType::Float => unreachable!("platform support rejects Float properties"),
+            ValueType::Int | ValueType::Float => "mutableFloatStateOf(0f)",
             ValueType::Bool => "mutableStateOf(false)",
             ValueType::String => "mutableStateOf(\"\")",
             ValueType::Color => "mutableStateOf(WeftColor.Transparent)",
@@ -145,8 +145,7 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
         out.open("when (slot) {");
         for (slot, value) in template.values.iter().enumerate() {
             let accessor = match value.ty {
-                ValueType::Int => "length",
-                ValueType::Float => unreachable!("platform support rejects Float properties"),
+                ValueType::Int | ValueType::Float => "number",
                 ValueType::Bool => "bool",
                 ValueType::String => "string",
                 ValueType::Color => "color",

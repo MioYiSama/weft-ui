@@ -20,20 +20,26 @@ import androidx.compose.ui.unit.dp
 // method is not reported, so it is never rolled back mid-composition; the
 // committed text is.
 
-/** Width of an `Input`, which has no width property (CSS inputs default to about 20 characters). */
+/** Intrinsic width of an `Input` (CSS inputs default to about 20 characters). */
 private val inputWidth = 200.dp
 
 /**
- * `Input`: an outlined text field showing [text], the value slot. [edit]
+ * `Input`: an outlined text field showing [value], the value slot. [edit]
  * reports an edit and returns the value to show again when the app refused
  * it, or null when it was accepted.
  */
 @Composable
-fun WeftInput(text: String, placeholder: String? = null, disabled: Boolean = false, edit: (String) -> String?) {
-    var field by remember { mutableStateOf(TextFieldValue(text, TextRange(text.length))) }
+fun WeftInput(
+    value: String,
+    placeholder: String? = null,
+    disabled: Boolean = false,
+    modifier: Modifier = Modifier,
+    edit: (String) -> String?,
+) {
+    var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
     // A value the app wrote replaces the field's text, unless an input method is composing.
-    val shown = if (field.text != text && field.composition == null) {
-        TextFieldValue(text, TextRange(text.length))
+    val shown = if (field.text != value && field.composition == null) {
+        TextFieldValue(value, TextRange(value.length))
     } else {
         field
     }
@@ -42,7 +48,7 @@ fun WeftInput(text: String, placeholder: String? = null, disabled: Boolean = fal
         onValueChange = { new ->
             field = when {
                 // Composing text and moves of the cursor are local to the field.
-                new.composition != null || new.text == text -> new
+                new.composition != null || new.text == value -> new
                 else -> when (val restored = edit(new.text)) {
                     null -> new
                     shown.text -> shown
@@ -53,12 +59,12 @@ fun WeftInput(text: String, placeholder: String? = null, disabled: Boolean = fal
         enabled = !disabled,
         singleLine = true,
         placeholder = placeholder?.let { { Text(it) } },
-        modifier = Modifier.width(inputWidth),
+        modifier = modifier.width(inputWidth),
     )
 }
 
 /** `Checkbox`: a Material checkbox showing [checked], the value slot; [edit] reports a toggle. */
 @Composable
-fun WeftCheckbox(checked: Boolean, disabled: Boolean = false, edit: (Boolean) -> Unit) {
-    Checkbox(checked = checked, onCheckedChange = edit, enabled = !disabled)
+fun WeftCheckbox(checked: Boolean, disabled: Boolean = false, modifier: Modifier = Modifier, edit: (Boolean) -> Unit) {
+    Checkbox(checked = checked, onCheckedChange = edit, enabled = !disabled, modifier = modifier)
 }

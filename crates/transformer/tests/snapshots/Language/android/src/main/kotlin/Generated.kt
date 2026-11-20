@@ -8,6 +8,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import net.mioyi.weftui.*
 
@@ -74,7 +75,7 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V1(s: S1) {
-    WeftRow {
+    WeftLinear(axis = WeftAxis.HORIZONTAL) {
         WeftText(s.v0)
         WeftButton(onClick = { s.dispatch(0) }) {
             WeftText("1")
@@ -129,7 +130,7 @@ private class S3(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V3(s: S3) {
-    WeftColumn {
+    WeftLinear(axis = WeftAxis.VERTICAL) {
         s.p0?.let { key(it.id) { it.Content() } }
         s.p1?.let { key(it.id) { it.Content() } }
         s.p2?.let { key(it.id) { it.Content() } }
@@ -175,7 +176,7 @@ private class S4(id: Int, session: WeftSession) : WeftScope(id, session) {
 
 @Composable
 private fun V4(s: S4) {
-    WeftColumn {
+    WeftLinear(axis = WeftAxis.VERTICAL) {
         WeftText(s.v0)
         s.p0?.let { V0(it) }
         s.p1?.let { V1(it) }

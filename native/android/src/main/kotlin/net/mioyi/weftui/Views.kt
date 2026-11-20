@@ -1,18 +1,14 @@
 package net.mioyi.weftui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -23,11 +19,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
@@ -57,13 +53,16 @@ fun WeftRoot(layoutHash: ULong, theme: WeftTheme = WeftTheme.Empty, make: WeftMa
             end = with(density) { safe.getRight(this, LayoutDirection.Ltr).toDp().value },
         )
         LaunchedEffect(session, environment) { session.updateEnvironment(environment) }
-        Column(Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState())) {
+        WeftLinear(
+            WeftAxis.VERTICAL,
+            Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).fillMaxWidth(),
+        ) {
             val failure = session.failure
             val root = session.root
             if (failure != null) {
                 Text(failure, Modifier.padding(16.dp), color = Color.Red)
             } else if (root != null) {
-                CompositionLocalProvider(LocalWeftTheme provides theme) {
+                CompositionLocalProvider(LocalWeftTheme provides theme, LocalLayoutDirection provides LayoutDirection.Ltr) {
                     key(root.id) { root.Content() }
                 }
             }
@@ -71,59 +70,30 @@ fun WeftRoot(layoutHash: ULong, theme: WeftTheme = WeftTheme.Empty, make: WeftMa
     }
 }
 
-/** `Column`: children from the top, aligned to the start, [gap] dp apart. */
-@Composable
-fun WeftColumn(
-    gap: Float = 0f,
-    padding: Float? = null,
-    width: Float? = null,
-    height: Float? = null,
-    background: WeftColor? = null,
-    content: @Composable () -> Unit,
-) {
-    Column(
-        Modifier.weftBox(padding, width, height, background?.resolve()),
-        verticalArrangement = Arrangement.spacedBy(gap.dp),
-        horizontalAlignment = Alignment.Start,
-    ) { content() }
-}
-
-/** `Row`: children from the start, aligned to the top, [gap] dp apart. */
-@Composable
-fun WeftRow(
-    gap: Float = 0f,
-    padding: Float? = null,
-    width: Float? = null,
-    height: Float? = null,
-    background: WeftColor? = null,
-    content: @Composable () -> Unit,
-) {
-    Row(
-        Modifier.weftBox(padding, width, height, background?.resolve()),
-        horizontalArrangement = Arrangement.spacedBy(gap.dp),
-        verticalAlignment = Alignment.Top,
-    ) { content() }
-}
-
-/**
- * Layout properties of `Column` and `Row`: the background behind the
- * padding, the padding around a fixed content size, as CSS boxes do.
- */
-private fun Modifier.weftBox(padding: Float?, width: Float?, height: Float?, background: Color?): Modifier {
-    var modifier = this
-    if (background != null) modifier = modifier.background(background)
-    if (padding != null) modifier = modifier.padding(padding.dp)
-    if (width != null) modifier = modifier.width(width.dp)
-    if (height != null) modifier = modifier.height(height.dp)
-    return modifier
-}
-
 /** `Text`; unset style properties keep the theme's. Sizes are dp, like every length. */
 @Composable
-fun WeftText(value: String, color: WeftColor? = null, size: Float? = null, bold: Boolean? = null) {
+fun WeftText(
+    value: String,
+    color: WeftColor? = null,
+    size: Float? = null,
+    bold: Boolean? = null,
+    modifier: Modifier = Modifier,
+    padding: Float? = null,
+    paddingX: Float? = null,
+    paddingY: Float? = null,
+    paddingTop: Float? = null,
+    paddingBottom: Float? = null,
+    paddingStart: Float? = null,
+    paddingEnd: Float? = null,
+) {
+    val insets = paddingEdges(padding, paddingX, paddingY, paddingTop, paddingBottom, paddingStart, paddingEnd)
+    val box = if (insets == WeftEdges()) modifier else modifier.weftPadding(insets).absolutePadding(
+        left = insets.start.dp, top = insets.top.dp, right = insets.end.dp, bottom = insets.bottom.dp,
+    )
     val fontSize = if (size != null) with(LocalDensity.current) { size.dp.toSp() } else TextUnit.Unspecified
     Text(
         value,
+        modifier = box,
         color = color?.resolve() ?: Color.Unspecified,
         fontSize = fontSize,
         fontWeight = if (bold == true) FontWeight.Bold else null,
@@ -132,6 +102,13 @@ fun WeftText(value: String, color: WeftColor? = null, size: Float? = null, bold:
 
 /** `Button`: a Material button around its children. */
 @Composable
-fun WeftButton(onClick: () -> Unit, disabled: Boolean = false, content: @Composable () -> Unit) {
-    Button(onClick = onClick, enabled = !disabled) { content() }
+fun WeftButton(
+    onClick: () -> Unit,
+    disabled: Boolean = false,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Button(onClick = onClick, enabled = !disabled, modifier = modifier) {
+        WeftButtonContent(content)
+    }
 }

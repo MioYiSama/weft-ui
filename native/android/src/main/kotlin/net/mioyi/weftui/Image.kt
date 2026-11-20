@@ -4,10 +4,7 @@ import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -15,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,27 +28,32 @@ import java.net.URL
  * per dp. Images that fail to load leave the fixed space empty.
  */
 @Composable
-fun WeftImage(src: String, width: Float? = null, height: Float? = null) {
+fun WeftImage(src: String, modifier: Modifier = Modifier) {
     val bitmap by produceState(Images.cached(src), src) {
         if (value == null) value = withContext(Dispatchers.IO) { Images.load(src) }
     }
     val image = bitmap
     if (image == null) {
-        Box(Modifier.size((width ?: 0f).dp, (height ?: 0f).dp))
+        Box(modifier.size(0.dp))
         return
-    }
-    val ratio = image.width.toFloat() / image.height.coerceAtLeast(1)
-    val modifier = when {
-        width != null && height != null -> Modifier.size(width.dp, height.dp)
-        width != null -> Modifier.width(width.dp).aspectRatio(ratio)
-        height != null -> Modifier.height(height.dp).aspectRatio(ratio)
-        else -> Modifier.size(image.width.dp, image.height.dp)
     }
     Image(
         image,
         contentDescription = null,
-        modifier = modifier,
-        contentScale = if (width != null && height != null) ContentScale.FillBounds else ContentScale.Fit,
+        modifier = modifier.layout { measurable, constraints ->
+            val w = image.width.dp.toPx()
+            val h = image.height.dp.toPx()
+            val scale = when {
+                constraints.hasFixedWidth -> constraints.maxWidth / w
+                constraints.hasFixedHeight -> constraints.maxHeight / h
+                else -> minOf(1f, constraints.maxWidth / w, constraints.maxHeight / h)
+            }
+            val width = (w * scale).toInt().coerceIn(constraints.minWidth, constraints.maxWidth)
+            val height = (h * scale).toInt().coerceIn(constraints.minHeight, constraints.maxHeight)
+            val placeable = measurable.measure(Constraints.fixed(width, height))
+            layout(width, height) { placeable.place(0, 0) }
+        },
+        contentScale = ContentScale.FillBounds,
     )
 }
 

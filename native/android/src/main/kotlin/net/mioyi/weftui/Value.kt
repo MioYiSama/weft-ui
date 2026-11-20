@@ -21,8 +21,8 @@ sealed class WeftValue {
     /** The value of a `Bool` slot. */
     val bool: Boolean get() = (this as? Bool)?.value ?: false
 
-    /** The value of an `Int` slot: a length in dp. */
-    val length: Float get() = (this as? Number)?.value?.toFloat() ?: 0f
+    /** The value of an `Int` or `Float` slot (lengths use dp). */
+    val number: Float get() = (this as? Number)?.value?.toFloat() ?: 0f
 
     /** The fixed color or theme token of a `Color` slot. */
     val color: WeftColor get() = WeftColor.parse(string)

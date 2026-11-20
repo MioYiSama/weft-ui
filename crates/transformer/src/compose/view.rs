@@ -1,18 +1,9 @@
 //! The Compose view `V{n}` of a template: built-in elements call the shell's
 //! composables, and mount points render child scopes.
 //!
-//! | Element    | Shell composable | Compose                                   |
-//! | ---------- | ---------------- | ----------------------------------------- |
-//! | `Column`   | `WeftColumn`     | `Column(horizontalAlignment = Start)`     |
-//! | `Row`      | `WeftRow`        | `Row(verticalAlignment = Top)`            |
-//! | `Text`     | `WeftText`       | Material 3 `Text`                         |
-//! | `Button`   | `WeftButton`     | Material 3 `Button`                       |
-//! | `Input`    | `WeftInput`      | controlled Material 3 `OutlinedTextField` |
-//! | `Checkbox` | `WeftCheckbox`   | Material 3 `Checkbox`                     |
-//! | `Image`    | `WeftImage`      | `Image` of a bitmap the shell downloads   |
-//!
-//! Stack spacing defaults to 0 and children align to the start of the cross
-//! axis, as the layout rules of GRAMMAR.md require.
+//! `Column` and `Row` share `WeftLinear`; `Stack` and `Scroll` have their own
+//! layouts. Size constraints, margins, grow and fill travel as modifiers so
+//! they are available to whichever parent measures the node.
 
 use std::fmt::{self, Display, Write as _};
 
@@ -57,75 +48,91 @@ impl Body<'_> {
         children: &[u32],
     ) {
         let prop = |name: &str| self.template.prop(node, props, name);
-        let optional = |mut args: CallArgs<'_>, names: &[&str]| {
-            for &name in names {
-                let Some(value) = prop(name) else {
-                    continue;
-                };
-                if name == "disabled"
-                    && matches!(value, PropSource::Constant(Constant::Bool(false)))
-                {
-                    continue;
-                }
-                let value = KotlinProp(value);
-                args.push(format_args!("{name} = {value}"));
-            }
-            args.finish();
-        };
         let line = out.writer.start_line();
         line.push_str("Weft");
-        line.push_str(element.name());
+        line.push_str(match element {
+            Element::Column | Element::Row => "Linear",
+            _ => element.name(),
+        });
         let mut args = CallArgs::new(line);
-        match element {
+        let controlled = matches!(element, Element::Input | Element::Checkbox)
+            .then(|| self.template.controlled(node));
+        let names: &[&str] = match element {
             Element::Column | Element::Row => {
-                optional(args, &["gap", "padding", "width", "height", "background"]);
+                let axis = if element == Element::Row {
+                    "HORIZONTAL"
+                } else {
+                    "VERTICAL"
+                };
+                args.push(format_args!("axis = WeftAxis.{axis}"));
+                &["gap", "align", "justify", "background"]
             }
             Element::Button => {
                 match self.template.event(node, "onClick") {
-                    Some(slot) => {
-                        args.push(format_args!("onClick = {{ s.dispatch({slot}) }}"));
-                    }
+                    Some(slot) => args.push(format_args!("onClick = {{ s.dispatch({slot}) }}")),
                     None => args.push("onClick = {}"),
                 }
-                optional(args, &["disabled"]);
+                &["disabled"]
             }
             Element::Text => {
-                args.push(KotlinProp(prop("value").expect("`Text` has a value")));
-                optional(args, &["color", "size", "bold"]);
-                out.writer.end_line("");
-                return;
+                args.push(KotlinProp(prop("value").expect("`Text` has a value"), None));
+                &["color", "size", "bold"]
             }
-            Element::Input => {
-                let (event, slot) = self.template.controlled(node);
+            Element::Input | Element::Checkbox => {
+                let (_, slot) = controlled.expect("input controls have value slots");
                 args.push(format_args!("s.v{slot}"));
-                optional(args, &["placeholder", "disabled"]);
+                if element == Element::Input {
+                    &["placeholder", "disabled"]
+                } else {
+                    &["disabled"]
+                }
+            }
+            Element::Image => {
+                args.push(KotlinProp(prop("src").expect("`Image` has a source"), None));
+                &[]
+            }
+            Element::Stack => &["alignment"],
+            Element::Scroll => &["direction", "gap", "align", "indicators"],
+            Element::Spacer => &["size"],
+        };
+        for &name in names.iter().chain(PADDING) {
+            let Some(value) = prop(name) else { continue };
+            if name == "disabled" && matches!(value, PropSource::Constant(Constant::Bool(false))) {
+                continue;
+            }
+            let union = match name {
+                "align" => Some("CrossAlign"),
+                "justify" => Some("Justify"),
+                "alignment" => Some("Alignment"),
+                "direction" => Some("Axis"),
+                _ => None,
+            };
+            args.push(format_args!("{name} = {}", KotlinProp(value, union)));
+        }
+        layout_modifier(&mut args, prop);
+        args.finish(element == Element::Spacer);
+        match element {
+            Element::Input => {
+                let (event, slot) = controlled.expect("Input has a value slot");
                 out.writer.end_line(format_args!(
                     " {{ if (s.dispatch({event}, WeftValue.Text(it))) null else s.v{slot} }}"
                 ));
-                return;
             }
             Element::Checkbox => {
-                let (event, slot) = self.template.controlled(node);
-                args.push(format_args!("s.v{slot}"));
-                optional(args, &["disabled"]);
+                let (event, _) = controlled.expect("Checkbox has a value slot");
                 out.writer.end_line(format_args!(
                     " {{ s.dispatch({event}, WeftValue.Bool(it)) }}"
                 ));
-                return;
             }
-            Element::Image => {
-                args.push(KotlinProp(prop("src").expect("`Image` has a source")));
-                optional(args, &["width", "height"]);
-                out.writer.end_line("");
-                return;
+            Element::Text | Element::Image | Element::Spacer => out.writer.end_line(""),
+            Element::Column | Element::Row | Element::Stack | Element::Scroll | Element::Button => {
+                out.open_after(" {");
+                for &child in children {
+                    self.node(out, child);
+                }
+                out.close("}");
             }
-            _ => unreachable!("platform support rejects unsupported elements"),
         }
-        out.open_after(" {");
-        for &child in children {
-            self.node(out, child);
-        }
-        out.close("}");
     }
 
     fn point(&self, out: &mut Code, point: u32) {
@@ -153,7 +160,69 @@ impl Body<'_> {
     }
 }
 
-/// Writes the argument list directly into the output, omitting empty parentheses.
+const PADDING: &[&str] = &[
+    "padding",
+    "paddingX",
+    "paddingY",
+    "paddingTop",
+    "paddingBottom",
+    "paddingStart",
+    "paddingEnd",
+];
+
+const SIZE: &[&str] = &[
+    "width",
+    "height",
+    "minWidth",
+    "maxWidth",
+    "minHeight",
+    "maxHeight",
+    "aspectRatio",
+];
+
+const CHILD: &[&str] = &[
+    "grow",
+    "fill",
+    "margin",
+    "marginX",
+    "marginY",
+    "marginTop",
+    "marginBottom",
+    "marginStart",
+    "marginEnd",
+];
+
+fn layout_modifier<'t>(args: &mut CallArgs<'_>, prop: impl Fn(&str) -> Option<PropSource<'t>>) {
+    let groups = [("weftSize", SIZE), ("weftChild", CHILD)];
+    if !groups
+        .iter()
+        .any(|(_, names)| names.iter().any(|name| prop(name).is_some()))
+    {
+        return;
+    }
+    args.push(fmt::from_fn(|f| {
+        f.write_str("modifier = Modifier")?;
+        for (method, names) in groups {
+            let mut first = true;
+            for &name in names {
+                let Some(value) = prop(name) else { continue };
+                if first {
+                    write!(f, ".{method}(")?;
+                    first = false;
+                } else {
+                    f.write_str(", ")?;
+                }
+                write!(f, "{name} = {}", KotlinProp(value, None))?;
+            }
+            if !first {
+                f.write_char(')')?;
+            }
+        }
+        Ok(())
+    }));
+}
+
+/// Writes the argument list directly into the output.
 struct CallArgs<'a> {
     line: &'a mut String,
     started: bool,
@@ -177,22 +246,40 @@ impl<'a> CallArgs<'a> {
         write!(self.line, "{argument}").expect("writing to a String cannot fail");
     }
 
-    fn finish(self) {
+    fn finish(self, parentheses: bool) {
         if self.started {
             self.line.push(')');
+        } else if parentheses {
+            self.line.push_str("()");
         }
     }
 }
 
-struct KotlinProp<'t>(PropSource<'t>);
+struct KotlinProp<'t>(PropSource<'t>, Option<&'static str>);
 
 impl Display for KotlinProp<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(union) = self.1 {
+            return match self.0 {
+                PropSource::Slot(slot) => write!(f, "Weft{union}.parse(s.v{slot})"),
+                PropSource::Constant(Constant::String(value)) => {
+                    write!(f, "Weft{union}.")?;
+                    for c in value.chars() {
+                        if c.is_ascii_uppercase() {
+                            f.write_char('_')?;
+                        }
+                        f.write_char(c.to_ascii_uppercase())?;
+                    }
+                    Ok(())
+                }
+                PropSource::Constant(_) => unreachable!("union properties contain strings"),
+            };
+        }
         match self.0 {
             PropSource::Slot(slot) => write!(f, "s.v{slot}"),
             PropSource::Constant(value) => match value {
                 Constant::Int(v) => write!(f, "{v}f"),
-                Constant::Float(_) => unreachable!("platform support rejects Float properties"),
+                Constant::Float(v) => write!(f, "{v:?}f"),
                 Constant::Bool(v) => v.fmt(f),
                 Constant::String(s) => kotlin::string(f, s),
                 Constant::Token(name) => {

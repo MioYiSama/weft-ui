@@ -416,6 +416,8 @@ impl Resolver<'_> {
         let ty = fmt::from_fn(|out| match &param.kind {
             ParamKind::Value(ty) => write!(out, "{}", self.ty(ty)),
             ParamKind::Children => out.write_str("Children"),
+            ParamKind::Callback { payload: None } => out.write_str("Event"),
+            ParamKind::Callback { payload: Some(ty) } => write!(out, "Event<{}>", self.ty(ty)),
         });
         match &param.default {
             Some(default) => format!(

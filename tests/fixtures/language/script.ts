@@ -6,8 +6,13 @@ export const script: Script<Language> = {
   entry: "Language.weft",
   component: "Language",
   App: Language,
-  model: () => ({ name: "Gallery", items: [{ id: 1, kind: "text", name: "Oak" }], mode: "full" }),
-  setup() {},
+  model: () => ({ name: "Gallery", items: [{ id: 1, kind: "text", name: "Oak" }], mode: "full", rating: 1 }),
+  setup(app, log) {
+    app.onRated((model, { value }) => {
+      log(`Rated ${value}`);
+      model.name = `Rated ${value}`;
+    });
+  },
   steps: [
     {
       name: "rename the gallery",
@@ -33,5 +38,12 @@ export const script: Script<Language> = {
         model.mode = "compact";
       },
     },
+    { name: "emit a rating through a callback", run: (ui) => ui.click("Button", 0) },
+    { name: "set local rating and then emit it", run: (ui) => ui.click("Button", 4) },
+    { name: "change model rating", run: (_, model) => { model.rating = 4; } },
+    { name: "emit the newly bound element value", run: (ui) => ui.click("Button", 2) },
+    { name: "replace the bound callback", run: (_, model) => { model.rating = 5; } },
+    { name: "forward the newly bound callback", run: (ui) => ui.click("Button", 6) },
+    { name: "call an omitted callback", run: (ui) => ui.click("Button", 9) },
   ],
 };

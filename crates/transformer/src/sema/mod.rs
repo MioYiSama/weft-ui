@@ -23,6 +23,7 @@ use record::{AliasSymbol, ProbeContext, RawCall, RawProbe, Recorder, Target};
 
 /// Name of the slot parameter type.
 const CHILDREN: &str = "Children";
+const EVENT: &str = "Event";
 const PRIMITIVES: [&str; 4] = ["Int", "Float", "Bool", "String"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -154,14 +155,14 @@ impl Checker<'_> {
         type_display(ty, &self.models, "{error}").to_string()
     }
 
-    /// Reports a type probe at `name`; `Children` is offered for parameters.
-    pub(crate) fn probe_type(&self, file: FileId, name: &str, children: bool) {
+    /// Reports a type probe; `Children` and `Event` are offered for parameters.
+    pub(crate) fn probe_type(&self, file: FileId, name: &str, parameter: bool) {
         if !self.is_probe(name) {
             return;
         }
         let builtins = PRIMITIVES
             .into_iter()
-            .chain(children.then_some(CHILDREN))
+            .chain([CHILDREN, EVENT].into_iter().filter(|_| parameter))
             .map(|name| Target::Type(name.to_owned()));
         let types = self.visible_decls(file, |k| {
             matches!(k, DeclKind::Model(_) | DeclKind::TypeAlias(_))
@@ -192,7 +193,7 @@ impl Checker<'_> {
         ty: &ast::TypeExpr,
         diags: &mut Vec<Diagnostic>,
     ) -> Type {
-        if let ast::TypeExprKind::Named(name) = &ty.kind {
+        if let ast::TypeExprKind::Named { name, .. } = &ty.kind {
             self.probe_type(file, &name.name, false);
             if PRIMITIVES.contains(&name.name.as_str()) {
                 self.record(name.span, || Target::Type(name.name.clone()));
@@ -211,7 +212,21 @@ impl Checker<'_> {
                 }
                 inner => inner.optional(),
             },
-            ast::TypeExprKind::Named(name) => match name.name.as_str() {
+            ast::TypeExprKind::Named { name, .. } if name.name == EVENT => {
+                diags.push(Diagnostic::error(
+                    name.span,
+                    "`Event` is only allowed as a component parameter type",
+                ));
+                Type::Error
+            }
+            ast::TypeExprKind::Named { args, .. } if !args.is_empty() => {
+                diags.push(Diagnostic::error(
+                    ty.span,
+                    "only `Event` takes a type argument",
+                ));
+                Type::Error
+            }
+            ast::TypeExprKind::Named { name, .. } => match name.name.as_str() {
                 "Int" => Type::Int,
                 "Float" => Type::Float,
                 "Bool" => Type::Bool,
@@ -522,7 +537,9 @@ fn declare<'a>(
     let name = item.name();
     let reserved = if elements::element(&name.name).is_some() {
         Some("a built-in element")
-    } else if PRIMITIVES.contains(&name.name.as_str()) || name.name == CHILDREN {
+    } else if PRIMITIVES.contains(&name.name.as_str())
+        || matches!(name.name.as_str(), CHILDREN | EVENT)
+    {
         Some("a built-in type")
     } else {
         None
@@ -660,15 +677,39 @@ fn signature(
             ));
             continue;
         }
-        if let ast::TypeExprKind::Named(n) = &param.ty.kind {
-            cx.probe_type(file, &n.name, true);
-        }
-        let is_children =
-            matches!(&param.ty.kind, ast::TypeExprKind::Named(n) if n.name == CHILDREN);
-        if is_children {
-            cx.record(param.ty.span, || Target::Type(CHILDREN.to_owned()));
-        }
-        let kind = if is_children {
+        let named = match &param.ty.kind {
+            ast::TypeExprKind::Named { name, args } => {
+                cx.probe_type(file, &name.name, true);
+                Some((name, args.as_slice()))
+            }
+            _ => None,
+        };
+        let kind = if let Some((ty_name, args)) = named.filter(|(n, _)| n.name == EVENT) {
+            cx.record(ty_name.span, || Target::Type(EVENT.to_owned()));
+            if let Some(default) = &param.default {
+                diags.push(Diagnostic::error(
+                    default.span,
+                    format!(
+                        "callback parameter `{}` cannot have a default value",
+                        name.name
+                    ),
+                ));
+            }
+            let payload = args.first().map(|arg| {
+                let ty = cx.resolve_type(file, arg, diags);
+                if ty.is_scalar() || ty.has_error() {
+                    ty
+                } else {
+                    diags.push(Diagnostic::error(
+                        arg.span,
+                        "callback payload must be a scalar type",
+                    ));
+                    Type::Error
+                }
+            });
+            ParamKind::Callback { payload }
+        } else if let Some((ty_name, [])) = named.filter(|(n, _)| n.name == CHILDREN) {
+            cx.record(ty_name.span, || Target::Type(CHILDREN.to_owned()));
             if let Some(prev) = params.iter().find(|p| p.kind == ParamKind::Children) {
                 diags.push(
                     Diagnostic::error(

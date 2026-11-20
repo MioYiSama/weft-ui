@@ -10,7 +10,7 @@ using namespace std::literals;
 namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
-constexpr uint64_t kLayoutHash = 0x518bf39fdd8340b7ull;
+constexpr uint64_t kLayoutHash = 0x0491f0fb29968dc8ull;
 
 // 0 ModeLabel
 
@@ -32,17 +32,30 @@ class S0 final : public weft::Scope {
   weft::Text *n0_;
 };
 
-// 1 Language
+// 1 Rating
 
 class S1 final : public weft::Scope {
  public:
-  S1(uint32_t id, weft::Session &session) : Scope(id, session, 2) {
-    auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
+  S1(uint32_t id, weft::Session &session) : Scope(id, session) {
+    auto &n0 = make<weft::Stack>(weft::Axis::Horizontal);
     roots().add(n0);
     n1_ = &make<weft::Text>();
     n0.children().add(*n1_);
-    n0.children().point(*this, 0);
-    n0.children().point(*this, 1);
+    auto &n2 = make<weft::Button>([this] { dispatch(0); });
+    n0.children().add(n2);
+    auto &n3 = make<weft::Text>();
+    n3.set_value("1"sv);
+    n2.children().add(n3);
+    auto &n4 = make<weft::Button>([this] { dispatch(1); });
+    n0.children().add(n4);
+    auto &n5 = make<weft::Text>();
+    n5.set_value("2"sv);
+    n4.children().add(n5);
+    auto &n6 = make<weft::Button>([this] { dispatch(2); });
+    n0.children().add(n6);
+    auto &n7 = make<weft::Text>();
+    n7.set_value("Repeat"sv);
+    n6.children().add(n7);
   }
 
   void apply(uint32_t slot, const weft::ops::Value &value) override {
@@ -56,11 +69,48 @@ class S1 final : public weft::Scope {
   weft::Text *n1_;
 };
 
-// 2 Language:for6
+// 2 ForwardRating
 
 class S2 final : public weft::Scope {
  public:
   S2(uint32_t id, weft::Session &session) : Scope(id, session, 1) {
+    roots().point(*this, 0);
+  }
+};
+
+// 3 Language
+
+class S3 final : public weft::Scope {
+ public:
+  S3(uint32_t id, weft::Session &session) : Scope(id, session, 6) {
+    auto &n0 = make<weft::Stack>(weft::Axis::Vertical);
+    roots().add(n0);
+    n1_ = &make<weft::Text>();
+    n0.children().add(*n1_);
+    n0.children().point(*this, 0);
+    n0.children().point(*this, 1);
+    n0.children().point(*this, 2);
+    n0.children().point(*this, 3);
+    n0.children().point(*this, 4);
+    n0.children().point(*this, 5);
+  }
+
+  void apply(uint32_t slot, const weft::ops::Value &value) override {
+    switch (slot) {
+      case 0: n1_->set_value(weft::string(value)); break;
+    }
+  }
+
+ private:
+  // Text.value
+  weft::Text *n1_;
+};
+
+// 4 Language:for10
+
+class S4 final : public weft::Scope {
+ public:
+  S4(uint32_t id, weft::Session &session) : Scope(id, session, 1) {
     n0_ = &make<weft::Text>();
     roots().add(*n0_);
     roots().point(*this, 0);
@@ -77,22 +127,22 @@ class S2 final : public weft::Scope {
   weft::Text *n0_;
 };
 
-// 3 Language:if5.0
+// 5 Language:if9.0
 
-class S3 final : public weft::Scope {
+class S5 final : public weft::Scope {
  public:
-  S3(uint32_t id, weft::Session &session) : Scope(id, session) {
+  S5(uint32_t id, weft::Session &session) : Scope(id, session) {
     auto &n0 = make<weft::Text>();
     n0.set_value("image"sv);
     roots().add(n0);
   }
 };
 
-// 4 Language:if5.1
+// 6 Language:if9.1
 
-class S4 final : public weft::Scope {
+class S6 final : public weft::Scope {
  public:
-  S4(uint32_t id, weft::Session &session) : Scope(id, session) {
+  S6(uint32_t id, weft::Session &session) : Scope(id, session) {
     auto &n0 = make<weft::Text>();
     n0.set_value("text"sv);
     roots().add(n0);
@@ -107,6 +157,8 @@ std::unique_ptr<weft::Scope> make_scope(uint32_t tpl, uint32_t id, weft::Session
     case 2: return std::make_unique<S2>(id, session);
     case 3: return std::make_unique<S3>(id, session);
     case 4: return std::make_unique<S4>(id, session);
+    case 5: return std::make_unique<S5>(id, session);
+    case 6: return std::make_unique<S6>(id, session);
     default: return nullptr;
   }
 }

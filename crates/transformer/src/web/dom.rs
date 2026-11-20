@@ -8,7 +8,8 @@ use std::fmt::{self, Display, Write};
 
 use crate::bridge::DomView;
 use crate::bridge::blocks::{
-    Consts, Ctx, Literal, Parts, binding_cond, handler_body, instance_watches, literal, words,
+    Consts, Ctx, Literal, Parts, binding_cond, element_handler_body, instance_watches, literal,
+    words,
 };
 use crate::bridge::expr::{Env, expr};
 use crate::bridge::flow::{Backend, ComponentIr, Flow};
@@ -282,7 +283,7 @@ impl Backend for Gen {
                 PropValue::Handler(_) if matches!(prop.name, "onMount" | "onUnmount") => {}
                 PropValue::Handler(handler) => {
                     listened = true;
-                    let body = handler_body(ir.program, handler);
+                    let body = element_handler_body(ir.program, ir.comp, id, prop, handler, parts);
                     parts.create.line(match (element, prop.name) {
                         (Element::Input, "onChange") => {
                             format!("$.input({n}, ($a) => {{ {body} }});")

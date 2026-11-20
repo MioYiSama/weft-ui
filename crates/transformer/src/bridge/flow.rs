@@ -287,7 +287,7 @@ impl<'ir, 'consts, B: Backend> Flow<'ir, 'consts, B> {
         parts.create.line(format!(
             "const {var} = {}$c(c.app, [{}], {}, {}.depth + 1);",
             callee.name,
-            arg_values(callee, args).join(", "),
+            arg_values(self.ir.program, callee, args).join(", "),
             slot.as_deref().unwrap_or("null"),
             ctx.scope()
         ));
@@ -295,7 +295,7 @@ impl<'ir, 'consts, B: Backend> Flow<'ir, 'consts, B> {
             .create
             .line(self.backend.mount(id, parent, &var).to_string());
 
-        arg_updates(self.ir.comp, &var, args, &mut parts.update);
+        arg_updates(self.ir.program, self.ir.comp, &var, args, &mut parts.update);
         if let Some(slot) = slot
             && let Some(cond) = walk_cond(self.ir.comp, children.iter().copied(), ctx)
         {

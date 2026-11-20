@@ -16,7 +16,9 @@ use crate::elements::Element;
 use crate::ir::{ComponentId, NodeId, Program, Prop, PropValue};
 use crate::view::ViewLayout;
 
-use super::blocks::{Consts, Ctx, Parts, binding_cond, handler_body, instance_watches, words};
+use super::blocks::{
+    Consts, Ctx, Parts, binding_cond, element_handler_body, instance_watches, words,
+};
 use super::expr::{Env, expr};
 use super::flow::{Backend, ComponentIr, Flow};
 use super::js::Code;
@@ -94,7 +96,7 @@ impl Backend for Gen<'_> {
             };
             let event = &template.events[slot as usize];
             let param = if event.payload.is_some() { "$a" } else { "" };
-            let body = handler_body(ir.program, handler);
+            let body = element_handler_body(ir.program, ir.comp, id, prop, handler, parts);
             let controls = event.controls.map_or(-1, i64::from);
             parts.create.line(format!(
                 "{var}.on({slot}, ({param}) => {{ {body} }}, {controls});"

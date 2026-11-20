@@ -53,6 +53,7 @@ test.each(fixtures)("%s renders alike on every platform and matches its golden o
       }
       check(step.name);
     }
+    if (name === "language") expect(renderer.log).toEqual(["Rated 1", "Rated 2", "Rated 4", "Rated 5"]);
     for (const driver of drivers) driver.app.unmount();
   } finally {
     await rm(built.out, { recursive: true, force: true });

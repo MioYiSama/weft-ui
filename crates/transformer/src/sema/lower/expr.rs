@@ -151,7 +151,7 @@ impl Lowerer<'_, '_> {
         if self.cx.is_probe(name) {
             self.probe_locals(
                 ProbeContext::Value,
-                |k| !matches!(k, LocalKind::Slot(_)),
+                |k| !matches!(k, LocalKind::Slot(_) | LocalKind::Callback(_)),
                 Vec::new(),
             );
         }
@@ -167,6 +167,13 @@ impl Lowerer<'_, '_> {
                         span,
                         ..expr.clone()
                     };
+                }
+                LocalKind::Callback(_) => {
+                    self.error(
+                        span,
+                        format!("callback `{name}` can only be used as an event handler or called in a lambda"),
+                    );
+                    return error_expr(span);
                 }
                 LocalKind::Slot(_) => {
                     self.error(

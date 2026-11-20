@@ -12,17 +12,38 @@ model LanguageModel {
   name: String,
   items: LanguageItem[],
   mode: Mode,
+  rating: Int,
 }
 
 component ModeLabel(mode: "compact" | "full" = "full") {
   Text(if (mode == "compact") "C" else "F")
 }
 
+event Rated(value: Int)
+
+component Rating(value: Int, onSelect: Event<Int>) {
+  Row {
+    Text("Rating: ${value}")
+    Button(onClick = onSelect(1)) { Text("1") }
+    Button(onClick = { onSelect(2) }) { Text("2") }
+    Button(onClick = onSelect(value)) { Text("Repeat") }
+  }
+}
+
+component ForwardRating(onSelect: Event<Int>) {
+  Rating(0, onSelect = onSelect)
+}
+
 component Language(model: LanguageModel) {
+  state local = 0
   let title = "${model.name} (${model.items.length})"
   Column {
     Text(title)
     ModeLabel(model.mode)
+    Rating(model.rating, onSelect = Rated)
+    Rating(local, onSelect = { v -> local = v; Rated(local) })
+    ForwardRating(onSelect = Rated(model.rating))
+    Rating(0)
     for (item in model.items; key = item.id) {
       let label = item.name.uppercase()
       Text(label)

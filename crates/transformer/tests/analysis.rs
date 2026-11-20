@@ -1,7 +1,9 @@
 //! M1: semantic analysis, dependency analysis and the view IR.
 
 use weft_ui_parser::{MemoryLoader, load};
-use weft_ui_transformer::ir::{BindingKind, Handler, NodeKind, ParamId, PropValue, SlotRef};
+use weft_ui_transformer::ir::{
+    BindingKind, EmitTarget, Handler, NodeKind, ParamId, PropValue, SlotRef, Stmt,
+};
 use weft_ui_transformer::{Compilation, check, dependency_report};
 
 const DEMO: &str = include_str!("fixtures/TodoList.weft");
@@ -386,13 +388,25 @@ fn demo_handlers_lower_to_emits_and_state_writes() {
     let summary: Vec<String> = handlers
         .iter()
         .map(|h| match h {
-            Handler::Emit { event, args } => {
+            Handler::Emit {
+                target: EmitTarget::Event(event),
+                args,
+            } => {
                 format!("emit {} ({} args)", program.event(*event).name, args.len())
+            }
+            Handler::Emit {
+                target: EmitTarget::Callback(_),
+                ..
+            } => {
+                panic!("demo does not declare callbacks");
             }
             Handler::Lambda { body, .. } => {
                 let states: Vec<&str> = body
                     .iter()
-                    .map(|a| list.states[a.state.index()].name.as_str())
+                    .map(|stmt| match stmt {
+                        Stmt::Assign(a) => list.states[a.state.index()].name.as_str(),
+                        Stmt::Emit { .. } => panic!("demo lambda only assigns state"),
+                    })
                     .collect();
                 format!("set {}", states.join(","))
             }
@@ -503,6 +517,59 @@ component C() {
             "c.weft:10:27: `onUnmount` only accepts an event, not a lambda",
         ]
     );
+}
+
+#[test]
+fn callback_parameter_types_and_payloads_are_checked() {
+    let src = r#"
+model M { callback: Event }
+event Wrong(value: String)
+component Choice(onSelect: Event<Int>) {}
+component C(onClose: Event = null, onChoose: Event<Int>) {
+  Choice(onSelect = Wrong)
+  Input("", onChange = onChoose)
+}
+"#;
+    assert_eq!(
+        diagnostics(&[("c.weft", src)]),
+        [
+            "c.weft:2:21: `Event` is only allowed as a component parameter type",
+            "c.weft:5:30: callback parameter `onClose` cannot have a default value",
+            "c.weft:6:21: `onSelect` provides a `Int`, but event `Wrong` expects `String`",
+            "c.weft:7:24: `onChange` provides a `String`, but callback `onChoose` expects `Int`",
+        ]
+    );
+}
+
+#[test]
+fn callbacks_have_no_dirty_slots_but_their_bound_arguments_do() {
+    let src = r#"
+event Selected(value: Int)
+component Choice(onSelect: Event<Int>, value: Int) {
+  Button(onClick = onSelect(value)) {}
+}
+component C(value: Int) {
+  Choice(onSelect = Selected(value), value = 1)
+}
+"#;
+    let compilation = compile(&[("c.weft", src)]);
+    let program = compilation
+        .program
+        .as_ref()
+        .unwrap_or_else(|| panic!("{}", compilation.render_diagnostics()));
+    let choice = program
+        .component_named("Choice")
+        .expect("choice component exists");
+    assert_eq!(choice.slots.len(), 1);
+    assert_eq!(choice.bindings[0].bits, [SlotRef::Component(0)]);
+    assert!(choice.emits.is_empty());
+    let caller = program
+        .component_named("C")
+        .expect("caller component exists");
+    assert_eq!(caller.bindings[0].kind, BindingKind::Arg(ParamId(0)));
+    assert_eq!(caller.bindings[0].bits, [SlotRef::Component(0)]);
+    assert_eq!(caller.emits.len(), 1);
+    assert_eq!(program.event(caller.emits[0]).name, "Selected");
 }
 
 #[test]

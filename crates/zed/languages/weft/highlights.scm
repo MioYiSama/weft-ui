@@ -14,7 +14,7 @@
 
 (type_identifier) @type
 ((type_identifier) @type.builtin
-  (#any-of? @type.builtin "Int" "Float" "Bool" "String" "Children"))
+  (#any-of? @type.builtin "Int" "Float" "Bool" "String" "Children" "Event"))
 
 ; ---- nodes -----------------------------------------------------------------
 
@@ -32,6 +32,7 @@
 (call_expression function: (field_expression field: (identifier) @function.method))
 (lambda parameter: (identifier) @variable.parameter)
 (assignment target: (identifier) @variable)
+(call_statement function: (identifier) @function)
 
 ; ---- literals --------------------------------------------------------------
 

@@ -207,3 +207,45 @@ model A { /* inline */ x: Int } // trailing
         (type_identifier))))
   (line_comment)
   (block_comment))
+
+========================================
+Callback parameter types and call statements
+========================================
+
+component Choice(onSelect: Event<Int>, onClose: Event) {
+  Button(onClick = { n = 1; onSelect(n); onClose() })
+}
+
+----------------------------------------
+
+(source_file
+  (component_declaration
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (generic_type
+          (type_identifier)
+          (type_identifier)))
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (component_body
+      (element
+        (element_name
+          (identifier))
+        (arguments
+          (argument
+            (identifier)
+            (lambda
+              (assignment
+                (identifier)
+                (integer))
+              (call_statement
+                (identifier)
+                (arguments
+                  (argument
+                    (identifier))))
+              (call_statement
+                (identifier)
+                (arguments)))))))))

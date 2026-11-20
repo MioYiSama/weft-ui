@@ -85,6 +85,7 @@ impl<'cx, 'd> Lowerer<'cx, 'd> {
             let id = ParamId(offset(index));
             let kind = match &param.kind {
                 ParamKind::Value(ty) => LocalKind::Param(id, ty.clone()),
+                ParamKind::Callback { .. } => LocalKind::Callback(id),
                 ParamKind::Children => LocalKind::Slot(id),
             };
             self.declare(&param.name, kind, param.span);

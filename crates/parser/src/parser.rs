@@ -2,10 +2,10 @@
 
 use weft_ui_ast::span::offset;
 use weft_ui_ast::{
-    Arg, Assign, AssignOp, BinaryOp, Block, ComponentDecl, Diagnostic, ElementNode, EventDecl,
-    Expr, ExprKind, Field, File, FileId, ForNode, Ident, IfBranch, IfNode, Import, Item, Lambda,
-    LetDecl, ModelDecl, Node, NodeKind, Param, Span, StateDecl, StrPart, TypeAlias, TypeExpr,
-    TypeExprKind, UnaryOp,
+    Arg, Assign, AssignOp, BinaryOp, Block, CallStmt, ComponentDecl, Diagnostic, ElementNode,
+    EventDecl, Expr, ExprKind, Field, File, FileId, ForNode, Ident, IfBranch, IfNode, Import, Item,
+    Lambda, LambdaStmt, LetDecl, ModelDecl, Node, NodeKind, Param, Span, StateDecl, StrPart,
+    TypeAlias, TypeExpr, TypeExprKind, UnaryOp,
 };
 
 use crate::lexer::{lex, scan_interpolation};
@@ -495,9 +495,16 @@ impl<'src> Parser<'src> {
                 span: start,
             };
         };
+        let args = if self.eat(TokenKind::Lt) {
+            let payload = self.type_expr();
+            self.expect(TokenKind::Gt);
+            vec![payload]
+        } else {
+            Vec::new()
+        };
         let mut ty = TypeExpr {
-            span: name.span,
-            kind: TypeExprKind::Named(name),
+            span: self.span_from(start),
+            kind: TypeExprKind::Named { name, args },
         };
         loop {
             if self.at(TokenKind::LBracket) {
@@ -876,8 +883,8 @@ impl<'src> Parser<'src> {
         };
         let mut body = Vec::new();
         while !self.at(TokenKind::RBrace) && !self.at(TokenKind::Eof) {
-            match self.assign() {
-                Some(assign) => body.push(assign),
+            match self.lambda_stmt() {
+                Some(stmt) => body.push(stmt),
                 None => {
                     while !matches!(
                         self.peek(),
@@ -893,8 +900,16 @@ impl<'src> Parser<'src> {
         Lambda { param, body }
     }
 
-    fn assign(&mut self) -> Option<Assign> {
-        let target = self.ident("assignment to a `state`")?;
+    fn lambda_stmt(&mut self) -> Option<LambdaStmt> {
+        let target = self.ident("assignment to a `state` or event call")?;
+        if self.eat(TokenKind::LParen) {
+            let args = self.comma_list(TokenKind::RParen, |p| Some(p.arg()));
+            return Some(LambdaStmt::Call(CallStmt {
+                span: self.span_from(target.span),
+                callee: target,
+                args,
+            }));
+        }
         let op = match self.peek() {
             TokenKind::Eq => AssignOp::Set,
             TokenKind::PlusEq => AssignOp::Add,
@@ -906,12 +921,12 @@ impl<'src> Parser<'src> {
         };
         self.bump();
         let value = self.expr();
-        Some(Assign {
+        Some(LambdaStmt::Assign(Assign {
             span: self.span_from(target.span),
             target,
             op,
             value,
-        })
+        }))
     }
 
     // ---- strings -------------------------------------------------------
@@ -1154,7 +1169,10 @@ mod tests {
         };
         assert_eq!(lambda.param.as_ref().map(|p| p.name.as_str()), Some("v"));
         assert_eq!(lambda.body.len(), 2);
-        assert_eq!(lambda.body[0].op, AssignOp::Add);
+        let LambdaStmt::Assign(assign) = &lambda.body[0] else {
+            panic!("expected assignment");
+        };
+        assert_eq!(assign.op, AssignOp::Add);
     }
 
     #[test]

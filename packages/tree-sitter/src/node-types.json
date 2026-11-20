@@ -88,6 +88,10 @@
         "named": true
       },
       {
+        "type": "generic_type",
+        "named": true
+      },
+      {
         "type": "optional_type",
         "named": true
       },
@@ -152,6 +156,10 @@
         "types": [
           {
             "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "generic_type",
             "named": true
           },
           {
@@ -339,6 +347,32 @@
             "type": "field_expression",
             "named": true
           },
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "call_statement",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "arguments",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
           {
             "type": "identifier",
             "named": true
@@ -612,6 +646,32 @@
     }
   },
   {
+    "type": "generic_type",
+    "named": true,
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_type",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "if_expression",
     "named": true,
     "fields": {
@@ -741,6 +801,10 @@
         {
           "type": "assignment",
           "named": true
+        },
+        {
+          "type": "call_statement",
+          "named": true
         }
       ]
     }
@@ -817,6 +881,10 @@
         "types": [
           {
             "type": "array_type",
+            "named": true
+          },
+          {
+            "type": "generic_type",
             "named": true
           },
           {

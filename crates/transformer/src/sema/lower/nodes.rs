@@ -11,8 +11,8 @@ use crate::elements::{
     PropType,
 };
 use crate::ir::{
-    Arg, Binding, BindingId, BindingKind, Branch, ComponentId, Dep, Expr, ExprKind, Loop, LoopId,
-    Node, NodeId, NodeKind, Param, ParamId, ParamKind, Prop, PropValue, Type,
+    Arg, ArgValue, Binding, BindingId, BindingKind, Branch, ComponentId, Dep, Expr, ExprKind, Loop,
+    LoopId, Node, NodeId, NodeKind, Param, ParamId, ParamKind, Prop, PropValue, Type,
 };
 use crate::sema::record::{ProbeContext, RawCall, Target};
 use crate::sema::{DeclKind, article};
@@ -190,7 +190,8 @@ impl Lowerer<'_, '_> {
                 }
                 PropKind::Handler { payload } => {
                     let payload = payload.map(PropType::to_type);
-                    let Some((handler, deps)) = self.handler(&arg.value, prop.name, payload, false)
+                    let Some((handler, deps)) =
+                        self.handler(&arg.value, prop.name, payload.as_ref(), false)
                     else {
                         continue;
                     };
@@ -258,22 +259,20 @@ impl Lowerer<'_, '_> {
             span: e.path[0].span,
         });
 
-        // Value parameters are positional in declaration order; lifecycle props follow.
-        let value_params: Vec<(ParamId, &Param, &Type)> = callee
+        // Value and callback parameters are positional; lifecycle props follow.
+        let params: Vec<(ParamId, &Param)> = callee
             .params
             .iter()
             .enumerate()
-            .filter_map(|(i, p)| match &p.kind {
-                ParamKind::Value(ty) => Some((ParamId(offset(i)), p, ty)),
-                ParamKind::Children => None,
-            })
+            .filter(|(_, p)| p.kind != ParamKind::Children)
+            .map(|(i, p)| (ParamId(offset(i)), p))
             .collect();
-        let mut slots: Vec<ArgSlot<'_>> = value_params
+        let mut slots: Vec<ArgSlot<'_>> = params
             .iter()
-            .map(|(_, p, _)| ArgSlot {
+            .map(|(_, p)| ArgSlot {
                 name: &p.name,
                 positional: true,
-                required: p.default.is_none(),
+                required: matches!(p.kind, ParamKind::Value(_)) && p.default.is_none(),
             })
             .collect();
         slots.extend(CALL_HOOKS.iter().map(|p| ArgSlot {
@@ -282,14 +281,12 @@ impl Lowerer<'_, '_> {
             required: false,
         }));
         let matched = self.match_args(&callee.name, &slots, &e.args, span);
-        self.record_args(args_span(e, span), &matched, |i| {
-            match value_params.get(i) {
-                Some(&(param, _, _)) => Target::ComponentParam(id, param.index()),
-                None => Target::Prop {
-                    owner: None,
-                    prop: &CALL_HOOKS[i - value_params.len()],
-                },
-            }
+        self.record_args(args_span(e, span), &matched, |i| match params.get(i) {
+            Some(&(param, _)) => Target::ComponentParam(id, param.index()),
+            None => Target::Prop {
+                owner: None,
+                prop: &CALL_HOOKS[i - params.len()],
+            },
         });
 
         let first_binding = self.bindings.len();
@@ -297,9 +294,24 @@ impl Lowerer<'_, '_> {
         let mut props = Vec::new();
         for (index, arg) in matched.into_iter().enumerate() {
             let Some(arg) = arg else { continue };
-            if let Some(&(param, _, ty)) = value_params.get(index) {
-                let value = self.expr_as(&arg.value, ty);
-                let binding = self.bind(BindingKind::Arg(param), expr_deps(&value));
+            if let Some(&(param, spec)) = params.get(index) {
+                let (value, deps) = match &spec.kind {
+                    ParamKind::Value(ty) => {
+                        let value = self.expr_as(&arg.value, ty);
+                        let deps = expr_deps(&value);
+                        (ArgValue::Expr(value), deps)
+                    }
+                    ParamKind::Callback { payload } => {
+                        let Some((handler, deps)) =
+                            self.handler(&arg.value, &spec.name, payload.as_ref(), false)
+                        else {
+                            continue;
+                        };
+                        (ArgValue::Callback(handler), deps)
+                    }
+                    ParamKind::Children => unreachable!("slots are filled by the child block"),
+                };
+                let binding = self.bind(BindingKind::Arg(param), deps);
                 args.push(Arg {
                     param,
                     value,
@@ -307,7 +319,7 @@ impl Lowerer<'_, '_> {
                     span: arg.span,
                 });
             } else {
-                let name = CALL_HOOKS[index - value_params.len()].name;
+                let name = CALL_HOOKS[index - params.len()].name;
                 if let Some((handler, deps)) = self.handler(&arg.value, name, None, true) {
                     let binding = self.bind(BindingKind::Handler(name), deps);
                     props.push(Prop {

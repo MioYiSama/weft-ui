@@ -124,7 +124,10 @@ pub struct TypeExpr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TypeExprKind {
-    Named(Ident),
+    Named {
+        name: Ident,
+        args: Vec<TypeExpr>,
+    },
     /// Decoded string literals and their source spans, in declaration order.
     Union(Vec<(String, Span)>),
     Array(Box<TypeExpr>),
@@ -242,7 +245,20 @@ pub enum StrPart {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Lambda {
     pub param: Option<Ident>,
-    pub body: Vec<Assign>,
+    pub body: Vec<LambdaStmt>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum LambdaStmt {
+    Assign(Assign),
+    Call(CallStmt),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CallStmt {
+    pub callee: Ident,
+    pub args: Vec<Arg>,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq)]

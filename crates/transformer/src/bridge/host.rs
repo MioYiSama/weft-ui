@@ -141,6 +141,7 @@ pub(crate) fn app_class(
     for (index, param) in comp.params.iter().enumerate() {
         match &param.kind {
             ParamKind::Children => args.push("undefined".to_owned()),
+            ParamKind::Callback { .. } => args.push("null".to_owned()),
             ParamKind::Value(ty) => {
                 let name = format!("p{index}");
                 params.push(match &param.default {
@@ -162,6 +163,22 @@ pub(crate) fn app_class(
         comp.name,
         args.join(", ")
     ));
+    // Callback slots are internal to the view; the host sees the first value parameter.
+    if comp
+        .params
+        .iter()
+        .any(|p| matches!(p.kind, ParamKind::Callback { .. }))
+    {
+        match comp
+            .params
+            .iter()
+            .position(|p| matches!(p.kind, ParamKind::Value(_)))
+        {
+            Some(0) => {}
+            Some(index) => out.line(format!("get model() {{ return this.$args[{index}]; }}")),
+            None => out.line("get model() { return undefined; }"),
+        }
+    }
     for &event in &comp.reachable_events {
         let name = &program.event(event).name;
         out.line(format!(
@@ -249,7 +266,7 @@ pub(crate) fn app_dts(program: &Program, id: ComponentId, mode: Mode<'_>, out: &
         .iter()
         .filter_map(|p| match &p.kind {
             ParamKind::Value(ty) => Some((p, ty)),
-            ParamKind::Children => None,
+            ParamKind::Children | ParamKind::Callback { .. } => None,
         })
         .collect();
     let mut constructor = MappedLine::new().push("constructor(");

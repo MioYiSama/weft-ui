@@ -41,7 +41,8 @@ Param       = IDENT ":" Type ( "=" Expr )? ;
 StateDecl   = "state" IDENT ( ":" Type )? "=" Expr ;
 LetDecl     = "let" IDENT ( ":" Type )? "=" Expr ;
 
-Type        = UnionType | IDENT TypeSuffix* ;
+Type        = UnionType | IDENT TypeArgs? TypeSuffix* ;
+TypeArgs    = "<" Type ">" ;
 UnionType   = STRING ( "|" STRING )+ ;       (* 不允许插值 *)
 TypeSuffix  = "[" "]" | "?" ;
 
@@ -62,8 +63,10 @@ Unary       = ( "!" | "-" ) Unary | Postfix ;
 Postfix     = Primary ( "." IDENT | "?." IDENT | "(" ArgList? ")" )* ;
 Primary     = INT | FLOAT | STRING | "true" | "false" | "null"
             | IDENT | "(" Expr ")" | Lambda ;
-Lambda      = "{" ( IDENT "->" )? ( Assign ";"? )* "}" ;
+Lambda      = "{" ( IDENT "->" )? ( Stmt ";"? )* "}" ;
+Stmt        = Assign | Call ;
 Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
+Call        = IDENT "(" ArgList? ")" ;
 ```
 
 二元运算符优先级（从低到高，全部左结合）：
@@ -85,7 +88,7 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 - 节点之间不需要分隔符。`Name` 后面紧跟的 `(` 和 `{` 都属于这个节点，包括换行之后的 `{`。
 - `if` 出现在节点位置时是条件渲染，分支是节点块；出现在表达式位置时是条件表达式，必须带 `else`，分支是表达式。
 - 调用只允许出现在标识符或成员访问之后：`Remove(todo.id)`、`name.trim()`。
-- Lambda 只能直接作为事件参数的值使用。
+- Lambda 只能直接作为元素的事件参数或组件的回调实参使用。
 - `for` 头部的 `key` 在语法上可以省略，缺失时由语义分析报错，以便给出更准确的提示。
 
 ## 错误恢复
@@ -141,8 +144,15 @@ Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
 
 - `Event`：事件名当函数用，事件参数个数必须等于载荷个数（0 或 1），载荷填充唯一参数。
 - `Event(args)`：直接构造事件实例，参数在渲染时绑定，忽略载荷。
-- `{ stmts }` / `{ v -> stmts }`：内联 lambda，只能给 `state` 赋值；`v` 接收载荷。
-- `onMount` / `onUnmount` 只接受事件，不接受 lambda。
+- `{ stmts }` / `{ v -> stmts }`：内联 lambda，可以给 `state` 赋值、发出事件或调用回调。`v` 接收载荷，语句按书写顺序执行。
+- 回调参数名或 `callback(args)`：前者将载荷转交给回调，后者在渲染时绑定参数。
+- `onMount` / `onUnmount` 只接受声明的事件，不接受回调或 lambda。
+
+### 回调参数
+
+类型为 `Event` 的回调不接收载荷；`Event<T>` 接收一个载荷，类型可以是 `Int`、`Float`、`Bool`、`String` 或字符串字面量联合。这两种类型只能直接用于组件参数。回调参数总是可选的，不能声明默认值。调用方可以传入上述任一种事件参数形式；直接按名称转发载荷时，载荷类型须能赋给接收方。调用未传入的回调没有效果。
+
+例如，`Rating(value: Int, onSelect: Event<Int>)` 组件可以写 `Button(onClick = onSelect(1))`。调用方可以写 `Rating(score, onSelect = Rated)` 发出宿主事件，也可以写 `Rating(score, onSelect = { v -> score = v; Rated(score) })`，先更新本地状态再发出事件。经回调传递的宿主事件仍归提供回调的组件。
 
 ### 视图
 

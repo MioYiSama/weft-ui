@@ -10,7 +10,7 @@ namespace Weft.Generated;
 public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
-    public const ulong LayoutHash = 0x518bf39fdd8340b7UL;
+    public const ulong LayoutHash = 0x0491f0fb29968dc8UL;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
     public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);
@@ -23,6 +23,8 @@ public static class WeftApp
         2 => new S2(id, session),
         3 => new S3(id, session),
         4 => new S4(id, session),
+        5 => new S5(id, session),
+        6 => new S6(id, session),
         _ => null,
     };
 }
@@ -49,21 +51,34 @@ file sealed class S0 : WeftScope
     }
 }
 
-// 1 Language
+// 1 Rating
 
 file sealed class S1 : WeftScope
 {
     // Text.value
     private readonly WeftText n1;
 
-    public S1(uint id, WeftSession session) : base(id, session, points: 2)
+    public S1(uint id, WeftSession session) : base(id, session)
     {
-        var n0 = new WeftStack(vertical: true);
+        var n0 = new WeftStack(vertical: false);
         Roots.Add(n0.Element);
         n1 = new WeftText();
         n0.Children.Add(n1.Element);
-        n0.Children.Point(this, 0);
-        n0.Children.Point(this, 1);
+        var n2 = new WeftButton(() => Dispatch(0));
+        n0.Children.Add(n2.Element);
+        var n3 = new WeftText();
+        n3.Value = "1";
+        n2.Children.Add(n3.Element);
+        var n4 = new WeftButton(() => Dispatch(1));
+        n0.Children.Add(n4.Element);
+        var n5 = new WeftText();
+        n5.Value = "2";
+        n4.Children.Add(n5.Element);
+        var n6 = new WeftButton(() => Dispatch(2));
+        n0.Children.Add(n6.Element);
+        var n7 = new WeftText();
+        n7.Value = "Repeat";
+        n6.Children.Add(n7.Element);
     }
 
     public override void Apply(int slot, WeftValue value)
@@ -75,14 +90,54 @@ file sealed class S1 : WeftScope
     }
 }
 
-// 2 Language:for6
+// 2 ForwardRating
 
 file sealed class S2 : WeftScope
+{
+    public S2(uint id, WeftSession session) : base(id, session, points: 1)
+    {
+        Roots.Point(this, 0);
+    }
+}
+
+// 3 Language
+
+file sealed class S3 : WeftScope
+{
+    // Text.value
+    private readonly WeftText n1;
+
+    public S3(uint id, WeftSession session) : base(id, session, points: 6)
+    {
+        var n0 = new WeftStack(vertical: true);
+        Roots.Add(n0.Element);
+        n1 = new WeftText();
+        n0.Children.Add(n1.Element);
+        n0.Children.Point(this, 0);
+        n0.Children.Point(this, 1);
+        n0.Children.Point(this, 2);
+        n0.Children.Point(this, 3);
+        n0.Children.Point(this, 4);
+        n0.Children.Point(this, 5);
+    }
+
+    public override void Apply(int slot, WeftValue value)
+    {
+        switch (slot)
+        {
+            case 0: n1.Value = value.String; break;
+        }
+    }
+}
+
+// 4 Language:for10
+
+file sealed class S4 : WeftScope
 {
     // Text.value
     private readonly WeftText n0;
 
-    public S2(uint id, WeftSession session) : base(id, session, points: 1)
+    public S4(uint id, WeftSession session) : base(id, session, points: 1)
     {
         n0 = new WeftText();
         Roots.Add(n0.Element);
@@ -98,11 +153,11 @@ file sealed class S2 : WeftScope
     }
 }
 
-// 3 Language:if5.0
+// 5 Language:if9.0
 
-file sealed class S3 : WeftScope
+file sealed class S5 : WeftScope
 {
-    public S3(uint id, WeftSession session) : base(id, session)
+    public S5(uint id, WeftSession session) : base(id, session)
     {
         var n0 = new WeftText();
         n0.Value = "image";
@@ -110,11 +165,11 @@ file sealed class S3 : WeftScope
     }
 }
 
-// 4 Language:if5.1
+// 6 Language:if9.1
 
-file sealed class S4 : WeftScope
+file sealed class S6 : WeftScope
 {
-    public S4(uint id, WeftSession session) : base(id, session)
+    public S6(uint id, WeftSession session) : base(id, session)
     {
         var n0 = new WeftText();
         n0.Value = "text";

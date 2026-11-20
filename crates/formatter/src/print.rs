@@ -1,6 +1,6 @@
 use weft_ui_ast::{
-    Arg, AssignOp, Block, ComponentDecl, Expr, ExprKind, Field, File, Ident, Item, Lambda, LetDecl,
-    Node, NodeKind, Param, Span, TypeExpr, TypeExprKind, UnaryOp,
+    Arg, AssignOp, Block, ComponentDecl, Expr, ExprKind, Field, File, Ident, Item, Lambda,
+    LambdaStmt, LetDecl, Node, NodeKind, Param, Span, TypeExpr, TypeExprKind, UnaryOp,
 };
 use weft_ui_parser::token::{Token, TokenKind};
 
@@ -400,7 +400,15 @@ impl<'src> Printer<'src, '_> {
 
     fn ty(&mut self, ty: &TypeExpr) -> Printed {
         match &ty.kind {
-            TypeExprKind::Named(name) => self.ident(name),
+            TypeExprKind::Named { name, args } => {
+                self.ident(name)?;
+                if let [payload] = args.as_slice() {
+                    self.token(TokenKind::Lt)?;
+                    self.ty(payload)?;
+                    self.token(TokenKind::Gt)?;
+                }
+                Ok(())
+            }
             TypeExprKind::Union(members) => {
                 for (index, (_, span)) in members.iter().enumerate() {
                     if index != 0 {
@@ -658,17 +666,25 @@ impl<'src> Printer<'src, '_> {
         {
             self.doc.indent();
             let mut gap = Gap::First;
-            for (index, assign) in lambda.body.iter().enumerate() {
+            for (index, stmt) in lambda.body.iter().enumerate() {
                 self.boundary(Line::Space, gap);
-                self.ident(&assign.target)?;
-                self.doc.text(" ");
-                self.token(match assign.op {
-                    AssignOp::Set => TokenKind::Eq,
-                    AssignOp::Add => TokenKind::PlusEq,
-                    AssignOp::Sub => TokenKind::MinusEq,
-                })?;
-                self.doc.text(" ");
-                self.expr(&assign.value)?;
+                match stmt {
+                    LambdaStmt::Assign(assign) => {
+                        self.ident(&assign.target)?;
+                        self.doc.text(" ");
+                        self.token(match assign.op {
+                            AssignOp::Set => TokenKind::Eq,
+                            AssignOp::Add => TokenKind::PlusEq,
+                            AssignOp::Sub => TokenKind::MinusEq,
+                        })?;
+                        self.doc.text(" ");
+                        self.expr(&assign.value)?;
+                    }
+                    LambdaStmt::Call(call) => {
+                        self.ident(&call.callee)?;
+                        self.comma_group(&call.args, Self::arg)?;
+                    }
+                }
                 self.optional_separator(TokenKind::Semi);
                 if index + 1 < lambda.body.len() {
                     self.doc.if_flat(";");

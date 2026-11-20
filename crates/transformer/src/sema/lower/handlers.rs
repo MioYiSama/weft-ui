@@ -2,7 +2,7 @@ use weft_ui_ast as ast;
 use weft_ui_ast::{AssignOp, Diagnostic, Span};
 
 use crate::deps;
-use crate::ir::{Assign, Dep, EmitArg, EventId, Handler, Type};
+use crate::ir::{Assign, Dep, EmitArg, EmitTarget, Handler, ParamId, ParamKind, Stmt, Type};
 use crate::sema::record::{ProbeContext, Target};
 use crate::sema::{DeclKind, article};
 
@@ -11,65 +11,20 @@ use super::expr::{assignable, error_expr};
 use super::nodes::ArgSlot;
 use super::scope::LocalKind;
 
-impl Lowerer<'_, '_> {
+impl<'cx> Lowerer<'cx, '_> {
     /// Lowers an event-handler value; returns the handler and its render-time deps.
     pub(super) fn handler(
         &mut self,
         value: &ast::Expr,
         prop: &str,
-        payload: Option<Type>,
+        payload: Option<&Type>,
         lifecycle: bool,
     ) -> Option<(Handler, Vec<Dep>)> {
-        let cx = self.cx;
         match &value.kind {
-            ast::ExprKind::Ident(name) if self.local(name).is_none() => {
-                self.probe_events(name);
-                let event = self.event_named(name, value.span, prop)?;
-                self.emits.insert(event);
-                let params = &cx.events[event.index()].params;
-                let args = match (payload, params.len()) {
-                    (None, 0) => Vec::new(),
-                    (Some(ty), 1) if assignable(&ty, &params[0].ty) => vec![EmitArg::Payload],
-                    (Some(ty), 1) => {
-                        let msg = format!(
-                            "`{prop}` provides a `{}`, but event `{name}` expects `{}`",
-                            self.type_name(&ty),
-                            self.type_name(&params[0].ty)
-                        );
-                        self.error(value.span, msg);
-                        return None;
-                    }
-                    (None, n) => {
-                        let plural = if n == 1 { "" } else { "s" };
-                        self.diags.push(
-                            Diagnostic::error(
-                                value.span,
-                                format!("event `{name}` takes {n} argument{plural}, but `{prop}` provides no value"),
-                            )
-                            .with_note(format!("construct the event explicitly: `{name}(...)`")),
-                        );
-                        return None;
-                    }
-                    (Some(ty), 0) => {
-                        let ty = self.type_name(&ty);
-                        self.diags.push(
-                            Diagnostic::error(
-                                value.span,
-                                format!("`{prop}` provides a `{ty}`, but event `{name}` takes no arguments"),
-                            )
-                            .with_note(format!("write `{name}()` to ignore the value")),
-                        );
-                        return None;
-                    }
-                    (Some(_), n) => {
-                        self.error(
-                            value.span,
-                            format!("event `{name}` takes {n} arguments, but `{prop}` provides one value"),
-                        );
-                        return None;
-                    }
-                };
-                Some((Handler::Emit { event, args }, Vec::new()))
+            ast::ExprKind::Ident(name) => {
+                let target = self.emit_target(name, value.span, prop, lifecycle)?;
+                let args = self.forward_payload(target, name, value.span, prop, payload)?;
+                Some((Handler::Emit { target, args }, Vec::new()))
             }
             ast::ExprKind::Call { callee, args } => {
                 let ast::ExprKind::Ident(name) = &callee.kind else {
@@ -79,42 +34,15 @@ impl Lowerer<'_, '_> {
                     );
                     return None;
                 };
-                if self.local(name).is_some() {
-                    self.error(callee.span, format!("`{name}` is not an event"));
-                    return None;
+                let target = self.emit_target(name, callee.span, prop, lifecycle)?;
+                let args = self.emit_args(target, name, callee.span, args, value.span);
+                let mut render_deps = Vec::new();
+                for arg in &args {
+                    if let EmitArg::Expr(expr) = arg {
+                        deps::collect(expr, &mut render_deps);
+                    }
                 }
-                self.probe_events(name);
-                let event = self.event_named(name, callee.span, prop)?;
-                self.emits.insert(event);
-                let params = &cx.events[event.index()].params;
-                let slots: Vec<ArgSlot<'_>> = params
-                    .iter()
-                    .map(|p| ArgSlot {
-                        name: &p.name,
-                        positional: true,
-                        required: true,
-                    })
-                    .collect();
-                let matched = self.match_args(name, &slots, args, value.span);
-                let call_span = Span::new(self.file, callee.span.end, value.span.end);
-                self.record_args(call_span, &matched, |i| Target::EventParam(event, i));
-                let mut deps = Vec::new();
-                let mut emit_args = Vec::with_capacity(params.len());
-                for (param, arg) in params.iter().zip(matched) {
-                    let expr = match arg {
-                        Some(arg) => self.expr_as(&arg.value, &param.ty),
-                        None => error_expr(value.span),
-                    };
-                    deps::collect(&expr, &mut deps);
-                    emit_args.push(EmitArg::Expr(expr));
-                }
-                Some((
-                    Handler::Emit {
-                        event,
-                        args: emit_args,
-                    },
-                    deps,
-                ))
+                Some((Handler::Emit { target, args }, render_deps))
             }
             ast::ExprKind::Lambda(_) if lifecycle => {
                 self.error(
@@ -137,18 +65,163 @@ impl Lowerer<'_, '_> {
         }
     }
 
-    fn probe_events(&self, name: &str) {
+    fn callback_payload(&self, id: ParamId) -> Option<&'cx Type> {
+        let ParamKind::Callback { payload } = &self.params[id.index()].kind else {
+            unreachable!("callback target refers to a callback parameter");
+        };
+        payload.as_ref()
+    }
+
+    fn forward_payload(
+        &mut self,
+        target: EmitTarget,
+        name: &str,
+        span: Span,
+        prop: &str,
+        payload: Option<&Type>,
+    ) -> Option<Vec<EmitArg>> {
+        let (what, count, expected) = match target {
+            EmitTarget::Event(event) => {
+                let params = &self.cx.events[event.index()].params;
+                ("event", params.len(), params.first().map(|p| &p.ty))
+            }
+            EmitTarget::Callback(id) => {
+                let ty = self.callback_payload(id);
+                ("callback", usize::from(ty.is_some()), ty)
+            }
+        };
+        match (payload, count, expected) {
+            (None, 0, _) => Some(Vec::new()),
+            (Some(ty), 1, Some(expected)) if assignable(ty, expected) => {
+                Some(vec![EmitArg::Payload])
+            }
+            (Some(ty), 1, Some(expected)) => {
+                self.error(
+                    span,
+                    format!(
+                        "`{prop}` provides a `{}`, but {what} `{name}` expects `{}`",
+                        self.type_name(ty),
+                        self.type_name(expected)
+                    ),
+                );
+                None
+            }
+            (None, n, _) => {
+                let plural = if n == 1 { "" } else { "s" };
+                self.diags.push(
+                    Diagnostic::error(
+                        span,
+                        format!("{what} `{name}` takes {n} argument{plural}, but `{prop}` provides no value"),
+                    )
+                    .with_note(format!("bind the arguments explicitly: `{name}(...)`")),
+                );
+                None
+            }
+            (Some(ty), 0, _) => {
+                let ty = self.type_name(ty);
+                self.diags.push(
+                    Diagnostic::error(
+                        span,
+                        format!(
+                            "`{prop}` provides a `{ty}`, but {what} `{name}` takes no arguments"
+                        ),
+                    )
+                    .with_note(format!("write `{name}()` to ignore the value")),
+                );
+                None
+            }
+            (Some(_), n, _) => {
+                self.error(
+                    span,
+                    format!("{what} `{name}` takes {n} arguments, but `{prop}` provides one value"),
+                );
+                None
+            }
+        }
+    }
+
+    fn emit_args(
+        &mut self,
+        target: EmitTarget,
+        name: &str,
+        name_span: Span,
+        args: &[ast::Arg],
+        span: Span,
+    ) -> Vec<EmitArg> {
+        let slots: Vec<_> = match target {
+            EmitTarget::Event(event) => self.cx.events[event.index()]
+                .params
+                .iter()
+                .map(|p| (p.name.as_str(), &p.ty))
+                .collect(),
+            EmitTarget::Callback(id) => self
+                .callback_payload(id)
+                .map(|ty| ("value", ty))
+                .into_iter()
+                .collect(),
+        };
+        let specs: Vec<_> = slots
+            .iter()
+            .map(|&(name, _)| ArgSlot {
+                name,
+                positional: true,
+                required: true,
+            })
+            .collect();
+        let matched = self.match_args(name, &specs, args, span);
+        if let EmitTarget::Event(event) = target {
+            let call_span = Span::new(self.file, name_span.end, span.end);
+            self.record_args(call_span, &matched, |i| Target::EventParam(event, i));
+        }
+        slots
+            .into_iter()
+            .zip(matched)
+            .map(|((_, ty), arg)| {
+                EmitArg::Expr(match arg {
+                    Some(arg) => self.expr_as(&arg.value, ty),
+                    None => error_expr(span),
+                })
+            })
+            .collect()
+    }
+
+    fn emit_target(
+        &mut self,
+        name: &str,
+        span: Span,
+        prop: &str,
+        lifecycle: bool,
+    ) -> Option<EmitTarget> {
         if self.cx.is_probe(name) {
             let events = self
                 .cx
                 .visible_decls(self.file, |k| matches!(k, DeclKind::Event(_)));
-            self.cx.set_probe(ProbeContext::Handler, events);
+            self.probe_locals(
+                ProbeContext::Handler,
+                |kind| !lifecycle && matches!(kind, LocalKind::Callback(_)),
+                events,
+            );
         }
-    }
-
-    fn event_named(&mut self, name: &str, span: Span, prop: &str) -> Option<EventId> {
+        if let Some(local) = self.local(name) {
+            self.cx.record(span, || self.local_target(local));
+            if let LocalKind::Callback(id) = local.kind
+                && !lifecycle
+            {
+                return Some(EmitTarget::Callback(id));
+            }
+            let what = if lifecycle {
+                "an event"
+            } else {
+                "an event or callback"
+            };
+            self.error(span, format!("`{name}` is not {what}"));
+            return None;
+        }
         match self.cx.global(self.file, name, span, self.diags) {
-            Some(DeclKind::Event(id)) => Some(id),
+            Some(DeclKind::Event(id)) => {
+                self.emits.insert(id);
+                Some(EmitTarget::Event(id))
+            }
             Some(kind) => {
                 self.error(
                     span,
@@ -166,11 +239,11 @@ impl Lowerer<'_, '_> {
         }
     }
 
-    fn lambda(&mut self, lambda: &ast::Lambda, prop: &str, payload: Option<Type>) -> Handler {
+    fn lambda(&mut self, lambda: &ast::Lambda, prop: &str, payload: Option<&Type>) -> Handler {
         let scope_len = self.scope.len();
         if let Some(param) = &lambda.param {
             let ty = match payload {
-                Some(ty) => ty,
+                Some(ty) => ty.clone(),
                 None => {
                     self.error(
                         param.span,
@@ -184,7 +257,19 @@ impl Lowerer<'_, '_> {
             };
             self.declare(&param.name, LocalKind::LambdaArg(ty), param.span);
         }
-        let body = lambda.body.iter().filter_map(|a| self.assign(a)).collect();
+        let body = lambda
+            .body
+            .iter()
+            .filter_map(|stmt| match stmt {
+                ast::LambdaStmt::Assign(assign) => self.assign(assign).map(Stmt::Assign),
+                ast::LambdaStmt::Call(call) => {
+                    let name = &call.callee;
+                    let target = self.emit_target(&name.name, name.span, prop, false)?;
+                    let args = self.emit_args(target, &name.name, name.span, &call.args, call.span);
+                    Some(Stmt::Emit { target, args })
+                }
+            })
+            .collect();
         self.scope.truncate(scope_len);
         Handler::Lambda {
             param: lambda.param.as_ref().map(|p| p.name.clone()),
@@ -218,7 +303,7 @@ impl Lowerer<'_, '_> {
                     );
                     return None;
                 }
-                LocalKind::Param(..) | LocalKind::Slot(_) => "parameter",
+                LocalKind::Param(..) | LocalKind::Callback(_) | LocalKind::Slot(_) => "parameter",
                 LocalKind::Item(..) => "loop variable",
                 LocalKind::LambdaArg(_) | LocalKind::State(..) => "lambda parameter",
             };

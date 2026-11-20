@@ -210,6 +210,36 @@ fn editor_session() {
     );
     assert!(formatted.contains("\n        for (todo in model.todos; key = todo.id) {\n"));
 
+    let callbacks =
+        "component Choice(onSelect: Event<Int>) {\n  Button(onClick = onSelect(1)) {}\n}\n";
+    client.notify(
+        "textDocument/didChange",
+        json!({ "textDocument": { "uri": uri, "version": 6 }, "contentChanges": [{ "text": callbacks }] }),
+    );
+    assert!(client.diagnostics(&uri).is_empty());
+
+    let (line, col) = after(callbacks, "onSelect: Ev");
+    let items = client.request("textDocument/completion", position(&uri, line, col));
+    assert!(crate::labels(&items).iter().any(|label| label == "Event"));
+
+    let (line, col) = after(callbacks, "onClick = onSel");
+    let hover = client.request("textDocument/hover", position(&uri, line, col));
+    assert_eq!(
+        hover["contents"]["value"],
+        "```weft\n(parameter) onSelect: Event<Int>\n```"
+    );
+    let definition = client.request("textDocument/definition", position(&uri, line, col));
+    assert_eq!(
+        definition["range"]["start"],
+        json!({ "line": 0, "character": 17 })
+    );
+    let items = client.request("textDocument/completion", position(&uri, line, col));
+    assert!(
+        crate::labels(&items)
+            .iter()
+            .any(|label| label == "onSelect")
+    );
+
     client.request("shutdown", Value::Null);
     client.notify("exit", Value::Null);
     handle.join().expect("server thread");

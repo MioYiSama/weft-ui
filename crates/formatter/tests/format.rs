@@ -438,6 +438,15 @@ fn preserves_disambiguating_empty_element_parentheses() {
 }
 
 #[test]
+fn callback_parameters_and_lambda_calls() {
+    golden(
+        "component C(onSelect:Event < Int >,onReset: Event){Button(onClick={n=1;onSelect(n);onReset()})}",
+        "component C(onSelect: Event<Int>, onReset: Event) {\n    Button(onClick = { n = 1; onSelect(n); onReset() })\n}\n",
+        Options::default(),
+    );
+}
+
+#[test]
 fn block_comment_before_binary_operator() {
     golden(
         "component C() { Text(x /* between operands */ + y) }",

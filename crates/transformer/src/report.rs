@@ -24,6 +24,10 @@ fn write_component(out: &mut String, program: &Program, component: &Component) {
         .map(|p| match &p.kind {
             ParamKind::Value(ty) => format!("{}: {}", p.name, program.display_type(ty)),
             ParamKind::Children => format!("{}: Children", p.name),
+            ParamKind::Callback { payload: None } => format!("{}: Event", p.name),
+            ParamKind::Callback { payload: Some(ty) } => {
+                format!("{}: Event<{}>", p.name, program.display_type(ty))
+            }
         })
         .collect();
     let _ = writeln!(out, "component {}({})", component.name, params.join(", "));

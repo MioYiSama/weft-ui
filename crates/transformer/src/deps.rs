@@ -4,8 +4,8 @@
 use weft_ui_ast::span::offset;
 
 use crate::ir::{
-    Component, Dep, DepRoot, Expr, ExprKind, FieldId, InterpPart, LoopId, Model, ParamId, SlotRef,
-    StateId, Type,
+    Component, Dep, DepRoot, Expr, ExprKind, FieldId, InterpPart, LoopId, Model, ParamId,
+    ParamKind, SlotRef, StateId, Type,
 };
 
 /// Appends every dependency of `expr` to `out` (unnormalized).
@@ -122,19 +122,31 @@ fn flatten(dep: Dep, ty: &Type, models: &[Model], out: &mut Vec<Dep>) {
 /// Assigns dirty-bit slots to the component and each loop, then resolves every
 /// binding's dependencies to the bits that trigger it.
 pub(crate) fn layout(component: &mut Component, models: &[Model]) {
-    let roots = (0..component.params.len())
-        .map(|i| DepRoot::Param(ParamId(offset(i))))
-        .filter(|&root| component.root_type(root) != &Type::Error)
-        .chain((0..component.states.len()).map(|i| DepRoot::State(StateId(offset(i)))));
+    let roots = component
+        .params
+        .iter()
+        .enumerate()
+        .filter_map(|(i, param)| match &param.kind {
+            ParamKind::Value(ty) if *ty != Type::Error => {
+                Some((DepRoot::Param(ParamId(offset(i))), ty))
+            }
+            _ => None,
+        })
+        .chain(
+            component
+                .states
+                .iter()
+                .enumerate()
+                .map(|(i, state)| (DepRoot::State(StateId(offset(i))), &state.ty)),
+        );
     let mut slots = Vec::new();
-    for root in roots {
-        let ty = component.root_type(root).clone();
+    for (root, ty) in roots {
         flatten(
             Dep {
                 root,
                 path: Vec::new(),
             },
-            &ty,
+            ty,
             models,
             &mut slots,
         );

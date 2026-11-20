@@ -123,8 +123,16 @@ export default grammar({
 
     _named_type: $ => choice(
       alias($.identifier, $.type_identifier),
+      $.generic_type,
       $.array_type,
       $.optional_type,
+    ),
+
+    generic_type: $ => seq(
+      field('name', alias($.identifier, $.type_identifier)),
+      '<',
+      field('argument', $._type),
+      '>',
     ),
 
     union_type: $ => seq($.string, repeat1(seq('|', $.string))),
@@ -249,8 +257,13 @@ export default grammar({
     lambda: $ => seq(
       '{',
       optional(seq(field('parameter', $.identifier), '->')),
-      repeat(seq($.assignment, optional(';'))),
+      repeat(seq(choice($.assignment, $.call_statement), optional(';'))),
       '}',
+    ),
+
+    call_statement: $ => seq(
+      field('function', $.identifier),
+      field('arguments', $.arguments),
     ),
 
     assignment: $ => seq(

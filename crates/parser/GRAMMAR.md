@@ -41,7 +41,8 @@ Param       = IDENT ":" Type ( "=" Expr )? ;
 StateDecl   = "state" IDENT ( ":" Type )? "=" Expr ;
 LetDecl     = "let" IDENT ( ":" Type )? "=" Expr ;
 
-Type        = UnionType | IDENT TypeSuffix* ;
+Type        = UnionType | IDENT TypeArgs? TypeSuffix* ;
+TypeArgs    = "<" Type ">" ;
 UnionType   = STRING ( "|" STRING )+ ;       (* no interpolation *)
 TypeSuffix  = "[" "]" | "?" ;
 
@@ -62,8 +63,10 @@ Unary       = ( "!" | "-" ) Unary | Postfix ;
 Postfix     = Primary ( "." IDENT | "?." IDENT | "(" ArgList? ")" )* ;
 Primary     = INT | FLOAT | STRING | "true" | "false" | "null"
             | IDENT | "(" Expr ")" | Lambda ;
-Lambda      = "{" ( IDENT "->" )? ( Assign ";"? )* "}" ;
+Lambda      = "{" ( IDENT "->" )? ( Stmt ";"? )* "}" ;
+Stmt        = Assign | Call ;
 Assign      = IDENT ( "=" | "+=" | "-=" ) Expr ;
+Call        = IDENT "(" ArgList? ")" ;
 ```
 
 Binary operator precedence (lowest to highest; all operators are left-associative):
@@ -85,7 +88,7 @@ Notes:
 - Nodes require no separators. An opening `(` or `{` immediately after `Name` belongs to that node, even if the `{` is on the next line.
 - In node position, `if` renders conditionally and its branches are blocks of nodes. In expression position, `if` requires an `else` and its branches are expressions.
 - Calls are allowed only after identifiers or member accesses: `Remove(todo.id)`, `name.trim()`.
-- A lambda may only be used directly as the value of an event argument.
+- A lambda may only be used directly as the value of an element event or a component callback argument.
 - A `for` header can omit `key` syntactically. Semantic analysis reports its absence to provide a more precise diagnostic.
 
 ## Error recovery
@@ -141,8 +144,15 @@ Element event arguments have payload types (`onClick` has no payload; `Input.onC
 
 - `Event`: Use the event name as a function. Its parameter count must match the payload count (0 or 1). The payload, if any, supplies the sole parameter.
 - `Event(args)`: Construct the event instance directly. Arguments are bound at render time, and the payload is ignored.
-- `{ stmts }` / `{ v -> stmts }`: An inline lambda. It can assign only to `state`; `v` receives the payload.
-- `onMount` / `onUnmount` accept only events, not lambdas.
+- `{ stmts }` / `{ v -> stmts }`: An inline lambda. It can assign to `state` and call events or callbacks; `v` receives the payload. Statements execute in source order.
+- A callback name or `callback(args)`: Forward the payload to a callback or bind its argument at render time, respectively.
+- `onMount` / `onUnmount` accept only declared events, not callbacks or lambdas.
+
+### Callback parameters
+
+A component parameter of type `Event` takes no payload; `Event<T>` takes a single `Int`, `Float`, `Bool`, `String`, or string literal union payload. These types are only allowed directly on component parameters. Callback parameters are optional and cannot declare a default value. The caller supplies any of the event argument forms above; when forwarding a payload by name, its type must be assignable to the receiver's payload type. An omitted callback can be invoked safely and does nothing.
+
+For example, a `Rating(value: Int, onSelect: Event<Int>)` component can use `Button(onClick = onSelect(1))`. Its caller can pass `Rating(score, onSelect = Rated)` to send a host event, or `Rating(score, onSelect = { v -> score = v; Rated(score) })` to set local state before sending the event. A host event passed through a callback still belongs to the component that supplies it.
 
 ### Views
 

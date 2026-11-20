@@ -10,6 +10,7 @@ use super::Lowerer;
 #[derive(Debug)]
 pub(super) enum LocalKind {
     Param(ParamId, Type),
+    Callback(ParamId),
     Slot(ParamId),
     State(StateId, Type),
     Item(LoopId, Type),
@@ -21,7 +22,7 @@ impl LocalKind {
     fn ty(&self) -> &Type {
         match self {
             Self::Param(_, ty) | Self::State(_, ty) | Self::Item(_, ty) | Self::LambdaArg(ty) => ty,
-            Self::Slot(_) => &Type::Error,
+            Self::Slot(_) | Self::Callback(_) => &Type::Error,
             Self::Let(expr) => &expr.ty,
         }
     }
@@ -50,7 +51,10 @@ impl Lowerer<'_, '_> {
             span,
         };
         // Parameters are recorded with the component signature.
-        if !matches!(local.kind, LocalKind::Param(..) | LocalKind::Slot(_)) {
+        if !matches!(
+            local.kind,
+            LocalKind::Param(..) | LocalKind::Callback(_) | LocalKind::Slot(_)
+        ) {
             self.cx.record(span, || self.local_target(&local));
         }
         self.scope.push(local);
@@ -62,10 +66,12 @@ impl Lowerer<'_, '_> {
 
     pub(super) fn local_target(&self, local: &Local) -> Target {
         let binding = match local.kind {
-            LocalKind::Param(p, _) | LocalKind::Slot(p) => match self.component {
-                Some(component) => return Target::ComponentParam(component, p.index()),
-                None => LocalBinding::Param,
-            },
+            LocalKind::Param(p, _) | LocalKind::Callback(p) | LocalKind::Slot(p) => {
+                match self.component {
+                    Some(component) => return Target::ComponentParam(component, p.index()),
+                    None => LocalBinding::Param,
+                }
+            }
             LocalKind::State(..) => LocalBinding::State,
             LocalKind::Item(..) => LocalBinding::LoopItem,
             LocalKind::LambdaArg(_) => LocalBinding::LambdaParam,

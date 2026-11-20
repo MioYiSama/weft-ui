@@ -266,7 +266,7 @@ impl Component {
         match root {
             DepRoot::Param(p) => match &self.params[p.index()].kind {
                 ParamKind::Value(ty) => ty,
-                ParamKind::Children => &Type::Error,
+                ParamKind::Children | ParamKind::Callback { .. } => &Type::Error,
             },
             DepRoot::State(s) => &self.states[s.index()].ty,
             DepRoot::Item(l) => &self.loops[l.index()].item_ty,
@@ -295,6 +295,10 @@ pub struct Param {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParamKind {
     Value(Type),
+    /// Optional callback supplied by the caller.
+    Callback {
+        payload: Option<Type>,
+    },
     /// Slot filled by the caller's trailing block.
     Children,
 }
@@ -397,20 +401,44 @@ pub enum PropValue {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Arg {
     pub param: ParamId,
-    pub value: Expr,
+    pub value: ArgValue,
     pub binding: Option<BindingId>,
     pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum ArgValue {
+    Expr(Expr),
+    Callback(Handler),
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Handler {
-    /// Sends an event to the host; arguments are bound at render time.
-    Emit { event: EventId, args: Vec<EmitArg> },
-    /// Inline lambda that only assigns component state.
+    /// Sends an event or invokes a callback; explicit arguments are bound at render time.
+    Emit {
+        target: EmitTarget,
+        args: Vec<EmitArg>,
+    },
+    /// Inline lambda evaluated when the handler is invoked.
     Lambda {
-        /// Name of the parameter receiving the element's value, if declared.
+        /// Name of the parameter receiving the handler payload, if declared.
         param: Option<String>,
-        body: Vec<Assign>,
+        body: Vec<Stmt>,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EmitTarget {
+    Event(EventId),
+    Callback(ParamId),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Stmt {
+    Assign(Assign),
+    Emit {
+        target: EmitTarget,
+        args: Vec<EmitArg>,
     },
 }
 

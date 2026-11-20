@@ -1,5 +1,5 @@
 {
-  "hash": "518bf39fdd8340b7",
+  "hash": "0491f0fb29968dc8",
   "templates": [
     {
       "label": "ModeLabel",
@@ -15,14 +15,55 @@
       "points": []
     },
     {
+      "label": "Rating",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Row", "props": {}, "children": [1, 2, 4, 6]},
+        {"element": "Text", "props": {}, "children": []},
+        {"element": "Button", "props": {}, "children": [3]},
+        {"element": "Text", "props": {"value": "1"}, "children": []},
+        {"element": "Button", "props": {}, "children": [5]},
+        {"element": "Text", "props": {"value": "2"}, "children": []},
+        {"element": "Button", "props": {}, "children": [7]},
+        {"element": "Text", "props": {"value": "Repeat"}, "children": []}
+      ],
+      "values": [
+        {"node": 1, "prop": "value", "type": "String"}
+      ],
+      "events": [
+        {"node": 2, "event": "onClick", "payload": null, "controls": null},
+        {"node": 4, "event": "onClick", "payload": null, "controls": null},
+        {"node": 6, "event": "onClick", "payload": null, "controls": null}
+      ],
+      "points": []
+    },
+    {
+      "label": "ForwardRating",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"point": 0}
+      ],
+      "values": [],
+      "events": [],
+      "points": [
+        {"node": 0, "kind": "instance", "template": 1}
+      ]
+    },
+    {
       "label": "Language",
       "kind": "component",
       "roots": [0],
       "nodes": [
-        {"element": "Column", "props": {}, "children": [1, 2, 3]},
+        {"element": "Column", "props": {}, "children": [1, 2, 3, 4, 5, 6, 7]},
         {"element": "Text", "props": {}, "children": []},
         {"point": 0},
-        {"point": 1}
+        {"point": 1},
+        {"point": 2},
+        {"point": 3},
+        {"point": 4},
+        {"point": 5}
       ],
       "values": [
         {"node": 1, "prop": "value", "type": "String"}
@@ -30,11 +71,15 @@
       "events": [],
       "points": [
         {"node": 2, "kind": "instance", "template": 0},
-        {"node": 3, "kind": "list", "template": 2}
+        {"node": 3, "kind": "instance", "template": 1},
+        {"node": 4, "kind": "instance", "template": 1},
+        {"node": 5, "kind": "instance", "template": 2},
+        {"node": 6, "kind": "instance", "template": 1},
+        {"node": 7, "kind": "list", "template": 4}
       ]
     },
     {
-      "label": "Language:for6",
+      "label": "Language:for10",
       "kind": "row",
       "roots": [0, 1],
       "nodes": [
@@ -46,11 +91,11 @@
       ],
       "events": [],
       "points": [
-        {"node": 1, "kind": "branch", "templates": [3, 4]}
+        {"node": 1, "kind": "branch", "templates": [5, 6]}
       ]
     },
     {
-      "label": "Language:if5.0",
+      "label": "Language:if9.0",
       "kind": "branch",
       "roots": [0],
       "nodes": [
@@ -61,7 +106,7 @@
       "points": []
     },
     {
-      "label": "Language:if5.1",
+      "label": "Language:if9.1",
       "kind": "branch",
       "roots": [0],
       "nodes": [

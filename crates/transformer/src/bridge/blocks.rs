@@ -8,9 +8,9 @@
 use std::collections::{BTreeMap, HashMap};
 
 use crate::ir::{
-    Arg, Assign, AssignOp, BindingId, Branch, Component, Dep, DepRoot, EmitArg, EventId, Expr,
-    ExprKind, FieldId, Handler, LoopId, NodeId, NodeKind, ParamId, ParamKind, Program, Prop,
-    PropValue, SlotRef, StateId, Type,
+    Arg, ArgValue, Assign, AssignOp, BindingId, Branch, Component, Dep, DepRoot, EmitArg,
+    EmitTarget, EventId, Expr, ExprKind, FieldId, Handler, LoopId, NodeId, NodeKind, ParamId,
+    ParamKind, Program, Prop, PropValue, SlotRef, StateId, Stmt, Type,
 };
 
 use super::expr::{Env, expr};
@@ -160,8 +160,8 @@ pub fn walk_cond(
     cond(&bits)
 }
 
-/// Event handler and key bindings are evaluated on demand by both backends,
-/// so only values, arguments, conditions and lists count.
+/// Callback calls with bound arguments refresh alongside value bindings;
+/// other event handlers and loop keys are evaluated on demand.
 fn subtree_bits(comp: &Component, id: NodeId, out: &mut Vec<SlotRef>) {
     let kind = &comp.node(id).kind;
     let mut push = |binding: Option<BindingId>| {
@@ -172,7 +172,14 @@ fn subtree_bits(comp: &Component, id: NodeId, out: &mut Vec<SlotRef>) {
     match kind {
         NodeKind::Element { props, .. } | NodeKind::Component { props, .. } => {
             for prop in props {
-                if let PropValue::Expr(_) = prop.value {
+                if matches!(
+                    prop.value,
+                    PropValue::Expr(_)
+                        | PropValue::Handler(Handler::Emit {
+                            target: EmitTarget::Callback(_),
+                            ..
+                        })
+                ) {
                     push(prop.binding);
                 }
             }
@@ -306,7 +313,7 @@ pub fn branch_index(branches: &[Branch]) -> String {
 
 /// Argument values of a component call in parameter order; the `Children`
 /// parameter is passed separately.
-pub fn arg_values(callee: &Component, args: &[Arg]) -> Vec<String> {
+pub fn arg_values(program: &Program, callee: &Component, args: &[Arg]) -> Vec<String> {
     callee
         .params
         .iter()
@@ -316,7 +323,8 @@ pub fn arg_values(callee: &Component, args: &[Arg]) -> Vec<String> {
                 return "undefined".to_owned();
             }
             match args.iter().find(|a| a.param.index() == index) {
-                Some(arg) => expr(&arg.value, Env::default()),
+                Some(arg) => arg_value(program, &arg.value),
+                None if matches!(param.kind, ParamKind::Callback { .. }) => "null".to_owned(),
                 None => param.default.as_ref().map_or_else(
                     || unreachable!("missing arguments are rejected by analysis"),
                     |d| expr(d, Env::default()),
@@ -327,16 +335,37 @@ pub fn arg_values(callee: &Component, args: &[Arg]) -> Vec<String> {
 }
 
 /// Re-sends changed arguments to the instance `var`.
-pub fn arg_updates(comp: &Component, var: &str, args: &[Arg], out: &mut Code) {
+pub fn arg_updates(program: &Program, comp: &Component, var: &str, args: &[Arg], out: &mut Code) {
     for arg in args {
         if let Some(cond) = binding_cond(comp, arg.binding) {
             out.line(format!(
                 "if ({cond}) {var}.arg({}, {});",
                 arg.param.0,
-                expr(&arg.value, Env::default())
+                arg_value(program, &arg.value)
             ));
         }
     }
+}
+
+fn arg_value(program: &Program, value: &ArgValue) -> String {
+    let handler = match value {
+        ArgValue::Expr(value) => return expr(value, Env::default()),
+        ArgValue::Callback(handler) => handler,
+    };
+    if let Handler::Emit { target, args } = handler
+        && matches!(args.first(), Some(EmitArg::Expr(_)))
+    {
+        // Bind explicit values now, not when the child fires the callback.
+        let names: Vec<_> = (0..args.len()).map(|i| format!("$b{i}")).collect();
+        let values: Vec<_> = args.iter().map(emit_arg).collect();
+        let body = emit(program, *target, names.iter().cloned());
+        return format!(
+            "(({}) => {{ {body} }}).bind(null, {})",
+            names.join(", "),
+            values.join(", ")
+        );
+    }
+    format!("($a) => {{ {} }}", handler_body(program, handler))
 }
 
 /* ---- handlers ---------------------------------------------------------- */
@@ -372,7 +401,7 @@ pub fn lifecycle(
 }
 
 /// `{ name: value, ... }` for an emitted event.
-fn payload(program: &Program, event: EventId, args: &[EmitArg]) -> String {
+fn payload(program: &Program, event: EventId, args: impl Iterator<Item = String>) -> String {
     let params = &program.event(event).params;
     if params.is_empty() {
         return "{}".to_owned();
@@ -380,27 +409,73 @@ fn payload(program: &Program, event: EventId, args: &[EmitArg]) -> String {
     let fields: Vec<String> = params
         .iter()
         .zip(args)
-        .map(|(param, arg)| {
-            let value = match arg {
-                EmitArg::Expr(e) => expr(e, Env::default()),
-                EmitArg::Payload => "$a".to_owned(),
-            };
-            format!("{}: {value}", js::object_key(&param.name))
-        })
+        .map(|(param, value)| format!("{}: {value}", js::object_key(&param.name)))
         .collect();
     format!("{{ {} }}", fields.join(", "))
 }
 
-/// Statements run when an element handler fires; the payload is `$a`.
-pub fn handler_body(program: &Program, handler: &Handler) -> String {
-    match handler {
-        Handler::Emit { event, args } => format!(
-            "c.app.$emit({}, {});",
-            js::string(&program.event(*event).name),
-            payload(program, *event, args)
-        ),
-        Handler::Lambda { body, .. } => body.iter().map(assign).collect::<Vec<_>>().join(" "),
+fn emit_arg(arg: &EmitArg) -> String {
+    match arg {
+        EmitArg::Expr(value) => expr(value, Env::default()),
+        EmitArg::Payload => "$a".to_owned(),
     }
+}
+
+fn emit(program: &Program, target: EmitTarget, mut args: impl Iterator<Item = String>) -> String {
+    match target {
+        EmitTarget::Event(event) => format!(
+            "c.app.$emit({}, {});",
+            js::string(&program.event(event).name),
+            payload(program, event, args)
+        ),
+        EmitTarget::Callback(param) => {
+            let value = args.next().unwrap_or_default();
+            format!("c.p[{}]?.({value});", param.0)
+        }
+    }
+}
+
+/// Statements run when a handler fires; the payload is `$a`.
+fn handler_body(program: &Program, handler: &Handler) -> String {
+    match handler {
+        Handler::Emit { target, args } => emit(program, *target, args.iter().map(emit_arg)),
+        Handler::Lambda { body, .. } => body
+            .iter()
+            .map(|stmt| match stmt {
+                Stmt::Assign(stmt) => assign(stmt),
+                Stmt::Emit { target, args } => emit(program, *target, args.iter().map(emit_arg)),
+            })
+            .collect::<Vec<_>>()
+            .join(" "),
+    }
+}
+
+/// Freezes explicit callback arguments until the affected binding is rendered again.
+pub fn element_handler_body(
+    program: &Program,
+    comp: &Component,
+    node: NodeId,
+    prop: &Prop,
+    handler: &Handler,
+    parts: &mut Parts,
+) -> String {
+    if let Handler::Emit {
+        target: target @ EmitTarget::Callback(_),
+        args,
+    } = handler
+        && let [EmitArg::Expr(value)] = args.as_slice()
+    {
+        let bound = format!("$h{}_{}", node.0, prop.name);
+        let value = expr(value, Env::default());
+        if let Some(cond) = binding_cond(comp, prop.binding) {
+            parts.create.line(format!("let {bound} = {value};"));
+            parts.update.line(format!("if ({cond}) {bound} = {value};"));
+        } else {
+            parts.create.line(format!("const {bound} = {value};"));
+        }
+        return emit(program, *target, std::iter::once(bound));
+    }
+    handler_body(program, handler)
 }
 
 fn assign(assign: &Assign) -> String {
@@ -415,12 +490,16 @@ fn assign(assign: &Assign) -> String {
 }
 
 fn lifecycle_call(program: &Program, handler: &Handler) -> String {
-    let Handler::Emit { event, args } = handler else {
+    let Handler::Emit {
+        target: EmitTarget::Event(event),
+        args,
+    } = handler
+    else {
         unreachable!("lifecycle properties only accept events");
     };
     format!(
         "$.lifecycle(c.app, {}, {});",
         js::string(&program.event(*event).name),
-        payload(program, *event, args)
+        payload(program, *event, args.iter().map(emit_arg))
     )
 }

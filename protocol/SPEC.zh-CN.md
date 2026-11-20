@@ -77,6 +77,8 @@ scope 在 `create` 时创建，此时还没挂上树。它被 `branch` 换掉、
 
 版本号、opcode、值标签和解码错误种类，以及 WeChat 样式单位、平台名和平台调用模块，都只在 [`protocol/weft.protocol.json`](weft.protocol.json) 中定义一次。`pnpm gen:protocol`（`protocol/generate.ts`）据此生成 TypeScript、Rust、C++、Swift、Kotlin 和 C# 的常量；生成文件过期时 `pnpm test` 会失败。
 
+内置元素单独定义在 [`protocol/weft.elements.json`](weft.elements.json) 中。同一命令会生成 Rust 编译器目录和由 `@weft-ui/runtime/elements` 导出的 TypeScript 目录。成员顺序不能随意改动：属性下标是小程序数据键的一部分。
+
 ## 解码错误
 
 一批 ops 解码失败时只会报下面 5 种错误之一，所有读取器使用相同的种类名：

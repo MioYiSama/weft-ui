@@ -20,7 +20,8 @@ mod build;
 mod json;
 
 use crate::color::Color;
-use crate::ir::{ComponentId, Element, NodeId};
+use crate::elements::Element;
+use crate::ir::{ComponentId, NodeId};
 
 /// Index into [`ViewLayout::templates`]; the same number the logic layer
 /// sends in `create` ops.

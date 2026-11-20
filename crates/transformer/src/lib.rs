@@ -14,7 +14,7 @@ mod code;
 pub mod color;
 mod compose;
 mod deps;
-mod elements;
+pub mod elements;
 mod gtk;
 pub mod ide;
 pub mod ir;

@@ -77,6 +77,8 @@ Each value starts with a u8 tag: `0` for false, `1` for true, `2` for a number (
 
 The version, opcodes, value tags and decoding error kinds, together with the WeChat style units, the platform names and the platform call modules, are defined once in [`protocol/weft.protocol.json`](weft.protocol.json). `pnpm gen:protocol` (`protocol/generate.ts`) generates the constants for TypeScript, Rust, C++, Swift, Kotlin and C# from it, and `pnpm test` fails when a generated file is out of date.
 
+Built-in elements are defined separately in [`protocol/weft.elements.json`](weft.elements.json). The same command generates the Rust compiler catalog and the TypeScript catalog exported as `@weft-ui/runtime/elements`. Keep members in order: a property's index feeds into its mini program data key.
+
 ## Decoding errors
 
 Decoding a batch fails with exactly one of five errors. Every reader uses the same kind names:

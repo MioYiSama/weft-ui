@@ -16,7 +16,7 @@
 
 use std::fmt::{self, Display, Write as _};
 
-use crate::ir::Element;
+use crate::elements::Element;
 use crate::view::{Constant, PointKind, PropSource, StaticProp, Template, ViewNodeKind};
 
 use super::kotlin::{self, Code};

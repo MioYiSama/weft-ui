@@ -12,7 +12,8 @@
 
 use std::fmt::{self, Display};
 
-use crate::ir::{ComponentId, Element, NodeId, Program, Prop, PropValue};
+use crate::elements::Element;
+use crate::ir::{ComponentId, NodeId, Program, Prop, PropValue};
 use crate::view::ViewLayout;
 
 use super::blocks::{Consts, Ctx, Parts, binding_cond, handler_body, instance_watches, words};

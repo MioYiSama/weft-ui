@@ -1,8 +1,6 @@
 use crate::color::Color;
-use crate::elements::{self, PropType};
-use crate::ir::{
-    Component, ComponentId, Element, Expr, ExprKind, NodeId, NodeKind, Program, PropValue,
-};
+use crate::elements::PropType;
+use crate::ir::{Component, ComponentId, Expr, ExprKind, NodeId, NodeKind, Program, PropValue};
 
 use super::json::fnv1a;
 use super::{
@@ -74,18 +72,6 @@ impl ValueType {
 fn offset(index: usize) -> u32 {
     u32::try_from(index).expect("layout indices fit in u32")
 }
-
-/// The property a user edits on a controlled element.
-fn controlled_prop(element: Element) -> Option<&'static str> {
-    match element {
-        Element::Input => Some("value"),
-        Element::Checkbox => Some("checked"),
-        _ => None,
-    }
-}
-
-/// The handler property reporting user edits of a controlled element.
-const EDIT_EVENT: &str = "onChange";
 
 fn constant(expr: &Expr, ty: PropType) -> Option<Constant> {
     match &expr.kind {
@@ -176,7 +162,7 @@ impl Builder<'_> {
                         children: Vec::new(),
                     },
                 });
-                let controlled = controlled_prop(*element);
+                let spec = element.spec();
                 let mut statics = Vec::new();
                 let mut values = Vec::with_capacity(props.len());
                 let mut handler = None;
@@ -190,8 +176,12 @@ impl Builder<'_> {
                             None
                         }
                         PropValue::Expr(value) => {
-                            let ty = elements::prop_type(*element, prop.name);
-                            let fixed = (prop.binding.is_none() && controlled != Some(prop.name))
+                            let prop_spec = spec
+                                .prop(prop.name)
+                                .expect("every element value property has a spec");
+                            let controlled_by = prop_spec.controlled_by;
+                            let ty = prop_spec.prop_type();
+                            let fixed = (prop.binding.is_none() && controlled_by.is_none())
                                 .then(|| constant(value, ty))
                                 .flatten();
                             match fixed {
@@ -204,13 +194,14 @@ impl Builder<'_> {
                                 }
                                 None => {
                                     let slot = offset(draft.values.len());
+                                    let ty = ValueType::of(ty);
                                     draft.values.push(ValueSlot {
                                         node: local,
                                         prop: prop.name,
-                                        ty: ValueType::of(ty),
+                                        ty,
                                     });
-                                    if controlled == Some(prop.name) {
-                                        edited = Some((slot, ValueType::of(ty)));
+                                    if let Some(event) = controlled_by {
+                                        edited = Some((event, slot, ty));
                                     }
                                     Some(slot)
                                 }
@@ -220,9 +211,9 @@ impl Builder<'_> {
                     values.push(slot);
                 }
                 let event = match (handler, edited) {
-                    (_, Some((slot, ty))) => Some(EventSlot {
+                    (_, Some((event, slot, ty))) => Some(EventSlot {
                         node: local,
-                        event: EDIT_EVENT,
+                        event,
                         payload: Some(ty),
                         controls: Some(slot),
                     }),

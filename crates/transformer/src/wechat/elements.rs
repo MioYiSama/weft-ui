@@ -12,8 +12,8 @@
 //! | `c{N}`     | data of a component instance                           |
 //! | `y{N}`     | data of slot content; its template name is in `t`      |
 
-use crate::ir::{ComponentId, Element, NodeId, Prop, PropValue};
-use crate::style::{CssUnit, css};
+use crate::elements::{Css, CssUnit, Element};
+use crate::ir::{ComponentId, NodeId, Prop, PropValue};
 use crate::view::{Constant, ViewLayout, ViewNodeKind};
 
 /// How a property value reaches the view.
@@ -36,8 +36,8 @@ pub(crate) fn target(element: Element, prop: &str) -> Target {
         (_, "disabled") => Target::Flag("disabled"),
         (_, "placeholder") => Target::Attr("placeholder"),
         (_, "src") => Target::Attr("src"),
-        (element, prop) => match css(prop) {
-            Some((name, unit)) => Target::Style(name, unit),
+        (element, prop) => match element.spec().prop(prop).and_then(|spec| spec.css) {
+            Some(Css { property, unit }) => Target::Style(property, unit),
             None => unreachable!("`{}` has no property `{prop}`", element.name()),
         },
     }

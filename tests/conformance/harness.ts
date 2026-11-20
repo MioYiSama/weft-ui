@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { tick as webTick } from "@weft-ui/runtime";
+import { ELEMENTS } from "@weft-ui/runtime/elements";
 import { type Value, tick as remoteTick } from "@weft-ui/runtime/remote";
 import { type Renderer, type ViewElement, render } from "@weft-ui/runtime/testing";
 import { Window } from "happy-dom";
@@ -76,12 +77,9 @@ export interface Driver<A extends AppLike> extends Actions {
 }
 
 /** Props compared across platforms; styling differs by design. */
-const MAIN: Record<string, readonly string[]> = {
-  Text: ["value"],
-  Input: ["value"],
-  Checkbox: ["checked"],
-  Image: ["src"],
-};
+const MAIN: Record<string, readonly string[]> = Object.fromEntries(
+  Object.entries(ELEMENTS).flatMap(([name, { main }]) => main === null ? [] : [[name, [main]] as const]),
+);
 
 /** A raw platform element's neutral type and main props, with its raw children. */
 interface Classified<R> {

@@ -8,6 +8,8 @@ use std::fmt;
 pub use weft_ui_ast::{AssignOp, BinaryOp, UnaryOp};
 use weft_ui_ast::{FileId, Span};
 
+use crate::elements::Element;
+
 macro_rules! id_type {
     ($($(#[$doc:meta])* $name:ident;)*) => {$(
         $(#[$doc])*
@@ -399,18 +401,6 @@ pub struct Assign {
     pub op: AssignOp,
     pub value: Expr,
     pub span: Span,
-}
-
-/// Built-in elements available on every backend.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Element {
-    Column,
-    Row,
-    Text,
-    Button,
-    Input,
-    Checkbox,
-    Image,
 }
 
 #[derive(Debug, Clone, PartialEq)]

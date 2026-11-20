@@ -7,7 +7,8 @@ use weft_ui_ast::{Diagnostic, Span};
 use crate::color::Color;
 use crate::deps;
 use crate::elements::{
-    self, ELEMENTS as BUILTIN_ELEMENTS, ElementSpec, LIFECYCLE as CALL_HOOKS, PropKind, PropType,
+    self, Children, ELEMENTS as BUILTIN_ELEMENTS, ElementSpec, LIFECYCLE as CALL_HOOKS, PropKind,
+    PropType,
 };
 use crate::ir::{
     Arg, Binding, BindingId, BindingKind, Branch, ComponentId, Dep, Expr, ExprKind, Loop, LoopId,
@@ -212,7 +213,7 @@ impl Lowerer<'_, '_> {
         let own = first_binding..self.bindings.len();
 
         let children = match &e.children {
-            Some(block) if !spec.children => {
+            Some(block) if spec.children == Children::None => {
                 self.error(
                     block.span,
                     format!("`{}` does not accept children", spec.name),

@@ -14,8 +14,9 @@ use crate::bridge::expr::{Env, expr};
 use crate::bridge::flow::{Backend, ComponentIr, Flow};
 use crate::bridge::js::{self, Code};
 use crate::color::Color;
-use crate::ir::{Component, ComponentId, Element, NodeId, NodeKind, Program, Prop, PropValue};
-use crate::style::{COLUMN_STYLE, CssUnit, ROW_STYLE, css};
+use crate::elements::{Css, CssUnit, Element};
+use crate::ir::{Component, ComponentId, NodeId, NodeKind, Program, Prop, PropValue};
+use crate::style::{COLUMN_STYLE, ROW_STYLE};
 
 /// The DOM [`DomView`].
 #[derive(Debug, Clone, Copy)]
@@ -63,8 +64,8 @@ fn target(element: Element, prop: &str) -> Target {
         (_, "disabled") => Target::Disabled,
         (_, "placeholder") => Target::Attr("placeholder"),
         (_, "src") => Target::Attr("src"),
-        (element, prop) => match css(prop) {
-            Some((name, unit)) => Target::Style(name, unit),
+        (element, prop) => match element.spec().prop(prop).and_then(|spec| spec.css) {
+            Some(Css { property, unit }) => Target::Style(property, unit),
             None => unreachable!("`{}` has no property `{prop}`", element.name()),
         },
     }

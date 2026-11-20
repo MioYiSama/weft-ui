@@ -20,6 +20,7 @@
     "./wechat": "./src/wechat.ts",
     "./native": "./src/native.ts",
     "./protocol": "./src/protocol.ts",
+    "./elements": "./src/elements.ts",
     "./testing": "./src/testing.ts"
   },
   "publishConfig": {
@@ -30,6 +31,7 @@
       "./wechat": "./dist/wechat.js",
       "./native": "./dist/native.js",
       "./protocol": "./dist/protocol.js",
+      "./elements": "./dist/elements.js",
       "./testing": "./dist/testing.js"
     }
   },

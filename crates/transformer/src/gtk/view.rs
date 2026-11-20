@@ -1,6 +1,6 @@
 //! Imperative construction of a template's elements and mount points.
 
-use crate::ir::Element;
+use crate::elements::Element;
 use crate::view::{Constant, Template, ViewNodeKind};
 
 use super::cpp::{self, Code};

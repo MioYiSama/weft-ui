@@ -1,0 +1,178 @@
+{
+  "groups": {
+    "box": [
+      {
+        "name": "padding",
+        "type": "Int",
+        "css": { "property": "padding", "unit": "px" },
+        "doc": { "en": "Sets the same inset on all four sides.", "zh": "设置四边相同的内边距。" }
+      },
+      {
+        "name": "gap",
+        "type": "Int",
+        "css": { "property": "gap", "unit": "px" },
+        "doc": { "en": "Adds space between neighboring children.", "zh": "设置相邻子节点之间的距离。" }
+      },
+      {
+        "name": "width",
+        "type": "Int",
+        "css": { "property": "width", "unit": "px" },
+        "doc": { "en": "Sets a fixed width instead of sizing to the content.", "zh": "固定宽度，不再由内容决定。" }
+      },
+      {
+        "name": "height",
+        "type": "Int",
+        "css": { "property": "height", "unit": "px" },
+        "doc": { "en": "Sets a fixed height instead of sizing to the content.", "zh": "固定高度，不再由内容决定。" }
+      },
+      {
+        "name": "background",
+        "type": "Color",
+        "css": { "property": "background", "unit": "color" },
+        "doc": { "en": "Sets the background color.", "zh": "设置背景色。" }
+      }
+    ]
+  },
+  "elements": [
+    {
+      "name": "Column",
+      "doc": { "en": "Stacks children vertically.", "zh": "将子节点纵向排列。" },
+      "groups": ["box"],
+      "children": "any"
+    },
+    {
+      "name": "Row",
+      "doc": { "en": "Places children side by side.", "zh": "将子节点横向排列。" },
+      "groups": ["box"],
+      "children": "any"
+    },
+    {
+      "name": "Text",
+      "doc": { "en": "Displays text.", "zh": "显示文本。" },
+      "members": [
+        {
+          "name": "value",
+          "type": "String",
+          "positional": true,
+          "required": true,
+          "doc": { "en": "The text to display.", "zh": "要显示的文本。" }
+        },
+        {
+          "name": "color",
+          "type": "Color",
+          "css": { "property": "color", "unit": "color" },
+          "doc": { "en": "Sets the text color.", "zh": "设置文字颜色。" }
+        },
+        {
+          "name": "size",
+          "type": "Int",
+          "css": { "property": "font-size", "unit": "px" },
+          "doc": { "en": "Sets the font size in logical pixels.", "zh": "用逻辑像素设置字号。" }
+        },
+        {
+          "name": "bold",
+          "type": "Bool",
+          "css": { "property": "font-weight", "unit": "bold" },
+          "doc": { "en": "Displays the text in bold.", "zh": "以粗体显示文本。" }
+        }
+      ]
+    },
+    {
+      "name": "Button",
+      "doc": { "en": "Renders a clickable control with child nodes for its content.", "zh": "显示可点击的控件，用子节点提供按钮内容。" },
+      "children": "any",
+      "members": [
+        {
+          "name": "onClick",
+          "event": true,
+          "doc": { "en": "Fires when the button is clicked.", "zh": "按钮被点击时触发。" }
+        },
+        {
+          "name": "disabled",
+          "type": "Bool",
+          "doc": { "en": "Disables the button.", "zh": "禁用按钮。" }
+        }
+      ]
+    },
+    {
+      "name": "Input",
+      "doc": { "en": "Displays an editable text field.", "zh": "显示可编辑的文本框。" },
+      "members": [
+        {
+          "name": "value",
+          "type": "String",
+          "positional": true,
+          "required": true,
+          "controlledBy": "onChange",
+          "doc": { "en": "The current text.", "zh": "当前输入的文本。" }
+        },
+        {
+          "name": "onChange",
+          "event": true,
+          "payload": "String",
+          "doc": { "en": "Reports the new text after an edit.", "zh": "编辑后提供修改后的文本。" }
+        },
+        {
+          "name": "placeholder",
+          "type": "String",
+          "doc": { "en": "Shows a hint when the field is empty.", "zh": "输入框为空时显示提示文字。" }
+        },
+        {
+          "name": "disabled",
+          "type": "Bool",
+          "doc": { "en": "Disables the input field.", "zh": "禁用输入框。" }
+        }
+      ]
+    },
+    {
+      "name": "Checkbox",
+      "doc": { "en": "Displays a checkable control.", "zh": "显示可勾选的控件。" },
+      "members": [
+        {
+          "name": "checked",
+          "type": "Bool",
+          "positional": true,
+          "required": true,
+          "controlledBy": "onChange",
+          "doc": { "en": "The current checked state.", "zh": "当前的选中状态。" }
+        },
+        {
+          "name": "onChange",
+          "event": true,
+          "payload": "Bool",
+          "doc": { "en": "Reports the new checked state.", "zh": "提供修改后的选中状态。" }
+        },
+        {
+          "name": "disabled",
+          "type": "Bool",
+          "doc": { "en": "Disables the checkbox.", "zh": "禁用复选框。" }
+        }
+      ]
+    },
+    {
+      "name": "Image",
+      "doc": { "en": "Displays an image from a URL.", "zh": "显示指定 URL 的图片。" },
+      "members": [
+        {
+          "name": "src",
+          "type": "String",
+          "positional": true,
+          "required": true,
+          "doc": { "en": "The image URL.", "zh": "图片的 URL。" }
+        },
+        {
+          "name": "width",
+          "type": "Int",
+          "css": { "property": "width", "unit": "px" },
+          "doc": { "en": "Sets the image width.", "zh": "设置图片宽度。" }
+        },
+        {
+          "name": "height",
+          "type": "Int",
+          "css": { "property": "height", "unit": "px" },
+          "doc": { "en": "Sets the image height.", "zh": "设置图片高度。" }
+        }
+      ]
+    }
+  ]
+}

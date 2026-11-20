@@ -17,7 +17,7 @@
 
 use std::fmt::{self, Display};
 
-use crate::ir::Element;
+use crate::elements::Element;
 use crate::view::{Constant, PointKind, PropSource, StaticProp, Template, ViewNodeKind};
 
 use super::swift::{self, Code};

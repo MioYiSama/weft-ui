@@ -6,7 +6,8 @@
 //! rendered by a template of the calling component, chosen at run time
 //! through `t`, so all templates of the app live in one file.
 
-use crate::ir::{Component, ComponentId, Element, NodeId, NodeKind, Program};
+use crate::elements::Element;
+use crate::ir::{Component, ComponentId, NodeId, NodeKind, Program};
 use crate::style::{COLUMN_STYLE, ROW_STYLE};
 use crate::view::ViewLayout;
 

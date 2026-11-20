@@ -11,6 +11,7 @@
 // In native bindings, module names use <module>Module and methods use <module><method>.
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { generateElements } from "./elements.ts";
 
 interface Schema {
   version: number;
@@ -235,18 +236,19 @@ ${errorKinds.map(kind => `    internal const string ${pascal(kind)} = ${quote(ki
 }
 
 const outputs = {
-  "packages/runtime/src/protocol.ts": typescript(),
-  "crates/transformer/src/protocol.rs": rust(),
-  "native/core/include/weft/protocol.hpp": cpp(),
-  "native/apple/Sources/WeftKit/Protocol.swift": swift(),
-  "native/android/src/main/kotlin/net/mioyi/weftui/Protocol.kt": kotlin(),
-  "native/windows/Weft.WinUI/Protocol.cs": csharp(),
+  "packages/runtime/src/protocol.ts": header + typescript(),
+  "crates/transformer/src/protocol.rs": header + rust(),
+  "native/core/include/weft/protocol.hpp": header + cpp(),
+  "native/apple/Sources/WeftKit/Protocol.swift": header + swift(),
+  "native/android/src/main/kotlin/net/mioyi/weftui/Protocol.kt": header + kotlin(),
+  "native/windows/Weft.WinUI/Protocol.cs": header + csharp(),
+  ...generateElements(),
 };
 
 const stale: string[] = [];
 for (const [path, content] of Object.entries(outputs)) {
   const file = new URL(path, root);
-  const generated = Buffer.from(header + content);
+  const generated = Buffer.from(content);
   if (existsSync(file) && readFileSync(file).equals(generated)) continue;
   if (check) stale.push(path);
   else writeFileSync(file, generated);

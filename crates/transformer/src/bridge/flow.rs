@@ -2,7 +2,8 @@
 
 use std::fmt::Display;
 
-use crate::ir::{BindingId, Branch, Component, DepRoot, Element, NodeId, NodeKind, Program, Prop};
+use crate::elements::Element;
+use crate::ir::{BindingId, Branch, Component, DepRoot, NodeId, NodeKind, Program, Prop};
 
 use super::blocks::{
     Consts, Ctx, Parts, arg_updates, arg_values, binding_cond, branch_index, lifecycle,

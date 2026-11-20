@@ -14,7 +14,7 @@ use std::fmt;
 
 use weft_ui_ast::{Diagnostic, FileId, ParsedProgram, SourceMap, Span};
 
-use crate::elements::{ElementSpec, PropKind, PropSpec, PropType};
+use crate::elements::{Children, ElementSpec, PropKind, PropSpec, PropType};
 use crate::ir::{ComponentId, ParamKind, Program, Type};
 use crate::sema;
 use crate::sema::builtins::{MemberKind, MemberSig};
@@ -240,7 +240,11 @@ fn prop_symbol(element: Option<&ElementSpec>, prop: &PropSpec) -> Symbol {
 
 fn element_symbol(spec: &ElementSpec) -> Symbol {
     let props: Vec<String> = spec.props.iter().map(prop_signature).collect();
-    let children = if spec.children { " { … }" } else { "" };
+    let children = if spec.children == Children::None {
+        ""
+    } else {
+        " { … }"
+    };
     Symbol {
         kind: SymbolKind::Element,
         name: spec.name.to_owned(),

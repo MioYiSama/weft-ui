@@ -60,7 +60,7 @@ export function Panel$c(app, args, children, depth) {
 }
 
 export class Panel extends $.App {
-  constructor() { super(Panel$c, [undefined], "606709743a230527"); }
+  constructor() { super(Panel$c, [undefined], "61c5242ca67945f7"); }
 }
 
 export function Gallery$c(app, args, children, depth) {
@@ -143,6 +143,6 @@ export function Gallery$c(app, args, children, depth) {
 }
 
 export class Gallery extends $.App {
-  constructor(p0) { super(Gallery$c, [GalleryModel.from(p0)], "606709743a230527"); }
+  constructor(p0) { super(Gallery$c, [GalleryModel.from(p0)], "61c5242ca67945f7"); }
   onChecked(h) { return this.$on("Checked", h); }
 }

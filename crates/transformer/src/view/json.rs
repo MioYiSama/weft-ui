@@ -10,6 +10,12 @@ impl ViewLayout {
         self.hash
     }
 
+    /// Whether the app asks the host to keep root content inside the safe area.
+    #[must_use]
+    pub fn safe_area(&self) -> bool {
+        self.safe_area
+    }
+
     /// The layout as JSON, consumed by JS tools such as the headless renderer.
     #[must_use]
     pub fn to_json(&self) -> String {
@@ -23,6 +29,8 @@ impl ViewLayout {
             out.key("hash");
             out.string(&format!("{hash:016x}"));
         }
+        out.key("safeArea");
+        out.inline(if self.safe_area { "true" } else { "false" });
         if let Some(colors) = &self.theme {
             out.key("theme");
             out.open('{');

@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, readdir, rename, rm, stat, symlink, writeFile
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { compileApp } from "@weft-ui/compiler";
 import { CSS } from "@weft-ui/runtime/elements";
 import { PLATFORMS } from "@weft-ui/runtime/protocol";
 import weft, { type WeftOptions } from "@weft-ui/vite";
@@ -149,6 +150,32 @@ test("an unset WEFT_PLATFORM builds the Web app into apps/web", async () => {
   expect(spans.map((span) => span.textContent)).toEqual(["You clicked!", "tinted", "Click me"]);
   expect(spans[1]!.getAttribute("style")).toMatch(/color:\s*transparent/);
   await window.happyDOM.close();
+});
+
+test("safeArea: false opts out of root padding and changes the layout hash", async () => {
+  await build("web,wechat", { safeArea: false });
+
+  const html = await readFile(join(root, "apps/web/index.html"), "utf8");
+  const script = /src="\/(assets\/[^"]+\.js)"/.exec(html)![1]!;
+  const window = new Window();
+  try {
+    window.document.body.innerHTML = '<div id="app"></div>';
+    window.eval(await readFile(join(root, "apps/web", script), "utf8"));
+    await settle();
+    expect(window.document.querySelector("#app.w-root:not(.w-safe)")).not.toBeNull();
+  } finally {
+    await window.happyDOM.close();
+  }
+
+  const wxml = await readFile(join(root, "apps/wechat/weft/index.wxml"), "utf8");
+  expect(wxml).toContain('class="w-root"');
+  expect(wxml).not.toContain("w-safe");
+
+  const defaults = await compileApp(["App.weft"], "wechat", () => APP);
+  const optedOut = await compileApp(["App.weft"], "wechat", () => APP, { safeArea: false });
+  expect(JSON.parse(defaults.layout).safeArea).toBe(true);
+  expect(JSON.parse(optedOut.layout).safeArea).toBe(false);
+  expect(optedOut.layoutHash).not.toBe(defaults.layoutHash);
 });
 
 async function writeThemeFixture() {

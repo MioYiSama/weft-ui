@@ -13,6 +13,7 @@ The headless renderer in `@weft-ui/runtime/testing` is the reference implementat
 ```json
 {
   "hash": "a6bb96edf9a9ad2d",
+  "safeArea": true,
   "templates": [
     {
       "label": "TodoList",
@@ -33,6 +34,7 @@ The headless renderer in `@weft-ui/runtime/testing` is the reference implementat
 - **Event slot** `events[i]`: An event property of a node. `payload` specifies the payload type (`null` means no payload). Every controlled element has an `onChange` event slot. Its `controls` field is the index of the value slot it controls; for all other events, `controls` is `null`. JS handles lifecycle properties (`onMount` / `onUnmount`), which do not appear in the layout.
 - **Mount point** `points[i]`: `branch` (`templates` lists branch templates in order), `list` (`template` is the row body), `instance` (`template` is the body of the instantiated component), or `slot` (the caller supplies the slot content, which may be any template of kind `slot`).
 - **Theme**: When the app declares a theme, the top-level `theme` object maps color token names to `[light, dark]` pairs. Both colors use lowercase `#rrggbbaa`; a token with only one color repeats it. Numeric tokens are folded by the compiler and do not appear here. A token in a static `props` entry or a dynamic `Color` value slot uses the string `"@name"`; it is resolved according to the host's appearance.
+- **Safe area**: The top-level `safeArea` boolean records whether the app requests safe-area padding. It defaults to `true` and is included in the layout hash.
 - **Hash**: The 64-bit FNV-1a hash of the JSON with the `hash` field removed, represented as 16 hexadecimal digits. It is written into both the JS logic (as an `App` constructor argument) and the platform view. The sink compares the hashes at `open` and reports an error if they differ.
 
 ## Scope

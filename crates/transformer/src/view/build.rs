@@ -1,3 +1,4 @@
+use crate::AppOptions;
 use crate::color::Color;
 use crate::elements::{ElementSpec, Level, PropKind, PropType};
 use crate::ir::{
@@ -16,10 +17,14 @@ impl ViewLayout {
     /// Derives the layout of every component of `program`.
     #[must_use]
     pub fn new(program: &Program) -> Self {
-        Self::for_platform(program, None)
+        Self::for_platform(program, None, &AppOptions::default())
     }
 
-    pub(crate) fn for_platform(program: &Program, platform: Option<Platform>) -> Self {
+    pub(crate) fn for_platform(
+        program: &Program,
+        platform: Option<Platform>,
+        options: &AppOptions,
+    ) -> Self {
         let mut builder = Builder {
             program,
             platform,
@@ -57,6 +62,7 @@ impl ViewLayout {
             })
             .collect();
         let mut layout = ViewLayout {
+            safe_area: options.safe_area,
             theme: program.theme.as_ref().map(|theme| theme.colors.clone()),
             templates,
             components,

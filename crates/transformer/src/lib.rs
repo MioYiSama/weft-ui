@@ -94,6 +94,19 @@ pub struct AppOutput {
     pub layout: Option<ViewLayout>,
 }
 
+/// App-wide settings shared by the compiler backends.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AppOptions {
+    /// Keep root content inside the host's safe area. Defaults to `true`.
+    pub safe_area: bool,
+}
+
+impl Default for AppOptions {
+    fn default() -> Self {
+        Self { safe_area: true }
+    }
+}
+
 /// Checks a parsed app (see [`check`]) and transforms it for `platform`.
 ///
 /// On compilation errors, no logic modules or view files are generated.
@@ -103,7 +116,7 @@ pub struct AppOutput {
 /// their backend: SwiftUI for iOS and macOS, Jetpack Compose for Android,
 /// WinUI 3 for Windows, and GTK 4 for Linux.
 #[must_use]
-pub fn compile_app(parsed: ParsedProgram, platform: Platform) -> AppOutput {
+pub fn compile_app(parsed: ParsedProgram, platform: Platform, options: &AppOptions) -> AppOutput {
     let compilation = check(parsed);
     let mut output = AppOutput {
         compilation,
@@ -114,7 +127,8 @@ pub fn compile_app(parsed: ParsedProgram, platform: Platform) -> AppOutput {
     if let Some(program) = &output.compilation.program {
         let diagnostics = support::check(program, platform);
         if diagnostics.is_empty() {
-            (output.logic, output.views, output.layout) = transform_program(program, platform);
+            (output.logic, output.views, output.layout) =
+                transform_program(program, platform, options);
         } else {
             output.compilation.program = None;
             output.compilation.diagnostics.extend(diagnostics);
@@ -134,7 +148,11 @@ pub fn compile_app(parsed: ParsedProgram, platform: Platform) -> AppOutput {
 /// Panics if `file` is not part of the program.
 #[must_use]
 pub fn declarations(program: &Program, file: FileId) -> Declarations {
-    bridge::declarations(program, file, bridge::Mode::Dom(&web::dom::Dom))
+    bridge::declarations(
+        program,
+        file,
+        bridge::Mode::Dom(&web::dom::Dom, &AppOptions::default()),
+    )
 }
 
 /// Declarations of a module at `path` whose program has errors: re-exports
@@ -154,6 +172,7 @@ pub fn import_declarations<'a>(path: &str, imports: impl IntoIterator<Item = &'a
 fn transform_program(
     program: &Program,
     platform: Platform,
+    options: &AppOptions,
 ) -> (Vec<JsModule>, Vec<OutputFile>, Option<ViewLayout>) {
     match platform {
         // DOM code lives in the logic modules; there are no view files.
@@ -161,32 +180,35 @@ fn transform_program(
             program
                 .modules
                 .iter()
-                .map(|module| crate::web::module(program, module.file))
+                .map(|module| crate::web::module(program, module.file, options))
                 .collect(),
             Vec::new(),
             None,
         ),
         Platform::Wechat => {
-            let layout = ViewLayout::new(program);
+            let layout = ViewLayout::for_platform(program, None, options);
             let cx = Context::new(program, Some(&layout), platform);
             let views = crate::wechat::transform(&cx);
             (remote_modules(program, &layout), views, Some(layout))
         }
         Platform::Ios | Platform::Macos => {
-            transform_native(program, platform, crate::swiftui::transform)
+            transform_native(program, platform, options, crate::swiftui::transform)
         }
-        Platform::Android => transform_native(program, platform, crate::compose::transform),
-        Platform::Windows => transform_native(program, platform, crate::winui::transform),
-        Platform::Linux => transform_native(program, platform, crate::gtk::transform),
+        Platform::Android => {
+            transform_native(program, platform, options, crate::compose::transform)
+        }
+        Platform::Windows => transform_native(program, platform, options, crate::winui::transform),
+        Platform::Linux => transform_native(program, platform, options, crate::gtk::transform),
     }
 }
 
 fn transform_native(
     program: &Program,
     platform: Platform,
+    options: &AppOptions,
     transform_view: impl FnOnce(&Context<'_>) -> Vec<OutputFile>,
 ) -> (Vec<JsModule>, Vec<OutputFile>, Option<ViewLayout>) {
-    let layout = ViewLayout::for_platform(program, Some(platform));
+    let layout = ViewLayout::for_platform(program, Some(platform), options);
     let layout_file = OutputFile {
         path: "layout.json".to_owned(),
         contents: layout.to_json(),

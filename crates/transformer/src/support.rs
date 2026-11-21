@@ -201,7 +201,8 @@ component Main(key: Key) {
 "#,
         );
         for platform in [Platform::Macos, Platform::Windows, Platform::Linux] {
-            let compiled = crate::compile_app(load(&[path], &mut loader), platform);
+            let compiled =
+                crate::compile_app(load(&[path], &mut loader), platform, &Default::default());
             assert!(
                 compiled.compilation.diagnostics.is_empty(),
                 "{}",

@@ -25,7 +25,7 @@ impl Fixture {
         let file = format!("{}.weft", self.name);
         let mut loader = MemoryLoader::new();
         loader.insert(&file, self.source);
-        let output = compile_app(load(&[&file], &mut loader), platform);
+        let output = compile_app(load(&[&file], &mut loader), platform, &Default::default());
         assert!(
             output.compilation.diagnostics.is_empty(),
             "{}",
@@ -292,7 +292,11 @@ fn web_imports_the_theme_declaration_even_when_the_token_folds_to_a_number() {
         "App.weft",
         "import \"./Palette.weft\"\ncomponent App() { Column(gap = theme.gap) }",
     );
-    let output = compile_app(load(&["App.weft"], &mut loader), Platform::Web);
+    let output = compile_app(
+        load(&["App.weft"], &mut loader),
+        Platform::Web,
+        &Default::default(),
+    );
     assert!(
         output.compilation.diagnostics.is_empty(),
         "{}",
@@ -307,7 +311,11 @@ fn changing_only_the_dark_color_updates_the_layout_hash() {
     let compile = |source: &str| {
         let mut loader = MemoryLoader::new();
         loader.insert("Theme.weft", source);
-        let output = compile_app(load(&["Theme.weft"], &mut loader), Platform::Wechat);
+        let output = compile_app(
+            load(&["Theme.weft"], &mut loader),
+            Platform::Wechat,
+            &Default::default(),
+        );
         output
             .layout
             .unwrap_or_else(|| panic!("{}", output.compilation.render_diagnostics()))
@@ -335,7 +343,11 @@ component C(color: String) {
     loader.insert("ui/C.weft", src);
     let mut css_indices = None;
     for platform in [Platform::Web, Platform::Wechat] {
-        let output = compile_app(load(&["ui/C.weft"], &mut loader), platform);
+        let output = compile_app(
+            load(&["ui/C.weft"], &mut loader),
+            platform,
+            &Default::default(),
+        );
         assert!(
             output.compilation.diagnostics.is_empty(),
             "{}",
@@ -408,7 +420,11 @@ fn remote_imports_preserve_weft_extensions() {
     let mut loader = MemoryLoader::new();
     loader.insert("ui/C.weft", "import \"./D.weft\"\ncomponent C() { D() }");
     loader.insert("ui/D.weft", "component D() { Text(\"x\") }");
-    let output = compile_app(load(&["ui/C.weft"], &mut loader), Platform::Wechat);
+    let output = compile_app(
+        load(&["ui/C.weft"], &mut loader),
+        Platform::Wechat,
+        &Default::default(),
+    );
     assert!(
         output.compilation.diagnostics.is_empty(),
         "{}",

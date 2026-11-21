@@ -45,7 +45,7 @@ export function Overlay$c(app, args, children, depth) {
 }
 
 export class Overlay extends $.App {
-  constructor() { super(Overlay$c, [undefined], "4104d6fab1e290a7"); }
+  constructor() { super(Overlay$c, [undefined], "79e99fac5e135437"); }
 }
 
 export function Layout$c(app, args, children, depth) {
@@ -128,5 +128,5 @@ export function Layout$c(app, args, children, depth) {
 }
 
 export class Layout extends $.App {
-  constructor(p0) { super(Layout$c, [LayoutModel.from(p0)], "4104d6fab1e290a7"); }
+  constructor(p0) { super(Layout$c, [LayoutModel.from(p0)], "79e99fac5e135437"); }
 }

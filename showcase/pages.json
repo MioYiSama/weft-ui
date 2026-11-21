@@ -24,5 +24,6 @@
   {
     "id": "assets",
     "title": "Assets"
-  }
+  },
+  { "id": "safearea", "title": "Safe area" }
 ]

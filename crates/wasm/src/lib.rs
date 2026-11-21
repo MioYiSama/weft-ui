@@ -7,12 +7,20 @@ use js_sys::Function;
 use wasm_bindgen::prelude::*;
 use weft_ui_content_mapper::PositionEncoding;
 use weft_ui_parser::SourceLoader;
+use weft_ui_transformer::AppOptions;
 use weft_ui_transformer::transform::Platform;
 
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_name = String)]
     fn exception_message(value: &JsValue) -> String;
+
+    /// JS options of `compileApp`.
+    #[wasm_bindgen(typescript_type = "{ safeArea?: boolean }")]
+    pub type JsAppOptions;
+
+    #[wasm_bindgen(method, getter, js_name = safeArea)]
+    fn safe_area(this: &JsAppOptions) -> Option<bool>;
 }
 
 struct JsLoader<'load>(&'load Function);
@@ -142,11 +150,16 @@ pub fn compile_app(
     entries: Vec<String>,
     platform: &str,
     load: &Function,
+    options: Option<JsAppOptions>,
 ) -> Result<AppOutput, JsError> {
     let platform: Platform = platform.parse()?;
+    let options = options
+        .as_ref()
+        .and_then(JsAppOptions::safe_area)
+        .map_or_else(AppOptions::default, |safe_area| AppOptions { safe_area });
     let entries: Vec<&str> = entries.iter().map(String::as_str).collect();
     let parsed = weft_ui_parser::load(&entries, &mut JsLoader(load));
-    let output = weft_ui_transformer::compile_app(parsed, platform);
+    let output = weft_ui_transformer::compile_app(parsed, platform, &options);
     let compilation = &output.compilation;
     let (logic_sources, (logic_code, logic_dts)) = output
         .logic

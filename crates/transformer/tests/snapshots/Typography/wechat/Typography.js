@@ -47,5 +47,5 @@ export function Typography$c(app, args, children, depth) {
 }
 
 export class Typography extends $.App {
-  constructor(p0) { super(Typography$c, [TypographyModel.from(p0)], "5de88bddbfefad1e"); }
+  constructor(p0) { super(Typography$c, [TypographyModel.from(p0)], "d2a4d4e0ff976a2e"); }
 }

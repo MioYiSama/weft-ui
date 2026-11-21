@@ -9,6 +9,7 @@ pub(super) mod dom;
 
 use weft_ui_ast::FileId;
 
+use crate::AppOptions;
 use crate::bridge::{self, Mode};
 use crate::ir::Program;
 use crate::transform::JsModule;
@@ -22,6 +23,6 @@ const RUNTIME: &str = "@weft-ui/runtime";
 ///
 /// Panics if `file` is not part of the program.
 #[must_use]
-pub fn module(program: &Program, file: FileId) -> JsModule {
-    bridge::generate(program, file, RUNTIME, Mode::Dom(&dom::Dom))
+pub fn module(program: &Program, file: FileId, options: &AppOptions) -> JsModule {
+    bridge::generate(program, file, RUNTIME, Mode::Dom(&dom::Dom, options))
 }

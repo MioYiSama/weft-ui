@@ -31,6 +31,6 @@ export function Tap$c(app, args, children, depth) {
 }
 
 export class Tap extends $.App {
-  constructor(p0) { super(Tap$c, [TapModel.from(p0)], "8c1df00d0c961bb0"); }
+  constructor(p0) { super(Tap$c, [TapModel.from(p0)], "e3346ca1afcb3b60"); }
   onActivated(h) { return this.$on("Activated", h); }
 }

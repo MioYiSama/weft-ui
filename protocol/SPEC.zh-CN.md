@@ -13,6 +13,7 @@ JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块�
 ```json
 {
   "hash": "a6bb96edf9a9ad2d",
+  "safeArea": true,
   "templates": [
     {
       "label": "TodoList",
@@ -33,6 +34,7 @@ JS 逻辑层（`@weft-ui/runtime/remote` 和生成的 remote 模式逻辑模块�
 - **事件槽** `events[i]`：节点的一个事件属性，`payload` 是载荷类型（`null` 表示无载荷）。受控元素总有 `onChange` 事件槽，`controls` 是它控制的值槽下标，其余事件为 `null`。生命周期属性（`onMount` / `onUnmount`）由 JS 处理，不进入布局。
 - **挂载点** `points[i]`：`branch`（`templates` 依次是各分支的模板）、`list`（`template` 是行体）、`instance`（`template` 是被实例化组件的组件体）或 `slot`（插槽内容由使用方提供，可以是任意 `slot` 种类的模板）。
 - **主题**：应用声明了主题时，顶层 `theme` 对象将颜色令牌名映射到 `[浅色, 深色]`。两项均为小写 `#rrggbbaa`；仅声明一种外观时两项相同。数值令牌已在编译期折叠，不写进布局。静态 `props` 中的令牌和动态 `Color` 值槽中的令牌都使用字符串 `"@name"`，由宿主按当前外观解析。
+- **安全区**：顶层布尔值 `safeArea` 表示应用是否要求为安全区留出内边距，默认为 `true`，并参与布局哈希计算。
 - **哈希**：去掉 `hash` 字段后的 JSON 的 FNV-1a 64 位哈希，16 位十六进制。它同时写进 JS 逻辑（`App` 构造参数）和平台视图，sink 在 `open` 时比对，不一致直接报错。
 
 ## Scope

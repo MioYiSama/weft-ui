@@ -15,7 +15,7 @@ import net.mioyi.weftui.*
 /** Root view of the app: starts the kernel with the bundle and renders the root component. */
 @Composable
 fun WeftApp() {
-    WeftRoot(layoutHash = 0x4104d6fab1e290a7uL, make = ::makeScope)
+    WeftRoot(layoutHash = 0x79e99fac5e135437uL, make = ::makeScope)
 }
 
 /** Scope of a `create` op. */

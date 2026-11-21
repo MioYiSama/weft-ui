@@ -40,6 +40,7 @@ impl TemplateId {
 /// Block templates of a whole app.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ViewLayout {
+    safe_area: bool,
     theme: Option<Vec<(String, Color, Color)>>,
     templates: Vec<Template>,
     /// Lookup from IR nodes to their place in the layout, by component.

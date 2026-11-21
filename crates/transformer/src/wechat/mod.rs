@@ -41,6 +41,14 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
     } else {
         ""
     };
+    let (safe_class, safe_css) = if layout.safe_area() {
+        (
+            " w-safe",
+            ".w-safe{padding-bottom:env(safe-area-inset-bottom)}\n",
+        )
+    } else {
+        ("", "")
+    };
     let mut files = vec![
         OutputFile {
             path: "view.js".to_owned(),
@@ -84,11 +92,13 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
         },
         OutputFile {
             path: "index.wxml".to_owned(),
-            contents: "<weft-view id=\"weft\" class=\"w-root\"/>\n".to_owned(),
+            contents: format!("<weft-view id=\"weft\" class=\"w-root{safe_class}\"/>\n"),
         },
         OutputFile {
             path: "index.wxss".to_owned(),
-            contents: "@import \"./view.wxss\";\npage{height:100%;overflow:hidden}\n".to_owned(),
+            contents: format!(
+                "@import \"./view.wxss\";\npage{{height:100%;overflow:hidden}}\n{safe_css}"
+            ),
         },
     ];
     if needs_assets {

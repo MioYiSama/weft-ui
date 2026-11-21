@@ -29,6 +29,7 @@ export default defineConfig({
 | `app.name` | The name of the Vite root directory | The display name filled into platform templates on the first build. |
 | `include` | `src/**/*.weft` | A glob relative to the Vite root. Non-Web builds compile the matched `.weft` files together. |
 | `entry` | The first existing `src/index.js`, `src/index.ts`, `src/index.mjs`, `src/index.mts`, `src/index.cjs`, or `src/index.cts`, in that order | The JS or TS logic entry for non-Web builds, resolved from the Vite root. Web starts from `index.html`. |
+| `safeArea` | `true` | Keep root content clear of system UI on Web and WeChat. Set to `false` for an edge-to-edge layout. |
 | `dts` | `false` | Set to `true` to write `X.d.weft.ts` next to `X.weft` when not using `@weft-ui/content-mapper`. Enable `allowArbitraryExtensions` in TypeScript. |
 
 ## Choose a target
@@ -69,6 +70,8 @@ pnpm --filter example exec vite
 pnpm --filter example build:web
 ```
 
+Include `viewport-fit=cover` in your viewport meta tag so mobile browsers expose the safe-area insets. The app adds those insets as padding on the mount element by default. If you set `safeArea: false`, you can still read the insets from [`platform.safeArea`](/guides/platform-api/#read-the-window-environment).
+
 To check the UI in the browser, add a todo, tick its checkbox, then remove it.
 
 ## WeChat Mini Program
@@ -78,6 +81,8 @@ pnpm --filter example build:wechat
 ```
 
 Open `example/apps/wechat/` in WeChat DevTools, not its `weft/` subdirectory. The generated WXML and logic bundle live in `weft/`. The [template](https://github.com/weft-ui/weft-ui/blob/master/packages/vite/templates/wechat/project.config.json) starts with `touristappid`; to use your registered Mini Program, set `appid` in the project’s `project.config.json`.
+
+By default, Weft pads the bottom of the page by the safe-area inset. The mini program navigation bar handles the top. `safeArea: false` removes the bottom padding without changing the navigation bar.
 
 In the simulator, try the same add, check, and remove flow. The workspace also has [automated Web and Mini Program tests](https://github.com/weft-ui/weft-ui/blob/master/tests/vite/platforms.test.ts) that run without WeChat DevTools:
 

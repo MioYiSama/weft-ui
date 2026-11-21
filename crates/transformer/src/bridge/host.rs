@@ -154,7 +154,12 @@ pub(crate) fn app_class(
     }
     // Remote views check that they were generated from the same layout.
     let hash = match mode {
-        Mode::Dom(_) => String::new(),
+        Mode::Dom(_, options) => {
+            if !options.safe_area {
+                out.line("static safeArea = false;");
+            }
+            String::new()
+        }
         Mode::Remote(layout) => format!(", \"{:016x}\"", layout.hash()),
     };
     out.line(format!(
@@ -309,7 +314,7 @@ pub(crate) fn app_dts(program: &Program, id: ComponentId, mode: Mode<'_>, out: &
         "$on(name: string, handler: (model: {model}, event: object) => unknown): () => void;"
     ));
     match mode {
-        Mode::Dom(_) => out.line("mount(target: Node): void;"),
+        Mode::Dom(..) => out.line("mount(target: Node): void;"),
         Mode::Remote(_) => {
             out.line("/** Renders into a view sink, or a generated mini program view component, e.g. `page.selectComponent(\"#view\")`. */");
             out.line("mount(view: object): void;");

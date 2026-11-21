@@ -7,7 +7,7 @@ import WeftKit
 @MainActor private let session = WeftSession(
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
     resources: Bundle.module,
-    layoutHash: 0x606709743a230527,
+    layoutHash: 0x61c5242ca67945f7,
     make: makeScope
 )
 

@@ -59,5 +59,5 @@ export function Appearance$c(app, args, children, depth) {
 }
 
 export class Appearance extends $.App {
-  constructor(p0) { super(Appearance$c, [AppearanceModel.from(p0)], "e7efdea4345db2e9"); }
+  constructor(p0) { super(Appearance$c, [AppearanceModel.from(p0)], "70627c3a51016ed9"); }
 }

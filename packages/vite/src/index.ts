@@ -22,6 +22,8 @@ export interface WeftOptions {
   apps?: string;
   /** Directory for bundled images, icons and fonts, relative to the Vite root. Defaults to `assets`. */
   assets?: string;
+  /** Keep root content inside the host's safe area. Defaults to `true`. */
+  safeArea?: boolean;
   /** Overrides the installed native shell packages with a directory containing the shells; absolute or relative to the Vite root. */
   native?: string;
   /** Values filled into the project templates copied to `<apps>/<platform>/` on the first build. */
@@ -210,6 +212,8 @@ function writeGenerated(generated: string, result: AppResult) {
 export default function weft(options: WeftOptions = {}): Plugin {
   const configured = options.platforms ?? PLATFORMS;
   const include = options.include ?? "src/**/*.weft";
+  const { safeArea } = options;
+  const appOptions = safeArea === undefined ? undefined : { safeArea };
   let root = process.cwd();
   let appsDir: string;
   let assetsDir: string;
@@ -332,7 +336,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
       if (options.dts) {
         const outputPath = existsSync(appsDir) ? realpathSync(appsDir) : appsDir;
         for (const file of weftFiles(root, outputPath)) {
-          const output = await compileApp([file], "web", (path) => readFileSync(path, "utf8"));
+          const output = await compileApp([file], "web", (path) => readFileSync(path, "utf8"), appOptions);
           const logic = output.logic.find((module) => module.source === file);
           if (!output.hasErrors && logic) writeDeclarations(file, logic.dts);
         }
@@ -341,7 +345,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
       if (platform === "web") return;
       const entries = globSync(include, { cwd: root }).map((path) => resolve(root, path).replaceAll("\\", "/"));
       if (entries.length === 0) this.error(`weft: no .weft files match ${include} in ${root}`);
-      const app = await compileApp(entries, platform, (path) => readFileSync(path, "utf8"));
+      const app = await compileApp(entries, platform, (path) => readFileSync(path, "utf8"), appOptions);
       apps.set(this.environment.name, app);
       for (const file of app.files) this.addWatchFile(file);
       if (app.hasErrors) this.error(app.diagnostics);
@@ -356,7 +360,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
         if (!logic) this.error(`${file} is not part of the app; include it with the include option (${include})`);
         return { code: logic.code, map: null };
       }
-      const output = await compileApp([file], "web", (path) => (path === file ? code : readFileSync(path, "utf8")));
+      const output = await compileApp([file], "web", (path) => (path === file ? code : readFileSync(path, "utf8")), appOptions);
       for (const loaded of output.files) this.addWatchFile(loaded);
       if (output.hasErrors) this.error(output.diagnostics);
       if (output.diagnostics) this.warn(output.diagnostics);

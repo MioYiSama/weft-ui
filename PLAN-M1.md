@@ -962,7 +962,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R7.d | ☑ | 15447d9 | 截图待维护者确认（`assets`：android；`tap` 的 android 基线在 Apple 提交中随图片显示而更新）；C-android 21 项、C-ui、3 个资源仪器测试与 Android 的 Vite 断言通过；其余 android 基线 0.000% |
 | R7.n | ☑ | 0df03db | C-windows（core 21、WinUI 37）、C-ui 与 Windows 的 Vite 断言通过；Windows `assets`、`tap` 截图已查看 |
 | R7.g | ☑ | 06781eb | C-linux 8 组、C-ui 与 Linux 的 Vite 断言通过，CMake 复制的资源与生成文件逐字节一致；Linux `assets`、`tap` 截图已查看 |
-| R8.w | ☐ | | |
+| R8.w | ☑ | （本提交） | 截图待维护者确认（`safearea`：web、wechat）；C-rust 133 项、C-ts 237 项通过，tsc 计数不变；example 与 showcase 的五个原生目标实际构建成功；Web 四边安全区为 0，小程序底部 34 px；C-apps 各平台按预期有差异，已重新录制基线 |
 | R8.a | ☐ | | |
 | R8.d | ☐ | | |
 | R8.n | ☐ | | |
@@ -1044,3 +1044,5 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R7.d] Android 新增依赖 `svg2vectordrawable` 把 SVG 转成 VectorDrawable，`pnpm-lock.yaml` 随之更新。结论：接受
 - [R7.n] 非打包 WinUI 应用中 `ms-appx` 字体 URI 可用，无需 `file:` 回退。结论：接受
 - [R7 收尾] `tap` 页的图片改用打包资源 `asset:tap_card`（由原内嵌 PNG 解码而来），五个原生平台都能显示；Web、iOS 截图 0.000% 不变，Android 基线因图片出现而更新（差异 0.143%），Windows、Linux 截图已查看。结论：接受
+- [R8.w] 预期变化之外的实际变化：11 个夹具的 56 份 `layout.json` 只新增 `"safeArea": true` 并更新哈希；112 份生成文件（非 Web 组件 JS、小程序 `view.js`、四种原生生成视图）只更新哈希；11 份小程序 `index.wxml` 加 `w-safe`、`index.wxss` 加底部规则；Web 快照不变；example 各平台产物相应变化。仓库没有独立的 Web HTML 模板，`viewport-fit=cover` 加在 example 与 showcase 的 `index.html`。结论：接受，已重新录制 C-apps 基线
+- [R8.w] 小程序底部留出 34 px 后，`controls` 页末尾文本框下沿移出初始视口，与旧基线差 0.069%（含 Spinner），Web 的 `controls` 差 0.002%，均低于 0.1% 阈值，旧基线保留。结论：接受，记录在案

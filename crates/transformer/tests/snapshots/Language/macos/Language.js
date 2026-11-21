@@ -49,7 +49,7 @@ export function ModeLabel$c(app, args, children, depth) {
 }
 
 export class ModeLabel extends $.App {
-  constructor(p0 = "full") { super(ModeLabel$c, [p0], "49c4ae055e1be040"); }
+  constructor(p0 = "full") { super(ModeLabel$c, [p0], "791dbd02ccbe6190"); }
 }
 
 export function Rating$c(app, args, children, depth) {
@@ -69,7 +69,7 @@ export function Rating$c(app, args, children, depth) {
 }
 
 export class Rating extends $.App {
-  constructor(p0) { super(Rating$c, [p0, null], "49c4ae055e1be040"); }
+  constructor(p0) { super(Rating$c, [p0, null], "791dbd02ccbe6190"); }
 }
 
 export function ForwardRating$c(app, args, children, depth) {
@@ -83,7 +83,7 @@ export function ForwardRating$c(app, args, children, depth) {
 }
 
 export class ForwardRating extends $.App {
-  constructor() { super(ForwardRating$c, [null], "49c4ae055e1be040"); }
+  constructor() { super(ForwardRating$c, [null], "791dbd02ccbe6190"); }
   get model() { return undefined; }
 }
 
@@ -104,7 +104,7 @@ export function Card$c(app, args, children, depth) {
 }
 
 export class Card extends $.App {
-  constructor() { super(Card$c, [undefined, undefined, undefined], "49c4ae055e1be040"); }
+  constructor() { super(Card$c, [undefined, undefined, undefined], "791dbd02ccbe6190"); }
 }
 
 export function Language$c(app, args, children, depth) {
@@ -212,6 +212,6 @@ export function Language$c(app, args, children, depth) {
 }
 
 export class Language extends $.App {
-  constructor(p0) { super(Language$c, [LanguageModel.from(p0)], "49c4ae055e1be040"); }
+  constructor(p0) { super(Language$c, [LanguageModel.from(p0)], "791dbd02ccbe6190"); }
   onRated(h) { return this.$on("Rated", h); }
 }

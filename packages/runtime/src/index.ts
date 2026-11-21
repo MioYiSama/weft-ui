@@ -378,6 +378,9 @@ type Create = (app: App, args: unknown[], children: readonly (Slot | null)[], de
 
 /** Base class of the generated root component classes. */
 export class App extends AppBase {
+  /** Set by generated classes when the app opts out of safe-area padding. */
+  declare static readonly safeArea?: boolean;
+
   #create: Create;
   #root: Instance | null = null;
 
@@ -393,10 +396,14 @@ export class App extends AppBase {
       const base = doc.createElement("style");
       base.dataset.weft = "";
       // WXSS cannot compile :has(); WeChat stops ancestor hover via WXML instead.
-      base.textContent = `${CSS}\n:root{color-scheme:light dark}\n.w-tap:active:not(:has(.w-tap:active,.w-button:active)){filter:opacity(.6)}\nimg.w-image{object-fit:cover}\n.w-image-placeholder:not(.w-image-loaded){background-color:var(--w-image-placeholder)!important;content:linear-gradient(transparent,transparent)}\n${assetFonts()}`;
+      base.textContent = `${CSS}\n.w-safe{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}\n:root{color-scheme:light dark}\n.w-tap:active:not(:has(.w-tap:active,.w-button:active)){filter:opacity(.6)}\nimg.w-image{object-fit:cover}\n.w-image-placeholder:not(.w-image-loaded){background-color:var(--w-image-placeholder)!important;content:linear-gradient(transparent,transparent)}\n${assetFonts()}`;
       doc.head.append(base);
     }
-    if (target.nodeType === 1) (target as Element).classList.add("w-root");
+    if (target.nodeType === 1) {
+      const { classList } = target as Element;
+      classList.add("w-root");
+      classList.toggle("w-safe", (this.constructor as typeof App).safeArea ?? true);
+    }
     const root = this.#create(this, this.$args, [], 0);
     root.mount(target, null);
     this.#root = root;

@@ -1,0 +1,19 @@
+model ShowcaseInsets { top: Float, bottom: Float, start: Float, end: Float }
+
+style SafeAreaLabel { size = 16, color = "#ffffff" }
+
+component Safearea(insets: ShowcaseInsets) {
+    Column(fill = true, grow = 1, background = "#eef4f5") {
+        Column(fill = true, padding = 20, gap = 8, background = "#164c60") {
+            Text("Safe area", size = 28, weight = "bold", color = "#ffffff")
+            Text("Top: ${insets.top} px", style = SafeAreaLabel)
+        }
+        Row(fill = true, padding = 20, justify = "spaceBetween") {
+            Text("Start: ${insets.start} px", color = "#164c60")
+            Text("End: ${insets.end} px", color = "#164c60")
+        }
+        Spacer()
+        Text("Bottom: ${insets.bottom} px", fill = true, padding = 20,
+            background = "#236859", style = SafeAreaLabel)
+    }
+}

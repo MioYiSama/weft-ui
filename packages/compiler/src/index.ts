@@ -36,6 +36,12 @@ export interface OutputFile {
   contents: string;
 }
 
+/** App-wide compiler settings. */
+export interface AppOptions {
+  /** Keep root content inside the host's safe area. Defaults to `true`. */
+  safeArea?: boolean;
+}
+
 export interface AppResult {
   /** One module per `.weft` file, entries first; empty on errors. */
   logic: LogicModule[];
@@ -110,9 +116,10 @@ export async function compileApp(
   entries: string[],
   platform: Platform,
   load: (path: string) => string,
+  options?: AppOptions,
 ): Promise<AppResult> {
   const module = await loadCompiler();
-  const output = module.compileApp(entries, platform, load);
+  const output = module.compileApp(entries, platform, load, options);
   try {
     const code = output.logicCode;
     const dts = output.logicDts;

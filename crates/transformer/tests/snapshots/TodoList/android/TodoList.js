@@ -73,7 +73,7 @@ export function TodoList$c(app, args, children, depth) {
 }
 
 export class TodoList extends $.App {
-  constructor(p0) { super(TodoList$c, [TodoListModel.from(p0)], "a6bb96edf9a9ad2d"); }
+  constructor(p0) { super(TodoList$c, [TodoListModel.from(p0)], "6cf685a4e57f05dd"); }
   onTextChanged(h) { return this.$on("TextChanged", h); }
   onRemove(h) { return this.$on("Remove", h); }
 }

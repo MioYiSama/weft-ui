@@ -10,7 +10,7 @@ namespace Weft.Generated;
 public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
-    public const ulong LayoutHash = 0x606709743a230527UL;
+    public const ulong LayoutHash = 0x61c5242ca67945f7UL;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
     public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);

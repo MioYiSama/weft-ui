@@ -32,7 +32,7 @@ use js::Code;
 #[derive(Debug, Clone, Copy)]
 pub enum Mode<'v> {
     /// Browser DOM through `view`; modules import each other as `.weft` files.
-    Dom(&'v dyn DomView),
+    Dom(&'v dyn DomView, &'v crate::AppOptions),
     /// Scopes of the view protocol `layout`, rendered by a separate view
     /// layer; modules import each other as `.weft` files for Vite to resolve.
     Remote(&'v ViewLayout),
@@ -271,7 +271,7 @@ fn code(program: &Program, links: &Links<'_>, runtime: &str) -> String {
     let theme = program
         .theme
         .as_ref()
-        .filter(|_| matches!(links.mode, Mode::Dom(_)));
+        .filter(|_| matches!(links.mode, Mode::Dom(..)));
     if let Some(theme) = theme
         && theme.span.file != entry.file
         && entry
@@ -325,7 +325,7 @@ fn code(program: &Program, links: &Links<'_>, runtime: &str) -> String {
     for &id in &entry.components {
         components.line("");
         match links.mode {
-            Mode::Dom(view) => view.component(program, id, &mut consts, &mut components),
+            Mode::Dom(view, _) => view.component(program, id, &mut consts, &mut components),
             Mode::Remote(layout) => {
                 remote::component(program, layout, id, &mut consts, &mut components);
             }

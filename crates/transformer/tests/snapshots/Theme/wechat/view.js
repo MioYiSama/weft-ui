@@ -1,5 +1,5 @@
 Component(getApp().weft.view({
-  hash: "df9b1480f4cc5c0a",
+  hash: "7cc75271705805fa",
   theme: ["accent"],
   templates: [
     { n: "Badge", v: [["n0_0", 34]] },

@@ -10,7 +10,7 @@ using namespace std::literals;
 namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
-constexpr uint64_t kLayoutHash = 0x49c4ae055e1be040ull;
+constexpr uint64_t kLayoutHash = 0x791dbd02ccbe6190ull;
 
 // 0 ModeLabel
 

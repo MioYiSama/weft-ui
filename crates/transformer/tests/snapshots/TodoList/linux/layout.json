@@ -1,5 +1,6 @@
 {
-  "hash": "a6bb96edf9a9ad2d",
+  "hash": "6cf685a4e57f05dd",
+  "safeArea": true,
   "templates": [
     {
       "label": "TodoList",

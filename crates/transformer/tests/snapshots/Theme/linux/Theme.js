@@ -22,7 +22,7 @@ export function Badge$c(app, args, children, depth) {
 }
 
 export class Badge extends $.App {
-  constructor(p0) { super(Badge$c, [p0], "df9b1480f4cc5c0a"); }
+  constructor(p0) { super(Badge$c, [p0], "7cc75271705805fa"); }
 }
 
 export function Theme$c(app, args, children, depth) {
@@ -42,5 +42,5 @@ export function Theme$c(app, args, children, depth) {
 }
 
 export class Theme extends $.App {
-  constructor(p0) { super(Theme$c, [Model.from(p0)], "df9b1480f4cc5c0a"); }
+  constructor(p0) { super(Theme$c, [Model.from(p0)], "7cc75271705805fa"); }
 }

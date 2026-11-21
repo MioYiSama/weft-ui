@@ -142,6 +142,7 @@ Session::~Session() {
   g_object_unref(cancellable_);
   if (timer_) g_source_remove(timer_);
   if (sweep_) g_source_remove(sweep_);
+  if (focus_idle_) g_source_remove(focus_idle_);
   scopes_.clear();
   dead_.clear();
   if (bytecode_) g_mapped_file_unref(bytecode_);
@@ -198,6 +199,26 @@ void Session::queue_environment() {
       g_autofree char *json = updated.json();
       weft_runtime_environment(session.runtime_, json, std::strlen(json));
     }
+    return G_SOURCE_REMOVE;
+  }, this);
+}
+
+void Session::queue_focus(uint32_t scope, uint32_t slot, bool focused) {
+  if (failed_ || !scopes_.contains(scope)) return;
+  focus_events_.push_back({scope, slot, focused});
+  if (focus_idle_) return;
+  // Focus can change inside GTK's focus handling or while applying a Set op.
+  // Deliver both edges in order once it is safe to run the kernel again.
+  focus_idle_ = g_idle_add([](gpointer data) -> gboolean {
+    auto &session = *static_cast<Session *>(data);
+    for (size_t i = 0; i < session.focus_events_.size() && !session.failed_; ++i) {
+      const auto [scope, slot, focused] = session.focus_events_[i];
+      if (auto it = session.scopes_.find(scope); it != session.scopes_.end()) {
+        it->second->dispatch(slot, focused);
+      }
+    }
+    session.focus_events_.clear();
+    session.focus_idle_ = 0;
     return G_SOURCE_REMOVE;
   }, this);
 }

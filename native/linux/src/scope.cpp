@@ -71,6 +71,8 @@ bool Scope::dispatch(uint32_t slot, std::string_view value) {
   return session_.dispatch(id_, slot, payload);
 }
 
+void Scope::dispatch_focus(uint32_t slot, bool focused) { session_.queue_focus(id_, slot, focused); }
+
 // Region.
 
 void Region::add(const Element &element) {

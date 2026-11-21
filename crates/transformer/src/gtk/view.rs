@@ -1,5 +1,7 @@
 //! Imperative construction of a template's elements and mount points.
 
+use std::fmt::Write;
+
 use crate::elements::Element;
 use crate::view::{Constant, Template, ValueType, ViewNodeKind};
 
@@ -32,7 +34,22 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                 },
                 Element::Input | Element::TextArea => {
                     let (slot, _) = template.controlled(index);
-                    format!("[this](std::string_view v) {{ return dispatch({slot}, v); }}")
+                    let mut args =
+                        format!("[this](std::string_view v) {{ return dispatch({slot}, v); }}");
+                    let focus = template.event(index, "onFocusChange");
+                    if *element == Element::Input {
+                        if let Some(submit) = template.event(index, "onSubmit") {
+                            write!(args, ", [this] {{ dispatch({submit}); }}")
+                                .expect("writing to a String cannot fail");
+                        } else if focus.is_some() {
+                            args.push_str(", nullptr");
+                        }
+                    }
+                    if let Some(focus) = focus {
+                        write!(args, ", [this](bool v) {{ dispatch_focus({focus}, v); }}")
+                            .expect("writing to a String cannot fail");
+                    }
+                    args
                 }
                 Element::Checkbox | Element::Switch => {
                     let (slot, _) = template.controlled(index);
@@ -187,6 +204,7 @@ fn union_type(element: Element, prop: &str) -> Option<&'static str> {
         (Element::Text, "align") => Some("TextAlign"),
         (Element::Text | Element::Span, "weight") => Some("Weight"),
         (Element::Text | Element::Span, "decoration") => Some("Decoration"),
+        (Element::Input, "type") => Some("InputType"),
         (_, "shadow") => Some("Shadow"),
         _ => None,
     }

@@ -527,9 +527,13 @@ constexpr int kInputWidth = 200;
 
 }  // namespace
 
-Input::Input(std::function<bool(std::string_view)> edit) : Element(gtk_entry_new()), edit_(std::move(edit)) {
+Input::Input(std::function<bool(std::string_view)> edit, std::function<void()> submit,
+             std::function<void(bool)> focus)
+    : TextControl(gtk_entry_new(), std::move(focus)), edit_(std::move(edit)), submit_(std::move(submit)) {
   gtk_widget_set_size_request(widget(), kInputWidth, -1);
+  set_focus_target(widget());
   g_signal_connect(widget(), "changed", G_CALLBACK(changed), this);
+  if (submit_) g_signal_connect(widget(), "activate", G_CALLBACK(activated), this);
   GtkEditable *text = gtk_editable_get_delegate(GTK_EDITABLE(widget()));
   g_signal_connect(text, "preedit-changed", G_CALLBACK(preedit_changed), this);
 }
@@ -549,6 +553,23 @@ void Input::set_placeholder(std::string_view placeholder) {
 
 void Input::set_disabled(bool disabled) { gtk_widget_set_sensitive(widget(), !disabled); }
 
+void Input::set_type(InputType type) {
+  GtkInputPurpose purpose = GTK_INPUT_PURPOSE_FREE_FORM;
+  switch (type) {
+    case InputType::Text: break;
+    case InputType::Password: purpose = GTK_INPUT_PURPOSE_PASSWORD; break;
+    case InputType::Number: purpose = GTK_INPUT_PURPOSE_NUMBER; break;
+    case InputType::Email: purpose = GTK_INPUT_PURPOSE_EMAIL; break;
+    case InputType::Phone: purpose = GTK_INPUT_PURPOSE_PHONE; break;
+  }
+  gtk_entry_set_input_purpose(GTK_ENTRY(widget()), purpose);
+  gtk_entry_set_visibility(GTK_ENTRY(widget()), type != InputType::Password);
+}
+
+void Input::activated(GtkEntry *, Input *self) {
+  if (!self->composing_) self->submit_();
+}
+
 void Input::changed(GtkEditable *, Input *self) { self->edited(); }
 
 void Input::preedit_changed(GtkText *, const char *preedit, Input *self) {
@@ -560,9 +581,21 @@ void Input::preedit_changed(GtkText *, const char *preedit, Input *self) {
 
 void Input::edited() {
   if (showing_ || composing_) return;
-  std::string text = gtk_editable_get_text(GTK_EDITABLE(widget()));
-  if (text == value_) return;
-  // The handler applies the app's ops, which may write `value_`, before this returns.
+  auto *editable = GTK_EDITABLE(widget());
+  std::string_view raw = gtk_editable_get_text(editable);
+  if (raw == value_) return;
+  const auto limited = limit_edit(raw);
+  if (limited.size() != raw.size()) {
+    const auto suffix = g_utf8_strlen(raw.data() + limited.size(), -1);
+    showing_ = true;
+    gtk_editable_delete_text(editable, gtk_entry_get_text_length(GTK_ENTRY(widget())) - suffix, -1);
+    showing_ = false;
+    raw = gtk_editable_get_text(editable);
+    if (raw == value_) return;
+  }
+  // The handler applies the app's ops synchronously, so the widget's text
+  // may change during dispatch. Own the payload until the handler returns.
+  std::string text(raw);
   if (!edit_(text)) show(value_);
 }
 

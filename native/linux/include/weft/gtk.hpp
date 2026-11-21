@@ -356,18 +356,47 @@ class Button final : public Element {
 // reported back. Text being composed by an input method is not reported, so
 // it is never rolled back mid-composition; the committed text is.
 
-/// `Input`: a `GtkEntry`, 200 px wide (CSS inputs default to about 20 characters).
-class Input final : public Element {
+/// Common focus requests and edit limits for GTK text controls.
+class TextControl : public Element {
  public:
-  explicit Input(std::function<bool(std::string_view)> edit);
+  ~TextControl() override;
+  void set_focused(bool focused);
+  void set_max_length(double length) { max_length_ = length; }
+
+ protected:
+  explicit TextControl(GtkWidget *widget, std::function<void(bool)> focus);
+  void set_focus_target(GtkWidget *target);
+  std::string_view limit_edit(std::string_view text) const;
+
+ private:
+  void cancel_pending_focus();
+  static void mapped(GtkWidget *target, TextControl *self);
+  static void entered(GtkEventControllerFocus *controller, TextControl *self);
+  static void left(GtkEventControllerFocus *controller, TextControl *self);
+
+  std::function<void(bool)> focus_;
+  GtkWidget *focus_target_ = nullptr;
+  GtkEventController *focus_controller_ = nullptr;
+  gulong pending_focus_ = 0;
+  double max_length_ = -1;
+  bool focused_ = false;
+};
+
+/// `Input`: a `GtkEntry`, 200 px wide (CSS inputs default to about 20 characters).
+class Input final : public TextControl {
+ public:
+  explicit Input(std::function<bool(std::string_view)> edit, std::function<void()> submit = {},
+                 std::function<void(bool)> focus = {});
   ~Input() override;
 
   /// The controlled value slot.
   void set_value(std::string_view value);
   void set_placeholder(std::string_view placeholder);
   void set_disabled(bool disabled);
+  void set_type(InputType type);
 
  private:
+  static void activated(GtkEntry *entry, Input *self);
   static void changed(GtkEditable *editable, Input *self);
   static void preedit_changed(GtkText *text, const char *preedit, Input *self);
   void edited();
@@ -375,6 +404,7 @@ class Input final : public Element {
   void show(const std::string &text);
 
   std::function<bool(std::string_view)> edit_;
+  std::function<void()> submit_;
   std::string value_;
   bool composing_ = false;
   /// Whether `show` is replacing the text.
@@ -412,9 +442,9 @@ class Switch final : public Element {
 };
 
 /// `TextArea`: a wrapping `GtkTextView` with a three-line scroll viewport.
-class TextArea final : public Element {
+class TextArea final : public TextControl {
  public:
-  explicit TextArea(std::function<bool(std::string_view)> edit);
+  explicit TextArea(std::function<bool(std::string_view)> edit, std::function<void(bool)> focus = {});
   ~TextArea() override;
   void set_value(std::string_view value);
   void set_placeholder(std::string_view placeholder);
@@ -576,6 +606,8 @@ class Scope {
   bool dispatch(uint32_t slot, bool value);
   bool dispatch(uint32_t slot, double value);
   bool dispatch(uint32_t slot, std::string_view value);
+  /// Reports a focus change after GTK and the current ops batch finish.
+  void dispatch_focus(uint32_t slot, bool focused);
 
  private:
   friend class Region;
@@ -612,10 +644,18 @@ class Session {
   bool dispatch(uint32_t scope, uint32_t slot, const std::string &payload);
 
  private:
+  friend class Scope;
+
   Session(GtkWidget *page, Factory make);
   void open(const std::string &bundle, uint64_t layout_hash);
   void queue_environment();
+  void queue_focus(uint32_t scope, uint32_t slot, bool focused);
   struct Environment;
+  struct FocusEvent {
+    uint32_t scope;
+    uint32_t slot;
+    bool focused;
+  };
   void commit(const uint8_t *ops, size_t len);
   void apply(const ops::Op &op);
   void mount(uint32_t parent, uint32_t index, std::vector<uint32_t> ids);
@@ -641,6 +681,8 @@ class Session {
   /// handler may still run code of the scope that its event destroyed.
   std::vector<std::unique_ptr<Scope>> dead_;
   guint sweep_ = 0;
+  std::vector<FocusEvent> focus_events_;
+  guint focus_idle_ = 0;
   /// The pending tick and when it fires, in monotonic milliseconds.
   guint timer_ = 0;
   int64_t due_ = 0;

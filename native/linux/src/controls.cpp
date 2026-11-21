@@ -48,9 +48,76 @@ char *buffer_text(GtkTextBuffer *buffer) {
 
 }  // namespace
 
-TextArea::TextArea(std::function<bool(std::string_view)> edit)
-    : Element(gtk_overlay_new()), edit_(std::move(edit)), view_(GTK_TEXT_VIEW(gtk_text_view_new())),
+TextControl::TextControl(GtkWidget *widget, std::function<void(bool)> focus)
+    : Element(widget), focus_(std::move(focus)) {}
+
+TextControl::~TextControl() {
+  cancel_pending_focus();
+  if (focus_controller_) {
+    g_signal_handlers_disconnect_by_data(focus_controller_, this);
+    gtk_widget_remove_controller(focus_target_, focus_controller_);
+  }
+}
+
+void TextControl::set_focus_target(GtkWidget *target) {
+  focus_target_ = target;
+  if (!focus_) return;
+  focus_controller_ = gtk_event_controller_focus_new();
+  g_signal_connect(focus_controller_, "enter", G_CALLBACK(entered), this);
+  g_signal_connect(focus_controller_, "leave", G_CALLBACK(left), this);
+  gtk_widget_add_controller(focus_target_, focus_controller_);
+}
+
+void TextControl::set_focused(bool focused) {
+  if (std::exchange(focused_, focused) == focused) return;
+  if (focused) {
+    if (gtk_widget_get_mapped(focus_target_)) gtk_widget_grab_focus(focus_target_);
+    // Initial values can arrive before the scope is attached to the window.
+    else pending_focus_ = g_signal_connect_after(focus_target_, "map", G_CALLBACK(mapped), this);
+    return;
+  }
+  cancel_pending_focus();
+  auto *root = gtk_widget_get_root(focus_target_);
+  auto *focus = root ? gtk_root_get_focus(root) : nullptr;
+  // GtkEntry delegates editing and keyboard focus to a child GtkText.
+  if (focus && (focus == focus_target_ || gtk_widget_is_ancestor(focus, focus_target_))) {
+    gtk_root_set_focus(root, nullptr);
+  }
+}
+
+void TextControl::cancel_pending_focus() {
+  if (pending_focus_) g_signal_handler_disconnect(focus_target_, std::exchange(pending_focus_, 0));
+}
+
+void TextControl::mapped(GtkWidget *target, TextControl *self) {
+  self->cancel_pending_focus();
+  gtk_widget_grab_focus(target);
+}
+
+void TextControl::entered(GtkEventControllerFocus *, TextControl *self) { self->focus_(true); }
+
+void TextControl::left(GtkEventControllerFocus *, TextControl *self) { self->focus_(false); }
+
+std::string_view TextControl::limit_edit(std::string_view text) const {
+  if (!(max_length_ >= 0 && max_length_ < text.size())) return text;
+  auto remaining = size_t(max_length_);
+  const char *at = text.data();
+  const char *end = at + text.size();
+  // GTK yields valid UTF-8. A four-byte code point uses two UTF-16 units.
+  while (at != end && remaining) {
+    const char *next = g_utf8_next_char(at);
+    const size_t units = next - at == 4 ? 2 : 1;
+    if (units > remaining) break;
+    remaining -= units;
+    at = next;
+  }
+  return text.substr(0, at - text.data());
+}
+
+TextArea::TextArea(std::function<bool(std::string_view)> edit, std::function<void(bool)> focus)
+    : TextControl(gtk_overlay_new(), std::move(focus)), edit_(std::move(edit)), view_(GTK_TEXT_VIEW(gtk_text_view_new())),
       buffer_(gtk_text_view_get_buffer(view_)), placeholder_(gtk_label_new(nullptr)) {
+  set_focus_target(GTK_WIDGET(view_));
   auto *scroll = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new());
   gtk_scrolled_window_set_policy(scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
   gtk_scrolled_window_set_has_frame(scroll, true);
@@ -121,8 +188,8 @@ void TextArea::changed(GtkTextBuffer *, TextArea *self) {
 void TextArea::begin_edit(GtkTextBuffer *, TextArea *self) { self->editing_ = true; }
 
 void TextArea::end_edit(GtkTextBuffer *, TextArea *self) {
-  self->editing_ = false;
   self->edited();
+  self->editing_ = false;
 }
 
 void TextArea::preedit_changed(GtkTextView *, const char *preedit, TextArea *self) {
@@ -136,7 +203,20 @@ void TextArea::preedit_changed(GtkTextView *, const char *preedit, TextArea *sel
 void TextArea::edited() {
   if (showing_ || composing_) return;
   g_autofree char *text = buffer_text(buffer_);
-  if (value_ != text && !edit_(text)) show();
+  const std::string_view raw(text);
+  if (raw == value_) return;
+  const auto limited = limit_edit(raw);
+  if (limited.size() != raw.size()) {
+    const auto suffix = g_utf8_strlen(raw.data() + limited.size(), -1);
+    GtkTextIter begin, end;
+    gtk_text_buffer_get_end_iter(buffer_, &end);
+    begin = end;
+    gtk_text_iter_backward_chars(&begin, suffix);
+    showing_ = true;
+    gtk_text_buffer_delete(buffer_, &begin, &end);
+    showing_ = false;
+  }
+  if (limited != value_ && !edit_(limited)) show();
 }
 
 void TextArea::show() {
@@ -144,7 +224,16 @@ void TextArea::show() {
   gtk_text_buffer_get_iter_at_mark(buffer_, &at, gtk_text_buffer_get_insert(buffer_));
   const int caret = gtk_text_iter_get_offset(&at);
   showing_ = true;
-  gtk_text_buffer_set_text(buffer_, value_.c_str(), value_.size());
+  if (editing_) {
+    // The end-user-action signal runs before GTK closes the undo group.
+    // set_text() would start an irreversible action inside that group.
+    GtkTextIter begin, end;
+    gtk_text_buffer_get_bounds(buffer_, &begin, &end);
+    gtk_text_buffer_delete(buffer_, &begin, &end);
+    if (!value_.empty()) gtk_text_buffer_insert(buffer_, &begin, value_.data(), value_.size());
+  } else {
+    gtk_text_buffer_set_text(buffer_, value_.data(), value_.size());
+  }
   showing_ = false;
   gtk_text_buffer_get_iter_at_offset(buffer_, &at, std::min(caret, gtk_text_buffer_get_char_count(buffer_)));
   gtk_text_buffer_place_cursor(buffer_, &at);

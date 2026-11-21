@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -38,14 +39,23 @@ std::vector<GtkWidget *> all(GtkWidget *root, GType type, size_t count) {
   return found;
 }
 
-GtkWidget *controls_link(GtkWidget *widget) {
-  if (GTK_IS_LABEL(widget) && std::string_view(gtk_label_get_text(GTK_LABEL(widget))) == "page:controls") {
-    return gtk_widget_get_ancestor(widget, GTK_TYPE_BUTTON);
-  }
+GtkWidget *label(GtkWidget *widget, std::string_view text) {
+  if (GTK_IS_LABEL(widget) && std::string_view(gtk_label_get_text(GTK_LABEL(widget))) == text) return widget;
   for (auto *child = gtk_widget_get_first_child(widget); child; child = gtk_widget_get_next_sibling(child)) {
-    if (auto *found = controls_link(child)) return found;
+    if (auto *found = label(child, text)) return found;
   }
   return nullptr;
+}
+
+void click(GtkWidget *root, std::string_view text) {
+  auto *caption = label(root, text);
+  auto *button = caption ? gtk_widget_get_ancestor(caption, GTK_TYPE_BUTTON) : nullptr;
+  if (!button) {
+    std::fprintf(stderr, "Button '%.*s' missing\n", int(text.size()), text.data());
+    std::exit(1);
+  }
+  g_signal_emit_by_name(button, "clicked");
+  pump();
 }
 
 bool active(GtkWidget *widget, bool value) {
@@ -82,10 +92,7 @@ bool contains(GtkWidget *area, std::string_view expected) {
 }
 
 void controls(GtkWidget *root) {
-  auto *link = controls_link(root);
-  check(link, "Controls catalog link missing");
-  g_signal_emit_by_name(link, "clicked");
-  pump();
+  click(root, "page:controls");
 
   const auto switches = all(root, GTK_TYPE_SWITCH, 4);
   const auto checkboxes = all(root, GTK_TYPE_CHECK_BUTTON, 2);
@@ -144,14 +151,55 @@ void controls(GtkWidget *root) {
   check(active(switches[0], false) && choice(pickers[1]) == "测试版", "Picker could not select after unlocking");
 }
 
-}  // namespace
+void inputs(GtkWidget *root) {
+  click(root, "page:inputs");
+  const auto entries = all(root, GTK_TYPE_ENTRY, 5);
+  const auto textareas = all(root, GTK_TYPE_TEXT_VIEW, 1);
+  auto *draft = gtk_editable_get_delegate(GTK_EDITABLE(entries[0]));
+  auto *window = gtk_widget_get_root(root);
+  auto expect_focus = [&](GtkWidget *widget, std::string_view message_label) {
+    check(gtk_root_get_focus(window) == widget, "Unexpected keyboard focus");
+    check(label(root, message_label), "onFocusChange did not update the label");
+  };
+  check(!gtk_entry_get_visibility(GTK_ENTRY(entries[1])), "Password input is not masked");
+  check(gtk_entry_get_input_purpose(GTK_ENTRY(entries[2])) == GTK_INPUT_PURPOSE_NUMBER &&
+        gtk_entry_get_input_purpose(GTK_ENTRY(entries[3])) == GTK_INPUT_PURPOSE_EMAIL &&
+        gtk_entry_get_input_purpose(GTK_ENTRY(entries[4])) == GTK_INPUT_PURPOSE_PHONE,
+        "Wrong keyboard purposes");
 
-int main() {
-  if (!gtk_init_check()) {
-    std::fprintf(stderr, "UI tests need a display (DISPLAY or WAYLAND_DISPLAY)\n");
-    return 1;
-  }
-  g_object_set(gtk_settings_get_default(), "gtk-enable-animations", false, nullptr);
+  click(root, "聚焦文本框");
+  expect_focus(GTK_WIDGET(draft), "已聚焦");
+  gtk_widget_grab_focus(entries[1]);
+  pump();
+  auto *password = gtk_editable_get_delegate(GTK_EDITABLE(entries[1]));
+  expect_focus(GTK_WIDGET(password), "未聚焦");
+  click(root, "放弃焦点");  // User focus changes must not write back to requestFocus.
+  expect_focus(GTK_WIDGET(password), "未聚焦");
+  click(root, "聚焦文本框");
+  expect_focus(GTK_WIDGET(draft), "已聚焦");
+  click(root, "放弃焦点");
+  expect_focus(nullptr, "未聚焦");
+  click(root, "聚焦文本框");
+  expect_focus(GTK_WIDGET(draft), "已聚焦");
+
+  g_signal_emit_by_name(draft, "insert-at-cursor", "1234567890123456789😀z");
+  check(std::string_view(gtk_editable_get_text(draft)) == "1234567890123456789" && label(root, "19/20"),
+        "Input split the emoji at the UTF-16 boundary");
+  g_signal_emit_by_name(draft, "activate");  // GtkText's Return key binding.
+  check(*gtk_editable_get_text(draft) == '\0' && label(root, "0/20"), "onSubmit did not clear the draft");
+
+  g_signal_emit_by_name(draft, "insert-at-cursor", "123456789012345678😀z");
+  check(std::string_view(gtk_editable_get_text(draft)) == "123456789012345678😀" && label(root, "20/20"),
+        "Input did not count the preserved emoji as two UTF-16 units");
+  gtk_widget_grab_focus(textareas.front());
+  pump();
+  expect_focus(textareas.front(), "未聚焦");
+  const std::string expected = std::string(78, 'a') + '\n';
+  type(textareas.front(), (expected + "😀z").c_str());
+  check(contains(textareas.front(), expected), "TextArea split the emoji at the UTF-16 boundary");
+}
+
+void run(void (*verify)(GtkWidget *)) {
   GtkWidget *window = gtk_window_new();
   GtkWidget *root = weft::start_app();
   gtk_window_set_child(GTK_WINDOW(window), root);
@@ -163,7 +211,20 @@ int main() {
   // shows its reason in a label styled `error` instead of the catalog.
   GtkWidget *first = gtk_widget_get_first_child(root);
   check(first && !gtk_widget_has_css_class(first, "error"), "The app did not start");
-  controls(root);
+  verify(root);
   gtk_window_destroy(GTK_WINDOW(window));
+  pump();
+}
+
+}  // namespace
+
+int main() {
+  if (!gtk_init_check()) {
+    std::fprintf(stderr, "UI tests need a display (DISPLAY or WAYLAND_DISPLAY)\n");
+    return 1;
+  }
+  g_object_set(gtk_settings_get_default(), "gtk-enable-animations", false, nullptr);
+  run(controls);
+  run(inputs);
   return 0;
 }

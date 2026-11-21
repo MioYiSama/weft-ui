@@ -55,6 +55,8 @@ struct Node {
   std::string element;  // empty for a mount point
   uint32_t point = 0;
   std::vector<uint32_t> children;
+  double max_length = -1;
+  std::optional<uint32_t> max_length_slot = std::nullopt;
 };
 
 struct Slot {
@@ -101,10 +103,20 @@ Layout load_layout(const json::Value &root) {
   for (auto &t : root["templates"].array()) {
     Template tpl{t["label"].string(), t["kind"].string(), ids(t["roots"]), {}, {}, {}, {}};
     for (auto &n : t["nodes"].array()) {
-      if (n.has("point")) tpl.nodes.push_back({"", n["point"].u32(), {}});
-      else tpl.nodes.push_back({n["element"].string(), 0, ids(n["children"])});
+      if (n.has("point")) {
+        tpl.nodes.push_back({"", n["point"].u32(), {}});
+      } else {
+        const auto &props = n["props"];
+        const double limit = props.has("maxLength") ? props["maxLength"].number() : -1;
+        tpl.nodes.push_back({n["element"].string(), 0, ids(n["children"]), limit});
+      }
     }
-    for (auto &v : t["values"].array()) tpl.values.push_back({v["node"].u32(), v["prop"].string(), v["type"].string()});
+    for (auto &v : t["values"].array()) {
+      const uint32_t node = v["node"].u32();
+      const auto &prop = v["prop"].string();
+      if (prop == "maxLength") tpl.nodes.at(node).max_length_slot = uint32_t(tpl.values.size());
+      tpl.values.push_back({node, prop, v["type"].string()});
+    }
     for (auto &e : t["events"].array()) {
       auto &controls = e["controls"];
       tpl.events.push_back({e["node"].u32(), e["event"].string(),
@@ -358,6 +370,21 @@ Value own(const json::Value &value) {
   return value.string();
 }
 
+/// Limits a UTF-8 edit to a whole-code-point prefix of at most `limit` UTF-16 units.
+std::string_view limit_edit(std::string_view text, double limit) {
+  if (!(limit >= 0 && limit < text.size())) return text;
+  auto remaining = size_t(limit);
+  size_t at = 0;
+  while (at < text.size() && remaining) {
+    const auto lead = static_cast<unsigned char>(text[at]);
+    const size_t units = lead < 0xf0 ? 1 : 2;
+    if (units > remaining) break;
+    remaining -= units;
+    at += lead < 0x80 ? 1 : lead < 0xe0 ? 2 : lead < 0xf0 ? 3 : 4;
+  }
+  return text.substr(0, at);
+}
+
 /// The platform shell of the run.
 struct Host {
   struct Call {
@@ -425,9 +452,24 @@ struct Host {
   void edit(uint32_t scope_id, uint32_t node, const json::Value &value) {
     uint32_t slot = renderer.event_of(scope_id, node, [](const Event &event) { return event.controls.has_value(); });
     Scope &scope = renderer.at(scope_id);
-    uint32_t controls = *renderer.layout().templates[scope.tpl].events[slot].controls;
-    scope.shown[controls] = own(value);
-    bool accepted = dispatch(scope_id, slot, encode(value));
+    const auto &tpl = renderer.layout().templates[scope.tpl];
+    uint32_t controls = *tpl.events[slot].controls;
+    std::string payload;
+    if (value.is_string()) {
+      const auto &input = tpl.nodes[node];
+      double limit = input.max_length;
+      if (input.max_length_slot) {
+        const auto &current = scope.values[*input.max_length_slot];
+        if (current) limit = std::get<double>(*current);
+      }
+      auto text = limit_edit(value.string(), limit);
+      scope.shown[controls] = std::string(text);
+      weft::ops::encode_value(text, payload);
+    } else {
+      scope.shown[controls] = own(value);
+      payload = encode(value);
+    }
+    bool accepted = dispatch(scope_id, slot, payload);
     const Scope *after = renderer.get(scope_id);
     if (!accepted && after) renderer.at(scope_id).shown[controls] = after->values[controls];
   }

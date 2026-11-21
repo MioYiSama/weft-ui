@@ -4,6 +4,7 @@ use super::{
     Children, Css, CssTarget, CssUnit, CustomCss, ElementSpec, FeatureSpec, PropKind, PropSpec,
     PropType,
 };
+use crate::protocol::Platform;
 
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,6 +20,7 @@ pub enum Element {
     Column,
     Row,
     Text,
+    Span,
     Button,
     Input,
     Checkbox,
@@ -58,6 +60,9 @@ const ALIGNMENT: &[&str] = &[
 ];
 const AXIS: &[&str] = &["vertical", "horizontal"];
 const SHADOW: &[&str] = &["none", "small", "medium", "large"];
+const WEIGHT: &[&str] = &["regular", "light", "medium", "semibold", "bold"];
+const TEXT_ALIGN: &[&str] = &["start", "center", "end"];
+const DECORATION: &[&str] = &["none", "underline", "lineThrough"];
 
 pub(crate) const CSS_PROPS: &[Css<'static>] = &[
     Css {
@@ -253,6 +258,42 @@ pub(crate) const CSS_PROPS: &[Css<'static>] = &[
     },
     Css {
         properties: &["font-weight"],
+        unit: CssUnit::Keyword(&[
+            ("light", "300"),
+            ("regular", "400"),
+            ("medium", "500"),
+            ("semibold", "600"),
+            ("bold", "700"),
+        ]),
+        target: CssTarget::Node,
+    },
+    Css {
+        properties: &["font-style"],
+        unit: CssUnit::Keyword(&[("true", "italic"), ("false", "normal")]),
+        target: CssTarget::Node,
+    },
+    Css {
+        properties: &["text-decoration-line"],
+        unit: CssUnit::Keyword(&[("lineThrough", "line-through")]),
+        target: CssTarget::Node,
+    },
+    Css {
+        properties: &["text-align"],
+        unit: CssUnit::Keyword(&[]),
+        target: CssTarget::Node,
+    },
+    Css {
+        properties: &[],
+        unit: CssUnit::Custom(CustomCss::MaxLines),
+        target: CssTarget::Node,
+    },
+    Css {
+        properties: &["line-height"],
+        unit: CssUnit::Px,
+        target: CssTarget::Node,
+    },
+    Css {
+        properties: &["font-weight"],
         unit: CssUnit::Keyword(&[("true", "bold"), ("false", "normal")]),
         target: CssTarget::Node,
     },
@@ -297,7 +338,11 @@ pub(crate) const CSS: &str = r#".w-root{display:flex;flex-direction:column;align
 /* A percentage basis falls back to content when the main size is indefinite. */
 .w-grow{flex-basis:0%!important}
 .w-spacer{width:0;height:0;flex:1 1 0px}
-.w-text{display:inline-block}
+.w-text{display:inline-block;white-space:pre-wrap;overflow-wrap:anywhere}
+.w-span{}
+/* Clamp owns the inline display and overflow; keep hide and clip independent. */
+.w-text-hidden{display:none!important}
+.w-text-clip{overflow:hidden}
 .w-button.w-wx{margin:0}
 .w-input.w-wx{border:1px solid #ccc;padding:4px 8px}
 /* The mini program scroll-view owns its viewport; its child owns the layout. */
@@ -965,16 +1010,6 @@ const PROPS_1: &[PropSpec] = &[
         support: &[],
     },
     PropSpec {
-        name: "value",
-        kind: PropKind::Value(PropType::String),
-        positional: true,
-        required: true,
-        constant: false,
-        css: None,
-        controlled_by: None,
-        support: &[],
-    },
-    PropSpec {
         name: "color",
         kind: PropKind::Value(PropType::Color),
         positional: false,
@@ -995,18 +1030,217 @@ const PROPS_1: &[PropSpec] = &[
         support: &[],
     },
     PropSpec {
+        name: "weight",
+        kind: PropKind::Value(PropType::Union(WEIGHT)),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(36),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "italic",
+        kind: PropKind::Value(PropType::Bool),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(37),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "decoration",
+        kind: PropKind::Value(PropType::Union(DECORATION)),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(38),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "value",
+        kind: PropKind::Value(PropType::String),
+        positional: true,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[],
+    },
+    PropSpec {
+        name: "align",
+        kind: PropKind::Value(PropType::Union(TEXT_ALIGN)),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(39),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "maxLines",
+        kind: PropKind::Value(PropType::Int),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(40),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "lineHeight",
+        kind: PropKind::Value(PropType::Int),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(41),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
         name: "bold",
         kind: PropKind::Value(PropType::Bool),
         positional: false,
         required: false,
         constant: false,
-        css: Some(36),
+        css: Some(42),
         controlled_by: None,
         support: &[],
     },
 ];
 
 const PROPS_2: &[PropSpec] = &[
+    PropSpec {
+        name: "color",
+        kind: PropKind::Value(PropType::Color),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(34),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "size",
+        kind: PropKind::Value(PropType::Int),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(35),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "weight",
+        kind: PropKind::Value(PropType::Union(WEIGHT)),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(36),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "italic",
+        kind: PropKind::Value(PropType::Bool),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(37),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "decoration",
+        kind: PropKind::Value(PropType::Union(DECORATION)),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(38),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "value",
+        kind: PropKind::Value(PropType::String),
+        positional: true,
+        required: true,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[],
+    },
+];
+
+const PROPS_3: &[PropSpec] = &[
     PropSpec {
         name: "width",
         kind: PropKind::Value(PropType::Int),
@@ -1209,7 +1443,7 @@ const PROPS_2: &[PropSpec] = &[
     },
 ];
 
-const PROPS_3: &[PropSpec] = &[
+const PROPS_4: &[PropSpec] = &[
     PropSpec {
         name: "width",
         kind: PropKind::Value(PropType::Int),
@@ -1434,7 +1668,7 @@ const PROPS_3: &[PropSpec] = &[
     },
 ];
 
-const PROPS_4: &[PropSpec] = &[
+const PROPS_5: &[PropSpec] = &[
     PropSpec {
         name: "width",
         kind: PropKind::Value(PropType::Int),
@@ -1649,7 +1883,7 @@ const PROPS_4: &[PropSpec] = &[
     },
 ];
 
-const PROPS_5: &[PropSpec] = &[
+const PROPS_6: &[PropSpec] = &[
     PropSpec {
         name: "width",
         kind: PropKind::Value(PropType::Int),
@@ -1902,7 +2136,7 @@ const PROPS_5: &[PropSpec] = &[
     },
 ];
 
-const PROPS_6: &[PropSpec] = &[
+const PROPS_7: &[PropSpec] = &[
     PropSpec {
         name: "width",
         kind: PropKind::Value(PropType::Int),
@@ -2219,13 +2453,13 @@ const PROPS_6: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(37),
+        css: Some(43),
         controlled_by: None,
         support: &[],
     },
 ];
 
-const PROPS_7: &[PropSpec] = &[
+const PROPS_8: &[PropSpec] = &[
     PropSpec {
         name: "width",
         kind: PropKind::Value(PropType::Int),
@@ -2572,24 +2806,24 @@ const PROPS_7: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(38),
+        css: Some(44),
         controlled_by: None,
         support: &[],
     },
 ];
 
-const PROPS_8: &[PropSpec] = &[PropSpec {
+const PROPS_9: &[PropSpec] = &[PropSpec {
     name: "size",
     kind: PropKind::Value(PropType::Int),
     positional: false,
     required: false,
     constant: false,
-    css: Some(39),
+    css: Some(45),
     controlled_by: None,
     support: &[],
 }];
 
-pub(crate) const ELEMENTS: [ElementSpec; 10] = [
+pub(crate) const ELEMENTS: [ElementSpec; 11] = [
     ElementSpec {
         element: Element::Column,
         name: "Column",
@@ -2612,15 +2846,30 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
         element: Element::Text,
         name: "Text",
         props: PROPS_1,
-        children: Children::None,
+        children: Children::Only(&[Element::Span]),
         parents: &[],
-        content: None,
+        content: Some("value"),
         support: &[],
+    },
+    ElementSpec {
+        element: Element::Span,
+        name: "Span",
+        props: PROPS_2,
+        children: Children::None,
+        parents: &[Element::Text],
+        content: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
     },
     ElementSpec {
         element: Element::Button,
         name: "Button",
-        props: PROPS_2,
+        props: PROPS_3,
         children: Children::Any,
         parents: &[],
         content: None,
@@ -2629,7 +2878,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
     ElementSpec {
         element: Element::Input,
         name: "Input",
-        props: PROPS_3,
+        props: PROPS_4,
         children: Children::None,
         parents: &[],
         content: None,
@@ -2638,7 +2887,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
     ElementSpec {
         element: Element::Checkbox,
         name: "Checkbox",
-        props: PROPS_4,
+        props: PROPS_5,
         children: Children::None,
         parents: &[],
         content: None,
@@ -2647,7 +2896,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
     ElementSpec {
         element: Element::Image,
         name: "Image",
-        props: PROPS_5,
+        props: PROPS_6,
         children: Children::None,
         parents: &[],
         content: None,
@@ -2656,7 +2905,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
     ElementSpec {
         element: Element::Stack,
         name: "Stack",
-        props: PROPS_6,
+        props: PROPS_7,
         children: Children::Any,
         parents: &[],
         content: None,
@@ -2665,7 +2914,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
     ElementSpec {
         element: Element::Scroll,
         name: "Scroll",
-        props: PROPS_7,
+        props: PROPS_8,
         children: Children::Any,
         parents: &[],
         content: None,
@@ -2674,7 +2923,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 10] = [
     ElementSpec {
         element: Element::Spacer,
         name: "Spacer",
-        props: PROPS_8,
+        props: PROPS_9,
         children: Children::None,
         parents: &[Element::Column, Element::Row, Element::Scroll],
         content: None,

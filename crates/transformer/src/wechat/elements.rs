@@ -40,7 +40,7 @@ pub(crate) enum Target {
 
 pub(crate) fn target(element: Element, prop: &str) -> Target {
     match (element, prop) {
-        (Element::Text, "value") => Target::Text,
+        (Element::Text | Element::Span, "value") => Target::Text,
         (Element::Input, "value") => Target::Attr("value"),
         (Element::Checkbox, "checked") => Target::Flag {
             name: "checked",

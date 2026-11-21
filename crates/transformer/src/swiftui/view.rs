@@ -111,6 +111,7 @@ impl Body<'_> {
                 )),
                 None => out.writer.line("WeftSpacer()"),
             },
+            Element::Span => unreachable!("platform support rejects `Span` before generation"),
             Element::Text => {
                 let value = Argument::Property(prop("value").expect("`Text` has a value"));
                 out.writer.line(format_args!("Text(verbatim: {value})"));

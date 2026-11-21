@@ -91,3 +91,49 @@ enum class WeftShadow {
         }
     }
 }
+
+enum class WeftWeight {
+    REGULAR,
+    LIGHT,
+    MEDIUM,
+    SEMIBOLD,
+    BOLD;
+
+    companion object {
+        fun parse(value: String): WeftWeight = when (value) {
+            "light" -> LIGHT
+            "medium" -> MEDIUM
+            "semibold" -> SEMIBOLD
+            "bold" -> BOLD
+            else -> REGULAR
+        }
+    }
+}
+
+enum class WeftTextAlign {
+    START,
+    CENTER,
+    END;
+
+    companion object {
+        fun parse(value: String): WeftTextAlign = when (value) {
+            "center" -> CENTER
+            "end" -> END
+            else -> START
+        }
+    }
+}
+
+enum class WeftDecoration {
+    NONE,
+    UNDERLINE,
+    LINE_THROUGH;
+
+    companion object {
+        fun parse(value: String): WeftDecoration = when (value) {
+            "underline" -> UNDERLINE
+            "lineThrough" -> LINE_THROUGH
+            else -> NONE
+        }
+    }
+}

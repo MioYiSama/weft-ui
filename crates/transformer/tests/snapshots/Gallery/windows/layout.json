@@ -1,5 +1,5 @@
 {
-  "hash": "a003534a93be9333",
+  "hash": "606709743a230527",
   "templates": [
     {
       "label": "Panel",
@@ -27,7 +27,7 @@
       "roots": [0],
       "nodes": [
         {"element": "Column", "props": {"width": 320, "height": 280, "padding": 12, "background": "#eeeeff", "gap": 8}, "children": [1, 2, 6, 7]},
-        {"element": "Text", "props": {"value": "Gallery", "color": "#224466", "size": 20, "bold": true}, "children": []},
+        {"element": "Text", "props": {"color": "#224466", "size": 20, "value": "Gallery", "bold": true}, "children": []},
         {"element": "Row", "props": {}, "children": [3, 4, 5]},
         {"element": "Checkbox", "props": {}, "children": []},
         {"element": "Image", "props": {"width": 32, "height": 32}, "children": []},

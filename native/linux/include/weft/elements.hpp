@@ -56,4 +56,30 @@ enum class Shadow { None, Small, Medium, Large };
     return Shadow::None;
 }
 
+enum class Weight { Regular, Light, Medium, Semibold, Bold };
+
+[[nodiscard]] constexpr Weight parse_weight(std::string_view value) noexcept {
+    if (value == "light") return Weight::Light;
+    if (value == "medium") return Weight::Medium;
+    if (value == "semibold") return Weight::Semibold;
+    if (value == "bold") return Weight::Bold;
+    return Weight::Regular;
+}
+
+enum class TextAlign { Start, Center, End };
+
+[[nodiscard]] constexpr TextAlign parse_text_align(std::string_view value) noexcept {
+    if (value == "center") return TextAlign::Center;
+    if (value == "end") return TextAlign::End;
+    return TextAlign::Start;
+}
+
+enum class Decoration { None, Underline, LineThrough };
+
+[[nodiscard]] constexpr Decoration parse_decoration(std::string_view value) noexcept {
+    if (value == "underline") return Decoration::Underline;
+    if (value == "lineThrough") return Decoration::LineThrough;
+    return Decoration::None;
+}
+
 } // namespace weft

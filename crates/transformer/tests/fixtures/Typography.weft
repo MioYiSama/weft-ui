@@ -1,0 +1,25 @@
+type Weight = "regular" | "light" | "medium" | "semibold" | "bold"
+type Decoration = "none" | "underline" | "lineThrough"
+
+model TypographyModel {
+    value: String,
+    weight: Weight,
+    decoration: Decoration,
+    lines: Int,
+    hidden: Bool,
+    clip: Bool,
+    italic: Bool,
+}
+
+component Typography(model: TypographyModel) {
+    Column(gap = 8) {
+        Text(model.value, color = "#123456", size = 18, weight = model.weight, italic = model.italic,
+             decoration = model.decoration, width = 240, align = "end", maxLines = model.lines,
+             lineHeight = 24, hidden = model.hidden, clip = model.clip)
+        Text(size = 16, color = "#334455", align = "center") {
+            Span("One ", weight = "semibold")
+            Span(model.value, color = "#228866", decoration = "underline")
+            Span(" two", size = 14, italic = true, decoration = "lineThrough")
+        }
+    }
+}

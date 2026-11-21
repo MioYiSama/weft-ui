@@ -194,7 +194,8 @@ The compiler rejects elements, properties, and events marked unsupported for the
 | --- | --- | --- | --- |
 | `Column` | — | — | Any |
 | `Row` | — | — | Any |
-| `Text` | `value` | — | None |
+| `Text` | `value` | — | `Span` |
+| `Span` | `value` | — | None |
 | `Button` | — | `onClick` | Any |
 | `Input` | `value` | `onChange(String)` | None |
 | `Checkbox` | `checked` | `onChange(Bool)` | None |
@@ -220,6 +221,7 @@ All elements also have `onMount` / `onUnmount`.
 - **`Scroll`**: Lays out content like a `Column` or `Row` with `gap` and `align`. `direction` is a constant and defaults to `"vertical"`. Content can overflow and scroll only along that axis. Unless set explicitly, `grow` is `1` and `fill` is `true`. `indicators = false` hides the scrollbars.
 - **Root and overflow**: Top-level nodes are arranged like children of a `Column` whose content box is the window minus its safe area. The root does not scroll; use `Scroll` for scrollable content. When natural child sizes exceed available space on a main axis that does not scroll, platforms may compress the children or let them overflow; don't rely on either behavior.
 - **Colors**: A `Color` property accepts a `Color` value such as `theme.accent`, or `#RGB`, `#RRGGBB`, or `#RRGGBBAA` (case-insensitive hexadecimal). Literals are validated at compile time and stored as RGBA in the view layout. Invalid dynamic colors and unknown runtime tokens are transparent, with a warning in development builds.
+- **`Text` / `Span`**: `Text` takes either a string value or one or more direct `Span` children, never both. A `Span` takes a string and has no children. `Text` wraps to the available width; `align` (`"start"`, `"center"`, or `"end"`) positions the lines within it. A positive `maxLines` truncates overflow with an ellipsis; zero or less leaves the line count unlimited. `lineHeight` sets the height of each line in logical pixels.
 - **`Image`**: `src` is an image URL. On platforms without a built-in control for remote images, the core downloads the image.
 
 ### Dependency analysis

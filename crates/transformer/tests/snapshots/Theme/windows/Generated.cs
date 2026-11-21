@@ -10,7 +10,7 @@ namespace Weft.Generated;
 public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
-    public const ulong LayoutHash = 0x7b435021593aec66UL;
+    public const ulong LayoutHash = 0xdf9b1480f4cc5c0aUL;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
     public static Microsoft.UI.Xaml.UIElement Start() =>
@@ -68,13 +68,13 @@ file sealed class S1 : WeftScope
         Roots.Add(n0.Element);
         var n1 = new WeftText();
         TrackColors(n1);
-        n1.Value = "accent";
         n1.Color = WeftColor.Token("accent");
+        n1.Value = "accent";
         n0.Children.Add(n1.Element);
         var n2 = new WeftText();
         TrackColors(n2);
-        n2.Value = "styled";
         n2.Color = WeftColor.Token("accent");
+        n2.Value = "styled";
         n0.Children.Add(n2.Element);
         n3 = new WeftText();
         TrackColors(n3);

@@ -10,7 +10,7 @@ using namespace std::literals;
 namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
-constexpr uint64_t kLayoutHash = 0xa003534a93be9333ull;
+constexpr uint64_t kLayoutHash = 0x606709743a230527ull;
 
 // 0 Panel
 
@@ -50,9 +50,9 @@ class S1 final : public weft::Scope {
     n0.set_gap(8);
     roots().add(n0);
     auto &n1 = make<weft::Text>();
-    n1.set_value("Gallery"sv);
     n1.set_color(weft::Color::rgba(0x224466ffu));
     n1.set_size(20);
+    n1.set_value("Gallery"sv);
     n1.set_bold(true);
     n0.children().add(n1);
     n2_ = &make<weft::Linear>(weft::Axis::Horizontal);

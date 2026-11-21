@@ -96,3 +96,56 @@ public enum WeftShadow: String, Sendable {
         }
     }
 }
+
+public enum WeftWeight: String, Sendable {
+    case regular
+    case light
+    case medium
+    case semibold
+    case bold
+
+    public init(weft: String) {
+        if let value = Self(rawValue: weft) {
+            self = value
+        } else {
+            #if DEBUG
+            NSLog("weft: invalid Weight value: %@", weft)
+            #endif
+            self = .regular
+        }
+    }
+}
+
+public enum WeftTextAlign: String, Sendable {
+    case start
+    case center
+    case end
+
+    public init(weft: String) {
+        if let value = Self(rawValue: weft) {
+            self = value
+        } else {
+            #if DEBUG
+            NSLog("weft: invalid TextAlign value: %@", weft)
+            #endif
+            self = .start
+        }
+    }
+}
+
+public enum WeftDecoration: String, Sendable {
+    case none
+    case underline
+    case lineThrough
+
+    public init(weft: String) {
+        if let value = Self(rawValue: weft) {
+            self = value
+        } else {
+            #if DEBUG
+            NSLog("weft: invalid Decoration value: %@", weft)
+            #endif
+            self = .none
+        }
+    }
+}

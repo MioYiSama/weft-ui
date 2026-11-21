@@ -1,0 +1,30 @@
+{
+  "hash": "5de88bddbfefad1e",
+  "templates": [
+    {
+      "label": "Typography",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {"gap": 8}, "children": [1, 2]},
+        {"element": "Text", "props": {"width": 240, "color": "#123456", "size": 18, "align": "end", "lineHeight": 24}, "children": []},
+        {"element": "Text", "props": {"color": "#334455", "size": 16, "align": "center"}, "children": [3, 4, 5]},
+        {"element": "Span", "props": {"weight": "semibold", "value": "One "}, "children": []},
+        {"element": "Span", "props": {"color": "#228866", "decoration": "underline"}, "children": []},
+        {"element": "Span", "props": {"size": 14, "italic": true, "decoration": "lineThrough", "value": " two"}, "children": []}
+      ],
+      "values": [
+        {"node": 1, "prop": "hidden", "type": "Bool"},
+        {"node": 1, "prop": "clip", "type": "Bool"},
+        {"node": 1, "prop": "weight", "type": "String"},
+        {"node": 1, "prop": "italic", "type": "Bool"},
+        {"node": 1, "prop": "decoration", "type": "String"},
+        {"node": 1, "prop": "value", "type": "String"},
+        {"node": 1, "prop": "maxLines", "type": "Int"},
+        {"node": 4, "prop": "value", "type": "String"}
+      ],
+      "events": [],
+      "points": []
+    }
+  ]
+}

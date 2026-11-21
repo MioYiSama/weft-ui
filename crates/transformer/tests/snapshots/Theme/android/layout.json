@@ -1,5 +1,5 @@
 {
-  "hash": "7b435021593aec66",
+  "hash": "df9b1480f4cc5c0a",
   "theme": {
     "accent": ["#0a84ffff", "#409cffff"]
   },
@@ -23,8 +23,8 @@
       "roots": [0],
       "nodes": [
         {"element": "Column", "props": {"gap": 8}, "children": [1, 2, 3, 4, 5]},
-        {"element": "Text", "props": {"value": "accent", "color": "@accent"}, "children": []},
-        {"element": "Text", "props": {"value": "styled", "color": "@accent"}, "children": []},
+        {"element": "Text", "props": {"color": "@accent", "value": "accent"}, "children": []},
+        {"element": "Text", "props": {"color": "@accent", "value": "styled"}, "children": []},
         {"element": "Text", "props": {"value": "flag"}, "children": []},
         {"element": "Text", "props": {}, "children": []},
         {"point": 0}

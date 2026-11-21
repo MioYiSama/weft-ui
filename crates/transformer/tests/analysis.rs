@@ -500,9 +500,42 @@ component C(model: M) {
         diagnostics(&[("layout.weft", src)]),
         [
             "layout.weft:3:22: `Scroll.direction` must be a constant",
-            "layout.weft:4:15: `Spacer` must be a direct child of `Column`, `Row` or `Scroll`",
+            "layout.weft:4:8: `Text` takes either `value` or children, not both",
+            "layout.weft:4:15: `Text` only accepts `Span` as children",
             "layout.weft:5:11: `Spacer` must be a direct child of `Column`, `Row` or `Scroll`",
             r#"layout.weft:6:15: `"middle"` is not a member of `"start" | "center" | "end" | "stretch"`"#,
+        ]
+    );
+}
+
+#[test]
+fn text_requires_a_value_or_direct_spans() {
+    let src = r#"component Label() { Text("label") }
+component C(slot: Children, labels: String[]) {
+  Text { Text("x") }
+  Text("a") { Span("b") }
+  Column { Span("x") }
+  Text()
+  Text {}
+  Text { if (true) { Span("x") } }
+  Text { for (label in labels; key = label) { Span(label) } }
+  Text { Label() }
+  Text { slot }
+  Text("valid")
+  Text { Span("also valid") }
+}"#;
+    assert_eq!(
+        diagnostics(&[("typography.weft", src)]),
+        [
+            "typography.weft:3:10: `Text` only accepts `Span` as children",
+            "typography.weft:4:8: `Text` takes either `value` or children, not both",
+            "typography.weft:5:12: `Span` must be a direct child of `Text`",
+            "typography.weft:6:3: missing argument `value` for `Text`",
+            "typography.weft:7:3: missing argument `value` for `Text`",
+            "typography.weft:8:10: `Text` only accepts `Span` as children",
+            "typography.weft:9:10: `Text` only accepts `Span` as children",
+            "typography.weft:10:10: `Text` only accepts `Span` as children",
+            "typography.weft:11:10: `Text` only accepts `Span` as children",
         ]
     );
 }

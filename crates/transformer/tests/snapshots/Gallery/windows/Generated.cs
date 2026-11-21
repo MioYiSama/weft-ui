@@ -10,7 +10,7 @@ namespace Weft.Generated;
 public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
-    public const ulong LayoutHash = 0xa003534a93be9333UL;
+    public const ulong LayoutHash = 0x606709743a230527UL;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
     public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);
@@ -85,9 +85,9 @@ file sealed class S1 : WeftScope
         n0.Gap = 8;
         Roots.Add(n0.Element);
         var n1 = new WeftText();
-        n1.Value = "Gallery";
         n1.Color = WeftColor.Rgba(0x224466ffu);
         n1.Size = 20;
+        n1.Value = "Gallery";
         n1.Bold = true;
         n0.Children.Add(n1.Element);
         n2 = new WeftStack(vertical: false);

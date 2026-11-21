@@ -4,7 +4,10 @@
     "Justify": ["start", "center", "end", "spaceBetween", "spaceAround", "spaceEvenly"],
     "Alignment": ["topStart", "top", "topEnd", "start", "center", "end", "bottomStart", "bottom", "bottomEnd"],
     "Axis": ["vertical", "horizontal"],
-    "Shadow": ["none", "small", "medium", "large"]
+    "Shadow": ["none", "small", "medium", "large"],
+    "Weight": ["regular", "light", "medium", "semibold", "bold"],
+    "TextAlign": ["start", "center", "end"],
+    "Decoration": ["none", "underline", "lineThrough"]
   },
   "groups": {
     "layout": [
@@ -152,6 +155,38 @@
         "css": { "property": "overflow", "unit": "keyword", "keywords": { "true": "hidden", "false": "visible" } },
         "doc": { "en": "Clips overflowing content to the rounded padding box.", "zh": "将溢出的内容裁剪到带圆角的内边距盒内。" }
       }
+    ],
+    "text": [
+      {
+        "name": "color", "type": "Color",
+        "css": { "property": "color", "unit": "color" },
+        "doc": { "en": "Sets the text color.", "zh": "设置文字颜色。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "size", "type": "Int",
+        "css": { "property": "font-size", "unit": "px" },
+        "doc": { "en": "Sets the font size in logical pixels.", "zh": "用逻辑像素设置字号。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "weight", "type": "Weight", "default": "regular",
+        "css": { "property": "font-weight", "unit": "keyword", "keywords": { "light": "300", "regular": "400", "medium": "500", "semibold": "600", "bold": "700" } },
+        "doc": { "en": "Sets the font weight.", "zh": "设置字重。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "italic", "type": "Bool", "default": false,
+        "css": { "property": "font-style", "unit": "keyword", "keywords": { "true": "italic", "false": "normal" } },
+        "doc": { "en": "Sets the text in italics.", "zh": "设置斜体。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      },
+      {
+        "name": "decoration", "type": "Decoration", "default": "none",
+        "css": { "property": "text-decoration-line", "unit": "keyword", "keywords": { "lineThrough": "line-through" } },
+        "doc": { "en": "Underlines or strikes through the text.", "zh": "为文字添加下划线或删除线。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      }
     ]
   },
   "features": {
@@ -211,33 +246,51 @@
     },
     {
       "name": "Text",
-      "doc": { "en": "Displays text.", "zh": "显示文本。" },
-      "groups": ["layout", "visibility", "padding", "decoration"],
+      "doc": { "en": "Displays plain text or a sequence of styled spans.", "zh": "显示纯文本或由多个行内片段组成的文本。" },
+      "groups": ["layout", "visibility", "padding", "decoration", "text"],
+      "memberSupport": { "color": {}, "size": {} },
+      "children": ["Span"],
+      "content": "value",
       "members": [
         {
-          "name": "value",
-          "type": "String",
-          "positional": true,
-          "required": true,
-          "doc": { "en": "The text to display.", "zh": "要显示的文本。" }
+          "name": "value", "type": "String", "positional": true,
+          "doc": { "en": "The plain text to display; required unless `Span` children provide the content.", "zh": "要显示的纯文本；没有 `Span` 子元素时必填。" }
         },
         {
-          "name": "color",
-          "type": "Color",
-          "css": { "property": "color", "unit": "color" },
-          "doc": { "en": "Sets the text color.", "zh": "设置文字颜色。" }
+          "name": "align", "type": "TextAlign", "default": "start",
+          "css": { "property": "text-align", "unit": "keyword", "keywords": {} },
+          "doc": { "en": "Aligns lines within the text box.", "zh": "设置各行文字在文本框中的对齐方式。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
         },
         {
-          "name": "size",
-          "type": "Int",
-          "css": { "property": "font-size", "unit": "px" },
-          "doc": { "en": "Sets the font size in logical pixels.", "zh": "用逻辑像素设置字号。" }
+          "name": "maxLines", "type": "Int", "default": 0,
+          "css": { "unit": "custom", "custom": "maxLines" },
+          "doc": { "en": "Truncates overflowing lines with an ellipsis; zero or less leaves the text unlimited.", "zh": "超出行数限制时在末尾显示省略号；小于或等于零表示不限行数。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
         },
         {
-          "name": "bold",
-          "type": "Bool",
+          "name": "lineHeight", "type": "Int",
+          "css": { "property": "line-height", "unit": "px" },
+          "doc": { "en": "Sets the line height in logical pixels.", "zh": "用逻辑像素设置行高。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        },
+        {
+          "name": "bold", "type": "Bool",
           "css": { "property": "font-weight", "unit": "keyword", "keywords": { "true": "bold", "false": "normal" } },
           "doc": { "en": "Displays the text in bold.", "zh": "以粗体显示文本。" }
+        }
+      ]
+    },
+    {
+      "name": "Span",
+      "doc": { "en": "Displays an inline run of text with its own styling.", "zh": "显示可单独设置样式的行内文本片段。" },
+      "groups": ["text"],
+      "parents": ["Text"],
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
+      "members": [
+        {
+          "name": "value", "type": "String", "positional": true, "required": true,
+          "doc": { "en": "The text of this run.", "zh": "此片段的文字。" }
         }
       ]
     },

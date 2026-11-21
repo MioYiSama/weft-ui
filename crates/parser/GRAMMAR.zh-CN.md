@@ -194,7 +194,8 @@ Call        = IDENT "(" ArgList? ")" ;
 | --- | --- | --- | --- |
 | `Column` | — | — | 不限 |
 | `Row` | — | — | 不限 |
-| `Text` | `value` | — | 无 |
+| `Text` | `value` | — | `Span` |
+| `Span` | `value` | — | 无 |
 | `Button` | — | `onClick` | 不限 |
 | `Input` | `value` | `onChange(String)` | 无 |
 | `Checkbox` | `checked` | `onChange(Bool)` | 无 |
@@ -220,6 +221,7 @@ Call        = IDENT "(" ArgList? ")" ;
 - **`Scroll`**：按 `direction` 像 `Column` 或 `Row` 一样排列内容，支持 `gap`、`align`。`direction` 必须是常量，默认为 `"vertical"`。内容只能沿滚动轴超出并滚动。未显式设置时，`grow` 为 `1`，`fill` 为 `true`。`indicators = false` 隐藏滚动条。
 - **根节点与溢出**：根组件的顶层节点像 `Column` 的子元素一样排列，内容盒为窗口减去安全区。根不滚动；需要滚动时请使用 `Scroll`。如果子元素的自然尺寸超过不滚动的主轴上的可用空间，平台可能压缩子元素，也可能让它们溢出，不要依赖其中一种行为。
 - **颜色**：`Color` 属性接受 `theme.accent` 等 `Color` 值，也接受 `#RGB`、`#RRGGBB` 或 `#RRGGBBAA`（十六进制，大小写不限）。颜色字面量在编译期校验并以 RGBA 写入视图布局。动态值中的无效颜色和未知令牌显示为透明，开发构建还会发出警告。
+- **`Text` / `Span`**：`Text` 接受一个字符串，或至少一个直接写出的 `Span` 子元素，二者不能同时使用。`Span` 接受字符串，不能有子元素。`Text` 按可用宽度换行；`align`（`"start"`、`"center"` 或 `"end"`）设置各行在文本框中的对齐方式。`maxLines` 大于零时，超出指定行数的文本会被截断，末尾显示省略号；小于或等于零时不限行数。`lineHeight` 用逻辑像素指定每行的高度。
 - **`Image`**：`src` 是图片 URL，没有内置网络图片控件的平台由内核下载。
 
 ### 依赖分析

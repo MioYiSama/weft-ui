@@ -67,7 +67,7 @@ Column(width = 240, padding = 12, gap = 8) {
 
 布局功能在所有目标平台上都可用。各元素及属性的平台支持情况见[内置元素参考](/zh/reference/elements/)。
 
-`Text`、`Input`、`Checkbox` 和 `Image` 的必填值都可以作为第一个位置参数。长度（包括字号 `size`）用逻辑像素计量，直接写 `Int`，不加单位后缀。它对应 iOS 和 macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px，以及小程序的 `px`（不是 `rpx`）。布局功能的语义在支持它的平台上一致，控件外观可能不同。
+`Text`、`Input`、`Checkbox` 和 `Image` 的值都可以作为第一个位置参数。长度（包括字号 `size`）用逻辑像素计量，直接写 `Int`，不加单位后缀。它对应 iOS 和 macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px，以及小程序的 `px`（不是 `rpx`）。布局功能的语义在支持它的平台上一致，控件外观可能不同。
 
 `Text.color`、`Row.background` 等颜色属性接收 `#RGB`、`#RRGGBB` 或 `#RRGGBBAA` 格式的字符串。非法颜色字面量会在编译时报错；非法的动态颜色值按透明处理，并在开发构建中发出警告。
 
@@ -84,6 +84,21 @@ Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "
 边框增加元素的外部尺寸，不改变内容盒大小。背景延伸到边框下方，`radius` 同时为背景和边框设置圆角。`clip = true` 将子元素裁剪在带圆角的内边距盒内。`"small"`、`"medium"` 和 `"large"` 阴影画在边框盒外，默认为 `"none"`。
 
 `opacity` 改变整个元素及其子元素的不透明度，但不影响布局。要隐藏元素且不留空位，设置 `hidden = true`。各元素可用的属性见[内置元素参考](/zh/reference/elements/)。
+
+## 设置文本与行内样式
+
+在 Web 和微信小程序上，`weight` 可设为 `"light"`、`"regular"`、`"medium"`、`"semibold"` 或 `"bold"`。设 `italic = true` 可使用斜体，设 `decoration = "underline"` 或 `"lineThrough"` 可添加下划线或删除线。在这两个平台上，新代码用 `weight = "bold"` 设置粗体；`bold = true` 仍可用于所有平台。
+
+`Text` 在可用宽度内自动换行。用 `align = "start"`、`"center"` 或 `"end"` 设置各行的对齐方式，用 `lineHeight` 以逻辑像素指定行高。设 `maxLines = 2` 时最多显示两行，被截断的内容用省略号表示；设为零或负数则不限行数。
+
+```weft
+Text(width = 200, lineHeight = 22) {
+  Span("新消息：", weight = "semibold")
+  Span("查看发布说明", decoration = "underline")
+}
+```
+
+`Text` 接受字符串或至少一个直接写出的 `Span`，不能同时使用。每个 `Span` 接收一个字符串，可单独设置该片段的样式。片段之间如果需要空格，要写进字符串。动态文字可以写成 `Span` 内的字符串表达式；不要在 `Text` 中直接写 `if`、`for`、组件调用或插槽。
 
 ## 复用元素样式
 

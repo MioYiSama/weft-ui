@@ -676,15 +676,21 @@ component Example(kind: Kind) { Text(kind) }"#;
                 "borderColor",
                 "shadow",
                 "clip",
-                "value",
                 "color",
                 "size",
+                "weight",
+                "italic",
+                "decoration",
+                "value",
+                "align",
+                "maxLines",
+                "lineHeight",
                 "bold",
                 "onMount",
                 "onUnmount",
             ]
         );
-        assert_eq!(call.given, ["value", "color"]);
+        assert_eq!(call.given, ["color", "value"]);
     }
 
     fn probe(app: &str) -> Probe {

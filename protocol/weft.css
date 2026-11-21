@@ -12,7 +12,11 @@
 /* A percentage basis falls back to content when the main size is indefinite. */
 .w-grow{flex-basis:0%!important}
 .w-spacer{width:0;height:0;flex:1 1 0px}
-.w-text{display:inline-block}
+.w-text{display:inline-block;white-space:pre-wrap;overflow-wrap:anywhere}
+.w-span{}
+/* Clamp owns the inline display and overflow; keep hide and clip independent. */
+.w-text-hidden{display:none!important}
+.w-text-clip{overflow:hidden}
 .w-button.w-wx{margin:0}
 .w-input.w-wx{border:1px solid #ccc;padding:4px 8px}
 /* The mini program scroll-view owns its viewport; its child owns the layout. */

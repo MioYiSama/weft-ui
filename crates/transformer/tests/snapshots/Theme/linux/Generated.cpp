@@ -10,7 +10,7 @@ using namespace std::literals;
 namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
-constexpr uint64_t kLayoutHash = 0x7b435021593aec66ull;
+constexpr uint64_t kLayoutHash = 0xdf9b1480f4cc5c0aull;
 
 // 0 Badge
 
@@ -42,12 +42,12 @@ class S1 final : public weft::Scope {
     n0.set_gap(8);
     roots().add(n0);
     auto &n1 = make<weft::Text>();
-    n1.set_value("accent"sv);
     n1.set_color(weft::Color::token("accent"sv));
+    n1.set_value("accent"sv);
     n0.children().add(n1);
     auto &n2 = make<weft::Text>();
-    n2.set_value("styled"sv);
     n2.set_color(weft::Color::token("accent"sv));
+    n2.set_value("styled"sv);
     n0.children().add(n2);
     n3_ = &make<weft::Text>();
     n3_->set_value("flag"sv);

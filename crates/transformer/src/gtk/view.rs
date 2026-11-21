@@ -45,6 +45,7 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                         literal(*element, prop.name, &prop.value)
                     }),
                 Element::Stack | Element::Spacer | Element::Text | Element::Image => String::new(),
+                Element::Span => unreachable!("platform support rejects `Span` before generation"),
             };
             let made = format!("make<weft::{}>({args})", wrapper(*element));
             let member = member(template, index);
@@ -104,6 +105,7 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Scroll => "Scroll",
         Element::Spacer => "Spacer",
         Element::Text => "Text",
+        Element::Span => unreachable!("platform support rejects `Span` before generation"),
         Element::Button => "Button",
         Element::Input => "Input",
         Element::Checkbox => "Checkbox",

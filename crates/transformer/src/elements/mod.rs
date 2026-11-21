@@ -81,7 +81,6 @@ pub(crate) enum CssTarget {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CustomCss {
     Hidden,
-    #[cfg_attr(not(test), expect(dead_code, reason = "first used by text styling"))]
     MaxLines,
     Shadow,
     Grow,

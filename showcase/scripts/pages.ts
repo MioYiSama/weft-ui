@@ -6,6 +6,7 @@ export type Platform = typeof platforms[number];
 interface Page {
   id: string;
   title: string;
+  component?: string;
   dark?: boolean;
   pending?: Platform[];
 }

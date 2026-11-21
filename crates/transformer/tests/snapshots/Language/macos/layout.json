@@ -1,5 +1,5 @@
 {
-  "hash": "59a0d6b25720bc8a",
+  "hash": "49c4ae055e1be040",
   "templates": [
     {
       "label": "ModeLabel",
@@ -84,7 +84,7 @@
         {"point": 5},
         {"point": 6},
         {"point": 7},
-        {"element": "Text", "props": {"value": "note", "color": "#6b7280", "size": 14}, "children": []}
+        {"element": "Text", "props": {"color": "#6b7280", "size": 14, "value": "note"}, "children": []}
       ],
       "values": [
         {"node": 1, "prop": "value", "type": "String"}

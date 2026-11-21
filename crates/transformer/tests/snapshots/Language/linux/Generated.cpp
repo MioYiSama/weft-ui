@@ -10,7 +10,7 @@ using namespace std::literals;
 namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
-constexpr uint64_t kLayoutHash = 0x59a0d6b25720bc8aull;
+constexpr uint64_t kLayoutHash = 0x49c4ae055e1be040ull;
 
 // 0 ModeLabel
 
@@ -109,9 +109,9 @@ class S4 final : public weft::Scope {
     n0.children().point(*this, 6);
     n0.children().point(*this, 7);
     auto &n10 = make<weft::Text>();
-    n10.set_value("note"sv);
     n10.set_color(weft::Color::rgba(0x6b7280ffu));
     n10.set_size(14);
+    n10.set_value("note"sv);
     n0.children().add(n10);
   }
 

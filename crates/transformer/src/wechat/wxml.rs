@@ -89,6 +89,7 @@ fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
         ),
         Element::Spacer => ("view", "w-spacer", ""),
         Element::Text => ("text", "w-text", ""),
+        Element::Span => ("text", "w-span", ""),
         Element::Button => ("button", "w-button w-wx", " size=\"mini\""),
         Element::Input => ("input", "w-input w-wx", ""),
         Element::Checkbox => ("switch", "w-checkbox", " type=\"checkbox\""),
@@ -234,6 +235,8 @@ impl Markup<'_> {
         let mut scroll_content_style = String::new();
         // Text values are emitted after the opening tag has been written.
         let mut text = None;
+        let has_clamp =
+            element == Element::Text && props.iter().any(|prop| prop.name == "maxLines");
         for (index, prop) in props.iter().enumerate() {
             if matches!(prop.value, PropValue::Handler(_)) {
                 continue;
@@ -267,6 +270,22 @@ impl Markup<'_> {
                 }
                 (Target::Style(index), value) => {
                     let css = CSS_PROPS[index];
+                    if let Some(class) = style::text_clamp_class(has_clamp, prop.name) {
+                        match value {
+                            Value::Inline(Constant::Bool(true)) => {
+                                let _ = write!(classes, " {class}");
+                            }
+                            Value::Data => {
+                                let enabled = style::declarations(css, &Constant::Bool(true));
+                                let _ = write!(
+                                    classes,
+                                    "{{{{{prefix}{key} === '{enabled}' ? ' {class}' : ''}}}}"
+                                );
+                            }
+                            Value::Inline(_) => {}
+                        }
+                        continue;
+                    }
                     if css.unit == CssUnit::Custom(CustomCss::Grow) {
                         default_grow = false;
                     }
@@ -364,7 +383,7 @@ impl Markup<'_> {
         out.push('>');
         match text {
             Some((_, Value::Inline(Constant::String(text)))) => out.push_str(text),
-            Some((_, Value::Inline(_))) => unreachable!("Text.value is a string"),
+            Some((_, Value::Inline(_))) => unreachable!("text content is a string"),
             Some((index, Value::Data)) => {
                 let key = value_key(id, index);
                 let _ = write!(out, "{{{{{prefix}{key}}}}}");

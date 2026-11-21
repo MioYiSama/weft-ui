@@ -12,10 +12,17 @@ export type Axis = "vertical" | "horizontal";
 
 export type Shadow = "none" | "small" | "medium" | "large";
 
+export type Weight = "regular" | "light" | "medium" | "semibold" | "bold";
+
+export type TextAlign = "start" | "center" | "end";
+
+export type Decoration = "none" | "underline" | "lineThrough";
+
 export const ELEMENTS: Record<string, { main: string | null; children: "any" | "none" | readonly string[] }> = {
   Column: { main: null, children: "any" },
   Row: { main: null, children: "any" },
-  Text: { main: "value", children: "none" },
+  Text: { main: "value", children: ["Span"] },
+  Span: { main: "value", children: "none" },
   Button: { main: null, children: "any" },
   Input: { main: "value", children: "none" },
   Checkbox: { main: "checked", children: "none" },
@@ -62,10 +69,16 @@ export const CSS_PROPS: readonly Css[] = [
   {"property":"justify-content","unit":"keyword","keywords":{"start":"flex-start","end":"flex-end","spaceBetween":"space-between","spaceAround":"space-around","spaceEvenly":"space-evenly"}},
   {"property":"color","unit":"color"},
   {"property":"font-size","unit":"px"},
+  {"property":"font-weight","unit":"keyword","keywords":{"light":"300","regular":"400","medium":"500","semibold":"600","bold":"700"}},
+  {"property":"font-style","unit":"keyword","keywords":{"true":"italic","false":"normal"}},
+  {"property":"text-decoration-line","unit":"keyword","keywords":{"lineThrough":"line-through"}},
+  {"property":"text-align","unit":"keyword","keywords":{}},
+  {"unit":"custom","custom":"maxLines"},
+  {"property":"line-height","unit":"px"},
   {"property":"font-weight","unit":"keyword","keywords":{"true":"bold","false":"normal"}},
   {"property":"place-items","unit":"keyword","keywords":{"topStart":"start start","top":"start center","topEnd":"start end","start":"center start","center":"center center","end":"center end","bottomStart":"end start","bottom":"end center","bottomEnd":"end end"}},
   {"property":"scrollbar-width","unit":"keyword","keywords":{"true":"auto","false":"none"}},
   {"unit":"custom","custom":"spacer"},
 ];
 
-export const CSS = ".w-root{display:flex;flex-direction:column;align-items:flex-start;box-sizing:border-box;width:100%;height:100%;overflow:hidden}\n.w-column{display:flex;flex-direction:column;align-items:flex-start}\n.w-row{display:flex;flex-direction:row;align-items:flex-start}\n.w-stack{display:grid;position:relative;grid-template:minmax(0,1fr)/minmax(0,1fr);place-items:start start}\n.w-in-stack{grid-area:1/1/2/2;position:relative}\n.w-in-stack.w-fill{position:absolute;inset:0}\n.w-scroll-v,.w-scroll-h{display:flex;align-items:flex-start;flex:1 1 0px;align-self:stretch;min-width:0;min-height:0}\n/* A Scroll viewport must keep its scrolling axis even when clip is specified. */\n.w-scroll-v{flex-direction:column;overflow-x:hidden!important;overflow-y:auto!important}\n.w-scroll-h{flex-direction:row;overflow-x:auto!important;overflow-y:hidden!important}\n.w-in-scroll{flex-shrink:0}\n/* A percentage basis falls back to content when the main size is indefinite. */\n.w-grow{flex-basis:0%!important}\n.w-spacer{width:0;height:0;flex:1 1 0px}\n.w-text{display:inline-block}\n.w-button.w-wx{margin:0}\n.w-input.w-wx{border:1px solid #ccc;padding:4px 8px}\n/* The mini program scroll-view owns its viewport; its child owns the layout. */\n.w-scroll-content-v,.w-scroll-content-h{display:flex;align-items:flex-start;flex:none}\n.w-scroll-content-v{flex-direction:column;width:100%;min-height:100%}\n.w-scroll-content-h{flex-direction:row;width:max-content;min-width:100%;height:100%}\n.w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#0000001f}\n@media (prefers-color-scheme:dark){\n  .w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#ffffff26}\n}\n";
+export const CSS = ".w-root{display:flex;flex-direction:column;align-items:flex-start;box-sizing:border-box;width:100%;height:100%;overflow:hidden}\n.w-column{display:flex;flex-direction:column;align-items:flex-start}\n.w-row{display:flex;flex-direction:row;align-items:flex-start}\n.w-stack{display:grid;position:relative;grid-template:minmax(0,1fr)/minmax(0,1fr);place-items:start start}\n.w-in-stack{grid-area:1/1/2/2;position:relative}\n.w-in-stack.w-fill{position:absolute;inset:0}\n.w-scroll-v,.w-scroll-h{display:flex;align-items:flex-start;flex:1 1 0px;align-self:stretch;min-width:0;min-height:0}\n/* A Scroll viewport must keep its scrolling axis even when clip is specified. */\n.w-scroll-v{flex-direction:column;overflow-x:hidden!important;overflow-y:auto!important}\n.w-scroll-h{flex-direction:row;overflow-x:auto!important;overflow-y:hidden!important}\n.w-in-scroll{flex-shrink:0}\n/* A percentage basis falls back to content when the main size is indefinite. */\n.w-grow{flex-basis:0%!important}\n.w-spacer{width:0;height:0;flex:1 1 0px}\n.w-text{display:inline-block;white-space:pre-wrap;overflow-wrap:anywhere}\n.w-span{}\n/* Clamp owns the inline display and overflow; keep hide and clip independent. */\n.w-text-hidden{display:none!important}\n.w-text-clip{overflow:hidden}\n.w-button.w-wx{margin:0}\n.w-input.w-wx{border:1px solid #ccc;padding:4px 8px}\n/* The mini program scroll-view owns its viewport; its child owns the layout. */\n.w-scroll-content-v,.w-scroll-content-h{display:flex;align-items:flex-start;flex:none}\n.w-scroll-content-v{flex-direction:column;width:100%;min-height:100%}\n.w-scroll-content-h{flex-direction:row;width:max-content;min-width:100%;height:100%}\n.w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#0000001f}\n@media (prefers-color-scheme:dark){\n  .w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#ffffff26}\n}\n";

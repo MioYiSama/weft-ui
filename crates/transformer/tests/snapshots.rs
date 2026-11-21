@@ -92,6 +92,12 @@ const APPEARANCE: Fixture = Fixture {
     natives: ALL_NATIVES,
 };
 
+const TYPOGRAPHY: Fixture = Fixture {
+    name: "Typography",
+    source: include_str!("fixtures/Typography.weft"),
+    natives: &[],
+};
+
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
 fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
@@ -182,6 +188,11 @@ fn layout() {
 #[test]
 fn appearance() {
     check_fixture(&APPEARANCE);
+}
+
+#[test]
+fn typography() {
+    check_fixture(&TYPOGRAPHY);
 }
 
 fn check_fixture(fixture: &Fixture) {
@@ -303,7 +314,7 @@ component C(color: String) {
         assert!(files["view.js"].ends_with("}));\n"));
         let [background, color] = css_indices.expect("the Web bindings were checked first");
         assert!(files["view.js"].contains(&format!(
-            "v: [[\"n3_0\", {background}], [\"n0_1\", {color}]]"
+            "v: [[\"n3_0\", {background}], [\"n0_0\", {color}]]"
         )));
         assert!(!files["view.js"].contains("import "));
         assert!(!files["view.js"].contains("require("));

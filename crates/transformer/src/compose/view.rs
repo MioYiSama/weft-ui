@@ -94,6 +94,7 @@ impl Body<'_> {
             Element::Stack => &["alignment"],
             Element::Scroll => &["direction", "gap", "align", "indicators"],
             Element::Spacer => &["size"],
+            Element::Span => unreachable!("platform support rejects `Span` before generation"),
         };
         for &name in names.iter().chain(PADDING) {
             let Some(value) = prop(name) else { continue };
@@ -125,6 +126,7 @@ impl Body<'_> {
                 ));
             }
             Element::Text | Element::Image | Element::Spacer => out.writer.end_line(""),
+            Element::Span => unreachable!("platform support rejects `Span` before generation"),
             Element::Column | Element::Row | Element::Stack | Element::Scroll | Element::Button => {
                 out.open_after(" {");
                 for &child in children {

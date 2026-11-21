@@ -95,9 +95,9 @@ title: 内置元素
 
 ## Text
 
-显示文本。
+显示纯文本或由多个行内片段组成的文本。
 
-**子节点:** 无.
+仅接受以下直接子元素： `Span`.
 
 | 属性 | 类型 | 默认值 | 说明 | 平台例外 |
 | --- | --- | --- | --- | --- |
@@ -132,10 +132,35 @@ title: 内置元素
 | `borderColor` | `Color` | `"#0000001f"` | 设置边框颜色；深色模式默认使用 `#ffffff26`。 | — |
 | `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | — |
 | `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | — |
-| `value` (位置参数) | `String` | 必填 | 要显示的文本。 | — |
 | `color` | `Color` | — | 设置文字颜色。 | — |
 | `size` | `Int` | — | 用逻辑像素设置字号。 | — |
+| `weight` | `Weight` | `"regular"` | 设置字重。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `italic` | `Bool` | `false` | 设置斜体。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `decoration` | `Decoration` | `"none"` | 为文字添加下划线或删除线。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `value` (位置参数) | `String` | — | 要显示的纯文本；没有 `Span` 子元素时必填。 | — |
+| `align` | `TextAlign` | `"start"` | 设置各行文字在文本框中的对齐方式。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `maxLines` | `Int` | `0` | 超出行数限制时在末尾显示省略号；小于或等于零表示不限行数。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `lineHeight` | `Int` | — | 用逻辑像素设置行高。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 | `bold` | `Bool` | — | 以粗体显示文本。 | — |
+
+## Span
+
+显示可单独设置样式的行内文本片段。
+
+**平台例外:** 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux`.
+
+**子节点:** 无.
+
+必须是以下元素之一的直接子元素： `Text`.
+
+| 属性 | 类型 | 默认值 | 说明 | 平台例外 |
+| --- | --- | --- | --- | --- |
+| `color` | `Color` | — | 设置文字颜色。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `size` | `Int` | — | 用逻辑像素设置字号。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `weight` | `Weight` | `"regular"` | 设置字重。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `italic` | `Bool` | `false` | 设置斜体。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `decoration` | `Decoration` | `"none"` | 为文字添加下划线或删除线。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `value` (位置参数) | `String` | 必填 | 此片段的文字。 | — |
 
 ## Button
 

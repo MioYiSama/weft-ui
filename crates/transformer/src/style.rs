@@ -37,6 +37,15 @@ pub(crate) fn theme_styles(colors: &[(String, Color, Color)]) -> String {
     out
 }
 
+/// Clamp owns the inline display and overflow, so competing flags use classes.
+pub(crate) fn text_clamp_class(has_clamp: bool, name: &str) -> Option<&'static str> {
+    match (has_clamp, name) {
+        (true, "hidden") => Some("w-text-hidden"),
+        (true, "clip") => Some("w-text-clip"),
+        _ => None,
+    }
+}
+
 /// Converts a property into complete semicolon-separated CSS declarations.
 pub(crate) fn declarations(css: Css<'_>, value: &Constant) -> String {
     let properties = css.properties;

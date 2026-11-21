@@ -53,13 +53,17 @@ enum Target {
     Checked,
     Disabled,
     Attr(&'static str),
+    Class(&'static str),
     Direction,
     Style(usize, PropType),
 }
 
-fn target(element: Element, prop: &str) -> Target {
+fn target(element: Element, prop: &str, has_clamp: bool) -> Target {
+    if let Some(class) = style::text_clamp_class(has_clamp, prop) {
+        return Target::Class(class);
+    }
     match (element, prop) {
-        (Element::Text, "value") => Target::Text,
+        (Element::Text | Element::Span, "value") => Target::Text,
         (Element::Input, "value") => Target::Value,
         (Element::Checkbox, "checked") => Target::Checked,
         (_, "disabled") => Target::Disabled,
@@ -105,6 +109,7 @@ fn tag(element: Element, props: &[Prop]) -> (&'static str, &'static str, &'stati
         }
         Element::Spacer => ("div", "", "w-spacer"),
         Element::Text => ("span", "", "w-text"),
+        Element::Span => ("span", "", "w-span"),
         Element::Button => ("button", " type=\"button\"", "w-button"),
         Element::Input => ("input", "", "w-input"),
         Element::Checkbox => ("input", " type=\"checkbox\"", "w-checkbox"),
@@ -199,6 +204,7 @@ fn apply(target: Target, mask: Option<u8>, node: &str, value: &str) -> String {
         Target::Checked => format!("$.checked({node}, {value});"),
         Target::Disabled => format!("{node}.disabled = {value};"),
         Target::Attr(name) => format!("{node}.setAttribute({}, {value});", js::string(name)),
+        Target::Class(name) => format!("{node}.classList.toggle({}, {value});", js::string(name)),
         Target::Direction => unreachable!("scroll direction was resolved statically"),
         Target::Style(index, _) => match mask {
             Some(mask) => format!("$.style({node}, {index}, {value}, {mask});"),
@@ -232,7 +238,10 @@ impl Gen {
         };
         let element = *element;
         let (tag, fixed, class) = tag(element, props);
+        let has_clamp =
+            element == Element::Text && props.iter().any(|prop| prop.name == "maxLines");
         let mut sources = StyleSources::new(props);
+        let mut classes = String::new();
         let mut style = String::new();
         let mut text = None;
         let mut fill = element == Element::Scroll;
@@ -244,7 +253,7 @@ impl Gen {
             let PropValue::Expr(expr) = &prop.value else {
                 continue;
             };
-            let target = target(element, prop.name);
+            let target = target(element, prop.name, has_clamp);
             let Some(value) = template_literal(prop, target) else {
                 continue;
             };
@@ -252,6 +261,11 @@ impl Gen {
                 (Target::Text, Literal::Str(s)) => text = Some(s),
                 (Target::Disabled, Literal::Bool(true)) => out.push_str(" disabled"),
                 (Target::Disabled | Target::Direction, _) => {}
+                (Target::Class(name), Literal::Bool(true)) => {
+                    classes.push(' ');
+                    classes.push_str(name);
+                }
+                (Target::Class(_), Literal::Bool(false)) => {}
                 (Target::Attr(name), Literal::Str(s)) => {
                     out.push(' ');
                     out.push_str(name);
@@ -296,6 +310,7 @@ impl Gen {
         out.push_str(" class=\"");
         out.push_str(class);
         out.push_str(context);
+        out.push_str(&classes);
         if fill {
             out.push_str(" w-fill");
         }
@@ -388,12 +403,14 @@ impl Backend for Gen {
         parts: &mut Parts,
     ) -> &'parent str {
         let n = format!("n{}", id.0);
+        let has_clamp =
+            element == Element::Text && props.iter().any(|prop| prop.name == "maxLines");
         let mut sources = StyleSources::new(props);
         let mut listened = false;
         for prop in props {
             match &prop.value {
                 PropValue::Expr(value) => {
-                    let target = target(element, prop.name);
+                    let target = target(element, prop.name, has_clamp);
                     if template_literal(prop, target).is_some() {
                         continue;
                     }

@@ -1,0 +1,81 @@
+type SpecimenWeight = "regular" | "light" | "medium" | "semibold" | "bold"
+type SpecimenAlign = "start" | "center" | "end"
+
+style TypeLabel { size = 12, weight = "semibold", color = "#42615b" }
+style TypeSample { size = 15, color = "#183b35" }
+
+component TypeWeight(label: String, weight: SpecimenWeight) {
+    Row(fill = true, align = "center", gap = 12) {
+        Text(label, width = 84, style = TypeLabel)
+        Text("Weft Aa", style = TypeSample, size = 19, weight = weight)
+    }
+}
+
+component TypeAlignment(label: String, align: SpecimenAlign) {
+    Column(grow = 1, gap = 4, padding = 6, radius = 6, background = "#edf4ef") {
+        Text(label, style = TypeLabel)
+        Text("A short line\nthen less.", fill = true, align = align, style = TypeSample)
+    }
+}
+
+component Typography() {
+    Scroll(background = "#f6f9f6", indicators = false) {
+        Column(fill = true, padding = 20, gap = 13) {
+            Column(gap = 8) {
+                Text("Typography", size = 34, weight = "bold", color = "#183b35")
+                Text("SIZE  ·  12 / 16 / 22 / 28 / 34", style = TypeLabel)
+                Row(gap = 12, align = "end") {
+                    Text("Aa", size = 12, color = "#183b35")
+                    Text("Aa", size = 16, color = "#183b35")
+                    Text("Aa", size = 22, color = "#183b35")
+                    Text("Aa", size = 28, color = "#183b35")
+                    Text("Aa", size = 34, color = "#183b35")
+                }
+            }
+            Column(fill = true, gap = 3) {
+                Text("WEIGHT", style = TypeLabel)
+                TypeWeight("Light 300", "light")
+                TypeWeight("Regular 400", "regular")
+                TypeWeight("Medium 500", "medium")
+                TypeWeight("Semibold 600", "semibold")
+                TypeWeight("Bold 700", "bold")
+            }
+            Column(fill = true, gap = 6) {
+                Text("STYLE", style = TypeLabel)
+                Row(gap = 18) {
+                    Text("Italic", italic = true, style = TypeSample)
+                    Text("Underline", decoration = "underline", style = TypeSample)
+                    Text("Strikethrough", decoration = "lineThrough", style = TypeSample)
+                }
+            }
+            Column(fill = true, gap = 6) {
+                Text("ALIGNMENT", style = TypeLabel)
+                Row(fill = true, align = "stretch", gap = 6) {
+                    TypeAlignment("Start", "start")
+                    TypeAlignment("Center", "center")
+                    TypeAlignment("End", "end")
+                }
+            }
+            Column(fill = true, gap = 6) {
+                Text("TWO-LINE LIMIT", style = TypeLabel)
+                Text("The wind lifted the pages from the desk and scattered them across the courtyard before anyone could catch them.",
+                     fill = true, maxLines = 2, style = TypeSample)
+            }
+            Column(fill = true, gap = 6) {
+                Text("LINE HEIGHT", style = TypeLabel)
+                Row(fill = true, gap = 20) {
+                    Text("18 px\nA second line", lineHeight = 18, style = TypeSample)
+                    Text("28 px\nA second line", lineHeight = 28, style = TypeSample)
+                }
+            }
+            Column(fill = true, gap = 6) {
+                Text("INLINE SPANS", style = TypeLabel)
+                Text(style = TypeSample) {
+                    Span("Read closely, ", weight = "bold")
+                    Span("pause often, ", italic = true, color = "#17765a")
+                    Span("then turn the page.", decoration = "underline")
+                }
+            }
+        }
+    }
+}

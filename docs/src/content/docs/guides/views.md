@@ -67,7 +67,7 @@ For overlapping children, use `Stack`: later children appear on top, and `alignm
 
 The layout features are available on every target platform. See the [built-in element reference](/reference/elements/) for the support status of each element and property.
 
-You can supply the required value for `Text`, `Input`, `Checkbox`, or `Image` as the first positional argument. Lengths, including text `size`, are `Int` values in logical pixels, with no unit suffix. These map to pt on iOS and macOS, dp on Android, DIP on Windows, CSS px on the web, and `px` (not `rpx`) in mini programs. Layout semantics are shared where supported, but controls can look different across platforms.
+You can supply the value for `Text`, `Input`, `Checkbox`, or `Image` as the first positional argument. Lengths, including text `size`, are `Int` values in logical pixels, with no unit suffix. These map to pt on iOS and macOS, dp on Android, DIP on Windows, CSS px on the web, and `px` (not `rpx`) in mini programs. Layout semantics are shared where supported, but controls can look different across platforms.
 
 Colors such as `Text.color` or `Row.background` are strings in `#RGB`, `#RRGGBB`, or `#RRGGBBAA` form. Invalid literals are compile errors. Invalid dynamic colors render as transparent and warn in development builds.
 
@@ -84,6 +84,21 @@ Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "
 The border adds to the element's outer size, not to its content size. The background extends under the border, and `radius` rounds both. Use `clip = true` to keep children inside the rounded padding box. The `"small"`, `"medium"`, and `"large"` shadows paint outside the border box; the default is `"none"`.
 
 `opacity` fades the whole element, including its children, without changing its size. Use `hidden = true` to hide an element and remove its space in the layout. See the [built-in element reference](/reference/elements/) for the available properties on each element.
+
+## Style text and inline spans
+
+On the web and in WeChat mini programs, set `weight` to `"light"`, `"regular"`, `"medium"`, `"semibold"`, or `"bold"`. Set `italic = true`, or use `decoration = "underline"` or `"lineThrough"`. Use `weight = "bold"` for new code on these targets; `bold = true` still works on all platforms.
+
+`Text` wraps within its available width. Use `align = "start"`, `"center"`, or `"end"` to align the lines, `lineHeight` to set their height in logical pixels, and `maxLines = 2` to show at most two lines and mark omitted text with an ellipsis. A nonpositive `maxLines` leaves text unlimited.
+
+```weft
+Text(width = 200, lineHeight = 22) {
+  Span("New: ", weight = "semibold")
+  Span("read the release notes", decoration = "underline")
+}
+```
+
+Give `Text` either a string value or one or more direct `Span` children, not both. Each `Span` takes a string and can override the text styling for that run. Include any spaces needed between spans in their strings. Use a string expression inside a `Span` for dynamic text rather than placing an `if`, `for`, component call, or slot directly inside `Text`.
 
 ## Reuse element styles
 

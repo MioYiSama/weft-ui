@@ -47,6 +47,29 @@ public enum WeftShadow
     Large,
 }
 
+public enum WeftWeight
+{
+    Regular,
+    Light,
+    Medium,
+    Semibold,
+    Bold,
+}
+
+public enum WeftTextAlign
+{
+    Start,
+    Center,
+    End,
+}
+
+public enum WeftDecoration
+{
+    None,
+    Underline,
+    LineThrough,
+}
+
 public static class WeftUnions
 {
     public static WeftCrossAlign ParseCrossAlign(string value) => value switch
@@ -92,5 +115,28 @@ public static class WeftUnions
         "medium" => WeftShadow.Medium,
         "large" => WeftShadow.Large,
         _ => WeftShadow.None,
+    };
+
+    public static WeftWeight ParseWeight(string value) => value switch
+    {
+        "light" => WeftWeight.Light,
+        "medium" => WeftWeight.Medium,
+        "semibold" => WeftWeight.Semibold,
+        "bold" => WeftWeight.Bold,
+        _ => WeftWeight.Regular,
+    };
+
+    public static WeftTextAlign ParseTextAlign(string value) => value switch
+    {
+        "center" => WeftTextAlign.Center,
+        "end" => WeftTextAlign.End,
+        _ => WeftTextAlign.Start,
+    };
+
+    public static WeftDecoration ParseDecoration(string value) => value switch
+    {
+        "underline" => WeftDecoration.Underline,
+        "lineThrough" => WeftDecoration.LineThrough,
+        _ => WeftDecoration.None,
     };
 }

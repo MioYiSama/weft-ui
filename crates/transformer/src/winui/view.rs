@@ -47,6 +47,7 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                         format!("direction: {}", literal(*element, prop.name, &prop.value))
                     }),
                 Element::Stack | Element::Spacer | Element::Text | Element::Image => String::new(),
+                Element::Span => unreachable!("platform support rejects `Span` before generation"),
             };
             out.writer.line(format_args!(
                 "{declaration}n{index} = new {}({args});",
@@ -82,6 +83,7 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
     match element {
         Element::Column | Element::Row => "WeftStack",
         Element::Text => "WeftText",
+        Element::Span => unreachable!("platform support rejects `Span` before generation"),
         Element::Button => "WeftButton",
         Element::Input => "WeftInput",
         Element::Checkbox => "WeftCheckbox",

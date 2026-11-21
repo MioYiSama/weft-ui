@@ -30,32 +30,32 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                     Some(slot) => format!("[this] {{ dispatch({slot}); }}"),
                     None => "nullptr".to_owned(),
                 },
-                Element::Input => {
+                Element::Input | Element::TextArea => {
                     let (slot, _) = template.controlled(index);
                     format!("[this](std::string_view v) {{ return dispatch({slot}, v); }}")
                 }
-                Element::Checkbox => {
+                Element::Checkbox | Element::Switch => {
                     let (slot, _) = template.controlled(index);
                     format!("[this](bool v) {{ return dispatch({slot}, v); }}")
                 }
-                Element::Scroll => props
+                Element::Slider | Element::Picker => {
+                    let (slot, _) = template.controlled(index);
+                    format!("[this](double v) {{ return dispatch({slot}, v); }}")
+                }
+                Element::Scroll | Element::Divider => props
                     .iter()
-                    .find(|prop| prop.name == "direction")
+                    .find(|prop| is_constructor_prop(*element, prop.name))
                     .map_or_else(String::new, |prop| {
                         literal(*element, prop.name, &prop.value)
                     }),
                 Element::Text if !children.is_empty() => children.len().to_string(),
-                Element::Stack | Element::Spacer | Element::Text | Element::Image => String::new(),
-                Element::Span => unreachable!("Span is emitted by its parent Text"),
-                Element::Switch
-                | Element::TextArea
+                Element::Stack
+                | Element::Spacer
+                | Element::Text
+                | Element::Image
                 | Element::Spinner
-                | Element::Progress
-                | Element::Divider
-                | Element::Slider
-                | Element::Picker => {
-                    unreachable!("unsupported elements are rejected before code generation")
-                }
+                | Element::Progress => String::new(),
+                Element::Span => unreachable!("Span is emitted by its parent Text"),
             };
             let made = format!("make<weft::{}>({args})", wrapper(*element));
             let member = initialize(out, template, index, &made);
@@ -97,7 +97,10 @@ fn initialize(out: &mut Code, template: &Template, index: u32, instance: &str) -
             .line(format_args!("auto &n{index} = {instance};"));
         format!("n{index}.")
     };
-    for prop in props.iter().filter(|prop| prop.name != "direction") {
+    for prop in props
+        .iter()
+        .filter(|prop| !is_constructor_prop(*element, prop.name))
+    {
         out.writer.line(format_args!(
             "{member}{}({});",
             setter(prop.name),
@@ -105,6 +108,13 @@ fn initialize(out: &mut Code, template: &Template, index: u32, instance: &str) -
         ));
     }
     member
+}
+
+fn is_constructor_prop(element: Element, prop: &str) -> bool {
+    matches!(
+        (element, prop),
+        (Element::Scroll, "direction") | (Element::Divider, "vertical")
+    )
 }
 
 /// Whether node `index` is kept in a field `n{index}_` for `apply`.
@@ -142,15 +152,13 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Input => "Input",
         Element::Checkbox => "Checkbox",
         Element::Image => "Image",
-        Element::Switch
-        | Element::TextArea
-        | Element::Spinner
-        | Element::Progress
-        | Element::Divider
-        | Element::Slider
-        | Element::Picker => {
-            unreachable!("unsupported elements are rejected before code generation")
-        }
+        Element::Switch => "Switch",
+        Element::TextArea => "TextArea",
+        Element::Spinner => "Spinner",
+        Element::Progress => "Progress",
+        Element::Divider => "Divider",
+        Element::Slider => "Slider",
+        Element::Picker => "Picker",
     }
 }
 
@@ -193,9 +201,7 @@ pub(crate) fn slot_value(element: Element, prop: &str, ty: ValueType) -> String 
         ValueType::Bool => "boolean",
         ValueType::String => "string",
         ValueType::Color => "color",
-        ValueType::Strings => {
-            unreachable!("string list slots are not supported on this platform yet")
-        }
+        ValueType::Strings => "strings",
     };
     format!("weft::{accessor}(value)")
 }

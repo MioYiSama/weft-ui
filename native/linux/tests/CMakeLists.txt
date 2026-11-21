@@ -30,3 +30,8 @@ target_link_libraries(weft_linux_text_tests PRIVATE weft_linux)
 target_include_directories(weft_linux_text_tests PRIVATE ../src)
 add_test(NAME linux.text COMMAND weft_linux_text_tests)
 set_tests_properties(linux.text PROPERTIES SKIP_RETURN_CODE 77)
+
+add_executable(weft_linux_controls_tests controls_test.cpp)
+target_link_libraries(weft_linux_controls_tests PRIVATE weft_linux)
+add_test(NAME linux.controls COMMAND weft_linux_controls_tests)
+set_tests_properties(linux.controls PROPERTIES SKIP_RETURN_CODE 77)

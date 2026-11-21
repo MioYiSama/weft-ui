@@ -33,17 +33,18 @@ class Session;
 struct Point;
 
 /// Implemented by the generated views: starts the app compiled to
-/// `weft/bundle.hbc` next to the executable and returns its root widget, a
-/// scrolled page whose content starts at the top left corner, or the reason
-/// the app failed to start.
+/// `weft/bundle.hbc` next to the executable and returns its root widget,
+/// a vertical container that shows the app or its startup error.
 GtkWidget *start_app();
 
 // Values of value slots.
 
-/// An `Int` slot: a length in logical pixels.
+/// Reads an `Int` or `Float` slot.
 double number(const ops::Value &value);
 bool boolean(const ops::Value &value);
 std::string_view string(const ops::Value &value);
+/// Borrows the list for the duration of the current ops batch.
+ops::StringList strings(const ops::Value &value);
 
 namespace theme {
 
@@ -348,7 +349,7 @@ class Button final : public Element {
   Linear content_;
 };
 
-// Controlled `Input` and `Checkbox`. The widget reports every user edit
+// Controlled inputs. The widget reports every user edit
 // through `edit`, which dispatches it synchronously; when the app refuses it
 // (`edit` returns false) the widget shows its value slot again. Values written
 // by `set` ops are recognized by comparing with the slot, so they are never
@@ -394,6 +395,130 @@ class Checkbox final : public Element {
 
   std::function<bool(bool)> edit_;
   bool value_ = false;
+};
+
+/// `Switch`: a `GtkSwitch` whose state follows the controlled slot.
+class Switch final : public Element {
+ public:
+  explicit Switch(std::function<bool(bool)> edit);
+  void set_checked(bool checked);
+  void set_disabled(bool disabled);
+
+ private:
+  static gboolean state_set(GtkSwitch *button, gboolean active, Switch *self);
+
+  std::function<bool(bool)> edit_;
+  bool value_ = false;
+};
+
+/// `TextArea`: a wrapping `GtkTextView` with a three-line scroll viewport.
+class TextArea final : public Element {
+ public:
+  explicit TextArea(std::function<bool(std::string_view)> edit);
+  ~TextArea() override;
+  void set_value(std::string_view value);
+  void set_placeholder(std::string_view placeholder);
+  void set_disabled(bool disabled);
+
+ private:
+  static void changed(GtkTextBuffer *buffer, TextArea *self);
+  static void begin_edit(GtkTextBuffer *buffer, TextArea *self);
+  static void end_edit(GtkTextBuffer *buffer, TextArea *self);
+  static void preedit_changed(GtkTextView *view, const char *preedit, TextArea *self);
+  void edited();
+  void show();
+  void update_placeholder();
+
+  std::function<bool(std::string_view)> edit_;
+  GtkTextView *view_;
+  GtkTextBuffer *buffer_;
+  GtkWidget *placeholder_;
+  std::string value_;
+  bool composing_ = false;
+  bool editing_ = false;
+  bool showing_ = false;
+};
+
+/// `Slider`: a `GtkScale` snapping edits to integer increments from `min`.
+class Slider final : public Element {
+ public:
+  explicit Slider(std::function<bool(double)> edit);
+  void set_value(double value);
+  void set_min(double min);
+  void set_max(double max);
+  void set_step(double step);
+  void set_disabled(bool disabled);
+
+ private:
+  static void changed(GtkRange *range, Slider *self);
+  double snap(double value) const;
+  void sync_range();
+  void show(double value);
+
+  static constexpr double kMin = 0, kMax = 100, kStep = 1;
+  std::function<bool(double)> edit_;
+  double value_ = kMin;
+  double min_ = kMin;
+  double max_ = kMax;
+  double step_ = kStep;
+  bool showing_ = false;
+};
+
+/// `Picker`: a `GtkMenuButton` with one popover button per option.
+class Picker final : public Element {
+ public:
+  explicit Picker(std::function<bool(double)> edit);
+  ~Picker() override;
+  void set_selected(double selected);
+  void set_options(ops::StringList options);
+  void set_placeholder(std::string_view placeholder);
+  void set_disabled(bool disabled);
+
+ private:
+  static void clicked(GtkButton *button, Picker *self);
+  void clear_options();
+  void show();
+
+  std::function<bool(double)> edit_;
+  GtkWidget *options_box_;
+  GtkLabel *label_;
+  std::vector<GtkButton *> options_;
+  std::string placeholder_;
+  double selected_ = -1;
+};
+
+/// `Spinner`: a rotating three-quarter ring, 20 logical pixels by default.
+class Spinner final : public Element {
+ public:
+  Spinner();
+  void set_color(Color color);
+  void reapply_colors() override;
+
+ private:
+  std::optional<Color> color_;
+};
+
+/// `Progress`: a four-pixel track with a fill proportional to `value`.
+class Progress final : public Element {
+ public:
+  Progress();
+  void set_value(double value);
+  void set_color(Color color);
+  void reapply_colors() override;
+
+ private:
+  Color color_ = Color::rgba(0x007affff);
+};
+
+/// `Divider`: a native separator or a solid one-pixel line when tinted.
+class Divider final : public Element {
+ public:
+  explicit Divider(bool vertical = false);
+  void set_color(Color color);
+  void reapply_colors() override;
+
+ private:
+  std::optional<Color> color_;
 };
 
 /// `Image`: a `GtkPicture` of a remote (`http:` / `https:`) or local image,
@@ -449,6 +574,7 @@ class Scope {
   /// and the widget must show its value slot again.
   bool dispatch(uint32_t slot);
   bool dispatch(uint32_t slot, bool value);
+  bool dispatch(uint32_t slot, double value);
   bool dispatch(uint32_t slot, std::string_view value);
 
  private:

@@ -41,6 +41,11 @@ std::string_view string(const ops::Value &value) {
   return text ? *text : std::string_view();
 }
 
+ops::StringList strings(const ops::Value &value) {
+  auto *list = std::get_if<ops::StringList>(&value);
+  return list ? *list : ops::StringList{};
+}
+
 // Element.
 
 Element::Element(GtkWidget *widget) : widget_(GTK_WIDGET(g_object_ref_sink(widget))), layout_(attach_layout(widget)) {}

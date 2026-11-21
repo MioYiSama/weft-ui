@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <deque>
 #include <fstream>
@@ -20,6 +21,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_map>
 #include <variant>
@@ -36,12 +38,17 @@ struct Protocol : std::runtime_error {
 };
 
 /// An owned slot value.
-using Value = std::variant<bool, double, std::string>;
+using Value = std::variant<bool, double, std::string, std::vector<std::string>>;
 
 Value own(const weft::ops::Value &value) {
   if (auto *flag = std::get_if<bool>(&value)) return *flag;
   if (auto *number = std::get_if<double>(&value)) return *number;
-  return std::string(std::get<std::string_view>(value));
+  if (auto *text = std::get_if<std::string_view>(&value)) return std::string(*text);
+  const auto list = std::get<weft::ops::StringList>(value);
+  std::vector<std::string> strings;
+  strings.reserve(list.count);
+  for (auto text : list) strings.emplace_back(text);
+  return strings;
 }
 
 struct Node {
@@ -276,9 +283,11 @@ class Renderer {
         if (op.index >= slots.size()) throw Protocol("scope " + std::to_string(op.scope) + " has no value slot " + std::to_string(op.index));
         const std::string &type = slots[op.index].type;
         auto *number = std::get_if<double>(&op.value);
-        bool fits = type == "Int" ? number && *number == double(int64_t(*number))
+        bool fits = type == "Int" ? number && std::isfinite(*number) && *number == std::trunc(*number)
+                    : type == "Float" ? number != nullptr
                     : type == "Bool" ? std::holds_alternative<bool>(op.value)
-                                     : std::holds_alternative<std::string_view>(op.value);
+                    : type == "Strings" ? std::holds_alternative<weft::ops::StringList>(op.value)
+                                        : std::holds_alternative<std::string_view>(op.value);
         if (!fits) throw Protocol(weft::ops::format(op) + " does not fit a " + type + " slot");
         scope.values[op.index] = own(op.value);
         scope.shown[op.index] = scope.values[op.index];
@@ -335,17 +344,17 @@ class Renderer {
 };
 
 /// One encoded value, as `weft_runtime_dispatch` takes it.
-std::vector<uint8_t> encode(const json::Value &value) {
-  if (value.is_bool()) return {uint8_t(value.boolean() ? 1 : 0)};
-  const std::string &text = value.string();
-  std::vector<uint8_t> out{3};
-  for (int i = 0; i < 4; i++) out.push_back(uint8_t(text.size() >> (8 * i)));
-  out.insert(out.end(), text.begin(), text.end());
+std::string encode(const json::Value &value) {
+  std::string out;
+  if (value.is_bool()) weft::ops::encode_value(value.boolean(), out);
+  else if (value.is_number()) weft::ops::encode_value(value.number(), out);
+  else weft::ops::encode_value(std::string_view(value.string()), out);
   return out;
 }
 
 Value own(const json::Value &value) {
   if (value.is_bool()) return value.boolean();
+  if (value.is_number()) return value.number();
   return value.string();
 }
 
@@ -408,8 +417,8 @@ struct Host {
     golden.push_back("");
   }
 
-  bool dispatch(uint32_t scope, uint32_t slot, const std::vector<uint8_t> &payload) {
-    return weft_runtime_dispatch(rt, scope, slot, payload.data(), payload.size());
+  bool dispatch(uint32_t scope, uint32_t slot, std::string_view payload) {
+    return weft_runtime_dispatch(rt, scope, slot, reinterpret_cast<const uint8_t *>(payload.data()), payload.size());
   }
 
   /// Edits a controlled element like a user; a rejected edit shows the last value received again.

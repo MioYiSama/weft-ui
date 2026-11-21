@@ -41,6 +41,7 @@ add_library(weft_linux STATIC
   src/appearance.cpp
   src/color.cpp
   src/container.cpp
+  src/controls.cpp
   src/elements.cpp
   src/frame.cpp
   src/layout.cpp

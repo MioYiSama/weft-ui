@@ -38,6 +38,11 @@ struct WidgetStyle {
 WidgetLayout &attach_layout(GtkWidget *widget);
 WidgetStyle &widget_style(GtkWidget *widget);
 GtkWidget *widget_new(GtkWidget *child = nullptr);
+GtkWidget *spinner_new();
+void spinner_set_color(GtkWidget *widget, GdkRGBA color);
+GtkWidget *progress_new();
+void progress_set_color(GtkWidget *widget, GdkRGBA color, bool dark);
+void progress_set_value(GtkWidget *widget, double value);
 GtkWidget *linear_new(Axis axis, CrossAlign align = CrossAlign::Start, bool scrolling = false);
 GtkWidget *overlay_new();
 void container_set_gap(GtkWidget *widget, double gap);

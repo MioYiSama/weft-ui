@@ -59,6 +59,12 @@ bool Scope::dispatch(uint32_t slot, bool value) {
   return session_.dispatch(id_, slot, payload);
 }
 
+bool Scope::dispatch(uint32_t slot, double value) {
+  std::string payload;
+  ops::encode_value(value, payload);
+  return session_.dispatch(id_, slot, payload);
+}
+
 bool Scope::dispatch(uint32_t slot, std::string_view value) {
   std::string payload;
   ops::encode_value(value, payload);

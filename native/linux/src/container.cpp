@@ -42,6 +42,23 @@ struct WeftWidget {
 struct WeftWidgetClass { GtkWidgetClass parent_class; };
 G_DEFINE_TYPE(WeftWidget, weft_widget, GTK_TYPE_WIDGET)
 
+struct WeftSpinner {
+  WeftWidget parent_instance;
+  GdkRGBA color;
+  double angle;
+};
+struct WeftSpinnerClass { WeftWidgetClass parent_class; };
+G_DEFINE_TYPE(WeftSpinner, weft_spinner, weft_widget_get_type())
+
+struct WeftProgress {
+  WeftWidget parent_instance;
+  GdkRGBA bar;
+  GdkRGBA track;
+  double fraction;
+};
+struct WeftProgressClass { WeftWidgetClass parent_class; };
+G_DEFINE_TYPE(WeftProgress, weft_progress, weft_widget_get_type())
+
 struct WeftLinear {
   WeftWidget parent_instance;
   void (*on_allocate)(GtkWidget *);
@@ -284,6 +301,46 @@ void snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
   if (style.clip) gtk_snapshot_pop(snapshot);
 }
 
+gboolean spin(GtkWidget *widget, GdkFrameClock *clock, gpointer) {
+  constexpr int64_t period_us = 800'000;
+  auto &spinner = *reinterpret_cast<WeftSpinner *>(widget);
+  spinner.angle = (gdk_frame_clock_get_frame_time(clock) % period_us) * (2 * G_PI / period_us);
+  gtk_widget_queue_draw(widget);
+  return G_SOURCE_CONTINUE;
+}
+
+void snapshot_spinner(GtkWidget *widget, GtkSnapshot *snapshot) {
+  const auto &spinner = *reinterpret_cast<WeftSpinner *>(widget);
+  const float width = gtk_widget_get_width(widget), height = gtk_widget_get_height(widget);
+  constexpr double stroke = 2;
+  const double radius = (std::min(width, height) - stroke) / 2;
+  if (radius <= 0 || spinner.color.alpha == 0) return;
+  const auto bounds = GRAPHENE_RECT_INIT(0, 0, width, height);
+  auto *cr = gtk_snapshot_append_cairo(snapshot, &bounds);
+  const auto &color = spinner.color;
+  cairo_set_source_rgba(cr, color.red, color.green, color.blue, color.alpha);
+  cairo_set_line_width(cr, stroke);
+  cairo_arc(cr, width / 2, height / 2, radius, spinner.angle, spinner.angle + 1.5 * G_PI);
+  cairo_stroke(cr);
+  cairo_destroy(cr);
+}
+
+void snapshot_progress(GtkWidget *widget, GtkSnapshot *snapshot) {
+  const auto &progress = *reinterpret_cast<WeftProgress *>(widget);
+  const float width = gtk_widget_get_width(widget), height = gtk_widget_get_height(widget);
+  const auto paint = [&](float span, const GdkRGBA &color) {
+    if (span <= 0 || height <= 0 || color.alpha == 0) return;
+    const auto bounds = GRAPHENE_RECT_INIT(0, 0, span, height);
+    GskRoundedRect rounded;
+    gsk_rounded_rect_init_from_rect(&rounded, &bounds, std::min(span, height) / 2);
+    gtk_snapshot_push_rounded_clip(snapshot, &rounded);
+    gtk_snapshot_append_color(snapshot, &color, &bounds);
+    gtk_snapshot_pop(snapshot);
+  };
+  paint(width, progress.track);
+  paint(width * progress.fraction, progress.bar);
+}
+
 void dispose(GObject *object) {
   while (auto *child = gtk_widget_get_first_child(GTK_WIDGET(object))) gtk_widget_unparent(child);
   G_OBJECT_CLASS(weft_widget_parent_class)->dispose(object);
@@ -330,6 +387,21 @@ static void weft_widget_class_init(WeftWidgetClass *klass) {
   gtk_widget_class_set_css_name(widget, "weft-widget");
 }
 
+static void weft_spinner_init(WeftSpinner *) {}
+static void weft_spinner_class_init(WeftSpinnerClass *klass) {
+  auto *widget = GTK_WIDGET_CLASS(klass);
+  widget->snapshot = snapshot_spinner;
+  gtk_widget_class_set_css_name(widget, "weft-spinner");
+}
+
+static void weft_progress_init(WeftProgress *) {}
+static void weft_progress_class_init(WeftProgressClass *klass) {
+  auto *widget = GTK_WIDGET_CLASS(klass);
+  widget->snapshot = snapshot_progress;
+  gtk_widget_class_set_css_name(widget, "weft-progress");
+  gtk_widget_class_set_accessible_role(widget, GTK_ACCESSIBLE_ROLE_PROGRESS_BAR);
+}
+
 namespace weft {
 
 Insets Edges::resolve() const {
@@ -365,6 +437,41 @@ GtkWidget *widget_new(GtkWidget *child) {
   auto *widget = GTK_WIDGET(g_object_new(weft_widget_get_type(), nullptr));
   if (child) gtk_widget_set_parent(child, widget);
   return widget;
+}
+
+GtkWidget *spinner_new() {
+  auto *widget = GTK_WIDGET(g_object_new(weft_spinner_get_type(), nullptr));
+  gtk_widget_set_can_target(widget, false);
+  gtk_widget_add_tick_callback(widget, spin, nullptr, nullptr);
+  return widget;
+}
+
+void spinner_set_color(GtkWidget *widget, GdkRGBA color) {
+  reinterpret_cast<WeftSpinner *>(widget)->color = color;
+  gtk_widget_queue_draw(widget);
+}
+
+GtkWidget *progress_new() {
+  auto *widget = GTK_WIDGET(g_object_new(weft_progress_get_type(), nullptr));
+  gtk_widget_set_can_target(widget, false);
+  gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_VALUE_MIN, 0.0,
+                                 GTK_ACCESSIBLE_PROPERTY_VALUE_MAX, 1.0,
+                                 GTK_ACCESSIBLE_PROPERTY_VALUE_NOW, 0.0, -1);
+  return widget;
+}
+
+void progress_set_color(GtkWidget *widget, GdkRGBA color, bool dark) {
+  auto &progress = *reinterpret_cast<WeftProgress *>(widget);
+  progress.bar = color;
+  progress.track = dark ? GdkRGBA{1, 1, 1, 38 / 255.0f} : GdkRGBA{0, 0, 0, 31 / 255.0f};
+  gtk_widget_queue_draw(widget);
+}
+
+void progress_set_value(GtkWidget *widget, double value) {
+  auto &progress = *reinterpret_cast<WeftProgress *>(widget);
+  progress.fraction = std::isnan(value) ? 0 : std::clamp(value, 0.0, 1.0);
+  gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_VALUE_NOW, progress.fraction, -1);
+  gtk_widget_queue_draw(widget);
 }
 
 void container_set_gap(GtkWidget *widget, double gap) {

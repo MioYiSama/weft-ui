@@ -16,7 +16,13 @@ export function prepareShots(platform: Platform): { directory: string; shots: Sh
   const directory = resolve("screenshots", "actual", platform);
   mkdirSync(directory, { recursive: true });
   const shots: Shot[] = [];
-  for (const { id, dark } of pages(platform)) {
+  // WEFT_SHOT_PAGES=a,b limits a run to those page ids (for example, the page a change affects).
+  const only = process.env.WEFT_SHOT_PAGES?.split(",").filter(Boolean);
+  const selected = pages(platform).filter(({ id }) => !only?.length || only.includes(id));
+  if (only?.length && selected.length !== only.length) {
+    throw new Error(`Unknown or unavailable page in WEFT_SHOT_PAGES=${only.join(",")} for ${platform}`);
+  }
+  for (const { id, dark } of selected) {
     shots.push({ id, scheme: "light", name: `${id}.png`, path: join(directory, `${id}.png`) });
     if (dark) {
       shots.push({ id, scheme: "dark", name: `${id}-dark.png`, path: join(directory, `${id}-dark.png`) });

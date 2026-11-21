@@ -2,7 +2,7 @@ import * as $ from "@weft-ui/runtime/remote";
 
 export class GalleryStyle extends $.Model {
   static from(v) { return v instanceof GalleryStyle ? v : new GalleryStyle(v); }
-  constructor(v) { super([v.padding, v.gap, v.width, v.height, v.background, v.color, v.size, v.bold]); }
+  constructor(v) { super([v.padding, v.gap, v.width, v.height, v.background, v.color, v.size, v.weight]); }
   get padding() { return this.$v[0]; }
   set padding(v) { this.$set(0, v); }
   get gap() { return this.$v[1]; }
@@ -17,9 +17,9 @@ export class GalleryStyle extends $.Model {
   set color(v) { this.$set(5, v); }
   get size() { return this.$v[6]; }
   set size(v) { this.$set(6, v); }
-  get bold() { return this.$v[7]; }
-  set bold(v) { this.$set(7, v); }
-  toJSON() { return { padding: this.$v[0], gap: this.$v[1], width: this.$v[2], height: this.$v[3], background: this.$v[4], color: this.$v[5], size: this.$v[6], bold: this.$v[7] }; }
+  get weight() { return this.$v[7]; }
+  set weight(v) { this.$set(7, v); }
+  toJSON() { return { padding: this.$v[0], gap: this.$v[1], width: this.$v[2], height: this.$v[3], background: this.$v[4], color: this.$v[5], size: this.$v[6], weight: this.$v[7] }; }
 }
 
 export class GalleryModel extends $.Model {
@@ -60,7 +60,7 @@ export function Panel$c(app, args, children, depth) {
 }
 
 export class Panel extends $.App {
-  constructor() { super(Panel$c, [undefined], "61c5242ca67945f7"); }
+  constructor() { super(Panel$c, [undefined], "fbf37220d9389a7d"); }
 }
 
 export function Gallery$c(app, args, children, depth) {
@@ -143,6 +143,6 @@ export function Gallery$c(app, args, children, depth) {
 }
 
 export class Gallery extends $.App {
-  constructor(p0) { super(Gallery$c, [GalleryModel.from(p0)], "61c5242ca67945f7"); }
+  constructor(p0) { super(Gallery$c, [GalleryModel.from(p0)], "fbf37220d9389a7d"); }
   onChecked(h) { return this.$on("Checked", h); }
 }

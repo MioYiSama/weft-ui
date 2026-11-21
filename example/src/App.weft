@@ -22,7 +22,7 @@ component App(model: Model) {
         Column(onMount = Mount, padding = 16, gap = 12) {
             Row(gap = 8) {
                 Image("https://avatars.githubusercontent.com/u/69631?s=64", width = 32, height = 32)
-                Text("Weft", size = 24, bold = true, color = "#3b82f6")
+                Text("Weft", size = 24, weight = "bold", color = "#3b82f6")
             }
 
             if (model.clicked) {

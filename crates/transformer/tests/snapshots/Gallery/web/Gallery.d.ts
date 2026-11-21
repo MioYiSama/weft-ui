@@ -7,7 +7,7 @@ export interface GalleryStyle {
   background: string;
   color: string;
   size: number;
-  bold: boolean;
+  weight: "regular" | "light" | "medium" | "semibold" | "bold";
 }
 
 export interface GalleryModel {

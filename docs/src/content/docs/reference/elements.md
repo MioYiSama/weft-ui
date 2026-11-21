@@ -150,7 +150,6 @@ Only these direct child elements are accepted: `Span`.
 | `align` | `TextAlign` | `"start"` | Aligns lines within the text box. | — |
 | `maxLines` | `Int` | `0` | Truncates overflowing lines with an ellipsis; zero or less leaves the text unlimited. | — |
 | `lineHeight` | `Int` | — | Sets the line height in logical pixels. | — |
-| `bold` | `Bool` | — | Displays the text in bold. | — |
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |

@@ -24,15 +24,15 @@ export function Assets$c(app, args, children, depth) {
   $.image(n0, "asset:logo");
   $.imagePlaceholder(n1);
   $.image(n1, c.p[0]);
-  $.style(n1, 44, c.p[1]);
-  $.style(n1, 45, c.p[3]);
+  $.style(n1, 43, c.p[1]);
+  $.style(n1, 44, c.p[3]);
   $.image(n2, "asset:star");
   $.style(n4, 39, c.p[2]);
   c.init(f);
   c.u = () => {
     if (c.d[0] & 1) $.image(n1, c.p[0]);
-    if (c.d[0] & 2) $.style(n1, 44, c.p[1]);
-    if (c.d[0] & 8) $.style(n1, 45, c.p[3]);
+    if (c.d[0] & 2) $.style(n1, 43, c.p[1]);
+    if (c.d[0] & 8) $.style(n1, 44, c.p[3]);
     if (c.d[0] & 4) $.style(n4, 39, c.p[2]);
   };
   return c;

@@ -88,11 +88,11 @@ export const landing: Record<Lang, LandingStrings> = {
     features: {
       eyebrow: "特性",
       heading: "编译期做完大部分工作",
-      sub: "DSL 只描述视图，不是通用编程语言。剩下的交给编译器和宿主语言。",
+      sub: "用 .weft 描述视图，复用样式和随系统切换的深浅主题，并打包本地图片和自定义字体。",
       items: [
         {
           title: "原生视图",
-          body: "每个平台的视图都编译成该平台的原生控件代码。不用 WebView，也不自绘，外观贴近各平台原生风格。",
+          body: "18 个内置元素，支持富文本、滚动布局和安全区。容器可以用 onTap 接收点击，输入框支持多种类型和焦点控制。",
         },
         {
           title: "编译期依赖分析",
@@ -171,11 +171,11 @@ export const landing: Record<Lang, LandingStrings> = {
     features: {
       eyebrow: "Features",
       heading: "Most of the work happens at compile time",
-      sub: "The DSL only describes views; it is not a general-purpose language. The compiler and the host language do the rest.",
+      sub: "Describe views in .weft with reusable styles, light and dark themes that follow the system, and bundled images and custom fonts.",
       items: [
         {
           title: "Native views",
-          body: "Each platform's views compile to that platform's native widget code. No WebView, no custom drawing; the look follows each platform.",
+          body: "18 built-in elements cover rich text, scrolling, and safe-area layout. Containers handle taps with onTap, and inputs support multiple types and focus control.",
         },
         {
           title: "Compile-time dependency analysis",

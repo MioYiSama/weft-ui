@@ -4,7 +4,7 @@ Elements, arguments and children
 
 component C() {
   Column(gap = 4) {
-    Text("a", bold = true)
+    Text("a", italic = true)
     Platform.Thing
     Button(onClick = Click) {}
   }

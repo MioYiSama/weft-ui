@@ -2,8 +2,8 @@
 
 use weft_ui_ast::Diagnostic;
 
-use crate::elements::{Element, FEATURES, Level};
-use crate::ir::{Expr, ExprKind, InterpPart, NodeKind, Program, PropValue};
+use crate::elements::{Element, Level};
+use crate::ir::{NodeKind, Program};
 use crate::transform::Platform;
 
 pub(crate) fn check(program: &Program, platform: Platform) -> Vec<Diagnostic> {
@@ -12,84 +12,13 @@ pub(crate) fn check(program: &Program, platform: Platform) -> Vec<Diagnostic> {
             .iter()
             .find_map(|&(target, level)| (target == platform).then_some(level))
     };
-    let mut diagnostics = check_with(program, platform, |element, member| {
+    check_with(program, platform, |element, member| {
         let spec = element.spec();
         level(match member {
             None => spec.support,
             Some(name) => spec.prop(name)?.support,
         })
-    });
-    if let Some(theme) = &program.theme
-        && FEATURES
-            .iter()
-            .any(|feature| feature.name == "theme" && level(feature.support) == Some(Level::No))
-    {
-        let previous = diagnostics.len();
-        let unsupported = |span| {
-            Diagnostic::error(
-                span,
-                format!("theme tokens are not supported on {platform}"),
-            )
-        };
-        diagnostics.extend(
-            program
-                .components
-                .iter()
-                .filter_map(|component| component.theme_use.first)
-                .map(unsupported),
-        );
-        if diagnostics.len() == previous {
-            diagnostics.push(unsupported(theme.span));
-        }
-    }
-    if FEATURES
-        .iter()
-        .any(|feature| feature.name == "assets" && level(feature.support) == Some(Level::No))
-    {
-        for component in &program.components {
-            let first = component
-                .nodes
-                .iter()
-                .filter_map(|node| match &node.kind {
-                    NodeKind::Element { props, .. } => Some(props),
-                    _ => None,
-                })
-                .flatten()
-                .filter_map(|prop| match (prop.name, &prop.value) {
-                    ("font", _) => Some(prop.span),
-                    ("src", PropValue::Expr(expr)) if asset_literal(expr) => Some(prop.span),
-                    _ => None,
-                })
-                .min_by_key(|span| span.start);
-            if let Some(span) = first {
-                diagnostics.push(Diagnostic::error(
-                    span,
-                    format!("local assets are not supported on {platform}"),
-                ));
-            }
-        }
-    }
-    diagnostics
-}
-
-fn asset_literal(expr: &Expr) -> bool {
-    match &expr.kind {
-        ExprKind::Str(text) => text.starts_with("asset:"),
-        ExprKind::Interp(parts) => parts.iter().any(|part| match part {
-            InterpPart::Expr(expr) => asset_literal(expr),
-            InterpPart::Lit(_) => false,
-        }),
-        ExprKind::Field { base, .. } => asset_literal(base),
-        ExprKind::Member { recv, args, .. } => {
-            asset_literal(recv) || args.iter().any(asset_literal)
-        }
-        ExprKind::Unary { expr, .. } | ExprKind::Coerce { expr, .. } => asset_literal(expr),
-        ExprKind::Binary { lhs, rhs, .. } => asset_literal(lhs) || asset_literal(rhs),
-        ExprKind::If { cond, then, else_ } => {
-            asset_literal(cond) || asset_literal(then) || asset_literal(else_)
-        }
-        _ => false,
-    }
+    })
 }
 
 fn check_with(
@@ -131,60 +60,6 @@ mod tests {
     use weft_ui_parser::{MemoryLoader, load};
 
     use super::*;
-
-    #[test]
-    fn local_assets_report_once_per_component() {
-        let path = "Main.weft";
-        let mut loader = MemoryLoader::new();
-        loader.insert(
-            path,
-            r#"
-component Images(flag: Bool) {
-    Image(if (flag) "asset:logo" else "https://example.test/logo.png")
-    Image("asset:other")
-    Text("label", font = "Inter")
-}
-component FontOnly(family: String) {
-    Text { Span("label", font = family) }
-}
-component Remote(source: String) {
-    Image(source)
-    Image("https://example.test/image.png")
-    Text("asset:ordinary text")
-}
-"#,
-        );
-        let compilation = crate::check(load(&[path], &mut loader));
-        let program = compilation.program.expect("valid asset properties");
-        let assets = FEATURES
-            .iter()
-            .find(|feature| feature.name == "assets")
-            .expect("assets feature");
-        for platform in [
-            Platform::Web,
-            Platform::Wechat,
-            Platform::Ios,
-            Platform::Macos,
-            Platform::Android,
-            Platform::Windows,
-            Platform::Linux,
-        ] {
-            let rejected = assets
-                .support
-                .iter()
-                .any(|&(target, level)| target == platform && level == Level::No);
-            let errors = check(&program, platform);
-            assert_eq!(
-                errors.len(),
-                if rejected { 2 } else { 0 },
-                "{platform}: {errors:?}"
-            );
-            assert!(errors.iter().all(|error| {
-                error.is_error()
-                    && error.message == format!("local assets are not supported on {platform}")
-            }));
-        }
-    }
 
     #[test]
     fn return_key_is_ignored_on_desktop_native_platforms() {

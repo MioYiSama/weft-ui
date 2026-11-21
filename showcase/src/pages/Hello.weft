@@ -1,6 +1,6 @@
 component Hello() {
     Column(padding = 16, gap = 12) {
-        Text("Hello, Weft", size = 36, bold = true)
+        Text("Hello, Weft", size = 36, weight = "bold")
         Row(gap = 8) {
             Checkbox(true)
             Button { Text("Button") }

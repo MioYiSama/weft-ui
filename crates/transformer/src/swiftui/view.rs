@@ -341,7 +341,6 @@ impl Body<'_> {
                 "weight",
                 "italic",
                 "decoration",
-                "bold",
                 "align",
                 "maxLines",
                 "lineHeight",

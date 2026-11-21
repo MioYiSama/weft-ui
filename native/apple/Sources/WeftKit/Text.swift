@@ -34,10 +34,10 @@ public struct WeftSpan {
 @MainActor public func weftText(
     spans: [WeftSpan], color: WeftColor? = nil, size: CGFloat? = nil, font: String? = nil,
     weight: WeftWeight? = nil, italic: Bool = false, decoration: WeftDecoration? = nil,
-    bold: Bool? = nil, align: WeftTextAlign = .start, maxLines: CGFloat = 0, lineHeight: CGFloat? = nil
+    align: WeftTextAlign = .start, maxLines: CGFloat = 0, lineHeight: CGFloat? = nil
 ) -> some View {
     WeftText(spans: spans, color: color, size: size, family: font,
-             weight: bold.map { $0 ? .bold : .regular } ?? weight, italic: italic, decoration: decoration,
+             weight: weight, italic: italic, decoration: decoration,
              align: align, maxLines: maxLines, lineHeight: lineHeight)
 }
 

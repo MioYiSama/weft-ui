@@ -181,7 +181,7 @@ For example, a `Rating(value: Int, onSelect: Event<Int>)` component can use `But
 - At most one `theme` declaration is allowed in the import closure. Tokens have unique names within it. A `theme.name` expression must appear in the declaring file or in a file that directly imports it. Style values are resolved in the file that declares the style.
 - A color token has a light color and an optional `dark` color. When omitted, the light color is also used in dark mode. The host updates the rendered colors when the system appearance changes. Integer and floating-point tokens have no appearance variants and are substituted as literals at compile time.
 - `Color` is a distinct type usable in annotations, including model fields and `Event<Color>` callback parameters. A `String` can be used where a `Color` is expected; literals must be hexadecimal colors and other values are parsed at runtime. A `Color` is not assignable to `String` and cannot be compared or interpolated. In TypeScript declarations it is represented as `string`.
-- Theme declarations and references are currently supported on the Web and in WeChat mini programs. See the [support matrix](https://weftui.mioyi.net/reference/elements/#feature-support).
+- All target platforms support theme declarations and references.
 
 ### Built-in elements and layout
 

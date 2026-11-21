@@ -18,12 +18,12 @@ type Level = "no" | "ignored";
 type Support = Record<string, Level>;
 type Platforms = ReadonlyMap<string, string>;
 
-interface Feature {
+interface Documented {
   doc: Doc;
   support?: Support;
 }
 
-interface Prop extends Feature {
+interface Prop extends Documented {
   name: string;
   type: string;
   positional?: boolean;
@@ -35,13 +35,13 @@ interface Prop extends Feature {
   event?: never;
 }
 
-interface Event extends Feature {
+interface Event extends Documented {
   name: string;
   event: true;
   payload?: string | null;
 }
 
-interface Element extends Feature {
+interface Element extends Documented {
   name: string;
   groups?: string[];
   members?: Member[];
@@ -54,7 +54,6 @@ interface Element extends Feature {
 interface Schema {
   unions?: Record<string, string[]>;
   groups?: Record<string, Member[]>;
-  features?: Record<string, Feature>;
   elements: Element[];
 }
 
@@ -149,9 +148,6 @@ function validateMembers(members: LocatedMember[], unions: Record<string, string
 
 function expand(schema: Schema, platforms: Platforms): ExpandedElement[] {
   const unions = schema.unions ?? {};
-  for (const [name, feature] of Object.entries(schema.features ?? {})) {
-    validateSupport(feature.support, `features.${name}.support`, platforms);
-  }
   for (const [name, values] of Object.entries(unions)) {
     const path = `unions.${name}`;
     if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) invalid(path, "expected a PascalCase union name");
@@ -317,7 +313,7 @@ function rustChildren(children: Children = "none"): string {
 }
 
 function rust(
-  elements: ExpandedElement[], features: Record<string, Feature>, platforms: Platforms,
+  elements: ExpandedElement[], platforms: Platforms,
   unions: Record<string, string[]>, css: CssCatalog, sheet: string,
 ): string {
   // Elements with identical expanded members share one slice.
@@ -345,11 +341,7 @@ function rust(
     }
     return `const ${name}: &[PropSpec] = &[\n${rendered}\n];`;
   }).join("\n\n");
-  const featureSpecs = Object.entries(features).map(([name, feature]) => `    FeatureSpec {
-        name: ${quote(name)},
-        support: ${rustSupport(feature.support, platforms)},
-    },`).join("\n");
-  const usesPlatform = [specs, members, featureSpecs].some((code) => code.includes("Platform::"));
+  const usesPlatform = [specs, members].some((code) => code.includes("Platform::"));
   const platformImport = usesPlatform ? "use crate::protocol::Platform;\n" : "";
   const unionSpecs = Object.entries(unions).map(([name, values]) => {
     const list = values.map((value) => quote(value)).join(", ");
@@ -360,9 +352,9 @@ function rust(
   }).join("\n");
   const customImport = css.mappings.some((mapping) => mapping.unit === "custom") ? "CustomCss, " : "";
   return `${header}
-use super::{${`Children, Css, CssTarget, CssUnit, ${customImport}ElementSpec, FeatureSpec, PropKind, PropSpec, PropType`.length > 88
-    ? `\n    Children, Css, CssTarget, CssUnit, ${customImport}ElementSpec, FeatureSpec, PropKind, PropSpec,\n    PropType,\n`
-    : `Children, Css, CssTarget, CssUnit, ${customImport}ElementSpec, FeatureSpec, PropKind, PropSpec, PropType`}};
+use super::{
+    Children, Css, CssTarget, CssUnit, ${customImport}ElementSpec, PropKind, PropSpec, PropType,
+};
 ${platformImport}
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -396,10 +388,6 @@ ${members}
 
 pub(crate) const ELEMENTS: [ElementSpec; ${elements.length}] = [
 ${specs}
-];
-
-pub(crate) const FEATURES: [FeatureSpec; ${Object.keys(features).length}] = [
-${featureSpecs}
 ];
 `;
 }
@@ -485,7 +473,6 @@ const locales: Record<Locale, {
   directParents: string;
   support: string;
   levels: Record<Level, string>;
-  features: string;
   reference: string;
 }> = {
   en: {
@@ -502,7 +489,6 @@ const locales: Record<Locale, {
     directParents: "Must be a direct child of:",
     support: "Platform exceptions",
     levels: { no: "Unsupported", ignored: "Ignored" },
-    features: "Feature support",
     reference: "See the [element reference](https://weftui.mioyi.net/reference/elements/) for full properties, events, and platform support.",
   },
   zh: {
@@ -519,7 +505,6 @@ const locales: Record<Locale, {
     directParents: "必须是以下元素之一的直接子元素：",
     support: "平台例外",
     levels: { no: "不支持", ignored: "忽略" },
-    features: "功能支持",
     reference: "完整的属性、事件及各平台的支持情况见[元素参考](https://weftui.mioyi.net/zh/reference/elements/)。",
   },
 };
@@ -547,7 +532,7 @@ function supportLabel(support: Support | undefined, locale: Locale, platforms: P
 }
 
 function reference(
-  elements: ExpandedElement[], features: Record<string, Feature>, locale: Locale, platforms: Platforms,
+  elements: ExpandedElement[], locale: Locale, platforms: Platforms,
 ): string {
   const text = locales[locale];
   const out = [
@@ -583,11 +568,6 @@ function reference(
       ])));
     }
   }
-  const featureNotes = Object.entries(features).flatMap(([name, feature]) => {
-    const support = supportLabel(feature.support, locale, platforms);
-    return support ? [`- ${code(name)}: ${feature.doc[locale]} ${support}.`] : [];
-  });
-  if (featureNotes.length > 0) out.push(`## ${text.features}`, featureNotes.join("\n"));
   return out.join("\n\n") + "\n";
 }
 
@@ -610,18 +590,17 @@ function grammar(path: string, elements: ExpandedElement[], locale: Locale): str
 export function generateElements(platforms: Platforms): Record<string, string> {
   const schema: Schema = JSON.parse(readFileSync(new URL("weft.elements.json", import.meta.url), "utf8"));
   const elements = expand(schema, platforms);
-  const features = schema.features ?? {};
   const unions = schema.unions ?? {};
   const css = collectCss(elements);
   const sheet = readFileSync(new URL("weft.css", import.meta.url), "utf8");
   const outputs: Record<string, string> = {
-    "crates/transformer/src/elements/catalog.rs": rust(elements, features, platforms, unions, css, sheet),
+    "crates/transformer/src/elements/catalog.rs": rust(elements, platforms, unions, css, sheet),
     "packages/runtime/src/elements.ts": typescript(elements, unions, css.mappings, sheet),
     ...nativeUnions(unions),
   };
   for (const locale of ["en", "zh"] as const) {
     const prefix = locale === "zh" ? "zh/" : "";
-    outputs[`docs/src/content/docs/${prefix}reference/elements.md`] = reference(elements, features, locale, platforms);
+    outputs[`docs/src/content/docs/${prefix}reference/elements.md`] = reference(elements, locale, platforms);
     const grammarPath = `crates/parser/GRAMMAR${locale === "zh" ? ".zh-CN" : ""}.md`;
     outputs[grammarPath] = grammar(grammarPath, elements, locale);
   }

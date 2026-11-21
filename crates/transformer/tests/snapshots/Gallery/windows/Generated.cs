@@ -10,7 +10,7 @@ namespace Weft.Generated;
 public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
-    public const ulong LayoutHash = 0x61c5242ca67945f7UL;
+    public const ulong LayoutHash = 0xfbf37220d9389a7dUL;
     public const bool SafeArea = true;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
@@ -71,7 +71,7 @@ file sealed class S1 : WeftScope
     private readonly WeftImage n4;
     // Text.color
     // Text.size
-    // Text.bold
+    // Text.weight
     private readonly WeftText n5;
     // Input.value
     private readonly WeftInput n6;
@@ -88,8 +88,8 @@ file sealed class S1 : WeftScope
         var n1 = new WeftText();
         n1.Color = WeftColor.Rgba(0x224466ffu);
         n1.Size = 20;
+        n1.Weight = WeftWeight.Bold;
         n1.Value = "Gallery";
-        n1.Bold = true;
         n0.Children.Add(n1.Element);
         n2 = new WeftStack(vertical: false);
         n0.Children.Add(n2.Element);
@@ -121,7 +121,7 @@ file sealed class S1 : WeftScope
             case 6: n4.Src = value.String; break;
             case 7: n5.Color = value.Color; break;
             case 8: n5.Size = value.Number; break;
-            case 9: n5.Bold = value.Bool; break;
+            case 9: n5.Weight = WeftUnions.ParseWeight(value.String); break;
             case 10: n6.Value = value.String; break;
         }
     }

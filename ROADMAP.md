@@ -41,24 +41,24 @@ C 端流量集中在手机和小程序上。7 个平台同步推进的成本是 
 
 ## 2. 现状评估
 
-依据：代码检查和 PLAN.md 的执行记录（2026-11）；分发、CI、编辑器、测试四行在 M0 完成后按 [PLAN-M0.md](PLAN-M0.md) 更新。
+依据：[PLAN.md](PLAN.md)、[PLAN-M0.md](PLAN-M0.md) 和 [PLAN-M1.md](PLAN-M1.md) 的执行记录。
 
 | 领域 | 现状 | 对 C 端的差距 | 严重度 |
 | --- | --- | --- | --- |
-| 元素 | 7 个：Column、Row、Text、Button、Input、Checkbox、Image | 缺滚动容器、虚拟列表、Stack 叠放、Spacer、Switch、多行输入、加载指示、浮层、WebView、视频 | 高 |
-| 样式 | 共 8 个属性：padding（四边相同）、gap、width、height、background、color、size、bold | 缺 flex 伸缩与对齐、margin、圆角、边框、阴影、透明度、字重、行数截断、对齐；没有可复用样式、主题和深色模式 | 高 |
-| 交互 | 只有 Button 点击和受控输入 | 任意元素点击、长按、滑动等手势，动画与过渡，键盘与焦点控制 | 高 |
+| 元素 | 18 个，含滚动、叠放、富文本、开关、多行输入、进度和选择控件；支持打包图片与自定义字体 | 缺虚拟列表、浮层、WebView、视频 | 高 |
+| 样式 | 支持伸缩与对齐、四边内外间距、尺寸约束、圆角、边框、阴影、透明度、字重和截断；可复用样式，主题跟随系统深浅模式 | 缺动画与过渡 | 中 |
+| 交互 | 按钮、容器和部分内容元素支持点击；受控输入支持输入类型、提交和焦点控制 | 缺长按、滑动等手势与键盘避让 | 高 |
 | 应用结构 | 单根组件；小程序只有一个页面 `weft/index`；原生是单 session | 缺导航（栈、Tab、模态）、返回键与侧滑、深链、前后台生命周期、小程序多页面与分包 | 高 |
 | 列表 | `rows` 一次性实例化全部行（`packages/runtime/src/remote.ts:262-335`） | 长列表的内存和首帧都不可接受；没有下拉刷新和加载更多 | 高 |
 | 平台 API | `run`、`fetch`（无响应头、超时、取消、上传）、字符串 `storage`、`platform` | 缺扩展机制（自定义原生模块 / 原生视图），以及相册、相机、权限、推送、分享、剪贴板、安全存储、文件、WebSocket、登录、支付 | 高 |
-| 语言 | 类型化 model、event、component、state、if/for、单个 Children 插槽 | 缺枚举/字面量联合、组件回调参数（可复用组件无法向父组件上报）、具名多插槽、局部 `let` | 中 |
+| 语言 | 类型化 model、event、component、state、if/for、字面量联合、组件回调、具名插槽和局部 `let` | 缺页面与导航声明 | 中 |
 | 无障碍 | 没有 label、role 等 API；Android `Image` 的 `contentDescription = null` | 上架合规和可用性要求 | 中 |
 | 国际化 | Hermes 构建时关闭了 Intl（`native/core/hermes.cmake`）；Android 区域设置有 TODO | 缺日期和数字格式、RTL、语言切换 | 中 |
 | 开发循环 | Web 有 Vite 开发服务器；原生和小程序只能整包构建；Hermes 调试器被关闭；生成的 JS 没有 source map | 改一行要重编原生工程；原生上无法断点调试 | 高 |
 | 分发 | TS 包 0.1.0 已发布；原生壳与预编译内核拆成 `@weft-ui/native-<target>`，`@weft-ui/vite` 按包解析壳和 hermesc（M0.4），已在仓库外用 tarball 验证 Android、iOS；Release 工作流在各平台构建全部内核，打包后通过可信发布暂存到 npm，维护者批准后上线；0.2.0 等待首次暂存（[PLAN-M0](PLAN-M0.md) R1）；没有脚手架 | native 包发布前，外部项目仍只能用 Web 和小程序 | 高 |
-| CI | PR 流水线（`ci.yml`）跑 C-rust、C-ts、C-core、C-linux、C-apple、C-android、C-windows；夜间流水线（`nightly.yml`）跑 Android、iOS 点击流程 | Windows、Linux 的点击流程仍在本地跑；没有截图回归和性能基准 | 低 |
+| CI | PR 流水线（`ci.yml`）跑 C-rust、C-ts、C-core、C-linux、C-apple、C-android、C-windows；夜间流水线（`nightly.yml`）配置了 Android、iOS 点击流程及 Web、iOS、Android 截图回归 | 尚待维护者触发截图工作流；桌面点击流程与小程序截图在本地运行；缺性能基准 | 低 |
 | 编辑器 | `weft lsp` 支持诊断、补全、悬停、跳转、格式化；Zed 扩展；TS content mapper | 缺 VS Code 扩展、重命名、查找引用、代码操作 | 中 |
-| 测试 | 协议共享样例全宿主覆盖；conformance 用 3 个夹具、快照用 2 个夹具，其中 Gallery 覆盖全部元素、样式属性、自定义组件和插槽；每个原生平台只有一条点击流程 | 缺跨平台截图回归、性能基准、真机或小程序自动化 | 中 |
+| 测试 | 协议共享样例覆盖所有宿主；编译产物快照与跨平台一致性测试覆盖 M1 能力，showcase 在七个平台可截图 | 缺性能基准和真机覆盖 | 中 |
 
 ### 已确认的缺陷（M0 修）
 
@@ -131,23 +131,23 @@ M4 和 M1–M3 并行。M4 越早完成，A 线的迭代越快，所以 M4 里�
 
 **目标**：参考应用的每一个静态页面都能用 `.weft` 精确写出来，并在第一梯队平台上一致地渲染。
 
-**前置**：D1、D2 定稿。
+**状态**：功能已完成，见 [PLAN-M1.md](PLAN-M1.md)。夜间截图工作流已配置，尚待维护者首次手动触发。
 
-| 编号 | 内容 |
-| --- | --- |
-| M1.1 | 元素定义单一来源（D1）：把现有 7 个元素迁移到 schema，产物逐字节不变（沿用 PLAN.md 的 C-apps 规则），然后再加新元素 |
-| M1.2 | 平台支持矩阵：schema 标注各平台的支持情况；编译到不支持的平台时报诊断；文档里的元素表格从 schema 生成 |
-| M1.3 | 跨平台截图回归：同一组「元素画廊」页面在 iOS 模拟器、Android 模拟器、Web（Playwright）、小程序（miniprogram-automator）上截图，与基线比较，进入夜间 CI |
-| M1.4 | 布局：`grow`（权重）、主轴和交叉轴对齐（`align`、`justify`）、`Spacer`、`Stack`（叠放，配合 `alignment`）、`margin`、四边分别设置的 padding（`paddingX`、`paddingTop` 等）、`minWidth`/`maxWidth` 等尺寸约束、`fill` 撑满父容器、`aspectRatio` |
-| M1.5 | 外观：`radius`、`border`、`shadow`、`opacity`、`clip`、`hidden`；渐变背景暂不做 |
-| M1.6 | 文本：`weight`（不只是 bold）、`align`、`maxLines` 加省略号、`lineHeight`、`italic`、`decoration`；`Span` 嵌套实现富文本 |
-| M1.7 | 新元素：`Scroll`（纵向或横向）、`Switch`、`TextArea`、`Spinner`、`Progress`、`Divider`、`Slider`、`Picker` |
-| M1.8 | 输入增强：`Input` 的 `type`（text、password、number、email、phone）、`returnKey`、`onSubmit`、`maxLength`；焦点控制（`focused` 绑定 state） |
-| M1.9 | 任意元素可点击：容器支持 `onTap`；按压态反馈遵循各平台习惯 |
-| M1.10 | 样式复用与主题（D2）：`style` 声明、主题 token、浅色/深色自动切换、跟随系统；`platform.colorScheme` 可以在逻辑层读取 |
-| M1.11 | 资源管线：本地图片（多倍图，`@2x`、`@3x`）、矢量图标（SVG 转各平台格式）、自定义字体；Vite 插件把资源分发到 xcassets、Android `res/`、小程序包和 Web 的 `public`。`Image` 增加 `fit`（cover、contain、fill）和 `placeholder` |
-| M1.12 | 安全区与屏幕信息：安全区内边距可选、`platform.screen`（尺寸、像素密度），横竖屏变化通知逻辑层 |
-| M1.13 | 语言补强：枚举或字符串字面量联合（用于 `type`、`align` 等属性，也给用户 model 用）、组件回调参数（`onSelect: Event<Int>` 一类，让可复用组件把事件交给调用方决定）、具名多插槽、组件内局部 `let` |
+| 编号 | 状态 | 内容 |
+| --- | --- | --- |
+| M1.1 | 完成 | 元素定义单一来源（D1）：把现有 7 个元素迁移到 schema，产物逐字节不变（沿用 PLAN.md 的 C-apps 规则），然后再加新元素 |
+| M1.2 | 完成 | 平台支持矩阵：schema 标注各平台的支持情况；编译到不支持的平台时报诊断；文档里的元素表格从 schema 生成 |
+| M1.3 | 完成 | 跨平台截图回归：同一组「元素画廊」页面在 iOS 模拟器、Android 模拟器和 Web（Playwright）上截图并在夜间 CI 比较基线；小程序在本地比对，macOS、Windows、Linux 截图供人工检查 |
+| M1.4 | 完成 | 布局：`grow`（权重）、主轴和交叉轴对齐（`align`、`justify`）、`Spacer`、`Stack`（叠放，配合 `alignment`）、`margin`、四边分别设置的 padding（`paddingX`、`paddingTop` 等）、`minWidth`/`maxWidth` 等尺寸约束、`fill` 撑满父容器、`aspectRatio` |
+| M1.5 | 完成 | 外观：`radius`、`border`、`shadow`、`opacity`、`clip`、`hidden`；渐变背景暂不做 |
+| M1.6 | 完成 | 文本：`weight`、`align`、`maxLines` 加省略号、`lineHeight`、`italic`、`decoration`；`Text` 的直接子元素 `Span` 实现富文本 |
+| M1.7 | 完成 | 新元素：`Scroll`（纵向或横向）、`Switch`、`TextArea`、`Spinner`、`Progress`、`Divider`、`Slider`、`Picker` |
+| M1.8 | 完成 | 输入增强：`Input` 的 `type`（text、password、number、email、phone）、`returnKey`、`onSubmit`、`maxLength`；焦点控制（`focused` 绑定 state） |
+| M1.9 | 完成 | 任意元素可点击：容器支持 `onTap`；按压态反馈遵循各平台习惯 |
+| M1.10 | 完成 | 样式复用与主题（D2）：`style` 声明、主题 token、浅色/深色自动切换、跟随系统；`platform.colorScheme` 可以在逻辑层读取 |
+| M1.11 | 完成 | 资源管线：本地图片（多倍图，`@2x`、`@3x`）、矢量图标（SVG 转各平台格式）、自定义字体；Vite 插件把资源分发到 xcassets、Android `res/`、小程序包和 Web 的 `public`。`Image` 增加 `fit`（cover、contain、fill）和 `placeholder` |
+| M1.12 | 完成 | 安全区与屏幕信息：安全区内边距可选、`platform.screen`（尺寸、像素密度），横竖屏变化通知逻辑层 |
+| M1.13 | 完成 | 语言补强：枚举或字符串字面量联合（用于 `type`、`align` 等属性，也给用户 model 用）、组件回调参数（`onSelect: Event<Int>` 一类，让可复用组件把事件交给调用方决定）、具名多插槽、组件内局部 `let` |
 
 **退出标准**：参考应用全部页面的静态版本（不含导航和真实数据）在第一梯队平台上与设计稿一致，截图回归通过；第二梯队要么正确渲染，要么在编译期报出不支持。
 

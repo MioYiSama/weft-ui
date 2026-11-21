@@ -235,7 +235,7 @@ mod tests {
         let code = cpp(r##"component A() {
                 Column(padding = 4, gap = 2, width = 100, height = 80, background = "#abc") {
                     Row(gap = 1) {
-                        Text("hello", color = "#12345680", size = 12, bold = true)
+                        Text("hello", color = "#12345680", size = 12, weight = "bold")
                         Button(disabled = true) { Text("button") }
                         Input("", placeholder = "hint", disabled = true)
                         Checkbox(false, disabled = true)
@@ -250,10 +250,7 @@ mod tests {
             "n0.set_height(80);",
             "n0.set_background(weft::Color::rgba(0xaabbccffu));\n    n0.set_gap(2);\n    roots().add(n0);",
             "auto &n1 = make<weft::Linear>(weft::Axis::Horizontal);",
-            "n2.set_value(\"hello\"sv);",
-            "n2.set_color(weft::Color::rgba(0x12345680u));",
-            "n2.set_size(12);",
-            "n2.set_bold(true);\n    n1.children().add(n2);",
+            "n2.set_color(weft::Color::rgba(0x12345680u));\n    n2.set_size(12);\n    n2.set_weight(weft::Weight::Bold);\n    n2.set_value(\"hello\"sv);\n    n1.children().add(n2);",
             "auto &n3 = make<weft::Button>(nullptr);",
             "n3.set_disabled(true);",
             "n5_ = &make<weft::Input>([this](std::string_view v) { return dispatch(0, v); });",
@@ -277,20 +274,21 @@ mod tests {
     #[test]
     fn value_slots_share_one_field_and_use_typed_accessors() {
         let code = cpp(
-            r#"component A(text: String, size: Int, bold: Bool, color: String) {
-                Text(text, size = size, bold = bold, color = color)
+            r#"type Weight = "regular" | "light" | "medium" | "semibold" | "bold"
+            component A(text: String, size: Int, weight: Weight, color: String) {
+                Text(text, size = size, weight = weight, color = color)
             }"#,
         );
         assert_eq!(code.matches("weft::Text *n0_;").count(), 1, "{code}");
         for expected in [
             "// Text.value",
             "// Text.size",
-            "// Text.bold",
+            "// Text.weight",
             "// Text.color",
             "n0_ = &make<weft::Text>();",
             "n0_->set_value(weft::string(value)); break;",
             "n0_->set_size(weft::number(value)); break;",
-            "n0_->set_bold(weft::boolean(value)); break;",
+            "n0_->set_weight(weft::parse_weight(weft::string(value))); break;",
             "n0_->set_color(weft::color(value)); break;",
         ] {
             assert!(code.contains(expected), "missing {expected:?}\n{code}");

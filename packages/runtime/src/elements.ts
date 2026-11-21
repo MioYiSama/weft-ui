@@ -89,7 +89,6 @@ export const CSS_PROPS: readonly Css[] = [
   {"property":"text-align","unit":"keyword","keywords":{}},
   {"unit":"custom","custom":"maxLines"},
   {"property":"line-height","unit":"px"},
-  {"property":"font-weight","unit":"keyword","keywords":{"true":"bold","false":"normal"}},
   {"property":"object-fit","unit":"keyword","keywords":{}},
   {"property":"--w-image-placeholder","unit":"color"},
   {"property":"place-items","unit":"keyword","keywords":{"topStart":"start start","top":"start center","topEnd":"start end","start":"center start","center":"center center","end":"center end","bottomStart":"end start","bottom":"end center","bottomEnd":"end end"}},

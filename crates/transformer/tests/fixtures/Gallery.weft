@@ -1,3 +1,5 @@
+type Weight = "regular" | "light" | "medium" | "semibold" | "bold"
+
 model GalleryStyle {
   padding: Int,
   gap: Int,
@@ -6,7 +8,7 @@ model GalleryStyle {
   background: String,
   color: String,
   size: Int,
-  bold: Bool,
+  weight: Weight,
 }
 
 model GalleryModel {
@@ -33,7 +35,7 @@ component Gallery(model: GalleryModel) {
   state caption = "Weft"
 
   Column(padding = 12, gap = 8, width = 320, height = 280, background = "#eef") {
-    Text("Gallery", color = "#224466", size = 20, bold = true)
+    Text("Gallery", color = "#224466", size = 20, weight = "bold")
     Row(
       padding = model.style.padding,
       gap = model.style.gap,
@@ -43,7 +45,7 @@ component Gallery(model: GalleryModel) {
     ) {
       Checkbox(model.checked, onChange = Checked)
       Image(model.imageUrl, width = 32, height = 32)
-      Text("Preview", color = model.style.color, size = model.style.size, bold = model.style.bold)
+      Text("Preview", color = model.style.color, size = model.style.size, weight = model.style.weight)
     }
     Input(caption, placeholder = "Caption", onChange = { value -> caption = value })
     Panel {

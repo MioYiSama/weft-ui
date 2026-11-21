@@ -395,7 +395,7 @@ mod tests {
             r#"
             event Clicked
             component App(text: String) {
-                Text(text, bold = true)
+                Text(text, weight = "bold")
                 Button(onClick = Clicked) { Text("click") }
                 Input("")
             }
@@ -421,8 +421,8 @@ mod tests {
             Some(PropSource::Slot(0))
         );
         assert_eq!(
-            template.prop(text, props, "bold"),
-            Some(PropSource::Constant(&Constant::Bool(true)))
+            template.prop(text, props, "weight"),
+            Some(PropSource::Constant(&Constant::String("bold".into())))
         );
         assert_eq!(template.prop(text, props, "color"), None);
     }

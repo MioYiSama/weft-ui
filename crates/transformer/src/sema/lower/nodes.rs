@@ -211,16 +211,12 @@ impl<'cx> Lowerer<'cx, '_> {
                         .iter()
                         .position(|entry| entry.name.name == prop.name)
                 {
-                    let (value, usage) = &style.values[index];
+                    let (value, uses_theme) = &style.values[index];
                     let expr = Expr {
                         span,
                         ..value.clone()
                     };
-                    if usage.first.is_some() {
-                        let mut usage = *usage;
-                        usage.first = Some(span);
-                        self.theme_use.merge(usage);
-                    }
+                    self.uses_theme |= uses_theme;
                     let expr = self.coerce_to(expr, &prop.prop_type().to_type());
                     let expr = self.check_float_literal(expr);
                     props.push(Prop {

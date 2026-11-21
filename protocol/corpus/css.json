@@ -23,7 +23,7 @@
     { "css": { "property": "align-items", "unit": "keyword", "keywords": { "start": "flex-start" } }, "value": "stretch", "out": "align-items:stretch" },
     { "css": { "property": "overflow", "unit": "keyword", "keywords": { "true": "hidden" } }, "value": true, "out": "overflow:hidden" },
     { "css": { "property": "overflow", "unit": "keyword", "keywords": { "true": "hidden" } }, "value": false, "out": "" },
-    { "css": { "property": "font-weight", "unit": "keyword", "keywords": { "true": "bold", "false": "normal" } }, "value": false, "out": "font-weight:normal" },
+    { "css": { "property": "font-style", "unit": "keyword", "keywords": { "true": "italic", "false": "normal" } }, "value": false, "out": "font-style:normal" },
     { "css": { "property": "font-weight", "unit": "keyword", "keywords": { "semibold": "600" } }, "value": "semibold", "out": "font-weight:600" },
     { "css": { "property": "text-decoration-line", "unit": "keyword", "keywords": { "lineThrough": "line-through" } }, "value": "lineThrough", "out": "text-decoration-line:line-through" },
     { "css": { "property": "text-align", "unit": "keyword", "keywords": {} }, "value": "end", "out": "text-align:end" },

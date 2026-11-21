@@ -49,7 +49,7 @@ Give a child `grow = 1` to share the remaining main-axis space, or `fill = true`
 ```weft
 Column(width = 240, padding = 12, gap = 8) {
   Row(fill = true, align = "center") {
-    Text("Tasks", size = 20, bold = true)
+    Text("Tasks", size = 20, weight = "bold")
     Spacer()
     Text("3 open")
   }
@@ -87,7 +87,7 @@ The border adds to the element's outer size, not to its content size. The backgr
 
 ## Style text and inline spans
 
-Set `weight` to `"light"`, `"regular"`, `"medium"`, `"semibold"`, or `"bold"`. Set `italic = true`, or use `decoration = "underline"` or `"lineThrough"`. Use `weight = "bold"` for new code; `bold = true` still works. Weights the system font lacks render with the nearest available face; for example, Windows' default font draws `"medium"` like `"regular"`.
+Set `weight` to `"light"`, `"regular"`, `"medium"`, `"semibold"`, or `"bold"`. Set `italic = true`, or use `decoration = "underline"` or `"lineThrough"`. Use `weight = "bold"` for new code; `weight = "bold"` still works. Weights the system font lacks render with the nearest available face; for example, Windows' default font draws `"medium"` like `"regular"`.
 
 `Text` wraps within its available width. Use `align = "start"`, `"center"`, or `"end"` to align the lines, `lineHeight` to set their height in logical pixels, and `maxLines = 2` to show at most two lines and mark omitted text with an ellipsis. A nonpositive `maxLines` leaves text unlimited. On iOS and macOS, `lineHeight` only adds space between lines, so a value below the font's natural line height has no effect.
 
@@ -268,7 +268,7 @@ import "./TodoList.weft"
 
 component Panel(title: String, content: Children, footer: Children) {
   Column(padding = 16, gap = 12) {
-    Text(title, size = 20, bold = true)
+    Text(title, size = 20, weight = "bold")
     content
     footer
   }

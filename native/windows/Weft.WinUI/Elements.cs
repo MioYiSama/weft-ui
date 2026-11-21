@@ -139,7 +139,6 @@ public sealed class WeftText : WeftPaddedElement
         set => block.FontSize = value;
     }
 
-    public bool Bold { set => Weight = value ? WeftWeight.Bold : WeftWeight.Regular; }
     public WeftWeight Weight { set { block.FontWeight = WeftTextStyle.Weight(value); UpdateFont(); } }
     public bool Italic { set { block.FontStyle = WeftTextStyle.Style(value); UpdateFont(); } }
     public string Font { set { font = value; UpdateFont(); } }

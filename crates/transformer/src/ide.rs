@@ -687,7 +687,6 @@ component Example(kind: Kind) { Text(kind) }"#;
                 "align",
                 "maxLines",
                 "lineHeight",
-                "bold",
                 "onMount",
                 "onUnmount",
             ]

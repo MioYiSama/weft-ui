@@ -277,7 +277,7 @@ fn code(program: &Program, links: &Links<'_>, runtime: &str) -> String {
         && entry
             .components
             .iter()
-            .any(|&id| program.component(id).theme_use.first.is_some())
+            .any(|&id| program.component(id).uses_theme)
     {
         // Styles can carry tokens from their own imports without declaring runtime symbols.
         imports.entry(theme.span.file).or_default();

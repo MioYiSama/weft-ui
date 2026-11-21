@@ -226,7 +226,6 @@ fn editor_session() {
             "align",
             "maxLines",
             "lineHeight",
-            "bold",
             "onMount",
             "onUnmount",
         ]

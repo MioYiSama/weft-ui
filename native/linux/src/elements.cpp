@@ -369,7 +369,6 @@ void Text::set_size(double size) {
 }
 
 void Text::set_weight(Weight weight) {
-  if (has_legacy_bold_) return;
   style_.weight = weight;
   restyle();
 }
@@ -412,12 +411,6 @@ void Text::set_max_lines(double lines) {
 
 void Text::set_line_height(double height) {
   line_height_ = height >= 0 ? std::optional(pango_length(height)) : std::nullopt;
-  restyle();
-}
-
-void Text::set_bold(bool bold) {
-  has_legacy_bold_ = true;
-  style_.weight = bold ? Weight::Bold : Weight::Regular;
   restyle();
 }
 

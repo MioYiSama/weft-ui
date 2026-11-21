@@ -7,7 +7,7 @@ import WeftKit
 @MainActor private let session = WeftSession(
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
     resources: Bundle.module,
-    layoutHash: 0x61c5242ca67945f7,
+    layoutHash: 0xfbf37220d9389a7d,
     safeArea: true,
     make: makeScope
 )
@@ -99,8 +99,8 @@ private struct V0: View {
     var v7: WeftColor = .clear
     /// Text.size
     var v8: CGFloat = 0
-    /// Text.bold
-    var v9: Bool = false
+    /// Text.weight
+    var v9: String = ""
     /// Input.value
     var v10: String = ""
     var p0: S0?
@@ -116,7 +116,7 @@ private struct V0: View {
         case 6: v6 = value.string
         case 7: v7 = value.color
         case 8: v8 = value.length
-        case 9: v9 = value.bool
+        case 9: v9 = value.string
         case 10: v10 = value.string
         default: break
         }
@@ -138,7 +138,7 @@ private struct V1: View {
     var body: some View {
         weftLinear(axis: .vertical, gap: 8, align: .start, justify: .start, padding: .init(padding: 12)) {
             weftLeaf {
-                weftText(spans: [.init(value: "Gallery")], color: WeftColor.rgba(0x224466ff), size: 20, bold: true)
+                weftText(spans: [.init(value: "Gallery")], color: WeftColor.rgba(0x224466ff), size: 20, weight: .bold)
             }
             weftLinear(axis: .horizontal, gap: s.v4, align: .start, justify: .start, padding: .init(padding: s.v2)) {
                 weftLeaf {
@@ -147,7 +147,7 @@ private struct V1: View {
                 WeftImage(src: s.v6)
                 .weftFrame(width: 32, height: 32)
                 weftLeaf {
-                    weftText(spans: [.init(value: "Preview")], color: s.v7, size: s.v8, bold: s.v9)
+                    weftText(spans: [.init(value: "Preview")], color: s.v7, size: s.v8, weight: WeftWeight(weft: s.v9))
                 }
             }
             .weftDecoration(background: s.v3)

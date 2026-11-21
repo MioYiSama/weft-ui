@@ -1,6 +1,6 @@
 component Card(title: String, body: Children, footer: String = "end") {
   Column(padding = 4) {
-    Text(title, bold = true)
+    Text(title, weight = "bold")
     body
     Text(footer)
   }

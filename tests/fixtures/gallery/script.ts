@@ -15,7 +15,7 @@ export const script: Script<Gallery> = {
       background: "#ace",
       color: "#135",
       size: 14,
-      bold: false,
+      weight: "regular",
     },
     checked: false,
     imageUrl: "https://example.test/gallery/day.png",
@@ -46,7 +46,7 @@ export const script: Script<Gallery> = {
           background: "#246",
           color: "#fff",
           size: 18,
-          bold: true,
+          weight: "bold",
         };
       },
     },

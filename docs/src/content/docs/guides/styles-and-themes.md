@@ -54,8 +54,6 @@ Theme tokens work on every platform and follow the system appearance while the a
 - **Windows**: colors are reapplied when the window's `ActualTheme` changes.
 - **Linux**: the color scheme comes from the XDG desktop portal (`org.freedesktop.appearance` `color-scheme`). Without a portal, apps use light colors.
 
-See the [element and feature support matrix](/reference/elements/).
-
 ## Pass a `Color` through a component
 
 `Color` is a Weft type for color tokens or hexadecimal colors. Use it in component parameters, state, model fields, or callbacks:

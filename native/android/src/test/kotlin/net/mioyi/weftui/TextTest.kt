@@ -59,7 +59,7 @@ class TextTest {
     }
 
     @Test
-    fun allFiveWeightsAndLegacyBoldAreSupported() = with(Density(1f)) {
+    fun allFiveWeightsAreSupported() = with(Density(1f)) {
         val expected = mapOf(
             WeftWeight.LIGHT to FontWeight.W300,
             WeftWeight.REGULAR to FontWeight.W400,
@@ -70,7 +70,5 @@ class TextTest {
         for ((weight, expectedWeight) in expected) {
             assertEquals(expectedWeight, weftTypography(TextStyle.Default, weight = weight).fontWeight)
         }
-        assertEquals(FontWeight.W700, weftTypography(TextStyle.Default, bold = true).fontWeight)
-        assertEquals(FontWeight.W400, weftTypography(TextStyle.Default, bold = false, weight = WeftWeight.BOLD).fontWeight)
     }
 }

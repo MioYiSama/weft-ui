@@ -17,7 +17,7 @@ use crate::deps;
 use crate::elements::{self, LIFECYCLE as CALL_HOOKS};
 use crate::ir::{
     Component, ComponentId, Event, EventId, Expr, Field, Model, ModelId, Module, Param, ParamKind,
-    Program, ThemeUse, Type, type_display,
+    Program, Type, type_display,
 };
 use lower::{Instance, Lowerer};
 use record::{AliasSymbol, ProbeContext, RawCall, RawProbe, Recorder, StyleSymbol, Target};
@@ -63,7 +63,7 @@ struct Alias<'a> {
 
 struct Style<'a> {
     declaration: &'a ast::StyleDecl,
-    values: Vec<(Expr, ThemeUse)>,
+    values: Vec<(Expr, bool)>,
 }
 
 /// Program-wide declarations shared by every component being checked.
@@ -431,7 +431,7 @@ fn check(
                 .map(|entry| {
                     let mut lowerer = Lowerer::new(&cx, diags, entry.span.file, None, &[]);
                     let value = lowerer.style_value(&entry.value);
-                    (value, lowerer.theme_use)
+                    (value, lowerer.uses_theme)
                 })
                 .collect()
         })
@@ -482,12 +482,12 @@ fn check(
     let mut bodies = Vec::new();
     for (file, item, id) in items() {
         if let (ast::Item::Component(c), DeclKind::Component(id)) = (item, id) {
-            let (params, theme_use) = signature(&cx, file, c, diags);
+            let (params, uses_theme) = signature(&cx, file, c, diags);
             for (index, param) in params.iter().enumerate() {
                 cx.record(param.span, || Target::ComponentParam(id, index));
             }
             cx.components[id.index()].params = params;
-            cx.components[id.index()].theme_use = theme_use;
+            cx.components[id.index()].uses_theme = uses_theme;
             bodies.push((file, c, id));
         }
     }
@@ -506,7 +506,7 @@ fn check(
         component.loops = body.loops;
         component.bindings = body.bindings;
         component.emits = body.emits;
-        component.theme_use.merge(body.theme_use);
+        component.uses_theme |= body.uses_theme;
         instances[id.index()] = body.instances;
     }
 
@@ -657,7 +657,7 @@ fn declare<'a>(
                 slots: Vec::new(),
                 emits: Vec::new(),
                 reachable_events: Vec::new(),
-                theme_use: ThemeUse::default(),
+                uses_theme: false,
             });
             DeclKind::Component(ComponentId(offset(cx.components.len() - 1)))
         }
@@ -737,9 +737,9 @@ fn signature(
     file: FileId,
     decl: &ast::ComponentDecl,
     diags: &mut Vec<Diagnostic>,
-) -> (Vec<Param>, ThemeUse) {
+) -> (Vec<Param>, bool) {
     let mut params: Vec<Param> = Vec::with_capacity(decl.params.len());
-    let mut theme_use = ThemeUse::default();
+    let mut uses_theme = false;
     for param in &decl.params {
         let name = &param.name;
         if theme::reserved(&name.name, name.span, diags) {
@@ -806,7 +806,7 @@ fn signature(
             (ParamKind::Value(ty), Some(default)) => {
                 let mut lowerer = Lowerer::new(cx, diags, file, None, &[]);
                 let value = lowerer.expr_as(default, ty);
-                theme_use.merge(lowerer.theme_use);
+                uses_theme |= lowerer.uses_theme;
                 Some(value)
             }
             _ => None,
@@ -818,7 +818,7 @@ fn signature(
             span: name.span,
         });
     }
-    (params, theme_use)
+    (params, uses_theme)
 }
 
 /// Finds cycles in a directed graph given as adjacency lists of `(target, edge span)`.

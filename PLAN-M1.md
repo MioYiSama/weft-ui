@@ -967,8 +967,8 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R8.d | ☑ | ed570cf | 截图待维护者确认（`safearea`：android）；C-android、C-ui 通过，全部 android 截图 0.000%；临时设 `safeArea: false` 时色带延伸到屏幕边缘（截图未提交） |
 | R8.n | ☑ | 74e9e9c | C-windows（core 21、WinUI 37）、C-ui 通过；Windows `safearea` 截图已查看，四边为 0 |
 | R8.g | ☑ | ec83b7b | C-linux 8 组、C-ui 通过；Linux `safearea` 截图已查看，四边为 0 |
-| T3 | ☑ | （本提交） | 截图待维护者确认（6 个页面加 `settings-dark`：web、wechat、ios、android）；macOS（一次运行）、Windows、Linux 截图已人工查看；C-rust 137 项、C-ts、各平台单测与 C-ui 通过；全部 ios、android 截图 0.000%；对比中发现的差异已在对应平台族修复（见执行中发现） |
-| X1 | ☐ | | |
+| T3 | ☑ | a09216d | 截图待维护者确认（6 个页面加 `settings-dark`：web、wechat、ios、android）；macOS（一次运行）、Windows、Linux 截图已人工查看；C-rust 137 项、C-ts、各平台单测与 C-ui 通过；全部 ios、android 截图 0.000%；对比中发现的差异已在对应平台族修复（见执行中发现） |
+| X1 | ☑ | （本提交） | C-rust 136 项、C-ts 238 项、C-gen、C-docs、C-core 21、C-apple 27、C-android 21、C-windows 37、C-linux 8、全部平台 C-ui 通过；C-shot（web、ios、android 各 18 张 0.000%）与 C-shot-local（wechat 18 张最大 0.074%；macOS、Windows、Linux 受影响页面已查看）通过；schema 无 `"no"`，元素参考只剩 `Input.returnKey` 一条平台说明；已有截图基线不变 |
 
 ## 执行中发现
 
@@ -1055,3 +1055,5 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [T3 Windows] 指定高度的单行输入框底边框被裁掉；showcase 截图窗口宽度与 Web 内容宽度不一致。已修复，截图测试逐个检查边框。结论：已修复
 - [T3 Linux] GTK `Text` 在「至多」约束下按满宽测量，居中容器里的文字靠左（Feed 标签、Profile 姓名）；GTK 按钮内自定义内容未居中；VNC 桌面高度把 844 截成 773。已修复，截图工具发现视口被截断时直接失败。结论：已修复
 - [T3] 各平台剩余差异：原生控件外观（开关、复选框、选择器、按钮）、系统字体导致的换行位置、窗口边框、macOS 窗口更宽。结论：接受
+- [X1] 预期变化之外的实际变化：`TodoList` 本来没有 `bold`，快照不变；`Gallery` 全部平台快照变化；删除旧的 CSS 映射使后续下标前移，Web 与小程序的 `Assets`、`Controls`、`Layout` 快照只有下标变化；conformance `gallery.ops` 有两个值从布尔改为 `"regular"`/`"bold"`，无头、Web、小程序与原生四方一致；Board 与 Vite 测试夹具随之迁移；example 七个平台产物变化（Web/小程序输出 `font-weight:700`，原生输出字重枚举，布局与 bundle 哈希相应变化）。结论：接受，已重新录制 C-apps 基线
+- [X1] 全部平台都支持主题与资源后，`support.rs` 中主题、资源的「不支持」诊断、资源表达式遍历及其测试、schema 与生成器中对应的 `features` 元数据都无法再触发，已删除；仅为诊断保存的主题位置改为布尔值，Web 的主题导入不受影响。按 schema 生成的元素、成员 `Level::No` 检查及其测试保留，便于以后新增平台时继续使用。结论：接受

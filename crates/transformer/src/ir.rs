@@ -67,22 +67,6 @@ pub struct Theme {
     pub colors: Vec<(String, Color, Color)>,
 }
 
-/// Records theme use before numeric tokens are folded and `let` bindings are inlined.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub(crate) struct ThemeUse {
-    pub first: Option<Span>,
-}
-
-impl ThemeUse {
-    pub fn merge(&mut self, other: Self) {
-        if let Some(span) = other.first
-            && self.first.is_none_or(|first| span.start < first.start)
-        {
-            self.first = Some(span);
-        }
-    }
-}
-
 impl Program {
     /// The module of `file`; modules are stored in file order.
     ///
@@ -286,7 +270,8 @@ pub struct Component {
     pub emits: Vec<EventId>,
     /// Events emitted by this component or any component it instantiates.
     pub reachable_events: Vec<EventId>,
-    pub(crate) theme_use: ThemeUse,
+    /// Records theme use even when numeric tokens or local bindings are folded away.
+    pub(crate) uses_theme: bool,
 }
 
 impl Component {

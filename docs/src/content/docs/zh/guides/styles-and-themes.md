@@ -54,8 +54,6 @@ component Panel() {
 - **Windows**：窗口的 `ActualTheme` 变化时重新应用颜色。
 - **Linux**：从 XDG 桌面门户（`org.freedesktop.appearance` 的 `color-scheme`）读取深浅色；没有门户时使用浅色。
 
-各平台的支持情况见[元素与功能参考](/zh/reference/elements/)。
-
 ## 在组件间传递 `Color`
 
 `Color` 是 Weft 的颜色类型，可以表示主题颜色或十六进制颜色。组件参数、状态、模型字段和回调都可以使用它：

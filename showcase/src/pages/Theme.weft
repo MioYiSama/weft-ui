@@ -21,11 +21,11 @@ component Theme() {
     Scroll(background = theme.surface, indicators = false) {
         Column(fill = true, padding = 22, gap = 22) {
             Column(gap = 4) {
-                Text("Settings", size = 30, bold = true, color = theme.text)
+                Text("Settings", size = 30, weight = "bold", color = theme.text)
                 Text("Colors follow your system appearance.", style = ThemeValue)
             }
             Column(fill = true, gap = 8) {
-                Text("Display", size = 17, bold = true, color = theme.text)
+                Text("Display", size = 17, weight = "bold", color = theme.text)
                 Column(fill = true, gap = 12, style = ThemeCard) {
                     ThemeSetting("Appearance", "System")
                     Row(fill = true, border = 1)
@@ -33,7 +33,7 @@ component Theme() {
                 }
             }
             Column(fill = true, gap = 8) {
-                Text("Accessibility", size = 17, bold = true, color = theme.text)
+                Text("Accessibility", size = 17, weight = "bold", color = theme.text)
                 Column(fill = true, gap = 12, style = ThemeCard) {
                     ThemeSetting("Contrast", "Standard")
                     Row(fill = true, border = 1)

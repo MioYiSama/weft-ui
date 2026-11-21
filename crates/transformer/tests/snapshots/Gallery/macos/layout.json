@@ -1,5 +1,5 @@
 {
-  "hash": "61c5242ca67945f7",
+  "hash": "fbf37220d9389a7d",
   "safeArea": true,
   "templates": [
     {
@@ -28,7 +28,7 @@
       "roots": [0],
       "nodes": [
         {"element": "Column", "props": {"width": 320, "height": 280, "padding": 12, "background": "#eeeeff", "gap": 8}, "children": [1, 2, 6, 7]},
-        {"element": "Text", "props": {"color": "#224466", "size": 20, "value": "Gallery", "bold": true}, "children": []},
+        {"element": "Text", "props": {"color": "#224466", "size": 20, "weight": "bold", "value": "Gallery"}, "children": []},
         {"element": "Row", "props": {}, "children": [3, 4, 5]},
         {"element": "Checkbox", "props": {}, "children": []},
         {"element": "Image", "props": {"width": 32, "height": 32}, "children": []},
@@ -46,7 +46,7 @@
         {"node": 4, "prop": "src", "type": "String"},
         {"node": 5, "prop": "color", "type": "Color"},
         {"node": 5, "prop": "size", "type": "Int"},
-        {"node": 5, "prop": "bold", "type": "Bool"},
+        {"node": 5, "prop": "weight", "type": "String"},
         {"node": 6, "prop": "value", "type": "String"}
       ],
       "events": [

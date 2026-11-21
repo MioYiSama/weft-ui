@@ -28,7 +28,6 @@ fun WeftText(
     value: String = "",
     color: WeftColor? = null,
     size: Float? = null,
-    bold: Boolean? = null,
     weight: WeftWeight? = null,
     italic: Boolean? = null,
     decoration: WeftDecoration? = null,
@@ -53,7 +52,7 @@ fun WeftText(
     val textColor = color?.resolve() ?: Color.Unspecified
     val family = weftFontFamily(font)
     val style = with(LocalDensity.current) {
-        weftTypography(LocalTextStyle.current, size, bold, weight, italic, decoration, align, lineHeight, family)
+        weftTypography(LocalTextStyle.current, size, weight, italic, decoration, align, lineHeight, family)
     }
     val limit = maxLines.lineLimit()
     val lines = if (limit > 0) limit else Int.MAX_VALUE
@@ -112,7 +111,6 @@ internal fun AnnotatedString.Builder.appendWeftSpan(
 internal fun Density.weftTypography(
     base: TextStyle,
     size: Float? = null,
-    bold: Boolean? = null,
     weight: WeftWeight? = null,
     italic: Boolean? = null,
     decoration: WeftDecoration? = null,
@@ -122,8 +120,7 @@ internal fun Density.weftTypography(
 ): TextStyle = base.merge(
     fontSize = textSize(size),
     fontFamily = family,
-    // The legacy property follows weight in the schema, so it takes precedence when specified.
-    fontWeight = bold?.let { if (it) FontWeight.W700 else FontWeight.W400 } ?: weight?.compose(),
+    fontWeight = weight?.compose(),
     fontStyle = italic.fontStyle(),
     textDecoration = decoration?.compose(),
     textAlign = when (align) {

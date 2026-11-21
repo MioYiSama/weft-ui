@@ -86,7 +86,7 @@ impl Body<'_> {
                 if let Some(value) = prop("value") {
                     args.push(KotlinProp(value, None));
                 }
-                &["bold", "align", "maxLines", "lineHeight"]
+                &["align", "maxLines", "lineHeight"]
             }
             Element::Span => {
                 args.push(KotlinProp(prop("value").expect("`Span` has a value"), None));

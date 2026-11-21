@@ -317,7 +317,6 @@ class Text final : public Padded {
   void set_align(TextAlign align);
   void set_max_lines(double lines);
   void set_line_height(double height);
-  void set_bold(bool bold);
   void reapply_colors() override;
 
  private:
@@ -338,7 +337,6 @@ class Text final : public Padded {
   int clipped_height_ = 0;
   guint clipped_context_ = 0;
   std::string clipped_value_;
-  bool has_legacy_bold_ = false;
   bool limit_paragraphs_ = false;
 };
 

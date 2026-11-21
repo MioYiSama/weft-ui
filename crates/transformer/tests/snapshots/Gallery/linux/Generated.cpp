@@ -10,7 +10,7 @@ using namespace std::literals;
 namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
-constexpr uint64_t kLayoutHash = 0x61c5242ca67945f7ull;
+constexpr uint64_t kLayoutHash = 0xfbf37220d9389a7dull;
 constexpr bool safe_area = true;
 
 // 0 Panel
@@ -53,8 +53,8 @@ class S1 final : public weft::Scope {
     auto &n1 = make<weft::Text>();
     n1.set_color(weft::Color::rgba(0x224466ffu));
     n1.set_size(20);
+    n1.set_weight(weft::Weight::Bold);
     n1.set_value("Gallery"sv);
-    n1.set_bold(true);
     n0.children().add(n1);
     n2_ = &make<weft::Linear>(weft::Axis::Horizontal);
     n0.children().add(*n2_);
@@ -84,7 +84,7 @@ class S1 final : public weft::Scope {
       case 6: n4_->set_src(weft::string(value)); break;
       case 7: n5_->set_color(weft::color(value)); break;
       case 8: n5_->set_size(weft::number(value)); break;
-      case 9: n5_->set_bold(weft::boolean(value)); break;
+      case 9: n5_->set_weight(weft::parse_weight(weft::string(value))); break;
       case 10: n6_->set_value(weft::string(value)); break;
     }
   }
@@ -102,7 +102,7 @@ class S1 final : public weft::Scope {
   weft::Image *n4_;
   // Text.color
   // Text.size
-  // Text.bold
+  // Text.weight
   weft::Text *n5_;
   // Input.value
   weft::Input *n6_;

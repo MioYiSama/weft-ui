@@ -198,20 +198,11 @@
       }
     ]
   },
-  "features": {
-    "theme": {
-      "doc": { "en": "Theme declarations and color tokens.", "zh": "主题声明和颜色令牌。" }
-    },
-    "assets": {
-      "doc": { "en": "Local image assets and custom fonts.", "zh": "本地图片资源和自定义字体。" }
-    }
-  },
   "elements": [
     {
       "name": "Column",
       "doc": { "en": "Stacks children vertically.", "zh": "将子节点纵向排列。" },
       "groups": ["layout", "visibility", "padding", "decoration", "tap"],
-      "memberSupport": { "padding": {}, "width": {}, "height": {}, "background": {} },
       "children": "any",
       "members": [
         {
@@ -234,7 +225,6 @@
       "name": "Row",
       "doc": { "en": "Places children side by side.", "zh": "将子节点横向排列。" },
       "groups": ["layout", "visibility", "padding", "decoration", "tap"],
-      "memberSupport": { "padding": {}, "width": {}, "height": {}, "background": {} },
       "children": "any",
       "members": [
         {
@@ -257,7 +247,6 @@
       "name": "Text",
       "doc": { "en": "Displays plain text or a sequence of styled spans.", "zh": "显示纯文本或由多个行内片段组成的文本。" },
       "groups": ["layout", "visibility", "padding", "decoration", "text", "tap"],
-      "memberSupport": { "color": {}, "size": {} },
       "children": ["Span"],
       "content": "value",
       "members": [
@@ -279,11 +268,6 @@
           "name": "lineHeight", "type": "Int",
           "css": { "property": "line-height", "unit": "px" },
           "doc": { "en": "Sets the line height in logical pixels.", "zh": "用逻辑像素设置行高。" }
-        },
-        {
-          "name": "bold", "type": "Bool",
-          "css": { "property": "font-weight", "unit": "keyword", "keywords": { "true": "bold", "false": "normal" } },
-          "doc": { "en": "Displays the text in bold.", "zh": "以粗体显示文本。" }
         }
       ]
     },
@@ -403,7 +387,6 @@
       "name": "Image",
       "doc": { "en": "Displays a bundled image or an image from a URL.", "zh": "显示打包图片或指定 URL 的图片。" },
       "groups": ["layout", "visibility", "decoration", "tap"],
-      "memberSupport": { "width": {}, "height": {} },
       "members": [
         {
           "name": "src",

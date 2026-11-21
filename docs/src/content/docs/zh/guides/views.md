@@ -49,7 +49,7 @@ component TodoRow(todo: Todo, showRemove: Bool = true) {
 ```weft
 Column(width = 240, padding = 12, gap = 8) {
   Row(fill = true, align = "center") {
-    Text("待办事项", size = 20, bold = true)
+    Text("待办事项", size = 20, weight = "bold")
     Spacer()
     Text("3 项未完成")
   }
@@ -87,7 +87,7 @@ Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "
 
 ## 设置文本与行内样式
 
-`weight` 可设为 `"light"`、`"regular"`、`"medium"`、`"semibold"` 或 `"bold"`。设 `italic = true` 可使用斜体，设 `decoration = "underline"` 或 `"lineThrough"` 可添加下划线或删除线。新代码用 `weight = "bold"` 设置粗体；`bold = true` 仍然可用。系统字体缺少的字重会用最接近的字重显示，例如 Windows 默认字体把 `"medium"` 画得和 `"regular"` 一样。
+`weight` 可设为 `"light"`、`"regular"`、`"medium"`、`"semibold"` 或 `"bold"`。设 `italic = true` 可使用斜体，设 `decoration = "underline"` 或 `"lineThrough"` 可添加下划线或删除线。新代码用 `weight = "bold"` 设置粗体；`weight = "bold"` 仍然可用。系统字体缺少的字重会用最接近的字重显示，例如 Windows 默认字体把 `"medium"` 画得和 `"regular"` 一样。
 
 `Text` 在可用宽度内自动换行。用 `align = "start"`、`"center"` 或 `"end"` 设置各行的对齐方式，用 `lineHeight` 以逻辑像素指定行高。设 `maxLines = 2` 时最多显示两行，被截断的内容用省略号表示；设为零或负数则不限行数。在 iOS 和 macOS 上，`lineHeight` 只能增加行间距，小于字体自然行高的值不起作用。
 
@@ -268,7 +268,7 @@ import "./TodoList.weft"
 
 component Panel(title: String, content: Children, footer: Children) {
   Column(padding = 16, gap = 12) {
-    Text(title, size = 20, bold = true)
+    Text(title, size = 20, weight = "bold")
     content
     footer
   }

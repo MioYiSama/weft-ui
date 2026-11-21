@@ -257,7 +257,7 @@ Reusable styles and literal entries
 style Muted {
   color = "#6b7280"
   size = -12,
-  bold = false
+  italic = false
   gap = -1.25
   background = "$$5 \${literal} {"
 }

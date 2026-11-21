@@ -2,7 +2,7 @@ use weft_ui_ast as ast;
 use weft_ui_ast::span::offset;
 use weft_ui_ast::{BinaryOp, Diagnostic, Span, UnaryOp};
 
-use crate::ir::{Coercion, Expr, ExprKind, FieldId, InterpPart, ThemeUse, Type};
+use crate::ir::{Coercion, Expr, ExprKind, FieldId, InterpPart, Type};
 use crate::sema::builtins::{self, MemberKind};
 use crate::sema::record::{ProbeContext, Target};
 use crate::sema::{DeclKind, theme};
@@ -104,7 +104,7 @@ impl Lowerer<'_, '_> {
                 {
                     let expr = self.cx.theme_expr(name, span, self.diags);
                     if !expr.ty.has_error() {
-                        self.theme_use.merge(ThemeUse { first: Some(span) });
+                        self.uses_theme = true;
                     }
                     return expr;
                 }

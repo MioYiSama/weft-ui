@@ -9,7 +9,7 @@ set 1 5 false  # Checkbox.checked
 set 1 6 "https://example.test/gallery/day.png"  # Image.src
 set 1 7 "#135"  # Text.color
 set 1 8 14  # Text.size
-set 1 9 false  # Text.bold
+set 1 9 "regular"  # Text.weight
 set 1 10 "Weft"  # Input.value
 create 2 0  # Panel
 create 3 2  # Gallery:slot10
@@ -40,7 +40,7 @@ set 1 3 "#246"  # Row.background
 set 1 4 10  # Row.gap
 set 1 7 "#fff"  # Text.color
 set 1 8 18  # Text.size
-set 1 9 true  # Text.bold
+set 1 9 "bold"  # Text.weight
 
 # edit the caption in the slot
 set 1 10 "New caption"  # Input.value

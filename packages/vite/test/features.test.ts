@@ -44,7 +44,7 @@ test("renders nested components, slots and defaults", () => {
   expect(cards).toHaveLength(2);
   expect(cards[0].firstElementChild!.textContent).toBe("first");
   expect(cards[0].lastElementChild!.textContent).toBe("end");
-  expect((cards[0].firstElementChild as HTMLElement).style.fontWeight).toBe("bold");
+  expect((cards[0].firstElementChild as HTMLElement).style.fontWeight).toBe("700");
   expect(labels()).toEqual(["a", "b", "c"]);
   expect(cards[0].querySelector("span[style*=color]")!.textContent).toBe("x");
 });

@@ -1,8 +1,7 @@
 // Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit.
 
 use super::{
-    Children, Css, CssTarget, CssUnit, CustomCss, ElementSpec, FeatureSpec, PropKind, PropSpec,
-    PropType,
+    Children, Css, CssTarget, CssUnit, CustomCss, ElementSpec, PropKind, PropSpec, PropType,
 };
 use crate::protocol::Platform;
 
@@ -305,11 +304,6 @@ pub(crate) const CSS_PROPS: &[Css<'static>] = &[
     Css {
         properties: &["line-height"],
         unit: CssUnit::Px,
-        target: CssTarget::Node,
-    },
-    Css {
-        properties: &["font-weight"],
-        unit: CssUnit::Keyword(&[("true", "bold"), ("false", "normal")]),
         target: CssTarget::Node,
     },
     Css {
@@ -1184,16 +1178,6 @@ const PROPS_1: &[PropSpec] = &[
         required: false,
         constant: false,
         css: Some(42),
-        controlled_by: None,
-        support: &[],
-    },
-    PropSpec {
-        name: "bold",
-        kind: PropKind::Value(PropType::Bool),
-        positional: false,
-        required: false,
-        constant: false,
-        css: Some(43),
         controlled_by: None,
         support: &[],
     },
@@ -2248,7 +2232,7 @@ const PROPS_6: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(44),
+        css: Some(43),
         controlled_by: None,
         support: &[],
     },
@@ -2258,7 +2242,7 @@ const PROPS_6: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(45),
+        css: Some(44),
         controlled_by: None,
         support: &[],
     },
@@ -2591,7 +2575,7 @@ const PROPS_7: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(46),
+        css: Some(45),
         controlled_by: None,
         support: &[],
     },
@@ -2944,7 +2928,7 @@ const PROPS_8: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(47),
+        css: Some(46),
         controlled_by: None,
         support: &[],
     },
@@ -2956,7 +2940,7 @@ const PROPS_9: &[PropSpec] = &[PropSpec {
     positional: false,
     required: false,
     constant: false,
-    css: Some(48),
+    css: Some(47),
     controlled_by: None,
     support: &[],
 }];
@@ -3813,7 +3797,7 @@ const PROPS_13: &[PropSpec] = &[
         positional: true,
         required: true,
         constant: false,
-        css: Some(49),
+        css: Some(48),
         controlled_by: None,
         support: &[],
     },
@@ -3823,7 +3807,7 @@ const PROPS_13: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(50),
+        css: Some(49),
         controlled_by: None,
         support: &[],
     },
@@ -4673,17 +4657,6 @@ pub(crate) const ELEMENTS: [ElementSpec; 18] = [
         children: Children::None,
         parents: &[],
         content: None,
-        support: &[],
-    },
-];
-
-pub(crate) const FEATURES: [FeatureSpec; 2] = [
-    FeatureSpec {
-        name: "theme",
-        support: &[],
-    },
-    FeatureSpec {
-        name: "assets",
         support: &[],
     },
 ];

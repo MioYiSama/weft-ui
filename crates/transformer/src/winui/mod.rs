@@ -234,7 +234,7 @@ mod tests {
             r##"component A() {
                 Column(padding = 4, gap = 2, width = 100, height = 80, background = "#abc") {
                     Row(gap = 1) {
-                        Text("hello", color = "#12345680", size = 12, bold = true)
+                        Text("hello", color = "#12345680", size = 12, weight = "bold")
                         Button(disabled = true) { Text("button") }
                         Input("", placeholder = "hint", disabled = true)
                         Checkbox(false, disabled = true)
@@ -250,10 +250,7 @@ mod tests {
             "n0.Height = 80;",
             "n0.Background = WeftColor.Rgba(0xaabbccffu);\n        n0.Gap = 2;\n        Roots.Add(n0.Element);",
             "var n1 = new WeftStack(vertical: false);",
-            "n2.Value = \"hello\";",
-            "n2.Color = WeftColor.Rgba(0x12345680u);",
-            "n2.Size = 12;",
-            "n2.Bold = true;\n        n1.Children.Add(n2.Element);",
+            "n2.Color = WeftColor.Rgba(0x12345680u);\n        n2.Size = 12;\n        n2.Weight = WeftWeight.Bold;\n        n2.Value = \"hello\";\n        n1.Children.Add(n2.Element);",
             "var n3 = new WeftButton(null);",
             "n3.Disabled = true;",
             "n5 = new WeftInput(v => Dispatch(0, WeftValue.Of(v)));",
@@ -277,8 +274,9 @@ mod tests {
     #[test]
     fn value_slots_share_one_field_and_use_typed_accessors() {
         let code = csharp(
-            r#"component A(text: String, size: Int, bold: Bool, color: String) {
-                Text(text, size = size, bold = bold, color = color)
+            r#"type Weight = "regular" | "light" | "medium" | "semibold" | "bold"
+            component A(text: String, size: Int, weight: Weight, color: String) {
+                Text(text, size = size, weight = weight, color = color)
             }"#,
         );
         assert_eq!(
@@ -289,12 +287,12 @@ mod tests {
         for expected in [
             "// Text.value",
             "// Text.size",
-            "// Text.bold",
+            "// Text.weight",
             "// Text.color",
             "n0 = new WeftText();",
             "n0.Value = value.String; break;",
             "n0.Size = value.Number; break;",
-            "n0.Bold = value.Bool; break;",
+            "n0.Weight = WeftUnions.ParseWeight(value.String); break;",
             "n0.Color = value.Color; break;",
         ] {
             assert!(code.contains(expected), "missing {expected:?}\n{code}");

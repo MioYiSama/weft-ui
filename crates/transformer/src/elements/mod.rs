@@ -3,16 +3,10 @@
 mod catalog;
 
 pub use catalog::Element;
-pub(crate) use catalog::{CSS, CSS_PROPS, ELEMENTS, FEATURES, Level};
+pub(crate) use catalog::{CSS, CSS_PROPS, ELEMENTS, Level};
 
 use crate::ir::Type;
 use crate::protocol::Platform;
-
-#[derive(Debug)]
-pub(crate) struct FeatureSpec {
-    pub name: &'static str,
-    pub support: &'static [(Platform, Level)],
-}
 
 /// Value type of an element property.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

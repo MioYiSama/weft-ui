@@ -15,7 +15,7 @@ import net.mioyi.weftui.*
 /** Root view of the app: starts the kernel with the bundle and renders the root component. */
 @Composable
 fun WeftApp() {
-    WeftRoot(layoutHash = 0x61c5242ca67945f7uL, safeArea = true, make = ::makeScope)
+    WeftRoot(layoutHash = 0xfbf37220d9389a7duL, safeArea = true, make = ::makeScope)
 }
 
 /** Scope of a `create` op. */
@@ -82,8 +82,8 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
     var v7 by mutableStateOf(WeftColor.Transparent)
     /** Text.size */
     var v8 by mutableFloatStateOf(0f)
-    /** Text.bold */
-    var v9 by mutableStateOf(false)
+    /** Text.weight */
+    var v9 by mutableStateOf("")
     /** Input.value */
     var v10 by mutableStateOf("")
     var p0 by mutableStateOf<S0?>(null)
@@ -99,7 +99,7 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
             6 -> v6 = value.string
             7 -> v7 = value.color
             8 -> v8 = value.number
-            9 -> v9 = value.bool
+            9 -> v9 = value.string
             10 -> v10 = value.string
         }
     }
@@ -117,11 +117,11 @@ private class S1(id: Int, session: WeftSession) : WeftScope(id, session) {
 @Composable
 private fun V1(s: S1) {
     WeftLinear(axis = WeftAxis.VERTICAL, gap = 8f, padding = 12f, modifier = Modifier.weftSize(width = 320f, height = 280f).weftAppearance(background = WeftColor.Fixed(Color(0xffeeeeffL)))) {
-        WeftText("Gallery", color = WeftColor.Fixed(Color(0xff224466L)), size = 20f, bold = true)
+        WeftText("Gallery", color = WeftColor.Fixed(Color(0xff224466L)), size = 20f, weight = WeftWeight.BOLD)
         WeftLinear(axis = WeftAxis.HORIZONTAL, gap = s.v4, padding = s.v2, modifier = Modifier.weftSize(width = s.v0, height = s.v1).weftAppearance(background = s.v3)) {
             WeftCheckbox(s.v5) { s.dispatch(0, WeftValue.Bool(it)) }
             WeftImage(s.v6, modifier = Modifier.weftSize(width = 32f, height = 32f))
-            WeftText("Preview", color = s.v7, size = s.v8, bold = s.v9)
+            WeftText("Preview", color = s.v7, size = s.v8, weight = WeftWeight.parse(s.v9))
         }
         WeftInput(s.v10, placeholder = "Caption") { if (s.dispatch(1, WeftValue.Text(it))) null else s.v10 }
         s.p0?.let { V0(it) }

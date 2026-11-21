@@ -533,12 +533,12 @@ line */
 #[test]
 fn formats_style_declarations() {
     golden(
-        r##"style Muted{color="#6b7280" size /* before */= - 12,bold=false,}
+        r##"style Muted{color="#6b7280" size /* before */= - 12,italic=false,}
         component Screen(){Text("note", style=Muted,size=14)}"##,
         r##"style Muted {
     color = "#6b7280"
     size /* before */ = -12,
-    bold = false,
+    italic = false,
 }
 
 component Screen() {

@@ -1,6 +1,6 @@
 # Weft UI
 
-A cross-platform UI library.
+A cross-platform UI library for Web, WeChat mini programs, iOS, macOS, Android, Windows, and Linux. Build views with [18 built-in elements](https://weftui.mioyi.net/reference/elements/) and write logic in JavaScript or TypeScript. Weft supports reusable styles and light/dark themes, bundled images and fonts, `onTap` on views, input types and focus control, and safe-area layout.
 
 ## Example
 

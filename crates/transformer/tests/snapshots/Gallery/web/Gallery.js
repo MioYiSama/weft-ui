@@ -2,7 +2,7 @@ import * as $ from "@weft-ui/runtime";
 
 export class GalleryStyle extends $.Model {
   static from(v) { return v instanceof GalleryStyle ? v : new GalleryStyle(v); }
-  constructor(v) { super([v.padding, v.gap, v.width, v.height, v.background, v.color, v.size, v.bold]); }
+  constructor(v) { super([v.padding, v.gap, v.width, v.height, v.background, v.color, v.size, v.weight]); }
   get padding() { return this.$v[0]; }
   set padding(v) { this.$set(0, v); }
   get gap() { return this.$v[1]; }
@@ -17,9 +17,9 @@ export class GalleryStyle extends $.Model {
   set color(v) { this.$set(5, v); }
   get size() { return this.$v[6]; }
   set size(v) { this.$set(6, v); }
-  get bold() { return this.$v[7]; }
-  set bold(v) { this.$set(7, v); }
-  toJSON() { return { padding: this.$v[0], gap: this.$v[1], width: this.$v[2], height: this.$v[3], background: this.$v[4], color: this.$v[5], size: this.$v[6], bold: this.$v[7] }; }
+  get weight() { return this.$v[7]; }
+  set weight(v) { this.$set(7, v); }
+  toJSON() { return { padding: this.$v[0], gap: this.$v[1], width: this.$v[2], height: this.$v[3], background: this.$v[4], color: this.$v[5], size: this.$v[6], weight: this.$v[7] }; }
 }
 
 export class GalleryModel extends $.Model {
@@ -42,7 +42,7 @@ const $s0 = 0;
 const $s1 = [[0, 1, 2, 3, 4, 5, 6, 7], 8, 9, 10];
 const $s2 = 11;
 const $t0 = $.template("<div class=\"w-column\"><!----><button type=\"button\" class=\"w-button\"><span class=\"w-text\"></span></button></div>");
-const $t1 = $.template("<div class=\"w-column\" style=\"width:320px;height:280px;padding-top:12px;padding-right:12px;padding-bottom:12px;padding-left:12px;background-color:#eeeeff;gap:8px\"><span class=\"w-text\" style=\"color:#224466;font-size:20px;font-weight:bold\">Gallery</span><div class=\"w-row\"><input type=\"checkbox\" class=\"w-checkbox\"><img class=\"w-image\" style=\"width:32px;height:32px\"><span class=\"w-text\">Preview</span></div><input placeholder=\"Caption\" class=\"w-input\"><!----></div>");
+const $t1 = $.template("<div class=\"w-column\" style=\"width:320px;height:280px;padding-top:12px;padding-right:12px;padding-bottom:12px;padding-left:12px;background-color:#eeeeff;gap:8px\"><span class=\"w-text\" style=\"color:#224466;font-size:20px;font-weight:700\">Gallery</span><div class=\"w-row\"><input type=\"checkbox\" class=\"w-checkbox\"><img class=\"w-image\" style=\"width:32px;height:32px\"><span class=\"w-text\">Preview</span></div><input placeholder=\"Caption\" class=\"w-input\"><!----></div>");
 const $t2 = $.template("<span class=\"w-text\"></span><!---->");
 const $t3 = $.template("<!----><!---->");
 const $t4 = $.template("<span class=\"w-text\"></span>");
@@ -98,7 +98,7 @@ export function Gallery$c(app, args, children, depth) {
   $.image(n2, c.p[0].$v[2]);
   $.style(n3, 34, c.p[0].$v[0].$v[5]);
   $.style(n3, 35, c.p[0].$v[0].$v[6]);
-  $.style(n3, 43, c.p[0].$v[0].$v[7]);
+  $.style(n3, 36, c.p[0].$v[0].$v[7]);
   $.value(n5, c.s[0]);
   $.input(n5, ($a) => { c.state(0, $a); });
   const s10 = new $.Slot(() => {
@@ -163,7 +163,7 @@ export function Gallery$c(app, args, children, depth) {
     if (c.d[0] & 512) $.image(n2, c.p[0].$v[2]);
     if (c.d[0] & 32) $.style(n3, 34, c.p[0].$v[0].$v[5]);
     if (c.d[0] & 64) $.style(n3, 35, c.p[0].$v[0].$v[6]);
-    if (c.d[0] & 128) $.style(n3, 43, c.p[0].$v[0].$v[7]);
+    if (c.d[0] & 128) $.style(n3, 36, c.p[0].$v[0].$v[7]);
     if (c.d[0] & 2048) $.value(n5, c.s[0]);
     if (c.d[0] & 3328) s10.update();
   };

@@ -1,7 +1,7 @@
 type AppearanceShadow = "none" | "small" | "medium" | "large"
 
 style AppearanceLabel { size = 14, color = "#29484b" }
-style AppearanceTitle { size = 17, bold = true, color = "#153b3d" }
+style AppearanceTitle { size = 17, weight = "bold", color = "#153b3d" }
 
 component ShadowCard(preset: AppearanceShadow) {
     Column(grow = 1, padding = 10, gap = 8, background = "#ffffff", radius = 12, shadow = preset) {
@@ -16,7 +16,7 @@ component Appearance() {
     Scroll(background = "#f5f8f6", indicators = false) {
         Column(fill = true, padding = 22, gap = 22) {
             Column(gap = 4) {
-                Text("Appearance", size = 30, bold = true, color = "#153b3d")
+                Text("Appearance", size = 30, weight = "bold", color = "#153b3d")
                 Text("Shadows, borders, clipping and visibility", style = AppearanceLabel)
             }
             Column(fill = true, gap = 10) {

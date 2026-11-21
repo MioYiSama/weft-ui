@@ -6,6 +6,45 @@
  */
 
 /* ------------------------------------------------------------------------ */
+/* Assets                                                                    */
+/* ------------------------------------------------------------------------ */
+
+/** Browser URLs for a logical image or icon. An empty srcset uses src alone. */
+export interface Asset {
+  readonly src: string;
+  readonly srcset: string;
+}
+
+const missingAsset: Asset = { src: "", srcset: "" };
+let assets: Readonly<Record<string, Asset>> = {};
+let fonts = "";
+
+/** Installs the manifest and styles from the Vite asset module. */
+export function registerAssets(manifest: Readonly<Record<string, Asset>>, fontStyles: string): void {
+  assets = manifest;
+  fonts = fontStyles;
+}
+
+/** Looks up a bundled image or icon by name, without its `asset:` prefix. */
+export function asset(name: string): Asset {
+  if (Object.prototype.hasOwnProperty.call(assets, name)) return assets[name]!;
+  warnMissingAsset(name);
+  return missingAsset;
+}
+
+/** Warns about a missing logical asset in debug builds. */
+export function warnMissingAsset(name: string): void {
+  if ((import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV) {
+    console.warn(`weft: missing asset ${JSON.stringify(name)}`);
+  }
+}
+
+/** CSS for the bundled fonts, installed the first time a document mounts. */
+export function assetFonts(): string {
+  return fonts;
+}
+
+/* ------------------------------------------------------------------------ */
 /* Models                                                                    */
 /* ------------------------------------------------------------------------ */
 

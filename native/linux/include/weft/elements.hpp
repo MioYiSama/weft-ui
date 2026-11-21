@@ -102,4 +102,12 @@ enum class ReturnKey { Done, Go, Next, Search, Send };
     return ReturnKey::Done;
 }
 
+enum class ImageFit { Cover, Contain, Fill };
+
+[[nodiscard]] constexpr ImageFit parse_image_fit(std::string_view value) noexcept {
+    if (value == "contain") return ImageFit::Contain;
+    if (value == "fill") return ImageFit::Fill;
+    return ImageFit::Cover;
+}
+
 } // namespace weft

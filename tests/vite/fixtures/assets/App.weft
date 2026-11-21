@@ -1,0 +1,14 @@
+component App() {
+    state missing = false
+    Column {
+        Image(if (missing) "asset:missing" else "asset:logo", width = 80, height = 80,
+            fit = if (missing) "fill" else "contain", placeholder = "#ffbb66", background = "#334455")
+        Image("asset:logo")
+        Image("asset:logo", width = 40)
+        Image("asset:only_high")
+        Image("asset:star", width = 24, height = 24)
+        Text("Regular face", font = "Inter", weight = "regular")
+        Text("Bold face", font = "Inter", weight = "bold")
+        Button(onClick = { missing = !missing }) { Text("Toggle first image") }
+    }
+}

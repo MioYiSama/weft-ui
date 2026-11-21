@@ -39,7 +39,7 @@ export function Typography$c(app, args, children, depth) {
   $.style(n0, 37, c.p[0].$v[6]);
   $.style(n0, 38, c.p[0].$v[2]);
   n0.textContent = c.p[0].$v[0];
-  $.style(n0, 40, c.p[0].$v[3]);
+  $.style(n0, 41, c.p[0].$v[3]);
   n2.textContent = c.p[0].$v[0];
   c.init(f);
   c.u = () => {
@@ -49,7 +49,7 @@ export function Typography$c(app, args, children, depth) {
     if (c.d[0] & 64) $.style(n0, 37, c.p[0].$v[6]);
     if (c.d[0] & 4) $.style(n0, 38, c.p[0].$v[2]);
     if (c.d[0] & 1) n0.textContent = c.p[0].$v[0];
-    if (c.d[0] & 8) $.style(n0, 40, c.p[0].$v[3]);
+    if (c.d[0] & 8) $.style(n0, 41, c.p[0].$v[3]);
     if (c.d[0] & 1) n2.textContent = c.p[0].$v[0];
   };
   return c;

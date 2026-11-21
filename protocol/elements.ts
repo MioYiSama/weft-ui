@@ -71,7 +71,7 @@ interface LocatedMember {
 const header = "// Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit.\n";
 const propTypes = { Int: true, Float: true, Bool: true, String: true, Color: true, Strings: true };
 const payloadTypes = { Int: true, Float: true, Bool: true, String: true };
-const rustUnits = { px: "Px", number: "Number", color: "Color", percent: "Percent" };
+const rustUnits = { px: "Px", number: "Number", color: "Color", percent: "Percent", font: "Font" };
 const rustCustom = { hidden: "Hidden", maxLines: "MaxLines", shadow: "Shadow", grow: "Grow", fill: "Fill", border: "Border", spacer: "Spacer" };
 const quote = JSON.stringify;
 const pascal = (value: string): string => value[0].toUpperCase() + value.slice(1);

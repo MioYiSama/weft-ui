@@ -22,11 +22,13 @@ use crate::elements::Element;
 use crate::ir::{NodeKind, Program, Prop};
 use crate::view::{PointKind, Template, TemplateKind, ViewLayout, ViewNodeKind};
 
-use super::elements::{Target, event_key, needs_data, picker_label_key, target, value_key};
+use super::elements::{
+    Target, event_key, image_key, image_layout, needs_data, picker_label_key, target, value_key,
+};
 use super::wxml::{slot_key, slot_template};
 
 /// The table object literal passed to the view runtime.
-pub(crate) fn object(program: &Program, layout: &ViewLayout) -> String {
+pub(crate) fn object(program: &Program, layout: &ViewLayout) -> (String, bool) {
     let mut out = Code::default();
     out.open("{");
     out.line(format!("hash: \"{:016x}\",", layout.hash()));
@@ -43,17 +45,18 @@ pub(crate) fn object(program: &Program, layout: &ViewLayout) -> String {
         out.line(format!("theme: [{names}],"));
     }
     out.open("templates: [");
+    let mut needs_assets = false;
     for template in layout.templates() {
-        out.line(format!("{},", entry(program, template)));
+        out.line(format!("{},", entry(program, template, &mut needs_assets)));
     }
     out.close("],");
     out.close("}");
     let mut text = String::new();
     out.write_to(&mut text);
-    text
+    (text, needs_assets)
 }
 
-fn entry(program: &Program, template: &Template) -> String {
+fn entry(program: &Program, template: &Template, needs_assets: &mut bool) -> String {
     let comp = program.component(template.component);
     let props_of = |local: u32| -> (&[Prop], _) {
         let source = template.nodes[local as usize].source;
@@ -117,8 +120,18 @@ fn entry(program: &Program, template: &Template) -> String {
             .map(|slot| {
                 let (props, (element, source)) = props_of(slot.node);
                 let key = value_key(source, index_of(props, slot.prop));
-                if let Target::Style(index) = target(element, slot.prop) {
+                let target = target(element, slot.prop);
+                if let Target::Style(index) = target {
                     format!("[\"{key}\", {index}]")
+                } else if matches!(target, Target::ImageSource) {
+                    *needs_assets = true;
+                    if image_layout(props).is_some() {
+                        format!("[\"{key}\", \"src\", \"{}\"]", image_key(source))
+                    } else {
+                        format!("[\"{key}\", \"src\"]")
+                    }
+                } else if matches!(target, Target::ImageFit) {
+                    format!("[\"{key}\", \"fit\"]")
                 } else if element == Element::Picker
                     && matches!(slot.prop, "selected" | "options" | "placeholder")
                 {
@@ -174,22 +187,39 @@ fn entry(program: &Program, template: &Template) -> String {
         fields.push(format!("p: [{}]", points.join(", ")));
     }
     let mut data = Vec::new();
+    let mut local_assets = Vec::new();
+    let mut tracks_images = false;
     for (local, node) in template.nodes.iter().enumerate() {
         let ViewNodeKind::Element { element, props, .. } = &node.kind else {
             continue;
         };
         let local = u32::try_from(local).expect("node indices fit in u32");
+        let (ir_props, (_, source)) = props_of(local);
+        tracks_images |= *element == Element::Image && image_layout(ir_props).is_some();
         for prop in props {
-            if !needs_data(target(*element, prop.name), &prop.value) {
+            let target = target(*element, prop.name);
+            if !needs_data(target, &prop.value) {
                 continue;
             }
-            let (ir_props, (_, source)) = props_of(local);
             let key = value_key(source, index_of(ir_props, prop.name));
-            data.push(format!("{key}: {}", prop.value));
+            if matches!(target, Target::ImageSource)
+                && matches!(&prop.value, crate::view::Constant::String(s) if s.starts_with("asset:"))
+            {
+                local_assets.push(format!("{key}: {}", prop.value));
+            } else {
+                data.push(format!("{key}: {}", prop.value));
+            }
         }
     }
     if !data.is_empty() {
         fields.push(format!("d: {{ {} }}", data.join(", ")));
+    }
+    if !local_assets.is_empty() {
+        *needs_assets = true;
+        fields.push(format!("a: {{ {} }}", local_assets.join(", ")));
+    }
+    if tracks_images {
+        fields.push("m: true".to_owned());
     }
     format!("{{ {} }}", fields.join(", "))
 }

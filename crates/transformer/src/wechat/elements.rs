@@ -30,6 +30,10 @@ pub(crate) enum Target {
     Attr(&'static str),
     /// Maps an InputType to the native type and password attributes.
     InputType,
+    /// An image source, possibly an `asset:` reference resolved by the sink.
+    ImageSource,
+    /// Maps an ImageFit to WeChat's image mode.
+    ImageFit,
     /// Boolean attribute; WXML treats every non-empty string as true, so
     /// values are always written as expressions.
     Flag {
@@ -71,8 +75,9 @@ pub(crate) fn target(element: Element, prop: &str) -> Target {
             name: "disabled",
             default: false,
         },
-        (_, "placeholder") => Target::Attr("placeholder"),
-        (_, "src") => Target::Attr("src"),
+        (Element::Input | Element::TextArea, "placeholder") => Target::Attr("placeholder"),
+        (Element::Image, "src") => Target::ImageSource,
+        (Element::Image, "fit") => Target::ImageFit,
         (Element::Scroll, "direction") => Target::Direction,
         (Element::Scroll, "indicators") => Target::Flag {
             name: "show-scrollbar",
@@ -113,6 +118,26 @@ pub(crate) fn picker_label_key(node: NodeId) -> impl fmt::Display {
     fmt::from_fn(move |f| write!(f, "q{}", node.0))
 }
 
+/// Image metrics and placeholder state collected from the native load event.
+pub(crate) fn image_key(node: NodeId) -> impl fmt::Display {
+    fmt::from_fn(move |out| write!(out, "m{}", node.0))
+}
+
+/// What the load event needs to supply when a dimension is not fixed by props.
+pub(crate) fn image_layout(props: &[Prop]) -> Option<(&'static str, bool)> {
+    let width = props.iter().any(|prop| prop.name == "width");
+    let height = props.iter().any(|prop| prop.name == "height");
+    let placeholder = props.iter().any(|prop| prop.name == "placeholder");
+    let size = match (width, height) {
+        (false, false) => "auto",
+        (true, false) => "width",
+        (false, true) => "height",
+        (true, true) if placeholder => "fixed",
+        (true, true) => return None,
+    };
+    Some((size, placeholder))
+}
+
 /// Where the view reads a property from.
 #[derive(Clone, Copy)]
 pub(crate) enum Value<'a> {
@@ -135,7 +160,8 @@ fn markup_safe(s: &str) -> bool {
 /// Constants whose text has to be sent through data instead of markup.
 pub(crate) fn needs_data(target: Target, constant: &Constant) -> bool {
     matches!(target, Target::PickerPlaceholder)
-        || matches!((target, constant), (Target::Text | Target::Attr(_), Constant::String(s)) if !markup_safe(s))
+        || matches!((target, constant), (Target::Text | Target::Attr(_) | Target::ImageSource, Constant::String(s)) if !markup_safe(s))
+        || matches!((target, constant), (Target::ImageSource, Constant::String(s)) if s.starts_with("asset:"))
 }
 
 /// How property `index` of element node `node` appears in the view.

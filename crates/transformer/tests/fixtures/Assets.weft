@@ -1,0 +1,13 @@
+type Fit = "cover" | "contain" | "fill"
+
+component Assets(source: String, fit: Fit, family: String, tint: Color) {
+    Column(gap = 8) {
+        Image("asset:logo", width = 96, height = 56, fit = "contain", placeholder = "#334455")
+        Image(source, width = 48, height = 48, fit = fit, placeholder = tint)
+        Image("asset:star", width = 24)
+        Text(font = "Inter", weight = "bold") {
+            Span("Bundled fonts")
+            Span("Family", font = family, italic = true)
+        }
+    }
+}

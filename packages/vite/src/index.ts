@@ -1,11 +1,14 @@
 import { cpSync, existsSync, globSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type EnvironmentOptions, type Plugin, defaultClientConditions, defaultServerConditions } from "vite";
 import { type AppResult, compileApp } from "@weft-ui/compiler";
 import { NATIVE_PLATFORMS, PLATFORMS, type NativePlatform, type Platform } from "@weft-ui/runtime/protocol";
 import { HERMES_TARGET, compileBytecode, nativeAdapter } from "./native.ts";
 import { checkShellProtocol, nativeShell } from "./shells.ts";
+import { type Assets, hasAssets, scanAssets } from "./assets/scan.ts";
+import { WEB_ASSETS_ID, RESOLVED_WEB_ASSETS_ID, serveWebAssets, webAssets } from "./assets/web.ts";
+import { writeWechatAssets } from "./assets/wechat.ts";
 
 /** Options of the Weft Vite plugin. */
 export interface WeftOptions {
@@ -13,6 +16,8 @@ export interface WeftOptions {
   platforms?: Platform[];
   /** Directory for platform projects; absolute or relative to the Vite root. Defaults to `./apps`. */
   apps?: string;
+  /** Directory for bundled images, icons and fonts, relative to the Vite root. Defaults to `assets`. */
+  assets?: string;
   /** Overrides the installed native shell packages with a directory containing the shells; absolute or relative to the Vite root. */
   native?: string;
   /** Values filled into the project templates copied to `<apps>/<platform>/` on the first build. */
@@ -203,6 +208,10 @@ export default function weft(options: WeftOptions = {}): Plugin {
   const include = options.include ?? "src/**/*.weft";
   let root = process.cwd();
   let appsDir: string;
+  let assetsDir: string;
+  let building: boolean;
+  let catalog: Assets | undefined;
+  const assets = () => catalog ??= scanAssets(assetsDir);
   let nativeRoot: string | undefined;
   const shells = new Map<NativePlatform, string>();
   let entry: string | undefined;
@@ -219,7 +228,10 @@ export default function weft(options: WeftOptions = {}): Plugin {
       // Module ids are real paths; `.weft` sources are matched against them.
       root = realpathSync(resolve(config.root ?? process.cwd()));
       appsDir = resolve(root, options.apps ?? "./apps");
-      if (env.command !== "build") return;
+      assetsDir = resolve(root, options.assets ?? "assets");
+      catalog = undefined;
+      building = env.command === "build";
+      if (!building) return;
       nativeRoot = options.native === undefined ? undefined : resolve(root, options.native);
       // The CLI passes `builder: {}` for `--app`; the plugin's own builder below makes plain `vite build` an app build.
       selected = selectPlatforms(configured, config.builder !== undefined);
@@ -275,14 +287,44 @@ export default function weft(options: WeftOptions = {}): Plugin {
         },
       };
     },
+    configureServer(server) {
+      server.middlewares.use(serveWebAssets(server.config.base, assets));
+      server.watcher.add(assetsDir);
+      server.watcher.on("all", (event, file) => {
+        if (event !== "change" && event !== "add" && event !== "unlink" && event !== "addDir" && event !== "unlinkDir") return;
+        const path = relative(assetsDir, resolve(file)).replaceAll("\\", "/");
+        if (path === ".." || path.startsWith("../") || isAbsolute(path)) return;
+        catalog = undefined;
+        for (const environment of Object.values(server.environments)) {
+          const graph = environment.moduleGraph;
+          const module = graph.getModuleById(RESOLVED_WEB_ASSETS_ID);
+          if (module) graph.invalidateModule(module);
+        }
+        server.ws.send({ type: "full-reload", path: "*" });
+      });
+    },
     resolveId(source, _importer, resolveOptions) {
+      if (source === WEB_ASSETS_ID && platformOf(this.environment.name) === "web") return RESOLVED_WEB_ASSETS_ID;
       if (!isRuntimeImport(source)) return;
       return this.resolve(source, RUNTIME_IMPORTER, { ...resolveOptions, skipSelf: true });
+    },
+    load(id) {
+      if (id !== RESOLVED_WEB_ASSETS_ID) return;
+      return webAssets(assets(), (file, output) => {
+        if (!building) {
+          const path = output.split("/").map((name) => encodeURIComponent(name).replaceAll("%40", "@")).join("/");
+          return JSON.stringify(`${this.environment.config.base}${path}`);
+        }
+        this.addWatchFile(file.path);
+        const reference = this.emitFile({ type: "asset", fileName: output, source: readFileSync(file.path) });
+        return `import.meta.ROLLDOWN_FILE_URL_${reference}`;
+      });
     },
     async buildApp(builder) {
       for (const platform of selected) await builder.build(builder.environments[platform]!);
     },
     async buildStart() {
+      if (building) assets();
       if (options.dts) {
         const outputPath = existsSync(appsDir) ? realpathSync(appsDir) : appsDir;
         for (const file of weftFiles(root, outputPath)) {
@@ -316,7 +358,8 @@ export default function weft(options: WeftOptions = {}): Plugin {
       if (output.diagnostics) this.warn(output.diagnostics);
       const logic = output.logic.find((module) => module.source === file)!;
       if (options.dts) writeDeclarations(file, logic.dts);
-      return { code: logic.code, map: null };
+      const withAssets = !building || hasAssets(assets());
+      return { code: withAssets ? `import ${JSON.stringify(WEB_ASSETS_ID)};\n${logic.code}` : logic.code, map: null };
     },
     async writeBundle() {
       const platform = platformOf(this.environment.name);
@@ -329,6 +372,10 @@ export default function weft(options: WeftOptions = {}): Plugin {
         name: options.app?.name ?? basename(root),
       });
       writeGenerated(generated, app);
+      if (platform === "wechat") {
+        writeWechatAssets(assets(), generated, (message) => this.warn(message));
+        return;
+      }
       if (!isNativePlatform(platform)) return;
       const shell = shells.get(platform)!;
       const adapter = nativeAdapter(platform, shell);

@@ -145,6 +145,7 @@ Only these direct child elements are accepted: `Span`.
 | `weight` | `Weight` | `"regular"` | Sets the font weight. | — |
 | `italic` | `Bool` | `false` | Sets the text in italics. | — |
 | `decoration` | `Decoration` | `"none"` | Underlines or strikes through the text. | — |
+| `font` | `String` | — | Selects a bundled font family by name; defaults to the inherited or system font. | — |
 | `value` (positional) | `String` | — | The plain text to display; required unless `Span` children provide the content. | — |
 | `align` | `TextAlign` | `"start"` | Aligns lines within the text box. | — |
 | `maxLines` | `Int` | `0` | Truncates overflowing lines with an ellipsis; zero or less leaves the text unlimited. | — |
@@ -170,6 +171,7 @@ Must be a direct child of: `Text`.
 | `weight` | `Weight` | `"regular"` | Sets the font weight. | — |
 | `italic` | `Bool` | `false` | Sets the text in italics. | — |
 | `decoration` | `Decoration` | `"none"` | Underlines or strikes through the text. | — |
+| `font` | `String` | — | Selects a bundled font family by name; defaults to the inherited or system font. | — |
 | `value` (positional) | `String` | Required | The text of this run. | — |
 
 ## Button
@@ -279,7 +281,7 @@ Displays a checkable control.
 
 ## Image
 
-Displays an image from a URL.
+Displays a bundled image or an image from a URL.
 
 **Children:** None.
 
@@ -309,7 +311,9 @@ Displays an image from a URL.
 | `borderColor` | `Color` | `"#0000001f"` | Sets the border color; the dark-mode default is `#ffffff26`. | — |
 | `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
 | `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
-| `src` (positional) | `String` | Required | The image URL. | — |
+| `src` (positional) | `String` | Required | The image URL or a bundled asset reference (`asset:name`). | — |
+| `fit` | `ImageFit` | `"cover"` | Crops (`cover`), fits (`contain`), or stretches (`fill`) the image to its box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `placeholder` | `Color` | — | Shows this background color while the image loads or if it fails. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
@@ -642,3 +646,7 @@ Selects one option from a list of strings.
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
 | `onChange` | `Int` | Reports the zero-based index of the proposed option. | — |
+
+## Feature support
+
+- `assets`: Local image assets and custom fonts. Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.

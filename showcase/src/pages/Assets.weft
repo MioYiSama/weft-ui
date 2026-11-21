@@ -1,0 +1,57 @@
+style AssetsHeading { size = 17, weight = "semibold", color = "#193948" }
+style AssetsNote { size = 13, color = "#47616b" }
+
+type AssetFit = "cover" | "contain" | "fill"
+
+component FitExample(label: String, fit: AssetFit) {
+    Column(gap = 6) {
+        Image("asset:hero", width = 100, height = 90, fit = fit, radius = 8, background = "#dbe9e8")
+        Text(label, style = AssetsNote)
+    }
+}
+
+component Assets() {
+    Scroll(fill = true, background = "#f2f7f7", indicators = false) {
+        Column(fill = true, padding = 20, gap = 22) {
+            Column(gap = 4) {
+                Text("Bundled assets", size = 29, weight = "bold", color = "#193948")
+                Text("Images, SVG icons and fonts", style = AssetsNote)
+            }
+            Column(gap = 10) {
+                Text("One image, three fits", style = AssetsHeading)
+                Row(gap = 8) {
+                    FitExample("Cover", "cover")
+                    FitExample("Contain", "contain")
+                    FitExample("Fill", "fill")
+                }
+            }
+            Column(gap = 10) {
+                Text("Bundled PNG and SVG", style = AssetsHeading)
+                Row(gap = 12, align = "center") {
+                    Image("asset:avatar", width = 44, radius = 22)
+                    Row(gap = 14, padding = 8, background = "#ffffff", radius = 8) {
+                        Image("asset:star", width = 26, height = 26)
+                        Image("asset:compass", width = 26, height = 26)
+                        Image("asset:mountain", width = 26, height = 26)
+                    }
+                }
+            }
+            Column(gap = 8) {
+                Text("Inter in three weights", style = AssetsHeading)
+                Column(gap = 4, padding = 12, background = "#ffffff", radius = 8) {
+                    Text("Regular    The quiet ridge", font = "Inter", weight = "regular", size = 18, color = "#193948")
+                    Text("Semibold  The quiet ridge", font = "Inter", weight = "semibold", size = 18, color = "#193948")
+                    Text("Bold          The quiet ridge", font = "Inter", weight = "bold", size = 18, color = "#193948")
+                }
+            }
+            Column(gap = 8) {
+                Text("Failed request", style = AssetsHeading)
+                Row(gap = 12, align = "center") {
+                    Image("https://example.invalid/weft-showcase.png", width = 58, height = 38,
+                        radius = 6, placeholder = "#f4bc81")
+                    Text("Placeholder color stays visible", style = AssetsNote)
+                }
+            }
+        }
+    }
+}

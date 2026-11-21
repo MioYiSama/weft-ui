@@ -187,3 +187,20 @@ public enum WeftReturnKey: String, Sendable {
         }
     }
 }
+
+public enum WeftImageFit: String, Sendable {
+    case cover
+    case contain
+    case fill
+
+    public init(weft: String) {
+        if let value = Self(rawValue: weft) {
+            self = value
+        } else {
+            #if DEBUG
+            NSLog("weft: invalid ImageFit value: %@", weft)
+            #endif
+            self = .cover
+        }
+    }
+}

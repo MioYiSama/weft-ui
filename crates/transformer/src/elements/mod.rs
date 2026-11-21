@@ -67,6 +67,7 @@ pub(crate) enum CssUnit<'a> {
     Number,
     Color,
     Percent,
+    Font,
     Keyword(&'a [(&'a str, &'a str)]),
     Custom(CustomCss),
 }

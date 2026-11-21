@@ -12,11 +12,16 @@
  * `(scope, event slot)`.
  */
 
+import { warnMissingAsset } from "./core.ts";
 import { declarations } from "./css.ts";
 import { CSS_PROPS } from "./elements.ts";
 import { sameValue, type Session, type Sink, type Value } from "./remote.ts";
 
 type Data = Record<string, unknown>;
+
+type AssetVariants = Readonly<Record<string, readonly [scale: number, src: string][]>>;
+
+declare const wx: { getWindowInfo?(): { pixelRatio: number } };
 
 /** Data keys of one layout template (see `crates/transformer/src/wechat/table.rs`). */
 export interface TemplateKeys {
@@ -26,8 +31,14 @@ export interface TemplateKeys {
   t?: string;
   /** Branch index of an `if` branch template. */
   i?: number;
-  /** Value key, optional CSS mapping index, and optional picker binding index. */
-  v?: [key: string, cssIndex?: number | null, picker?: number][];
+  /** Value key with optional CSS, picker or image-source mapping. */
+  v?: ([key: string, cssIndex?: number | null, picker?: number]
+    | [key: string, kind: "src", metrics?: string]
+    | [key: string, kind: "fit"])[];
+  /** Constant local sources to resolve when the scope is created. */
+  a?: Readonly<Record<string, string>>;
+  /** Whether to expose the scope id to image load events. */
+  m?: true;
   /** Handler key, controlled value slot or -1, and optional event behavior. */
   e?: [key: string, controls: number, kind?: "number" | "textarea"][];
   /** Label, selected index, options and optional placeholder data keys per picker. */
@@ -56,7 +67,7 @@ export interface View {
 interface ViewEvent {
   type: string;
   currentTarget: { dataset: Data };
-  detail?: { value?: unknown };
+  detail?: { value?: unknown; width?: number; height?: number };
 }
 
 interface Scope {
@@ -80,6 +91,8 @@ export class WechatSink implements Sink {
   #view: View;
   #layout: Layout;
   #theme: ReadonlySet<string> | null;
+  #assets: AssetVariants | undefined;
+  #scales = new Map<string, number>();
   #session: Session | null = null;
   #scopes = new Map<number, Scope>();
   #root: Scope | null = null;
@@ -91,10 +104,16 @@ export class WechatSink implements Sink {
   #handlers = new Map<number, [Scope, number]>();
   #lastHandler = 0;
 
-  constructor(view: View, layout: Layout) {
+  constructor(view: View, layout: Layout, assets?: AssetVariants) {
     this.#view = view;
     this.#layout = layout;
     this.#theme = layout.theme ? new Set(layout.theme) : null;
+    this.#assets = assets;
+    if (assets) {
+      for (const variants of Object.values(assets)) {
+        for (const [scale, src] of variants) this.#scales.set(src, scale);
+      }
+    }
   }
 
   open(session: Session): void {
@@ -114,6 +133,8 @@ export class WechatSink implements Sink {
     const o = scope.o;
     if (keys.t !== undefined) o.t = keys.t;
     if (keys.d) Object.assign(o, keys.d);
+    if (keys.m) o.ws = id;
+    if (keys.a) for (const [key, src] of Object.entries(keys.a)) o[key] = this.#imageSource(src);
     if (keys.e) {
       for (let slot = 0; slot < keys.e.length; slot++) {
         const handler = ++this.#lastHandler;
@@ -138,12 +159,20 @@ export class WechatSink implements Sink {
 
   set(id: number, slot: number, value: Value): void {
     const scope = this.#scope(id);
-    const [key, cssIndex, picker] = scope.keys.v![slot];
-    const next = cssIndex == null ? value : declarations(CSS_PROPS[cssIndex], value, this.#theme);
+    const [key, mapping, extra] = scope.keys.v![slot]!;
+    const next = mapping === "src" ? this.#imageSource(String(value))
+      : mapping === "fit" ? value === "contain" ? "aspectFit" : value === "fill" ? "scaleToFill" : "aspectFill"
+      : mapping == null ? value : declarations(CSS_PROPS[mapping]!, value, this.#theme);
     if (sameValue(scope.o[key], next)) return;
     scope.o[key] = next;
     if (!scope.fresh) this.#pend(scope, key);
-    if (picker !== undefined) {
+    if (mapping === "src") {
+      if (typeof extra === "string" && scope.o[extra]) {
+        scope.o[extra] = "";
+        if (!scope.fresh) this.#pend(scope, extra);
+      }
+    } else if (typeof extra === "number") {
+      const picker = extra;
       const [label, selected, options, placeholder] = scope.keys.q![picker]!;
       const index = scope.o[selected] as number;
       const labels = scope.o[options] as readonly string[] | undefined;
@@ -290,6 +319,38 @@ export class WechatSink implements Sink {
     return undefined;
   }
 
+  /** Applies logical image dimensions and clears the placeholder when loading succeeds. */
+  imageLoaded(event: ViewEvent): void {
+    const { scope: id, image: key, src, size } = event.currentTarget.dataset;
+    const scope = this.#scopes.get(Number(id));
+    const width = event.detail?.width ?? 0;
+    const height = event.detail?.height ?? 0;
+    if (!scope || typeof key !== "string" || width <= 0 || height <= 0) return;
+    const scale = typeof src === "string" ? this.#scales.get(src) ?? 1 : 1;
+    let metrics = ";"; // Truthy even when both dimensions are fixed and only the placeholder changes.
+    switch (size) {
+      case "auto": metrics = `width:${width / scale}px;height:${height / scale}px`; break;
+      case "width": metrics = `height:auto;aspect-ratio:${width}/${height}`; break;
+      case "height": metrics = `width:auto;aspect-ratio:${width}/${height}`; break;
+    }
+    if (scope.o[key] === metrics) return;
+    scope.o[key] = metrics;
+    const path = this.#locate(scope, key);
+    if (path !== null) this.#view.setData({ [path]: metrics });
+  }
+
+  #imageSource(src: string): string {
+    if (!src.startsWith("asset:")) return src;
+    const name = src.slice(6);
+    const variants = this.#assets && Object.prototype.hasOwnProperty.call(this.#assets, name) ? this.#assets[name] : undefined;
+    if (!variants?.length) {
+      warnMissingAsset(name);
+      return "";
+    }
+    const scale = typeof wx === "undefined" ? 1 : wx.getWindowInfo?.().pixelRatio ?? 1;
+    return (variants.find(([density]) => density >= scale) ?? variants.at(-1)!)[1];
+  }
+
   #scope(id: number): Scope {
     const scope = this.#scopes.get(id);
     if (!scope) throw new Error(`weft: unknown scope ${id}`);
@@ -349,18 +410,21 @@ function uncovered(data: Map<string, unknown>): Data {
  * Options of the generated view component. The view releases its app when
  * it is detached from the page.
  */
-export function view(layout: Layout) {
+export function view(layout: Layout, assets?: AssetVariants) {
   return {
     data: { t: "", r: null },
     lifetimes: {
       created(this: View) {
-        this.$sink = new WechatSink(this, layout);
+        this.$sink = new WechatSink(this, layout, assets);
       },
       detached(this: View) {
         this.$sink?.detach();
       },
     },
     methods: {
+      $image(this: View, event: ViewEvent): void {
+        this.$sink?.imageLoaded(event);
+      },
       $e(this: View, event: ViewEvent): string | undefined {
         return this.$sink?.event(event);
       },

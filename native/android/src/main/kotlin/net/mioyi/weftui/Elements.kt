@@ -173,3 +173,17 @@ enum class WeftReturnKey {
         }
     }
 }
+
+enum class WeftImageFit {
+    COVER,
+    CONTAIN,
+    FILL;
+
+    companion object {
+        fun parse(value: String): WeftImageFit = when (value) {
+            "contain" -> CONTAIN
+            "fill" -> FILL
+            else -> COVER
+        }
+    }
+}

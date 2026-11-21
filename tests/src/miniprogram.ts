@@ -258,7 +258,6 @@ const parents = new WeakMap<Element, Element>();
 function fire(view: TestView & Data, element: Element, type: string, value: unknown): unknown {
   const bindAttr = `bind${type}`;
   const catchAttr = `catch${type}`;
-  const key = `e${type}`;
   let handled = false;
   let result: unknown;
   for (let node: Element | undefined = element; node; node = type === "tap" ? parents.get(node) : undefined) {
@@ -269,10 +268,12 @@ function fire(view: TestView & Data, element: Element, type: string, value: unkn
     if (type === "input" && typeof value === "string") {
       value = limitInput(value, Number(node.attrs.maxlength ?? 140));
     }
+    const dataset = Object.fromEntries(Object.entries(node.attrs)
+      .filter(([name]) => name.startsWith("data-")).map(([name, data]) => [name.slice(5), data]));
     result = handler.call(view, {
       type,
-      currentTarget: { dataset: { [key]: node.attrs[`data-${key}`] } },
-      detail: { value },
+      currentTarget: { dataset },
+      detail: type === "load" ? value : { value },
     });
     handled = true;
     if (catchAttr in node.attrs) break;

@@ -95,10 +95,10 @@ export function Gallery$c(app, args, children, depth) {
   $.style(n4, 31, c.p[0].$v[0].$v[1]);
   $.checked(n1, c.p[0].$v[1]);
   $.checkbox(n1, ($a) => { c.app.$emit("Checked", { value: $a }); });
-  n2.setAttribute("src", c.p[0].$v[2]);
+  $.image(n2, c.p[0].$v[2]);
   $.style(n3, 34, c.p[0].$v[0].$v[5]);
   $.style(n3, 35, c.p[0].$v[0].$v[6]);
-  $.style(n3, 42, c.p[0].$v[0].$v[7]);
+  $.style(n3, 43, c.p[0].$v[0].$v[7]);
   $.value(n5, c.s[0]);
   $.input(n5, ($a) => { c.state(0, $a); });
   const s10 = new $.Slot(() => {
@@ -160,10 +160,10 @@ export function Gallery$c(app, args, children, depth) {
     if (c.d[0] & 16) $.style(n4, 25, c.p[0].$v[0].$v[4]);
     if (c.d[0] & 2) $.style(n4, 31, c.p[0].$v[0].$v[1]);
     if (c.d[0] & 256) $.checked(n1, c.p[0].$v[1]);
-    if (c.d[0] & 512) n2.setAttribute("src", c.p[0].$v[2]);
+    if (c.d[0] & 512) $.image(n2, c.p[0].$v[2]);
     if (c.d[0] & 32) $.style(n3, 34, c.p[0].$v[0].$v[5]);
     if (c.d[0] & 64) $.style(n3, 35, c.p[0].$v[0].$v[6]);
-    if (c.d[0] & 128) $.style(n3, 42, c.p[0].$v[0].$v[7]);
+    if (c.d[0] & 128) $.style(n3, 43, c.p[0].$v[0].$v[7]);
     if (c.d[0] & 2048) $.value(n5, c.s[0]);
     if (c.d[0] & 3328) s10.update();
   };

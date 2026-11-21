@@ -49,8 +49,8 @@ export function Controls$c(app, args, children, depth) {
   $.value(n3, c.s[1]);
   $.input(n3, ($a) => { c.state(1, $a); });
   $.style(n4, 34, c.p[1]);
-  $.style(n5, 46, c.p[2]);
-  $.style(n5, 47, c.p[1]);
+  $.style(n5, 49, c.p[2]);
+  $.style(n5, 50, c.p[1]);
   $.style(n8, 25, c.p[1]);
   $.rangeValue(n10, c.s[2]);
   $.rangeAttr(n10, "max", c.p[3]);
@@ -67,8 +67,8 @@ export function Controls$c(app, args, children, depth) {
     if (c.d[0] & 16) $.checked(n0, c.s[0]);
     if (c.d[0] & 32) $.value(n3, c.s[1]);
     if (c.d[0] & 2) $.style(n4, 34, c.p[1]);
-    if (c.d[0] & 4) $.style(n5, 46, c.p[2]);
-    if (c.d[0] & 2) $.style(n5, 47, c.p[1]);
+    if (c.d[0] & 4) $.style(n5, 49, c.p[2]);
+    if (c.d[0] & 2) $.style(n5, 50, c.p[1]);
     if (c.d[0] & 2) $.style(n8, 25, c.p[1]);
     if (c.d[0] & 64) $.rangeValue(n10, c.s[2]);
     if (c.d[0] & 8) $.rangeAttr(n10, "max", c.p[3]);

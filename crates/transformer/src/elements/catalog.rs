@@ -72,6 +72,7 @@ const TEXT_ALIGN: &[&str] = &["start", "center", "end"];
 const DECORATION: &[&str] = &["none", "underline", "lineThrough"];
 const INPUT_TYPE: &[&str] = &["text", "password", "number", "email", "phone"];
 const RETURN_KEY: &[&str] = &["done", "go", "next", "search", "send"];
+const IMAGE_FIT: &[&str] = &["cover", "contain", "fill"];
 
 pub(crate) const CSS_PROPS: &[Css<'static>] = &[
     Css {
@@ -287,6 +288,11 @@ pub(crate) const CSS_PROPS: &[Css<'static>] = &[
         target: CssTarget::Node,
     },
     Css {
+        properties: &["font-family"],
+        unit: CssUnit::Font,
+        target: CssTarget::Node,
+    },
+    Css {
         properties: &["text-align"],
         unit: CssUnit::Keyword(&[]),
         target: CssTarget::Node,
@@ -304,6 +310,16 @@ pub(crate) const CSS_PROPS: &[Css<'static>] = &[
     Css {
         properties: &["font-weight"],
         unit: CssUnit::Keyword(&[("true", "bold"), ("false", "normal")]),
+        target: CssTarget::Node,
+    },
+    Css {
+        properties: &["object-fit"],
+        unit: CssUnit::Keyword(&[]),
+        target: CssTarget::Node,
+    },
+    Css {
+        properties: &["--w-image-placeholder"],
+        unit: CssUnit::Color,
         target: CssTarget::Node,
     },
     Css {
@@ -1112,6 +1128,16 @@ const PROPS_1: &[PropSpec] = &[
         support: &[],
     },
     PropSpec {
+        name: "font",
+        kind: PropKind::Value(PropType::String),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(39),
+        controlled_by: None,
+        support: &[],
+    },
+    PropSpec {
         name: "onTap",
         kind: PropKind::Handler { payload: None },
         positional: false,
@@ -1137,7 +1163,7 @@ const PROPS_1: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(39),
+        css: Some(40),
         controlled_by: None,
         support: &[],
     },
@@ -1147,7 +1173,7 @@ const PROPS_1: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(40),
+        css: Some(41),
         controlled_by: None,
         support: &[],
     },
@@ -1157,7 +1183,7 @@ const PROPS_1: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(41),
+        css: Some(42),
         controlled_by: None,
         support: &[],
     },
@@ -1167,7 +1193,7 @@ const PROPS_1: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(42),
+        css: Some(43),
         controlled_by: None,
         support: &[],
     },
@@ -1221,6 +1247,16 @@ const PROPS_2: &[PropSpec] = &[
         required: false,
         constant: false,
         css: Some(38),
+        controlled_by: None,
+        support: &[],
+    },
+    PropSpec {
+        name: "font",
+        kind: PropKind::Value(PropType::String),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(39),
         controlled_by: None,
         support: &[],
     },
@@ -2206,6 +2242,38 @@ const PROPS_6: &[PropSpec] = &[
         controlled_by: None,
         support: &[],
     },
+    PropSpec {
+        name: "fit",
+        kind: PropKind::Value(PropType::Union(IMAGE_FIT)),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(44),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "placeholder",
+        kind: PropKind::Value(PropType::Color),
+        positional: false,
+        required: false,
+        constant: false,
+        css: Some(45),
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
 ];
 
 const PROPS_7: &[PropSpec] = &[
@@ -2535,7 +2603,7 @@ const PROPS_7: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(43),
+        css: Some(46),
         controlled_by: None,
         support: &[],
     },
@@ -2888,7 +2956,7 @@ const PROPS_8: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(44),
+        css: Some(47),
         controlled_by: None,
         support: &[],
     },
@@ -2900,7 +2968,7 @@ const PROPS_9: &[PropSpec] = &[PropSpec {
     positional: false,
     required: false,
     constant: false,
-    css: Some(45),
+    css: Some(48),
     controlled_by: None,
     support: &[],
 }];
@@ -3757,7 +3825,7 @@ const PROPS_13: &[PropSpec] = &[
         positional: true,
         required: true,
         constant: false,
-        css: Some(46),
+        css: Some(49),
         controlled_by: None,
         support: &[],
     },
@@ -3767,7 +3835,7 @@ const PROPS_13: &[PropSpec] = &[
         positional: false,
         required: false,
         constant: false,
-        css: Some(47),
+        css: Some(50),
         controlled_by: None,
         support: &[],
     },
@@ -4628,6 +4696,12 @@ pub(crate) const FEATURES: [FeatureSpec; 2] = [
     },
     FeatureSpec {
         name: "assets",
-        support: &[],
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
     },
 ];

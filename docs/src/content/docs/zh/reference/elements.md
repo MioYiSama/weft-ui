@@ -145,6 +145,7 @@ title: 内置元素
 | `weight` | `Weight` | `"regular"` | 设置字重。 | — |
 | `italic` | `Bool` | `false` | 设置斜体。 | — |
 | `decoration` | `Decoration` | `"none"` | 为文字添加下划线或删除线。 | — |
+| `font` | `String` | — | 按族名选择打包字体；默认使用继承的字体或系统字体。 | — |
 | `value` (位置参数) | `String` | — | 要显示的纯文本；没有 `Span` 子元素时必填。 | — |
 | `align` | `TextAlign` | `"start"` | 设置各行文字在文本框中的对齐方式。 | — |
 | `maxLines` | `Int` | `0` | 超出行数限制时在末尾显示省略号；小于或等于零表示不限行数。 | — |
@@ -170,6 +171,7 @@ title: 内置元素
 | `weight` | `Weight` | `"regular"` | 设置字重。 | — |
 | `italic` | `Bool` | `false` | 设置斜体。 | — |
 | `decoration` | `Decoration` | `"none"` | 为文字添加下划线或删除线。 | — |
+| `font` | `String` | — | 按族名选择打包字体；默认使用继承的字体或系统字体。 | — |
 | `value` (位置参数) | `String` | 必填 | 此片段的文字。 | — |
 
 ## Button
@@ -279,7 +281,7 @@ title: 内置元素
 
 ## Image
 
-显示指定 URL 的图片。
+显示打包图片或指定 URL 的图片。
 
 **子节点:** 无.
 
@@ -309,7 +311,9 @@ title: 内置元素
 | `borderColor` | `Color` | `"#0000001f"` | 设置边框颜色；深色模式默认使用 `#ffffff26`。 | — |
 | `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | — |
 | `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | — |
-| `src` (位置参数) | `String` | 必填 | 图片的 URL。 | — |
+| `src` (位置参数) | `String` | 必填 | 图片的 URL 或打包资源引用（`asset:name`）。 | — |
+| `fit` | `ImageFit` | `"cover"` | 在盒内裁剪（`cover`）、完整显示（`contain`）或拉伸（`fill`）图片。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `placeholder` | `Color` | — | 图片加载中或加载失败时显示此背景色。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
 
 | 事件 | 载荷 | 说明 | 平台例外 |
 | --- | --- | --- | --- |
@@ -642,3 +646,7 @@ title: 内置元素
 | 事件 | 载荷 | 说明 | 平台例外 |
 | --- | --- | --- | --- |
 | `onChange` | `Int` | 提供用户选择的选项索引（从 0 开始）。 | — |
+
+## 功能支持
+
+- `assets`: 本地图片资源和自定义字体。 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux`.

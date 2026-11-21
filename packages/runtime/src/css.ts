@@ -7,7 +7,7 @@ type Properties =
 type Custom = "hidden" | "maxLines" | "shadow" | "grow" | "fill" | "border" | "spacer";
 
 export type Css = { target?: "inner" } & (
-  | (Properties & { unit: "px" | "number" | "color" | "percent" })
+  | (Properties & { unit: "px" | "number" | "color" | "percent" | "font" })
   | (Properties & { unit: "keyword"; keywords: Readonly<Record<string, string>> })
   | { unit: "custom"; custom: Custom }
 );
@@ -60,6 +60,13 @@ export function declarations(css: Css, value: Value, tokens?: ReadonlySet<string
   let formatted: string;
   switch (css.unit) {
     case "color": formatted = color(value, tokens); break;
+    case "font": {
+      if (typeof value !== "string" || value === "") return "";
+      // These escapes also keep the result safe in a WXML attribute and as a declaration string.
+      const family = value.replace(/[\p{Cc}"'\\;&<>{}]/gu, (c) => `\\${c.charCodeAt(0).toString(16)} `);
+      formatted = `'${family}'`;
+      break;
+    }
     case "keyword": {
       if (typeof value !== "boolean" && typeof value !== "string") return "";
       const key = String(value);

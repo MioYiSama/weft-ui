@@ -16,7 +16,8 @@ use crate::style;
 use crate::view::{Constant, ViewLayout};
 
 use super::elements::{
-    Target, Value, event_key, event_types, picker_label_key, prop_value, target, value_key,
+    Target, Value, event_key, event_types, image_key, image_layout, picker_label_key, prop_value,
+    target, value_key,
 };
 
 fn slot_name(base: fmt::Arguments<'_>, callee: &Component, param: ParamId) -> String {
@@ -252,6 +253,10 @@ impl Markup<'_> {
         // Unlike view, text and image do not implement WeChat's hover behavior.
         let wraps_text = tappable && element == Element::Text;
         let wraps_image = tappable && element == Element::Image;
+        let track_image = (element == Element::Image)
+            .then(|| image_layout(props))
+            .flatten();
+        let mut default_image_fit = element == Element::Image;
         if matches!(element, Element::Input | Element::TextArea)
             && props.iter().any(|prop| prop.name == "maxLength")
         {
@@ -266,6 +271,10 @@ impl Markup<'_> {
         let mut style = String::new();
         let mut inner_style = String::new();
         let mut picker_classes = String::new();
+        let metrics = image_key(id);
+        if track_image.is_some() {
+            push_style(&mut style, format_args!("{{{{{prefix}{metrics}}}}}"));
+        }
         // Text values are emitted after the opening tag has been written.
         let mut text = None;
         let has_clamp =
@@ -278,7 +287,7 @@ impl Markup<'_> {
             let value = prop_value(self.layout, self.id, id, index, prop, target);
             let key = value_key(id, index);
             let binding = fmt::from_fn(|out| write!(out, "{{{{{prefix}{key}}}}}"));
-            let attrs = if wraps_image && prop.name == "src" {
+            let attrs = if wraps_image && matches!(target, Target::ImageSource | Target::ImageFit) {
                 &mut image_attrs
             } else {
                 &mut attrs
@@ -293,6 +302,33 @@ impl Markup<'_> {
                 }
                 (Target::Attr(name), Value::Data) => {
                     let _ = write!(attrs, " {name}=\"{binding}\"");
+                }
+                (Target::ImageSource, value) => {
+                    let src = fmt::from_fn(|out| match value {
+                        Value::Inline(Constant::String(src)) => out.write_str(src),
+                        Value::Data => write!(out, "{binding}"),
+                        _ => unreachable!("Image.src is a string"),
+                    });
+                    let _ = write!(attrs, " src=\"{src}\"");
+                    if let Some((size, _)) = track_image {
+                        let _ = write!(
+                            attrs,
+                            " bindload=\"$image\" data-scope=\"{{{{{prefix}ws}}}}\" data-image=\"{metrics}\" data-src=\"{src}\" data-size=\"{size}\""
+                        );
+                    }
+                }
+                (Target::ImageFit, Value::Inline(Constant::String(fit))) => {
+                    default_image_fit = false;
+                    let mode = match fit.as_str() {
+                        "contain" => "aspectFit",
+                        "fill" => "scaleToFill",
+                        _ => "aspectFill",
+                    };
+                    let _ = write!(attrs, " mode=\"{mode}\"");
+                }
+                (Target::ImageFit, Value::Data) => {
+                    default_image_fit = false;
+                    let _ = write!(attrs, " mode=\"{binding}\"");
                 }
                 (Target::InputType, Value::Inline(Constant::String(kind))) => {
                     let mapping = match kind.as_str() {
@@ -426,6 +462,22 @@ impl Markup<'_> {
                 (Target::PickerPlaceholder, Value::Data) => {}
                 _ => unreachable!("invalid WXML property {}.{}", element.name(), prop.name),
             }
+        }
+        if default_image_fit {
+            let attrs = if wraps_image {
+                &mut image_attrs
+            } else {
+                &mut attrs
+            };
+            attrs.push_str(" mode=\"aspectFill\"");
+        }
+        if track_image.is_some_and(|(_, placeholder)| placeholder) {
+            push_style(
+                &mut style,
+                format_args!(
+                    "{{{{{prefix}{metrics} ? '' : 'background-color:var(--w-image-placeholder)!important'}}}}"
+                ),
+            );
         }
         if default_scrollbar {
             attrs.push_str(" show-scrollbar=\"{{true}}\"");

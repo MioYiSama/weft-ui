@@ -60,13 +60,14 @@ enum Target {
     PickerPlaceholder,
     Orientation,
     Disabled,
+    ImageSource,
     Attr(&'static str),
     Class(&'static str),
     Direction,
     Style(usize, PropType),
 }
 
-fn target(element: Element, prop: &str, has_clamp: bool) -> Target {
+fn target(element: Element, prop: &str, has_clamp: bool, has_placeholder: bool) -> Target {
     if let Some(class) = style::text_clamp_class(has_clamp, prop) {
         return Target::Class(class);
     }
@@ -87,8 +88,9 @@ fn target(element: Element, prop: &str, has_clamp: bool) -> Target {
         (Element::Picker, "placeholder") => Target::PickerPlaceholder,
         (Element::Divider, "vertical") => Target::Orientation,
         (_, "disabled") => Target::Disabled,
-        (_, "placeholder") => Target::Attr("placeholder"),
-        (_, "src") => Target::Attr("src"),
+        (Element::Input | Element::TextArea, "placeholder") => Target::Attr("placeholder"),
+        (Element::Image, "src") if has_placeholder => Target::ImageSource,
+        (Element::Image, "src") => Target::Attr("src"),
         (Element::Scroll, "direction") => Target::Direction,
         (element, prop) => {
             let spec = element
@@ -243,11 +245,17 @@ fn template_literal(prop: &Prop, target: Target) -> Option<Literal<'_>> {
                 | Target::PickerValue
                 | Target::PickerOptions
                 | Target::PickerPlaceholder
+                | Target::ImageSource
         )
     {
         return None;
     }
-    literal(value)
+    let value = literal(value)?;
+    if matches!((target, &value), (Target::Attr("src"), Literal::Str(src)) if src.starts_with("asset:"))
+    {
+        return None;
+    }
+    Some(value)
 }
 
 fn apply(target: Target, mask: Option<u8>, node: &str, value: &str) -> String {
@@ -263,6 +271,7 @@ fn apply(target: Target, mask: Option<u8>, node: &str, value: &str) -> String {
         Target::PickerOptions => format!("$.options({node}, {value});"),
         Target::PickerPlaceholder => format!("$.placeholder({node}, {value});"),
         Target::Disabled => format!("{node}.disabled = {value};"),
+        Target::ImageSource | Target::Attr("src") => format!("$.image({node}, {value});"),
         Target::Attr(name) => format!("{node}.setAttribute({}, {value});", js::string(name)),
         Target::Class(name) => format!("{node}.classList.toggle({}, {value});", js::string(name)),
         Target::Direction | Target::Orientation => {
@@ -312,6 +321,8 @@ impl Gen {
         let (tag, fixed, class) = tag(element, props);
         let has_clamp =
             element == Element::Text && props.iter().any(|prop| prop.name == "maxLines");
+        let has_placeholder =
+            element == Element::Image && props.iter().any(|prop| prop.name == "placeholder");
         let mut sources = StyleSources::new(props);
         let mut classes = String::new();
         let mut style = String::new();
@@ -322,6 +333,10 @@ impl Gen {
         out.push('<');
         out.push_str(tag);
         out.push_str(fixed);
+        if has_placeholder {
+            out.push_str(" alt=\"\"");
+            classes.push_str(" w-image-placeholder");
+        }
         let tappable = props.iter().any(|prop| prop.name == "onTap");
         if tappable {
             out.push_str(" role=\"button\" tabindex=\"0\"");
@@ -330,7 +345,7 @@ impl Gen {
             let PropValue::Expr(expr) = &prop.value else {
                 continue;
             };
-            let target = target(element, prop.name, has_clamp);
+            let target = target(element, prop.name, has_clamp, has_placeholder);
             let Some(value) = template_literal(prop, target) else {
                 continue;
             };
@@ -508,11 +523,16 @@ impl Backend for Gen {
         let has_clamp =
             element == Element::Text && props.iter().any(|prop| prop.name == "maxLines");
         let mut sources = StyleSources::new(props);
+        let has_placeholder =
+            element == Element::Image && props.iter().any(|prop| prop.name == "placeholder");
+        if has_placeholder {
+            parts.create.line(format!("$.imagePlaceholder({n});"));
+        }
         let mut listens_for_edits = false;
         for prop in props {
             match &prop.value {
                 PropValue::Expr(value) => {
-                    let target = target(element, prop.name, has_clamp);
+                    let target = target(element, prop.name, has_clamp, has_placeholder);
                     if template_literal(prop, target).is_some() {
                         continue;
                     }

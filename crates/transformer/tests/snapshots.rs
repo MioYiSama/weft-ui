@@ -134,6 +134,13 @@ const TAP: Fixture = Fixture {
     diverges: &[],
 };
 
+const ASSETS: Fixture = Fixture {
+    name: "Assets",
+    source: include_str!("fixtures/Assets.weft"),
+    natives: &[],
+    diverges: &[],
+};
+
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
 fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
@@ -146,7 +153,16 @@ fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
         files.insert(format!("{stem}.js"), module.code);
         files.insert(format!("{stem}.d.ts"), module.dts);
     }
-    files.extend(output.views.into_iter().map(|f| (f.path, f.contents)));
+    // Asset manifests are tested as Vite output. The compiler emits an empty
+    // one for standalone WeChat builds; in this flat snapshot directory its
+    // name would collide with the logic for Assets.weft on case-insensitive disks.
+    files.extend(
+        output
+            .views
+            .into_iter()
+            .filter(|f| f.path != "assets.js")
+            .map(|f| (f.path, f.contents)),
+    );
     files
 }
 
@@ -244,6 +260,11 @@ fn inputs() {
 #[test]
 fn tap() {
     check_fixture(&TAP);
+}
+
+#[test]
+fn assets() {
+    check_fixture(&ASSETS);
 }
 
 fn check_fixture(fixture: &Fixture) {

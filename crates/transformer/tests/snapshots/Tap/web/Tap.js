@@ -32,11 +32,11 @@ export function Tap$c(app, args, children, depth) {
   $.onTap(n3, () => { c.app.$emit("Activated", { target: "text" }); });
   $.onTap(n6, () => { c.app.$emit("Activated", { target: "stack" }); });
   $.onTap(n5, () => { c.app.$emit("Activated", { target: "image" }); });
-  n5.setAttribute("src", c.p[0].$v[0]);
+  $.image(n5, c.p[0].$v[0]);
   c.init(f);
   c.u = () => {
     if (c.d[0] & 2) $.style(n7, 16, c.p[0].$v[1]);
-    if (c.d[0] & 1) n5.setAttribute("src", c.p[0].$v[0]);
+    if (c.d[0] & 1) $.image(n5, c.p[0].$v[0]);
   };
   return c;
 }

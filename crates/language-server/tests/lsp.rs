@@ -221,6 +221,7 @@ fn editor_session() {
             "weight",
             "italic",
             "decoration",
+            "font",
             "onTap",
             "align",
             "maxLines",

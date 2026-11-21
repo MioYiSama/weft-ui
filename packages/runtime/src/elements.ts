@@ -22,6 +22,8 @@ export type InputType = "text" | "password" | "number" | "email" | "phone";
 
 export type ReturnKey = "done" | "go" | "next" | "search" | "send";
 
+export type ImageFit = "cover" | "contain" | "fill";
+
 export const ELEMENTS: Record<string, { main: string | null; children: "any" | "none" | readonly string[] }> = {
   Column: { main: null, children: "any" },
   Row: { main: null, children: "any" },
@@ -83,10 +85,13 @@ export const CSS_PROPS: readonly Css[] = [
   {"property":"font-weight","unit":"keyword","keywords":{"light":"300","regular":"400","medium":"500","semibold":"600","bold":"700"}},
   {"property":"font-style","unit":"keyword","keywords":{"true":"italic","false":"normal"}},
   {"property":"text-decoration-line","unit":"keyword","keywords":{"lineThrough":"line-through"}},
+  {"property":"font-family","unit":"font"},
   {"property":"text-align","unit":"keyword","keywords":{}},
   {"unit":"custom","custom":"maxLines"},
   {"property":"line-height","unit":"px"},
   {"property":"font-weight","unit":"keyword","keywords":{"true":"bold","false":"normal"}},
+  {"property":"object-fit","unit":"keyword","keywords":{}},
+  {"property":"--w-image-placeholder","unit":"color"},
   {"property":"place-items","unit":"keyword","keywords":{"topStart":"start start","top":"start center","topEnd":"start end","start":"center start","center":"center center","end":"center end","bottomStart":"end start","bottom":"end center","bottomEnd":"end end"}},
   {"property":"scrollbar-width","unit":"keyword","keywords":{"true":"auto","false":"none"}},
   {"unit":"custom","custom":"spacer"},

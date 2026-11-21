@@ -150,6 +150,8 @@ Slot data holds `t`, the slot content template name. In the calling component, t
 
 Each value slot in the generated view table is `[key]` for a raw value or `[key, cssIndex]` for a style. The sink converts a styled value into a complete declaration string with `CSS_PROPS[cssIndex]`. The template joins static and dynamic declarations in schema member order, so declarations for a more specific padding or margin edge follow and override broader ones.
 
+Image `src` values stay as strings in the layout and ops. The mini program view table maps image slots with `[key, "src"]` (optionally followed by a metrics key); static `asset:` URLs come from its `a` field. The sink reads `assets.js` to resolve those URLs to the window's density. Load events set `m{N}` to the image's sizing declarations and clear any placeholder independently of the logic batch; `ws` identifies the scope receiving this event.
+
 `view.wxss` always includes the base stylesheet. A themed app also defines token variables on `:host` and their dark media-query overrides. The generated view table lists the valid token names; dynamic `Color` values referencing them are written as `var(--weft-name)`. Unknown names render transparent.
 
 `setData` rules:

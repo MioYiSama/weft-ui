@@ -85,6 +85,23 @@ pub(crate) fn declarations(css: Css<'_>, value: &Constant) -> String {
                 repeated(properties, mapped)
             }
         }
+        CssUnit::Font => match value {
+            Constant::String(family) if !family.is_empty() => repeated(
+                properties,
+                fmt::from_fn(|out| {
+                    out.write_char('\'')?;
+                    for c in family.chars() {
+                        if c.is_control() || "\"'\\;&<>{}".contains(c) {
+                            write!(out, "\\{:x} ", u32::from(c))?;
+                        } else {
+                            out.write_char(c)?;
+                        }
+                    }
+                    out.write_char('\'')
+                }),
+            ),
+            _ => String::new(),
+        },
         CssUnit::Color => match value {
             Constant::Color(color) => repeated(properties, color),
             Constant::Token(name) => repeated(properties, theme_color(name)),
@@ -271,6 +288,7 @@ mod tests {
                 "color" => CssUnit::Color,
                 "number" => CssUnit::Number,
                 "percent" => CssUnit::Percent,
+                "font" => CssUnit::Font,
                 "keyword" => CssUnit::Keyword(&keywords),
                 "custom" => {
                     CssUnit::Custom(match source["custom"].as_str().expect("CSS custom name") {

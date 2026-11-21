@@ -35,12 +35,18 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
     } else {
         ""
     };
-    vec![
+    let (table, needs_assets) = table::object(program, layout);
+    let manifest = if needs_assets {
+        ", require(\"./assets.js\")"
+    } else {
+        ""
+    };
+    let mut files = vec![
         OutputFile {
             path: "view.js".to_owned(),
             contents: format!(
-                "Component(getApp().weft.view({}));\n",
-                table::object(program, layout).trim_end(),
+                "Component(getApp().weft.view({}{manifest}));\n",
+                table.trim_end(),
             ),
         },
         OutputFile {
@@ -84,5 +90,13 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
             path: "index.wxss".to_owned(),
             contents: "@import \"./view.wxss\";\npage{height:100%;overflow:hidden}\n".to_owned(),
         },
-    ]
+    ];
+    if needs_assets {
+        // Direct compiler users may not have a Vite asset directory. The plugin replaces this manifest.
+        files.push(OutputFile {
+            path: "assets.js".to_owned(),
+            contents: "module.exports = {};\n".to_owned(),
+        });
+    }
+    files
 }

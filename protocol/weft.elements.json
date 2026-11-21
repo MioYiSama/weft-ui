@@ -9,7 +9,8 @@
     "TextAlign": ["start", "center", "end"],
     "Decoration": ["none", "underline", "lineThrough"],
     "InputType": ["text", "password", "number", "email", "phone"],
-    "ReturnKey": ["done", "go", "next", "search", "send"]
+    "ReturnKey": ["done", "go", "next", "search", "send"],
+    "ImageFit": ["cover", "contain", "fill"]
   },
   "groups": {
     "layout": [
@@ -183,6 +184,11 @@
         "name": "decoration", "type": "Decoration", "default": "none",
         "css": { "property": "text-decoration-line", "unit": "keyword", "keywords": { "lineThrough": "line-through" } },
         "doc": { "en": "Underlines or strikes through the text.", "zh": "为文字添加下划线或删除线。" }
+      },
+      {
+        "name": "font", "type": "String",
+        "css": { "property": "font-family", "unit": "font" },
+        "doc": { "en": "Selects a bundled font family by name; defaults to the inherited or system font.", "zh": "按族名选择打包字体；默认使用继承的字体或系统字体。" }
       }
     ],
     "tap": [
@@ -197,7 +203,8 @@
       "doc": { "en": "Theme declarations and color tokens.", "zh": "主题声明和颜色令牌。" }
     },
     "assets": {
-      "doc": { "en": "Local image assets and custom fonts.", "zh": "本地图片资源和自定义字体。" }
+      "doc": { "en": "Local image assets and custom fonts.", "zh": "本地图片资源和自定义字体。" },
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
     }
   },
   "elements": [
@@ -395,7 +402,7 @@
     },
     {
       "name": "Image",
-      "doc": { "en": "Displays an image from a URL.", "zh": "显示指定 URL 的图片。" },
+      "doc": { "en": "Displays a bundled image or an image from a URL.", "zh": "显示打包图片或指定 URL 的图片。" },
       "groups": ["layout", "visibility", "decoration", "tap"],
       "memberSupport": { "width": {}, "height": {} },
       "members": [
@@ -404,7 +411,19 @@
           "type": "String",
           "positional": true,
           "required": true,
-          "doc": { "en": "The image URL.", "zh": "图片的 URL。" }
+          "doc": { "en": "The image URL or a bundled asset reference (`asset:name`).", "zh": "图片的 URL 或打包资源引用（`asset:name`）。" }
+        },
+        {
+          "name": "fit", "type": "ImageFit", "default": "cover",
+          "css": { "property": "object-fit", "unit": "keyword", "keywords": {} },
+          "doc": { "en": "Crops (`cover`), fits (`contain`), or stretches (`fill`) the image to its box.", "zh": "在盒内裁剪（`cover`）、完整显示（`contain`）或拉伸（`fill`）图片。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        },
+        {
+          "name": "placeholder", "type": "Color",
+          "css": { "property": "--w-image-placeholder", "unit": "color" },
+          "doc": { "en": "Shows this background color while the image loads or if it fails.", "zh": "图片加载中或加载失败时显示此背景色。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
         }
       ]
     },

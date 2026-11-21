@@ -88,6 +88,13 @@ public enum WeftReturnKey
     Send,
 }
 
+public enum WeftImageFit
+{
+    Cover,
+    Contain,
+    Fill,
+}
+
 public static class WeftUnions
 {
     public static WeftCrossAlign ParseCrossAlign(string value) => value switch
@@ -174,5 +181,12 @@ public static class WeftUnions
         "search" => WeftReturnKey.Search,
         "send" => WeftReturnKey.Send,
         _ => WeftReturnKey.Done,
+    };
+
+    public static WeftImageFit ParseImageFit(string value) => value switch
+    {
+        "contain" => WeftImageFit.Contain,
+        "fill" => WeftImageFit.Fill,
+        _ => WeftImageFit.Cover,
     };
 }

@@ -13,6 +13,8 @@ import {
   type Marker,
   type Shape,
   type Watch,
+  asset,
+  assetFonts,
   currentEpoch,
   enqueue,
   restoreAfterFlush,
@@ -391,7 +393,7 @@ export class App extends AppBase {
       const base = doc.createElement("style");
       base.dataset.weft = "";
       // WXSS cannot compile :has(); WeChat stops ancestor hover via WXML instead.
-      base.textContent = `${CSS}\n:root{color-scheme:light dark}\n.w-tap:active:not(:has(.w-tap:active,.w-button:active)){filter:opacity(.6)}`;
+      base.textContent = `${CSS}\n:root{color-scheme:light dark}\n.w-tap:active:not(:has(.w-tap:active,.w-button:active)){filter:opacity(.6)}\nimg.w-image{object-fit:cover}\n.w-image-placeholder:not(.w-image-loaded){background-color:var(--w-image-placeholder)!important;content:linear-gradient(transparent,transparent)}\n${assetFonts()}`;
       doc.head.append(base);
     }
     if (target.nodeType === 1) (target as Element).classList.add("w-root");
@@ -411,6 +413,29 @@ export class App extends AppBase {
 /* ------------------------------------------------------------------------ */
 /* DOM helpers used by generated code                                        */
 /* ------------------------------------------------------------------------ */
+
+/** Tracks loading state for an image that has a placeholder. */
+export function imagePlaceholder(node: HTMLImageElement): void {
+  node.addEventListener("load", () => node.classList.add("w-image-loaded"));
+  node.addEventListener("error", () => node.classList.remove("w-image-loaded"));
+}
+
+/** Applies an image source, resolving and clearing density variants as needed. */
+export function image(node: HTMLImageElement, value: string): void {
+  let src = value;
+  let srcset = "";
+  if (value.startsWith("asset:")) {
+    ({ src, srcset } = asset(value.slice(6)));
+    // src would count as an extra 1x candidate if the manifest starts at 2x or 3x.
+    if (srcset && !srcset.startsWith(`${src} 1x`)) src = "";
+  }
+  if ((node.getAttribute("src") ?? "") === src && (node.getAttribute("srcset") ?? "") === srcset) return;
+  node.classList.remove("w-image-loaded");
+  if (srcset) node.setAttribute("srcset", srcset);
+  else node.removeAttribute("srcset");
+  if (src) node.setAttribute("src", src);
+  else node.removeAttribute("src");
+}
 
 let webThemeColors: ReadonlySet<string> | null = null;
 
@@ -446,7 +471,7 @@ export function style(node: HTMLElement, index: number, value: Value, mask = -1)
         }
         break;
     }
-  } else if (css.unit === "keyword" && !output) {
+  } else if ((css.unit === "keyword" || css.unit === "font") && !output) {
     if (css.properties) {
       for (const property of css.properties) inline.removeProperty(property);
     } else {

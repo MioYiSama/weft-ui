@@ -121,9 +121,10 @@ test("WeChat copies assets, chooses density, and embeds Inter in the page styles
     for (const image of images.slice(0, 4)) app.view.fire(image, "load", { width: 128, height: 80 });
     const loaded = app.view.all("image");
     expect(loaded[0]!.attrs.style).not.toContain("background-color:var(--w-image-placeholder)");
-    expect(loaded[1]!.attrs.style).toContain("width:64px;height:40px");
-    expect(loaded[2]!.attrs.style).toContain("height:auto;aspect-ratio:128/80;width:40px");
-    expect(loaded[3]!.attrs.style).toContain("width:64px;height:40px");
+    const intrinsic = "--w-image-width:64px;--w-image-ratio:128/80";
+    expect(loaded[1]!.attrs.style).toContain(intrinsic);
+    expect(loaded[2]!.attrs.style).toContain("--w-image-ratio:128/80;width:40px");
+    expect(loaded[3]!.attrs.style).toContain(intrinsic);
     app.view.tap(app.view.all("button")[0]!);
     await Promise.resolve();
     expect(app.view.all("image")[0]!.attrs).toMatchObject({ src: "", mode: "scaleToFill" });
@@ -132,6 +133,76 @@ test("WeChat copies assets, chooses density, and embeds Inter in the page styles
     app.unload();
   }
 });
+
+test("WeChat intrinsic image dimensions yield to layout constraints", async () => {
+  await writeFile(join(root, "src/App.weft"), `
+component Photo() { Image("asset:logo") }
+component App() {
+    state align: "start" | "stretch" = "stretch"
+    Column(width = 192) {
+        Photo()
+        Image("asset:logo", fill = true, aspectRatio = 2)
+        Image("asset:logo", width = 72, aspectRatio = 2)
+        Image("asset:logo", height = 30)
+        Image("asset:logo", aspectRatio = 2)
+        Stack(width = 144, height = 90) { Image("asset:logo", fill = true) }
+        Column(width = 128, align = align) { Photo() }
+        Row(width = 192, height = 50, align = "stretch") { Photo() }
+        Scroll(width = 128, height = 100, align = "stretch") { Photo() }
+        Row(width = 112) { Image("asset:logo", grow = 1) }
+        Stack(width = 144, height = 90) { Image("asset:logo", width = 72, fill = true) }
+        Stack(width = 144, height = 90) { Image("asset:logo", height = 45, fill = true) }
+        Column(width = 128, align = "stretch") { Image("asset:logo", width = 48, height = 40, aspectRatio = 2) }
+        Button(onClick = { align = "start" }) { Text("Stop stretching") }
+    }
+    Image("asset:logo", fill = true, aspectRatio = 2)
+}
+`);
+  await build("wechat");
+  const project = join(root, "apps/wechat");
+  const css = await readFile(join(project, "weft/view.wxss"), "utf8");
+  const app = launch(project, { wx: { getWindowInfo: () => ({ pixelRatio: 2 }) } });
+  try {
+    await Promise.resolve();
+    for (const image of app.view.all("image")) {
+      if (image.attrs.bindload) app.view.fire(image, "load", { width: 128, height: 80 });
+    }
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      await page.addStyleTag({ content: css });
+      const dimensions = () => page.evaluate((nodes) => {
+        // The WeChat image host is a non-replaced box; its child paints the image.
+        function render(node: (typeof nodes)[number]): HTMLElement {
+          const element = document.createElement("div");
+          element.className = String(node.attrs.class ?? "");
+          element.style.cssText = String(node.attrs.style ?? "");
+          for (const child of node.children) element.append(typeof child === "string" ? child : render(child));
+          return element;
+        }
+        const root = document.createElement("div");
+        root.className = "w-root";
+        root.style.width = "256px";
+        root.append(...nodes.map(render));
+        document.body.replaceChildren(root);
+        return Array.from(document.querySelectorAll(".w-image"), ({ clientWidth, clientHeight }) => [clientWidth, clientHeight]);
+      }, app.view.render());
+      const expected = [
+        [64, 40], [192, 96], [72, 36], [48, 30], [64, 32], [144, 90], [128, 80], [80, 50],
+        [128, 80], [112, 70], [72, 90], [144, 45], [48, 40], [256, 128],
+      ];
+      expect(await dimensions()).toEqual(expected);
+      app.view.tap(app.view.all("button")[0]!);
+      await Promise.resolve();
+      expected[6] = [64, 40];
+      expect(await dimensions()).toEqual(expected);
+    } finally {
+      await browser.close();
+    }
+  } finally {
+    app.unload();
+  }
+}, 15_000);
 
 test("Android packages density variants, VectorDrawables and Inter font faces", async () => {
   await cp(join(root, "res/images/logo@2x.png"), join(root, "res/images/logo@3x.png"));

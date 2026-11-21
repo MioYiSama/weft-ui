@@ -7,6 +7,18 @@
 
 namespace {
 
+void button_centers_custom_content() {
+  constexpr int width = 220;
+  weft::Button button([] {});
+  weft::Text label;
+  label.set_value("Submit");
+  button.children().add(label);
+  gtk_widget_allocate(button.widget(), width, 44, -1, nullptr);
+  graphene_point_t center = GRAPHENE_POINT_INIT(gtk_widget_get_width(label.widget()) / 2.0f, 0);
+  g_assert_true(gtk_widget_compute_point(label.widget(), button.widget(), &center, &center));
+  g_assert_cmpfloat_with_epsilon(center.x, gtk_widget_get_width(button.widget()) / 2.0, 0.51);
+}
+
 void picker_strings() {
   weft::Picker picker([](double) { return false; });
   auto *button = GTK_MENU_BUTTON(picker.widget());
@@ -281,6 +293,7 @@ int main(int argc, char **argv) {
   g_test_init(&argc, &argv, nullptr);
   g_setenv("GTK_A11Y", "none", false);
   if (!gtk_init_check()) return 77;
+  g_test_add_func("/controls/button-centers-custom-content", button_centers_custom_content);
   g_test_add_func("/controls/picker-strings", picker_strings);
   g_test_add_func("/controls/slider-rounding", slider_rounding);
   g_test_add_func("/controls/input-type-and-submit", input_type_and_submit);

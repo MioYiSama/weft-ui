@@ -28,7 +28,22 @@ final class Screenshots: XCTestCase {
             if id == "controls" { checkControls(in: app) }
             if id == "inputs" { checkInputs(in: app) }
             if id == "tap" { checkTap(in: app) }
+            if id == "form" { checkForm(in: app) }
         }
+    }
+
+    @MainActor
+    private func checkForm(in app: XCUIApplication) {
+        let bio = app.textViews["Where do you like to walk?"]
+        let agreement = app.buttons["Checkbox"]
+        let submit = app.buttons["Create account"]
+        XCTAssertTrue(bio.exists)
+        XCTAssertTrue(agreement.exists)
+        XCTAssertTrue(submit.exists)
+        XCTAssertEqual(bio.frame.height, 52, accuracy: 1)
+        XCTAssertLessThan(bio.frame.maxY, agreement.frame.minY)
+        XCTAssertEqual(submit.frame.width, bio.frame.width, accuracy: 1)
+        XCTAssertEqual(submit.frame.height, 44, accuracy: 1)
     }
 
     @MainActor

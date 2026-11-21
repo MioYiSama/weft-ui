@@ -30,7 +30,7 @@ Image("asset:hero", width = 180, height = 90, fit = "contain",
 Image("asset:compass", width = 24, height = 24)
 ```
 
-`cover` (the default) preserves the image's proportions and crops it to fill the box. `contain` shows the entire image, leaving space around it when the proportions differ. `fill` stretches to fit. Without a width or height, the image uses its intrinsic size in logical pixels; specifying only one dimension preserves the aspect ratio. `placeholder` is the background color while an image loads or if it fails. A missing asset is not a build error; debug builds warn at runtime.
+`cover` (the default) preserves the image's proportions and crops it to fill the box. `contain` shows the entire image, leaving space around it when the proportions differ. `fill` stretches to fit. The image uses its intrinsic size in logical pixels only when layout supplies neither dimension. If layout supplies just one dimension, the other follows the image’s natural proportions unless you set `aspectRatio`. `placeholder` is the background color while an image loads or if it fails. A missing asset is not a build error; debug builds warn at runtime.
 
 Web builds emit files under `weft-assets/`, respecting Vite's `base`; the browser chooses a density via `srcset`. WeChat packages the files under `weft/assets/` and uses the smallest density at least as large as the window's pixel ratio, or the largest if none is high enough.
 

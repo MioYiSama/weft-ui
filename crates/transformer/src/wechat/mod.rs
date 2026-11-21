@@ -19,6 +19,21 @@ use crate::elements::CSS;
 use crate::style;
 use crate::transform::{Context, OutputFile};
 
+// A mini program image has a default 320×240 size, with no CSS intrinsic size.
+// When the parent supplies a dimension, let CSS use that size and derive the
+// other from the ratio instead of pinning both to the loaded source dimensions.
+const INTRINSIC_IMAGE_CSS: &str = "\
+.w-image-intrinsic{width:auto;height:auto;aspect-ratio:var(--w-image-ratio,4/3)}
+.w-image-natural-width{width:var(--w-image-width,320px)}
+.w-root > .w-image-natural-width.w-fill,
+.w-column > .w-image-natural-width.w-fill,.w-column > .w-image-natural-width.w-grow,.w-column.w-stretch > .w-image-natural-width,
+.w-row > .w-image-natural-width.w-fill,.w-row > .w-image-natural-width.w-grow,.w-row.w-stretch > .w-image-natural-width,
+.w-scroll-content-v > .w-image-natural-width.w-fill,.w-scroll-content-v > .w-image-natural-width.w-grow,.w-scroll-content-v.w-stretch > .w-image-natural-width,
+.w-scroll-content-h > .w-image-natural-width.w-fill,.w-scroll-content-h > .w-image-natural-width.w-grow,.w-scroll-content-h.w-stretch > .w-image-natural-width,
+.w-stack > .w-image-natural-width.w-fill{width:auto}
+.w-stack > .w-image-intrinsic.w-fill{aspect-ratio:auto}
+";
+
 /// Generates the WeChat mini program's view component and host page.
 ///
 /// # Panics
@@ -28,9 +43,14 @@ use crate::transform::{Context, OutputFile};
 pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
     let program = cx.program;
     let layout = cx.layout.expect("the mini program view needs the layout");
-    let (templates, has_textarea) = wxml::templates(program, layout);
+    let (templates, styles) = wxml::templates(program, layout);
+    let image_css = if styles.has_intrinsic_image {
+        INTRINSIC_IMAGE_CSS
+    } else {
+        ""
+    };
     // WeChat gives textarea a fixed width that prevents cross-axis stretch.
-    let textarea_css = if has_textarea {
+    let textarea_css = if styles.has_textarea {
         ".w-textarea.w-wx{width:auto}\n"
     } else {
         ""
@@ -69,7 +89,10 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
         },
         OutputFile {
             path: "view.wxss".to_owned(),
-            contents: format!("{CSS}{textarea_css}{}", style::theme_styles(layout.theme())),
+            contents: format!(
+                "{CSS}{image_css}{textarea_css}{}",
+                style::theme_styles(layout.theme())
+            ),
         },
         OutputFile {
             path: "index.js".to_owned(),

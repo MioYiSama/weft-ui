@@ -3,10 +3,14 @@ package net.mioyi.weftui.app
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -18,6 +22,8 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.width
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -76,6 +82,17 @@ class InputsTest {
         val multiline = "b".repeat(76) + "\n😀"
         notes.performTextReplacement(multiline + "🚀rest")
         compose.onNode(hasSetTextAction() and hasText(multiline)).assertTextEquals(multiline)
+    }
+
+    @Test
+    fun compactInputShowsItsHintAndFilledPickerSpansTheField() {
+        compose.onNodeWithText("page:form").performScrollTo().performClick()
+        val name = compose.onNode(hasSetTextAction() and hasText("Mara Chen"))
+        name.assertHeightIsEqualTo(28.dp)
+        compose.onNodeWithText("Mara Chen", useUnmergedTree = true).assertIsDisplayed()
+
+        val picker = compose.onNode(hasClickAction() and hasText("Choose a region"))
+        picker.assertWidthIsEqualTo(name.getUnclippedBoundsInRoot().width)
     }
 
     private fun openInputs() {

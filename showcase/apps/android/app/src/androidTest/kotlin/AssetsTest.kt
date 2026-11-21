@@ -10,6 +10,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -22,10 +24,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import net.mioyi.weftui.WeftButton
 import net.mioyi.weftui.WeftColor
 import net.mioyi.weftui.WeftImage
 import net.mioyi.weftui.WeftSpan
 import net.mioyi.weftui.WeftText
+import net.mioyi.weftui.weftSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -69,6 +73,21 @@ class AssetsTest {
         assertNotEquals(placeholder, center())
         compose.runOnIdle { src.value = "asset:not_packaged" }
         assertEquals(placeholder, center())
+    }
+
+    @Test
+    fun compactButtonKeepsItsImageFullSizeAndCentered() {
+        compose.setContent {
+            WeftButton(onClick = {}, modifier = Modifier.size(44.dp).testTag("button")) {
+                WeftImage("asset:compass", Modifier.weftSize(width = 22f, height = 22f).testTag("icon"))
+            }
+        }
+        val button = compose.onNodeWithTag("button").getUnclippedBoundsInRoot()
+        val icon = compose.onNodeWithTag("icon", useUnmergedTree = true)
+        icon.assertWidthIsEqualTo(22.dp).assertHeightIsEqualTo(22.dp)
+        val bounds = icon.getUnclippedBoundsInRoot()
+        assertEquals("left/right insets", (bounds.left - button.left).value, (button.right - bounds.right).value, 1f)
+        assertEquals("top/bottom insets", (bounds.top - button.top).value, (button.bottom - bounds.bottom).value, 1f)
     }
 
     @Test

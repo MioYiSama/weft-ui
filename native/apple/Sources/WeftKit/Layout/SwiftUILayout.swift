@@ -299,9 +299,26 @@ private struct WeftConfiguredBox<Content: View>: View {
 
 /// Arranges a native button's label children without treating it as a Row for grow or fill.
 @MainActor public func weftButtonLabel<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-    WeftLinear(axis: .horizontal, gap: 0, align: .center, justify: .start,
-               box: WeftBox(padding: .init(), exact: (false, false)), participates: false) {
-        content().weftChildren(of: .none)
+    WeftButtonLabel(content: content())
+}
+
+private struct WeftButtonLabel<Content: View>: View {
+    let content: Content
+    private var sizing = WeftSizing()
+
+    var body: some View {
+        let exact = sizing.exactAxes
+        let frame = sizing.frame
+        let ratio = frame.aspectRatio.map { $0.isFinite && $0 > 0 } ?? false
+        let width = frame.width != nil || exact.width
+        let height = frame.height != nil || exact.height
+        WeftLinear(axis: .horizontal, gap: 0, align: .center, justify: .start,
+                   box: WeftBox(padding: .init(), exact: (false, false)), participates: false) {
+            content.weftChildren(of: .none)
+        }
+        .frame(minWidth: frame.minWidth.map { max(0, $0) }, maxWidth: width || (ratio && height) ? .infinity : nil,
+               minHeight: frame.minHeight.map { max(0, $0) }, maxHeight: height || (ratio && width) ? .infinity : nil)
+        .contentShape(Rectangle())
     }
 }
 

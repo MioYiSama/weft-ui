@@ -963,11 +963,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R7.n | ☑ | 0df03db | C-windows（core 21、WinUI 37）、C-ui 与 Windows 的 Vite 断言通过；Windows `assets`、`tap` 截图已查看 |
 | R7.g | ☑ | 06781eb | C-linux 8 组、C-ui 与 Linux 的 Vite 断言通过，CMake 复制的资源与生成文件逐字节一致；Linux `assets`、`tap` 截图已查看 |
 | R8.w | ☑ | 67c314b | 截图待维护者确认（`safearea`：web、wechat）；C-rust 133 项、C-ts 237 项通过，tsc 计数不变；example 与 showcase 的五个原生目标实际构建成功；Web 四边安全区为 0，小程序底部 34 px；C-apps 各平台按预期有差异，已重新录制基线 |
-| R8.a | ☑ | （本提交） | 截图待维护者确认（`safearea`：ios）；C-apple 26 项、iOS C-ui、macOS C-ui 与 showcase 截图（一次运行）通过；色带避开顶部 62、底部 34 的安全区，临时设 `safeArea: false` 时色带延伸到屏幕边缘（截图未提交）；其余 ios 基线 0.000%；含 GRAMMAR 与 platforms 指南去掉「仅 Web 与小程序」的说法 |
+| R8.a | ☑ | 3f6f548 | 截图待维护者确认（`safearea`：ios）；C-apple 26 项、iOS C-ui、macOS C-ui 与 showcase 截图（一次运行）通过；色带避开顶部 62、底部 34 的安全区，临时设 `safeArea: false` 时色带延伸到屏幕边缘（截图未提交）；其余 ios 基线 0.000%；含 GRAMMAR 与 platforms 指南去掉「仅 Web 与小程序」的说法 |
 | R8.d | ☑ | ed570cf | 截图待维护者确认（`safearea`：android）；C-android、C-ui 通过，全部 android 截图 0.000%；临时设 `safeArea: false` 时色带延伸到屏幕边缘（截图未提交） |
 | R8.n | ☑ | 74e9e9c | C-windows（core 21、WinUI 37）、C-ui 通过；Windows `safearea` 截图已查看，四边为 0 |
 | R8.g | ☑ | ec83b7b | C-linux 8 组、C-ui 通过；Linux `safearea` 截图已查看，四边为 0 |
-| T3 | ☐ | | |
+| T3 | ☑ | （本提交） | 截图待维护者确认（6 个页面加 `settings-dark`：web、wechat、ios、android）；macOS（一次运行）、Windows、Linux 截图已人工查看；C-rust 137 项、C-ts、各平台单测与 C-ui 通过；全部 ios、android 截图 0.000%；对比中发现的差异已在对应平台族修复（见执行中发现） |
 | X1 | ☐ | | |
 
 ## 执行中发现
@@ -1048,3 +1048,10 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R8.w] 小程序底部留出 34 px 后，`controls` 页末尾文本框下沿移出初始视口，与旧基线差 0.069%（含 Spinner），Web 的 `controls` 差 0.002%，均低于 0.1% 阈值，旧基线保留。结论：接受，记录在案
 - [R8.a/.d/.n/.g] 各原生平台生成代码在布局哈希旁多一个 `safeArea` 字段，所有已有原生快照只有这一处变化（Apple 12 份、Android/Windows/Linux 各 11 份）。`safeArea: false` 时根元素不留安全区，但 `platform.safeArea` 仍报告系统的真实值。结论：接受
 - [R8.d] Android 的顶部安全区是非整数逻辑像素（模拟器上 54.095237731933594），showcase 页面原样显示。结论：接受，记录在案；数值正确，页面不做取整
+- [T3 小程序] 图片加载后用固有尺寸覆盖了 `fill`、拉伸与 `aspectRatio`（Feed 封面 1.6 变成约 1.46，Detail 头图比全宽少约 6 px）。改为只在布局两个方向都未确定时才用固有尺寸，补回归测试；`Assets`、`Layout` 的小程序快照与 example 的小程序 `js/index.js` 随之变化，assets 指南同步说明。结论：已修复
+- [T3 共享页面] `empty` 页说明文字的 `Column(fill = true, maxWidth = 292)` 先撑满再被限宽，结果靠左（Web 也偏约 40 px）；去掉 `fill`。`feed` 页右上角的图标按钮原用原生 `Button`，Android Material 填充按钮的紫色与青色指南针图标对比度仅约 1.3:1；改为白底圆角带边框、`onTap` 的 `Stack`，各平台一致。结论：已修复
+- [T3 Apple] 填充或指定尺寸的 `Button` 标签靠左、图标偏离中心；iOS 限高的 `TextArea` 溢出盖住复选框。已修复并补单测。结论：已修复
+- [T3 Android] 28dp 高的描边 `Input` 被 Material 默认内边距挤掉占位文字；`Picker` 的 `ExposedDropdownMenuBox` 丢掉最小约束导致不随 `fill` 撑满；44dp `Button` 内的自定义内容被 Material 内边距挤偏。已修复并补仪器测试。结论：已修复
+- [T3 Windows] 指定高度的单行输入框底边框被裁掉；showcase 截图窗口宽度与 Web 内容宽度不一致。已修复，截图测试逐个检查边框。结论：已修复
+- [T3 Linux] GTK `Text` 在「至多」约束下按满宽测量，居中容器里的文字靠左（Feed 标签、Profile 姓名）；GTK 按钮内自定义内容未居中；VNC 桌面高度把 844 截成 773。已修复，截图工具发现视口被截断时直接失败。结论：已修复
+- [T3] 各平台剩余差异：原生控件外观（开关、复选框、选择器、按钮）、系统字体导致的换行位置、窗口边框、macOS 窗口更宽。结论：接受

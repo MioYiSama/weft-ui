@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 import Testing
@@ -169,6 +170,25 @@ private struct LayoutProbe: Layout {
     let image = try #require(renderer.nsImage)
     #expect(image.size == CGSize(width: 58, height: 30))
     #expect(placedContent)
+}
+
+@Test @MainActor func filledButtonLabelCentersContentWithinItsBox() throws {
+    let renderer = ImageRenderer(content: weftLinear(axis: .vertical) {
+        weftLeaf {
+            Button {} label: {
+                weftButtonLabel { Color.red.frame(width: 8, height: 12) }
+            }
+            .buttonStyle(WeftPressStyle())
+        }
+        .weftFrame(minHeight: 44)
+        .weftChild(fill: true)
+    }.weftFrame(width: 100))
+    let image = try #require(renderer.cgImage)
+    let bitmap = NSBitmapImageRep(cgImage: image)
+    #expect(image.width == 100)
+    #expect(image.height == 44)
+    #expect(bitmap.colorAt(x: 50, y: 22)?.alphaComponent == 1)
+    #expect(bitmap.colorAt(x: 4, y: 6)?.alphaComponent == 0)
 }
 
 @Test func roundedClippingUsesTheInsideOfTheBorder() {

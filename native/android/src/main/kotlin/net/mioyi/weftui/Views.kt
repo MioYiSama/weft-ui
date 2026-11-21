@@ -2,6 +2,7 @@ package net.mioyi.weftui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -68,7 +69,9 @@ fun WeftButton(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Button(onClick = onClick, enabled = !disabled, modifier = modifier) {
+    Button(onClick = onClick, enabled = !disabled, modifier = modifier, contentPadding = noButtonPadding) {
         WeftButtonContent(content)
     }
 }
+
+private val noButtonPadding = PaddingValues(0.dp)

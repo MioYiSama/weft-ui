@@ -104,6 +104,25 @@ void font_families() {
   g_assert_cmpstr(family(attrs), ==, "Inter");
 }
 
+void intrinsic_width_in_centered_column() {
+  constexpr int width = 300;
+  weft::Linear column(weft::Axis::Vertical, weft::CrossAlign::Center);
+  weft::Text text;
+  text.set_value("A short title");
+  column.children().add(text);
+
+  auto *widget = column.widget();
+  gtk_widget_allocate(widget, width, 100, -1, nullptr);
+  graphene_rect_t bounds;
+  g_assert_true(gtk_widget_compute_bounds(text.widget(), widget, &bounds));
+  g_assert_cmpfloat(bounds.size.width, <, width);
+  g_assert_cmpfloat_with_epsilon(bounds.origin.x + bounds.size.width / 2, width / 2.0, 0.51);
+
+  text.set_fill(true);
+  gtk_widget_allocate(widget, width, 100, -1, nullptr);
+  g_assert_cmpint(gtk_widget_get_width(GTK_WIDGET(label_of(text))), ==, width);
+}
+
 void line_height_and_limit() {
   weft::Text text;
   text.set_size(15);
@@ -155,6 +174,7 @@ int main(int argc, char **argv) {
   if (!gtk_init_check()) return 77;
   g_test_add_func("/text/spans-merge", spans_merge);
   g_test_add_func("/text/font-families", font_families);
+  g_test_add_func("/text/intrinsic-width-in-centered-column", intrinsic_width_in_centered_column);
   g_test_add_func("/text/line-height-and-limit", line_height_and_limit);
   g_test_add_func("/text/limit-across-paragraphs", line_limit_across_paragraphs);
   return g_test_run();

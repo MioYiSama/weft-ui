@@ -159,9 +159,10 @@ public struct WeftInput: View {
 
 private struct InputLayout: Layout {
     let sizing: WeftSizing
+    var idealHeight: CGFloat? = nil
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let height = subviews.first?.sizeThatFits(.unspecified).height ?? 0
+        let height = idealHeight ?? subviews.first?.sizeThatFits(.unspecified).height ?? 0
         return sizing.nativeSize(proposal, ideal: CGSize(width: inputWidth, height: height))
     }
 
@@ -375,7 +376,7 @@ private final class TextAreaEditor: NSTextView {
     }
 }
 #else
-/// A multiline text field with three lines reserved for its content.
+/// A multiline text field with three lines reserved for its content by default.
 public struct WeftTextArea: View {
     private let value: String
     private let placeholder: String
@@ -383,6 +384,8 @@ public struct WeftTextArea: View {
     private let focused: Bool
     private let onFocusChange: (@MainActor (Bool) -> Void)?
     private let edit: @MainActor (String) -> String?
+    @Environment(\.isEnabled) private var isEnabled
+    private var sizing = WeftSizing()
 
     public init(value: String, placeholder: String, maxLength: CGFloat? = nil, focused: Bool = false,
                 onFocusChange: (@MainActor (Bool) -> Void)? = nil, edit: @escaping @MainActor (String) -> String?) {
@@ -396,10 +399,43 @@ public struct WeftTextArea: View {
 
     public var body: some View {
         TextDraft(value: value, maxLength: maxLength, edit: edit) { draft in
-            TextField("", text: draft, prompt: Text(placeholder), axis: .vertical)
-                .lineLimit(3, reservesSpace: true)
-                .textFieldStyle(.roundedBorder)
-                .modifier(TextInputFocus(focused: focused, onFocusChange: onFocusChange))
+            Group {
+                let frame = sizing.frame
+                if frame.height != nil || frame.minHeight != nil || frame.maxHeight != nil ||
+                    frame.aspectRatio != nil || sizing.exactAxes.height {
+                    boundedEditor(draft)
+                } else {
+                    TextField("", text: draft, prompt: Text(placeholder), axis: .vertical)
+                        .lineLimit(3, reservesSpace: true)
+                        .textFieldStyle(.roundedBorder)
+                }
+            }
+            .modifier(TextInputFocus(focused: focused, onFocusChange: onFocusChange))
+        }
+    }
+
+    private func boundedEditor(_ draft: Binding<String>) -> some View {
+        // The rounded-border TextField reserves three lines even when the box is shorter.
+        // A scrolling text editor can honor the box height without cutting off its text.
+        InputLayout(sizing: sizing, idealHeight: 3 * UIFont.preferredFont(forTextStyle: .body).lineHeight + 10) {
+            TextEditor(text: draft)
+                .scrollContentBackground(.hidden)
+                .overlay(alignment: .topLeading) {
+                    if draft.wrappedValue.isEmpty {
+                        Text(placeholder)
+                            .foregroundStyle(Color(uiColor: .placeholderText))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 8)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .background(isEnabled ? Color.clear : Color(uiColor: .secondarySystemBackground))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 5).strokeBorder(.quaternary)
+                        .allowsHitTesting(false)
+                }
+                .accessibilityLabel(placeholder)
         }
     }
 }

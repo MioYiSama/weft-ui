@@ -21,6 +21,7 @@ struct LayoutState {
   Edges padding;
   std::optional<Axis> scroll_axis;
   bool overlay = false;
+  bool text = false;
   std::vector<Child> children;
 };
 
@@ -164,7 +165,10 @@ Size run(GtkLayoutManager *manager, GtkWidget *widget, Proposal proposal) {
   // axis. Keep that axis unbounded for the algorithm so grow stays intrinsic.
   if (box.scroll_axis == Axis::Vertical) proposal.height = {};
   if (box.scroll_axis == Axis::Horizontal) proposal.width = {};
-  return linear(box.linear, padding, proposal, children);
+  auto options = box.linear;
+  // An at-most width constrains wrapping but must not force an intrinsically sized Text to fill.
+  if (box.text && !proposal.width.is_exact()) options.align = CrossAlign::Start;
+  return linear(options, padding, proposal, children);
 }
 
 Size measure_widget(const void *pointer, Proposal proposal) {
@@ -450,6 +454,12 @@ GtkWidget *linear_new(Axis axis, CrossAlign align, bool scrolling) {
 }
 
 GtkWidget *overlay_new() { return container_new(weft_stack_layout_get_type()); }
+
+GtkWidget *text_new() {
+  auto *widget = linear_new(Axis::Vertical, CrossAlign::Stretch);
+  state(widget).text = true;
+  return widget;
+}
 
 WidgetStyle &widget_style(GtkWidget *widget) { return reinterpret_cast<WeftWidget *>(widget)->style; }
 

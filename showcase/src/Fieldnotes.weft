@@ -1,0 +1,42 @@
+style FieldCard { background = "#ffffff", border = 1, borderColor = "#deded2", radius = 16 }
+style FieldTitle { color = "#192e28", size = 31, weight = "bold" }
+style FieldLabel { color = "#192e28", size = 16, weight = "semibold" }
+style FieldMuted { color = "#4b6359", size = 14 }
+style FieldKicker { color = "#376253", size = 12, weight = "bold" }
+
+component Screen(body: Children, header: Children, footer: Children, surface: Color = "#f6f4ed") {
+    Column(fill = true, grow = 1, align = "center", background = surface) {
+        Column(fill = true, grow = 1, maxWidth = 480) {
+            header
+            body
+            footer
+        }
+    }
+}
+
+component PageHeading(section: String, title: String, subtitle: String) {
+    Column(fill = true, gap = 5) {
+        Text(section, style = FieldKicker)
+        Text(title, style = FieldTitle)
+        Text(subtitle, style = FieldMuted)
+    }
+}
+
+component SettingRow(label: String, control: Children) {
+    Row(fill = true, minHeight = 46, paddingX = 14, gap = 12, align = "center", justify = "spaceBetween") {
+        Text(label, style = FieldLabel, size = 15)
+        control
+    }
+}
+
+component ChoiceRow(label: String, detail: String, next: String, onSelect: Event<String>,
+    ink: Color = "#192e28", accent: Color = "#376253") {
+    Row(fill = true, minHeight = 46, paddingX = 14, gap = 10, align = "center", justify = "spaceBetween",
+        onTap = onSelect(next)) {
+        Text(label, color = ink, size = 15, weight = "semibold")
+        Row(gap = 8, align = "center") {
+            Text(detail, color = accent, size = 14)
+            Text("›", color = accent, size = 20)
+        }
+    }
+}

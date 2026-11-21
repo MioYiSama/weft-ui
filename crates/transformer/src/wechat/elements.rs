@@ -130,8 +130,7 @@ pub(crate) fn image_layout(props: &[Prop]) -> Option<(&'static str, bool)> {
     let placeholder = props.iter().any(|prop| prop.name == "placeholder");
     let size = match (width, height) {
         (false, false) => "auto",
-        (true, false) => "width",
-        (false, true) => "height",
+        (true, false) | (false, true) => "ratio",
         (true, true) if placeholder => "fixed",
         (true, true) => return None,
     };

@@ -326,12 +326,14 @@ export class WechatSink implements Sink {
     const width = event.detail?.width ?? 0;
     const height = event.detail?.height ?? 0;
     if (!scope || typeof key !== "string" || width <= 0 || height <= 0) return;
-    const scale = typeof src === "string" ? this.#scales.get(src) ?? 1 : 1;
     let metrics = ";"; // Truthy even when both dimensions are fixed and only the placeholder changes.
     switch (size) {
-      case "auto": metrics = `width:${width / scale}px;height:${height / scale}px`; break;
-      case "width": metrics = `height:auto;aspect-ratio:${width}/${height}`; break;
-      case "height": metrics = `width:auto;aspect-ratio:${width}/${height}`; break;
+      case "auto": {
+        const scale = typeof src === "string" ? this.#scales.get(src) ?? 1 : 1;
+        metrics = `--w-image-width:${width / scale}px;--w-image-ratio:${width}/${height}`;
+        break;
+      }
+      case "ratio": metrics = `--w-image-ratio:${width}/${height}`; break;
     }
     if (scope.o[key] === metrics) return;
     scope.o[key] = metrics;

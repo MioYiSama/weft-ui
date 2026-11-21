@@ -1,0 +1,27 @@
+import "../Fieldnotes.weft"
+
+component Empty() {
+    state showTip = false
+    Screen {
+        header: {
+            Column(fill = true, paddingX = 20, paddingY = 16, gap = 4) {
+                Text("FIELDNOTES", style = FieldKicker)
+                Text("Saved notes", style = FieldTitle, size = 25)
+            }
+        }
+        Column(fill = true, grow = 1, align = "center", gap = 14, paddingX = 20) {
+            Spacer()
+            Image("asset:field_empty", width = 176, height = 136, fit = "contain")
+            Column(maxWidth = 292, align = "center", gap = 8) {
+                Text("No saved notes yet", fill = true, align = "center", style = FieldLabel, size = 25, weight = "bold")
+                Text(if (showTip) "Open the feed’s Saved tab to see how a bookmarked note looks."
+                    else "Keep the routes you want to revisit in one place.",
+                    fill = true, align = "center", lineHeight = 22, style = FieldMuted, size = 15)
+            }
+            Button(minHeight = 44, onClick = { showTip = !showTip }) {
+                Text(if (showTip) "Hide tip" else "How to find saved notes", size = 14, weight = "semibold")
+            }
+            Spacer()
+        }
+    }
+}

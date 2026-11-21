@@ -25,5 +25,17 @@
     "id": "assets",
     "title": "Assets"
   },
-  { "id": "safearea", "title": "Safe area" }
+  { "id": "safearea", "title": "Safe area" },
+  { "id": "feed", "title": "Fieldnotes feed" },
+  { "id": "detail", "title": "Trail note" },
+  { "id": "profile", "title": "Member profile" },
+  {
+    "id": "form",
+    "title": "Registration",
+    "props": {
+      "fieldRegions": ["North Coast", "High Country", "River Valley"]
+    }
+  },
+  { "id": "settings", "title": "Journal settings", "dark": true },
+  { "id": "empty", "title": "Empty saved notes" }
 ]

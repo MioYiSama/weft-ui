@@ -6,7 +6,13 @@ See [Screenshot regression](../CONTRIBUTING.md#screenshot-regression) for platfo
 
 If WeChat DevTools rejects the template's `touristappid`, set `appid` to an AppID your signed-in account can use in `apps/wechat/project.private.config.json`. That file stays local. Dark shots use the `wechatide` CLI to switch the simulator's appearance. Set `WEFT_WECHAT_IDE_CLI` if it isn't on `PATH`; authorize the CLI client `Weft Showcase` or set `WEFT_WECHAT_IDE_CLIENT` to an authorized name. If DevTools requires a CLI token, pass it in `WEFT_WECHAT_IDE_TOKEN`.
 
+## Fieldnotes reference screens
+
+The six `feed`, `detail`, `profile`, `form`, `settings`, and `empty` pages are independent snapshots of an outdoor journal. They share the screen layout, card styles, and settings rows in `src/Fieldnotes.weft`. All content and artwork ship with the showcase. Controls update local state only; registration does not send data, and Settings follows the system’s light or dark appearance.
+
 ## 中文
+
+`feed`、`detail`、`profile`、`form`、`settings` 和 `empty` 是户外手记应用 Fieldnotes 的六个独立页面，共用 `src/Fieldnotes.weft` 中的页面布局、卡片样式和设置行。内容和插图随应用打包。控件只修改本地状态，注册表单不发送数据，设置页的深浅配色跟随系统。
 
 从仓库根目录运行 `pnpm --filter showcase build:<平台>`，生成目录并构建对应平台。`pages.json` 的 `id` 用短横线连接单词，页面文件及组件默认用对应的 PascalCase（例如 `my-page` 对应 `MyPage.weft` 和 `component MyPage()`）。若默认名称是保留字，可用 `component` 指定导出的组件名。要给组件传参，可用 `props` 按参数顺序列出字段，例如 `"props": { "regions": ["本地", "远程"] }`。值必须是字符串数组，字段名不能与其他页面重复。`pending` 列出暂时无法构建该页面的平台；`dark: true` 会额外生成支持深色模式的平台截图。
 

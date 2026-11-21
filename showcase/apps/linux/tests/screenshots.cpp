@@ -11,6 +11,10 @@
 
 namespace {
 
+// Match the Web reference's logical viewport so wrapping is comparable.
+constexpr int kViewportWidth = 390;
+constexpr int kViewportHeight = 844;
+
 [[noreturn]] void fail(const std::string &message) {
   std::fprintf(stderr, "%s\n", message.c_str());
   std::exit(1);
@@ -30,9 +34,13 @@ GtkWidget *find_catalog_button(GtkWidget *widget, std::string_view label, GtkWid
 }
 
 void capture(GtkWidget *window, const std::filesystem::path &path) {
+  const int width = gtk_widget_get_width(window);
+  const int height = gtk_widget_get_height(window);
+  if (width != kViewportWidth || height != kViewportHeight) {
+    fail("Expected a 390x844 GTK viewport, got " + std::to_string(width) + "x" + std::to_string(height) +
+         "; make sure the desktop work area can fit the showcase window");
+  }
   auto *snapshot = gtk_snapshot_new();
-  auto width = gtk_widget_get_width(window);
-  auto height = gtk_widget_get_height(window);
   auto *paintable = gtk_widget_paintable_new(window);
   gdk_paintable_snapshot(paintable, GDK_SNAPSHOT(snapshot), width, height);
   g_object_unref(paintable);
@@ -64,8 +72,7 @@ int main(int argc, char **argv) {
     auto *window = gtk_window_new();
     auto *root = weft::start_app();
     gtk_window_set_child(GTK_WINDOW(window), root);
-    // Match the Web reference's logical viewport so wrapping is comparable.
-    gtk_window_set_default_size(GTK_WINDOW(window), 390, 844);
+    gtk_window_set_default_size(GTK_WINDOW(window), kViewportWidth, kViewportHeight);
     gtk_window_present(GTK_WINDOW(window));
     GtkWidget *button = nullptr;
     const auto label = "page:" + id;

@@ -59,6 +59,24 @@ public abstract class WeftTextInput : WeftElement
 
     protected sealed override FrameworkElement Control => host;
 
+    protected override void Resize()
+    {
+        base.Resize();
+        ApplyEditorHeight();
+    }
+
+    private void ApplyEditorHeight()
+    {
+        // A fixed Weft height belongs to the whole control. If WinUI's theme
+        // minimum is larger, the host would clip the editor's bottom border.
+        if (double.IsNaN(host.Height)) return;
+        if (Editor is PasswordBox)
+            // Its border reads the resource directly rather than binding MinHeight.
+            Editor.Resources["TextControlThemeMinHeight"] = 0.0;
+        else
+            Editor.MinHeight = 0;
+    }
+
     /// <summary>The controlled value slot.</summary>
     public string Value
     {
@@ -135,6 +153,7 @@ public abstract class WeftTextInput : WeftElement
         composing = false;
         Disabled = !previous.IsEnabled;
         Placeholder = previous is TextBox box ? box.PlaceholderText : ((PasswordBox)previous).PlaceholderText;
+        ApplyEditorHeight();
         ApplyNativeLimit();
         if (value.Length != 0) Show(value);
         Observe(editor);

@@ -321,7 +321,7 @@ PangoWeight pango_weight(Weight weight) {
 }  // namespace
 
 Text::Text(size_t span_count)
-    : Padded(linear_new(Axis::Vertical, CrossAlign::Stretch)), label_(GTK_LABEL(gtk_label_new(nullptr))) {
+    : Padded(text_new()), label_(GTK_LABEL(gtk_label_new(nullptr))) {
   spans_.reserve(span_count);
   for (size_t index = 0; index < span_count; ++index) spans_.emplace_back(*this);
   gtk_widget_set_direction(GTK_WIDGET(label_), GTK_TEXT_DIR_LTR);
@@ -601,6 +601,7 @@ void TextLayout::before_allocate(GtkWidget *widget, int width) {
 
 Button::Button(std::function<void()> click)
     : Element(gtk_button_new()), click_(std::move(click)), content_(Axis::Horizontal, CrossAlign::Center) {
+  content_.set_justify(Justify::Center);
   gtk_button_set_child(GTK_BUTTON(widget()), content_.widget());
   // GTK handles Button releases in capture by default. Use the same
   // child-first order as onTap when a Button contains another tappable.

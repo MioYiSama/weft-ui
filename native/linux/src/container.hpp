@@ -47,6 +47,7 @@ void progress_set_color(GtkWidget *widget, GdkRGBA color, bool dark);
 void progress_set_value(GtkWidget *widget, double value);
 GtkWidget *linear_new(Axis axis, CrossAlign align = CrossAlign::Start, bool scrolling = false);
 GtkWidget *overlay_new();
+GtkWidget *text_new();
 void container_set_gap(GtkWidget *widget, double gap);
 void container_set_align(GtkWidget *widget, CrossAlign align);
 void container_set_justify(GtkWidget *widget, Justify justify);

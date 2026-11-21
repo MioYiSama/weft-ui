@@ -53,7 +53,8 @@ public sealed class Screenshots
                 Thread.Sleep(TimeSpan.FromSeconds(1));
 
                 var suffix = scheme == "dark" ? "-dark" : "";
-                CaptureWindow(window, Path.Combine(directory, $"{id}{suffix}.png"));
+                var path = Path.Combine(directory, $"{id}{suffix}.png");
+                CaptureWindow(window, path, id == "form" ? capture => VerifyFormInputBorders(window, capture) : null);
                 if (id == "appearance") VerifyVisibility(window);
                 if (id == "text") VerifyTypography(window);
                 if (id == "controls") VerifyControls(window);
@@ -214,6 +215,26 @@ public sealed class Screenshots
         Assert.AreEqual("测试版", channel.SelectedItem?.Text);
     }
 
+    private static void VerifyFormInputBorders(Window window, CaptureImage capture)
+    {
+        var boxes = window.FindAllDescendants(cf => cf.ByClassName("TextBox").Or(cf.ByClassName("PasswordBox")))
+            .OrderBy(box => box.BoundingRectangle.Top).ToArray();
+        Assert.AreEqual(6, boxes.Length, "Expected five single-line editors and a text area");
+        var bitmap = capture.Bitmap;
+        var origin = capture.OriginalBounds.Location;
+        foreach (var box in boxes.Take(5))
+        {
+            var bounds = box.BoundingRectangle;
+            var x = bounds.Left + 3 * bounds.Width / 4 - origin.X;
+            var bottom = bounds.Bottom - origin.Y;
+            var outside = bitmap.GetPixel(x, bottom + 1).R;
+            var edge = Enumerable.Range(1, Math.Max(1, bounds.Height / 8))
+                .Min(offset => bitmap.GetPixel(x, bottom - offset).R);
+            Assert.IsTrue(edge < outside - 10,
+                $"{box.Properties.ClassName.Value} at {bounds} must show its bottom border (capture {capture.OriginalBounds})");
+        }
+    }
+
     private static void VerifyInputs(Window window)
     {
         var boxes = window.FindAllDescendants(cf => cf.ByClassName("TextBox"));
@@ -368,7 +389,7 @@ public sealed class Screenshots
         Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
     }
 
-    private static void CaptureWindow(Window window, string path)
+    private static void CaptureWindow(Window window, string path, Action<CaptureImage>? verify)
     {
         // FlaUI crops the desktop by a window's bounds. Use physical pixels for both.
         const int perMonitorAwareV2 = -4;
@@ -376,7 +397,9 @@ public sealed class Screenshots
         if (previous == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
         try
         {
-            Capture.Element(window).ToFile(path);
+            using var capture = Capture.Element(window);
+            capture.ToFile(path);
+            verify?.Invoke(capture);
         }
         finally
         {

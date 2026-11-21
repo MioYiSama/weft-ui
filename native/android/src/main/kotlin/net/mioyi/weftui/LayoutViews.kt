@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
@@ -13,8 +14,11 @@ import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.ParentDataModifier
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import kotlin.math.roundToInt
 
 private data class WeftParentData(
@@ -193,9 +197,23 @@ private fun LinearContent(
 
 @Composable
 internal fun WeftButtonContent(content: @Composable () -> Unit) = LinearContent(
-    WeftAxis.HORIZONTAL, 0f, WeftCrossAlign.CENTER, WeftJustify.CENTER, WeftEdges(), Modifier,
+    WeftAxis.HORIZONTAL, 0f, WeftCrossAlign.CENTER, WeftJustify.CENTER, WeftEdges(), buttonContentPadding,
     content, flexChildren = false,
 )
+
+// Give the children the whole button proposal, then use the available space for Material insets.
+// Reserving those insets first can leave no room at all in a compact button.
+private val buttonContentPadding = Modifier.layout { measurable, constraints ->
+    val content = measurable.measure(constraints)
+    val padding = ButtonDefaults.ContentPadding
+    val width = constraints.constrainWidth(content.width +
+        padding.calculateLeftPadding(layoutDirection).roundToPx() + padding.calculateRightPadding(layoutDirection).roundToPx())
+    val height = constraints.constrainHeight(content.height +
+        padding.calculateTopPadding().roundToPx() + padding.calculateBottomPadding().roundToPx())
+    layout(width, height) {
+        content.place((width - content.width) / 2, (height - content.height) / 2)
+    }
+}
 
 /** Overlays children in source order, with the last child on top. */
 @Composable

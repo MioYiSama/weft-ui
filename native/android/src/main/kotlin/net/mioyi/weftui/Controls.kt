@@ -1,12 +1,19 @@
 package net.mioyi.weftui
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DividerDefaults
@@ -17,8 +24,9 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -26,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,13 +45,20 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.coerceAtLeast
+import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.dp
 import kotlin.math.floor
 
@@ -163,7 +179,7 @@ private fun WeftEditableText(
             if (focused) requester.requestFocus() else if (focus.active) focusManager.clearFocus()
         }
     }
-    val fieldModifier = modifier.width(inputWidth).focusRequester(requester).onFocusChanged {
+    val focusModifier = Modifier.focusRequester(requester).onFocusChanged {
         if (focus.active != it.isFocused) {
             focus.active = it.isFocused
             onFocusChange?.invoke(it.isFocused)
@@ -171,17 +187,79 @@ private fun WeftEditableText(
     }
     val hint: (@Composable () -> Unit)? = placeholder?.let { { Text(it) } }
     if (lines == 1) {
-        OutlinedTextField(
-            value = shown, onValueChange = onValueChange, enabled = !disabled,
-            singleLine = true, placeholder = hint, modifier = fieldModifier,
-            keyboardOptions = keyboardOptions, keyboardActions = keyboardActions,
-            visualTransformation = visualTransformation,
+        OutlinedInput(
+            shown, onValueChange, !disabled, hint, modifier, focusModifier,
+            keyboardOptions, keyboardActions, visualTransformation,
         )
     } else {
         TextField(
             value = shown, onValueChange = onValueChange, enabled = !disabled,
-            minLines = lines, maxLines = lines, placeholder = hint, modifier = fieldModifier,
+            minLines = lines, maxLines = lines, placeholder = hint,
+            modifier = modifier.width(inputWidth).then(focusModifier),
         )
+    }
+}
+
+@Composable
+private fun OutlinedInput(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    enabled: Boolean,
+    placeholder: (@Composable () -> Unit)?,
+    modifier: Modifier,
+    focusModifier: Modifier,
+    keyboardOptions: KeyboardOptions,
+    keyboardActions: KeyboardActions,
+    visualTransformation: VisualTransformation,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val colors = OutlinedTextFieldDefaults.colors()
+    val textStyle = LocalTextStyle.current
+    val textColor = textStyle.color.takeOrElse {
+        when {
+            !enabled -> colors.disabledTextColor
+            interaction.collectIsFocusedAsState().value -> colors.focusedTextColor
+            else -> colors.unfocusedTextColor
+        }
+    }
+    BoxWithConstraints(modifier, propagateMinConstraints = true) {
+        val standardPadding = OutlinedTextFieldDefaults.contentPadding()
+        // Under a tight height, reduce the insets before the editable line and hint are clipped.
+        val contentPadding = if (constraints.hasBoundedHeight) {
+            val hintStyle = MaterialTheme.typography.bodyLarge
+            val lineHeight = with(LocalDensity.current) {
+                maxOf(lineHeightInDp(textStyle), lineHeightInDp(hintStyle))
+            }
+            val vertical = ((maxHeight - lineHeight).coerceAtLeast(0.dp) / 2)
+                .coerceAtMost(standardPadding.calculateTopPadding())
+            OutlinedTextFieldDefaults.contentPadding(top = vertical, bottom = vertical)
+        } else standardPadding
+        CompositionLocalProvider(LocalTextSelectionColors provides colors.textSelectionColors) {
+            BasicTextField(
+                value = value, onValueChange = onValueChange, enabled = enabled,
+                modifier = Modifier.width(inputWidth).then(focusModifier)
+                    .defaultMinSize(minHeight = OutlinedTextFieldDefaults.MinHeight),
+                singleLine = true, textStyle = textStyle.merge(TextStyle(color = textColor)),
+                cursorBrush = SolidColor(colors.cursorColor), interactionSource = interaction,
+                keyboardOptions = keyboardOptions, keyboardActions = keyboardActions,
+                visualTransformation = visualTransformation,
+                decorationBox = { inner ->
+                    OutlinedTextFieldDefaults.DecorationBox(
+                        value = value.text, innerTextField = inner, enabled = enabled, singleLine = true,
+                        visualTransformation = visualTransformation, interactionSource = interaction,
+                        placeholder = placeholder, colors = colors, contentPadding = contentPadding,
+                    )
+                },
+            )
+        }
+    }
+}
+
+private fun Density.lineHeightInDp(style: TextStyle) = with(style) {
+    when {
+        lineHeight.isSp -> lineHeight.toDp()
+        fontSize.isSp -> if (lineHeight.isEm) fontSize.toDp() * lineHeight.value else fontSize.toDp()
+        else -> 0.dp
     }
 }
 
@@ -265,25 +343,29 @@ fun WeftPicker(
     val label = options.getOrNull(index)
     val state = remember(label) { TextFieldState(label.orEmpty()) }
     val textStyle = MaterialTheme.typography.bodyMedium
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { open = it }, modifier = modifier) {
-        TextField(
-            state = state,
-            readOnly = true,
-            enabled = !disabled,
-            lineLimits = TextFieldLineLimits.SingleLine,
-            textStyle = textStyle,
-            placeholder = placeholder?.takeIf { label == null }?.let { { Text(it, style = textStyle) } },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            colors = ExposedDropdownMenuDefaults.textFieldColors(),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 16.dp),
-            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = !disabled),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { open = false }) {
-            options.forEachIndexed { i, option ->
-                DropdownMenuItem(text = { Text(option) }, onClick = {
-                    open = false
-                    if (i != index) edit(i)
-                })
+    BoxWithConstraints(modifier) {
+        // ExposedDropdownMenuBox does not pass minimum constraints to its field.
+        val fieldSize = Modifier.sizeIn(minWidth = minWidth, minHeight = minHeight)
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { open = it }) {
+            TextField(
+                state = state,
+                readOnly = true,
+                enabled = !disabled,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                textStyle = textStyle,
+                placeholder = placeholder?.takeIf { label == null }?.let { { Text(it, style = textStyle) } },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 16.dp),
+                modifier = fieldSize.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = !disabled),
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { open = false }) {
+                options.forEachIndexed { i, option ->
+                    DropdownMenuItem(text = { Text(option) }, onClick = {
+                        open = false
+                        if (i != index) edit(i)
+                    })
+                }
             }
         }
     }

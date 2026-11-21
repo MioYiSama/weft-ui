@@ -50,10 +50,16 @@ pub(crate) fn slot_template(
     )
 }
 
-/// Templates for every component, and whether they use a textarea.
-pub(crate) fn templates(program: &Program, layout: &ViewLayout) -> (String, bool) {
+#[derive(Default)]
+pub(crate) struct ViewStyles {
+    pub has_textarea: bool,
+    pub has_intrinsic_image: bool,
+}
+
+/// Templates for every component, plus the conditional styles they need.
+pub(crate) fn templates(program: &Program, layout: &ViewLayout) -> (String, ViewStyles) {
     let mut out = String::new();
-    let mut has_textarea = false;
+    let mut styles = ViewStyles::default();
     for (index, comp) in program.components.iter().enumerate() {
         let mut markup = Markup {
             program,
@@ -61,17 +67,16 @@ pub(crate) fn templates(program: &Program, layout: &ViewLayout) -> (String, bool
             id: ComponentId(u32::try_from(index).expect("component ids fit in u32")),
             comp,
             slots: Vec::new(),
-            has_textarea,
+            styles: &mut styles,
         };
         let mut body = String::new();
         markup.nodes(&comp.roots, "", Parent::Inherited, &mut body);
-        has_textarea = markup.has_textarea;
         template(&comp.name, &body, &mut out);
         for (name, body) in markup.slots {
             template(&name, &body, &mut out);
         }
     }
-    (out, has_textarea)
+    (out, styles)
 }
 
 fn template(name: &str, body: &str, out: &mut String) {
@@ -172,7 +177,7 @@ struct Markup<'a> {
     comp: &'a Component,
     /// Slot content templates found so far: name and body.
     slots: Vec<(String, String)>,
-    has_textarea: bool,
+    styles: &'a mut ViewStyles,
 }
 
 impl Markup<'_> {
@@ -247,7 +252,7 @@ impl Markup<'_> {
             unreachable!("caller checked the node kind");
         };
         let element = *element;
-        self.has_textarea |= element == Element::TextArea;
+        self.styles.has_textarea |= element == Element::TextArea;
         let (tag, mut class, mut fixed) = tag(element);
         let tappable = props.iter().any(|prop| prop.name == "onTap");
         // Unlike view, text and image do not implement WeChat's hover behavior.
@@ -271,6 +276,14 @@ impl Markup<'_> {
         let mut style = String::new();
         let mut inner_style = String::new();
         let mut picker_classes = String::new();
+        let mut scroll_classes = String::new();
+        if let Some((size, _)) = track_image.filter(|(size, _)| *size != "fixed") {
+            self.styles.has_intrinsic_image = true;
+            classes.push_str(" w-image-intrinsic");
+            if size == "auto" {
+                classes.push_str(" w-image-natural-width");
+            }
+        }
         let metrics = image_key(id);
         if track_image.is_some() {
             push_style(&mut style, format_args!("{{{{{prefix}{metrics}}}}}"));
@@ -397,6 +410,27 @@ impl Markup<'_> {
                     }
                     if css.unit == CssUnit::Custom(CustomCss::Fill) {
                         default_fill = false;
+                    }
+                    if prop.name == "align"
+                        && matches!(element, Element::Column | Element::Row | Element::Scroll)
+                    {
+                        let align_classes = if element == Element::Scroll {
+                            &mut scroll_classes
+                        } else {
+                            &mut classes
+                        };
+                        match value {
+                            Value::Inline(Constant::String(value)) if value == "stretch" => {
+                                align_classes.push_str(" w-stretch");
+                            }
+                            Value::Data => {
+                                let _ = write!(
+                                    align_classes,
+                                    "{{{{{prefix}{key} === 'align-items:stretch' ? ' w-stretch' : ''}}}}"
+                                );
+                            }
+                            _ => {}
+                        }
                     }
                     let style = if css.target == CssTarget::Inner
                         || element == Element::Scroll && matches!(prop.name, "gap" | "align")
@@ -552,7 +586,10 @@ impl Markup<'_> {
         }
         if element == Element::Scroll {
             let axis = if class == "w-scroll-h" { 'h' } else { 'v' };
-            let _ = write!(out, "<view class=\"w-scroll-content-{axis}\"");
+            let _ = write!(
+                out,
+                "<view class=\"w-scroll-content-{axis}{scroll_classes}\""
+            );
             if !inner_style.is_empty() {
                 let _ = write!(out, " style=\"{inner_style}\"");
             }

@@ -50,3 +50,12 @@ input.w-switch:disabled{opacity:.45;cursor:default}
   .w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#ffffff26}
   .w-divider,.w-divider-v,.w-progress{background-color:#ffffff26}
 }
+.w-image-intrinsic{width:auto;height:auto;aspect-ratio:var(--w-image-ratio,4/3)}
+.w-image-natural-width{width:var(--w-image-width,320px)}
+.w-root > .w-image-natural-width.w-fill,
+.w-column > .w-image-natural-width.w-fill,.w-column > .w-image-natural-width.w-grow,.w-column.w-stretch > .w-image-natural-width,
+.w-row > .w-image-natural-width.w-fill,.w-row > .w-image-natural-width.w-grow,.w-row.w-stretch > .w-image-natural-width,
+.w-scroll-content-v > .w-image-natural-width.w-fill,.w-scroll-content-v > .w-image-natural-width.w-grow,.w-scroll-content-v.w-stretch > .w-image-natural-width,
+.w-scroll-content-h > .w-image-natural-width.w-fill,.w-scroll-content-h > .w-image-natural-width.w-grow,.w-scroll-content-h.w-stretch > .w-image-natural-width,
+.w-stack > .w-image-natural-width.w-fill{width:auto}
+.w-stack > .w-image-intrinsic.w-fill{aspect-ratio:auto}

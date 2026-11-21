@@ -221,16 +221,16 @@ Displays an editable text field.
 | `value` (positional) | `String` | Required | The current text. | — |
 | `placeholder` | `String` | — | Shows a hint when the field is empty. | — |
 | `disabled` | `Bool` | — | Disables the input field. | — |
-| `type` | `InputType` | `"text"` | Chooses the kind of input field and its keyboard. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `returnKey` | `ReturnKey` | — | Hints what action the keyboard's return key should display. | Unsupported: `ios`; Ignored: `macos`; Unsupported: `android`; Ignored: `windows`; Ignored: `linux` |
-| `maxLength` | `Int` | — | Limits user edits to this many UTF-16 code units; omit for no limit. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `focused` | `Bool` | `false` | Requests focus when changed to true and releases it when changed to false. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `type` | `InputType` | `"text"` | Chooses the kind of input field and its keyboard. | — |
+| `returnKey` | `ReturnKey` | — | Hints what action the keyboard's return key should display. | Ignored: `macos`; Ignored: `windows`; Ignored: `linux` |
+| `maxLength` | `Int` | — | Limits user edits to this many UTF-16 code units; omit for no limit. | — |
+| `focused` | `Bool` | `false` | Requests focus when changed to true and releases it when changed to false. | — |
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
 | `onChange` | `String` | Reports the new text after an edit. | — |
-| `onSubmit` | — | Fires when the user submits with the keyboard's return key. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `onFocusChange` | `Bool` | Reports true when focus is gained and false when it is lost, without changing focused. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `onSubmit` | — | Fires when the user submits with the keyboard's return key. | — |
+| `onFocusChange` | `Bool` | Reports true when focus is gained and false when it is lost, without changing focused. | — |
 
 ## Checkbox
 
@@ -458,13 +458,13 @@ Edits multiple lines of text.
 | `value` (positional) | `String` | Required | The current text. | — |
 | `placeholder` | `String` | — | Shows a hint when the text is empty. | — |
 | `disabled` | `Bool` | — | Prevents editing the text. | — |
-| `maxLength` | `Int` | — | Limits user edits to this many UTF-16 code units; omit for no limit. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `focused` | `Bool` | `false` | Requests focus when changed to true and releases it when changed to false. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `maxLength` | `Int` | — | Limits user edits to this many UTF-16 code units; omit for no limit. | — |
+| `focused` | `Bool` | `false` | Requests focus when changed to true and releases it when changed to false. | — |
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
 | `onChange` | `String` | Reports the proposed text after an edit. | — |
-| `onFocusChange` | `Bool` | Reports true when focus is gained and false when it is lost, without changing focused. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `onFocusChange` | `Bool` | Reports true when focus is gained and false when it is lost, without changing focused. | — |
 
 ## Spinner
 

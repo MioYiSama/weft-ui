@@ -221,16 +221,16 @@ title: 内置元素
 | `value` (位置参数) | `String` | 必填 | 当前输入的文本。 | — |
 | `placeholder` | `String` | — | 输入框为空时显示提示文字。 | — |
 | `disabled` | `Bool` | — | 禁用输入框。 | — |
-| `type` | `InputType` | `"text"` | 选择输入框类型及对应的键盘。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `returnKey` | `ReturnKey` | — | 提示键盘的回车键显示哪种操作。 | 不支持: `ios`; 忽略: `macos`; 不支持: `android`; 忽略: `windows`; 忽略: `linux` |
-| `maxLength` | `Int` | — | 限制用户编辑后的 UTF-16 码元个数；省略则不限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `focused` | `Bool` | `false` | 变为 true 时请求焦点，变为 false 时放弃焦点。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `type` | `InputType` | `"text"` | 选择输入框类型及对应的键盘。 | — |
+| `returnKey` | `ReturnKey` | — | 提示键盘的回车键显示哪种操作。 | 忽略: `macos`; 忽略: `windows`; 忽略: `linux` |
+| `maxLength` | `Int` | — | 限制用户编辑后的 UTF-16 码元个数；省略则不限。 | — |
+| `focused` | `Bool` | `false` | 变为 true 时请求焦点，变为 false 时放弃焦点。 | — |
 
 | 事件 | 载荷 | 说明 | 平台例外 |
 | --- | --- | --- | --- |
 | `onChange` | `String` | 编辑后提供修改后的文本。 | — |
-| `onSubmit` | — | 用户通过键盘回车键提交时触发。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `onFocusChange` | `Bool` | 获得焦点时提供 true，失去焦点时提供 false，不会改写 focused。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `onSubmit` | — | 用户通过键盘回车键提交时触发。 | — |
+| `onFocusChange` | `Bool` | 获得焦点时提供 true，失去焦点时提供 false，不会改写 focused。 | — |
 
 ## Checkbox
 
@@ -458,13 +458,13 @@ title: 内置元素
 | `value` (位置参数) | `String` | 必填 | 当前文本。 | — |
 | `placeholder` | `String` | — | 文本为空时显示提示。 | — |
 | `disabled` | `Bool` | — | 禁止编辑文本。 | — |
-| `maxLength` | `Int` | — | 限制用户编辑后的 UTF-16 码元个数；省略则不限。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `focused` | `Bool` | `false` | 变为 true 时请求焦点，变为 false 时放弃焦点。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `maxLength` | `Int` | — | 限制用户编辑后的 UTF-16 码元个数；省略则不限。 | — |
+| `focused` | `Bool` | `false` | 变为 true 时请求焦点，变为 false 时放弃焦点。 | — |
 
 | 事件 | 载荷 | 说明 | 平台例外 |
 | --- | --- | --- | --- |
 | `onChange` | `String` | 提供用户编辑后的文本。 | — |
-| `onFocusChange` | `Bool` | 获得焦点时提供 true，失去焦点时提供 false，不会改写 focused。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `onFocusChange` | `Bool` | 获得焦点时提供 true，失去焦点时提供 false，不会改写 focused。 | — |
 
 ## Spinner
 

@@ -1645,13 +1645,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "returnKey",
@@ -1662,9 +1656,7 @@ const PROPS_4: &[PropSpec] = &[
         css: None,
         controlled_by: None,
         support: &[
-            (Platform::Ios, Level::No),
             (Platform::Macos, Level::Ignored),
-            (Platform::Android, Level::No),
             (Platform::Windows, Level::Ignored),
             (Platform::Linux, Level::Ignored),
         ],
@@ -1677,13 +1669,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "focused",
@@ -1693,13 +1679,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "onSubmit",
@@ -1709,13 +1689,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "onFocusChange",
@@ -1727,13 +1701,7 @@ const PROPS_4: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
 ];
 
@@ -3338,13 +3306,7 @@ const PROPS_11: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "focused",
@@ -3354,13 +3316,7 @@ const PROPS_11: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "onFocusChange",
@@ -3372,13 +3328,7 @@ const PROPS_11: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
 ];
 

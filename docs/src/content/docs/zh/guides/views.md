@@ -124,7 +124,7 @@ component Preferences(choices: String[]) {
 
 ## 文本输入
 
-`Input` 用于单行输入。`type` 可设为 `text`、`password`、`number`、`email` 或 `phone`，用来选择输入框和键盘类型，输入值始终是字符串。`returnKey` 提示键盘显示哪种操作（`done`、`go`、`next`、`search`、`send`），`onSubmit` 处理提交。在微信小程序中，`phone` 使用数字键盘，`email` 使用默认键盘。各平台支持情况见[元素参考](/zh/reference/elements/#input)。
+`Input` 用于单行输入。`type` 可设为 `text`、`password`、`number`、`email` 或 `phone`，用来选择输入框和键盘类型，输入值始终是字符串。`returnKey` 提示键盘显示哪种操作（`done`、`go`、`next`、`search`、`send`），`onSubmit` 处理提交。在微信小程序中，`phone` 使用数字键盘，`email` 使用默认键盘。macOS、Windows 和 Linux 没有屏幕键盘，会忽略 `returnKey`；macOS 只区分 `password` 和其他类型。各平台支持情况见[元素参考](/zh/reference/elements/#input)。
 
 `Input` 和 `TextArea` 都可以用 `maxLength` 限制编辑后的长度。长度按 UTF-16 码元计算，与 `String.length` 一致；`onChange` 收到的是截断后的文本。`focused` 变为 `true` 时请求焦点，变回 `false` 时放弃焦点。值不变时不会重复请求。用 `onFocusChange` 监听实际焦点变化，该事件不会改写 `focused`。
 

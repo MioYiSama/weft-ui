@@ -1,134 +1,174 @@
 import SwiftUI
 
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
+
 // The `edit` closure dispatches the event and returns the slot's value to
-// restore when an edit was refused, or nil when accepted. Input
-// delegates skip marked text so it is never rolled back mid-composition.
+// restore when an edit was refused, or nil when accepted.
 
 /// Intrinsic width of an `Input` (CSS inputs default to about 20 characters).
 private let inputWidth: CGFloat = 200
 
-#if os(macOS)
-import AppKit
-
-/// `Input`: an `NSTextField`.
-public struct WeftInput: NSViewRepresentable {
-    let text: String
-    let placeholder: String?
-    let edit: @MainActor (String) -> String?
-    private var sizing = WeftSizing()
-
-    public init(text: String, placeholder: String?, edit: @escaping @MainActor (String) -> String?) {
-        self.text = text
-        self.placeholder = placeholder
-        self.edit = edit
+func limitTextEdit(_ value: String, maxLength: CGFloat?) -> String {
+    guard let maxLength, maxLength >= 0, let limit = Int(exactly: maxLength) else { return value }
+    let utf16 = value.utf16
+    guard var end = utf16.index(utf16.startIndex, offsetBy: limit, limitedBy: utf16.endIndex),
+          end != utf16.endIndex else { return value }
+    if (0xDC00...0xDFFF).contains(utf16[end]) {
+        utf16.formIndex(before: &end)
     }
+    return String(decoding: utf16[..<end], as: UTF16.self)
+}
 
-    public func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
+/// Tracks the requested value, independently of where keyboard focus actually is.
+struct TextFocusRequest {
+    private var previous = false
 
-    public func makeNSView(context: Context) -> NSTextField {
-        let field = NSTextField(string: text)
-        field.delegate = context.coordinator
-        field.usesSingleLineMode = true
-        field.cell?.isScrollable = true
-        field.cell?.wraps = false
-        return field
-    }
-
-    public func updateNSView(_ field: NSTextField, context: Context) {
-        context.coordinator.input = self
-        field.placeholderString = placeholder
-        field.isEnabled = context.environment.isEnabled
-        if field.stringValue != text, !Self.composing(field) {
-            field.stringValue = text
-        }
-    }
-
-    public func sizeThatFits(_ proposal: ProposedViewSize, nsView field: NSTextField, context: Context) -> CGSize? {
-        sizing.nativeSize(proposal, ideal: CGSize(width: inputWidth, height: field.intrinsicContentSize.height))
-    }
-
-    static func composing(_ field: NSTextField) -> Bool {
-        (field.currentEditor() as? NSTextView)?.hasMarkedText() ?? false
-    }
-
-    @MainActor
-    public final class Coordinator: NSObject, NSTextFieldDelegate {
-        var input: WeftInput
-
-        init(_ input: WeftInput) {
-            self.input = input
-        }
-
-        public func controlTextDidChange(_ notification: Notification) {
-            guard let field = notification.object as? NSTextField, !WeftInput.composing(field) else { return }
-            if let restored = input.edit(field.stringValue) {
-                field.stringValue = restored
-            }
-        }
+    mutating func update(_ focused: Bool) -> Bool? {
+        guard previous != focused else { return nil }
+        previous = focused
+        return focused
     }
 }
 
-#else
-import UIKit
+private struct TextInputFocus: ViewModifier {
+    let focused: Bool
+    let onFocusChange: (@MainActor (Bool) -> Void)?
+    @FocusState private var actual: Bool
+    @State private var request = TextFocusRequest()
+    @Environment(\.isEnabled) private var isEnabled
 
-/// `Input`: a `UITextField`.
-public struct WeftInput: UIViewRepresentable {
-    let text: String
-    let placeholder: String?
-    let edit: @MainActor (String) -> String?
-    private var sizing = WeftSizing()
-
-    public init(text: String, placeholder: String?, edit: @escaping @MainActor (String) -> String?) {
-        self.text = text
-        self.placeholder = placeholder
-        self.edit = edit
-    }
-
-    public func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    public func makeUIView(context: Context) -> UITextField {
-        let field = UITextField()
-        field.text = text
-        field.borderStyle = .roundedRect
-        field.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .editingChanged)
-        return field
-    }
-
-    public func updateUIView(_ field: UITextField, context: Context) {
-        context.coordinator.input = self
-        field.placeholder = placeholder
-        field.isEnabled = context.environment.isEnabled
-        if field.text != text, field.markedTextRange == nil {
-            field.text = text
-        }
-    }
-
-    public func sizeThatFits(_ proposal: ProposedViewSize, uiView field: UITextField, context: Context) -> CGSize? {
-        sizing.nativeSize(proposal, ideal: CGSize(width: inputWidth, height: field.intrinsicContentSize.height))
-    }
-
-    @MainActor
-    public final class Coordinator: NSObject {
-        var input: WeftInput
-
-        init(_ input: WeftInput) {
-            self.input = input
-        }
-
-        @objc func changed(_ field: UITextField) {
-            guard field.markedTextRange == nil else { return }
-            if let restored = input.edit(field.text ?? "") {
-                field.text = restored
+    func body(content: Content) -> some View {
+        content.focused($actual)
+            .onChange(of: focused, initial: true) { _, focused in
+                if let desired = request.update(focused), !desired || isEnabled {
+                    actual = desired
+                }
             }
-        }
+            .onChange(of: actual) { _, actual in onFocusChange?(actual) }
     }
 }
 
-#endif
+private struct TextDraft<Content: View>: View {
+    let value: String
+    let maxLength: CGFloat?
+    let edit: @MainActor (String) -> String?
+    let content: (Binding<String>) -> Content
+    @State private var draft: String
+
+    init(value: String, maxLength: CGFloat?, edit: @escaping @MainActor (String) -> String?,
+         @ViewBuilder content: @escaping (Binding<String>) -> Content) {
+        self.value = value
+        self.maxLength = maxLength
+        self.edit = edit
+        self.content = content
+        _draft = State(initialValue: value)
+    }
+
+    var body: some View {
+        content($draft)
+            .onChange(of: value) { _, value in draft = value }
+            .onChange(of: draft) { _, proposed in
+                guard proposed != value else { return }
+                let limited = limitTextEdit(proposed, maxLength: maxLength)
+                // Restore the local edit buffer even when the slot did not change.
+                let accepted = edit(limited) ?? limited
+                if proposed != accepted { draft = accepted }
+            }
+    }
+}
+
+/// A native single-line text or password field.
+public struct WeftInput: View {
+    private let text: String
+    private let placeholder: String
+    private let type: WeftInputType
+    private let returnKey: WeftReturnKey?
+    private let maxLength: CGFloat?
+    private let focused: Bool
+    private let onSubmit: (@MainActor () -> Void)?
+    private let onFocusChange: (@MainActor (Bool) -> Void)?
+    private let edit: @MainActor (String) -> String?
+    private var sizing = WeftSizing()
+
+    public init(text: String, placeholder: String?, type: WeftInputType = .text, returnKey: WeftReturnKey? = nil,
+                maxLength: CGFloat? = nil, focused: Bool = false, onSubmit: (@MainActor () -> Void)? = nil,
+                onFocusChange: (@MainActor (Bool) -> Void)? = nil, edit: @escaping @MainActor (String) -> String?) {
+        self.text = text
+        self.placeholder = placeholder ?? ""
+        self.type = type
+        self.returnKey = returnKey
+        self.maxLength = maxLength
+        self.focused = focused
+        self.onSubmit = onSubmit
+        self.onFocusChange = onFocusChange
+        self.edit = edit
+    }
+
+    public var body: some View {
+        InputLayout(sizing: sizing) {
+            TextDraft(value: text, maxLength: maxLength, edit: edit) { draft in
+                field(draft)
+                    .textFieldStyle(.roundedBorder)
+                    .modifier(TextInputFocus(focused: focused, onFocusChange: onFocusChange))
+                    .onSubmit { onSubmit?() }
+            }
+        }
+    }
+
+    @ViewBuilder private func field(_ draft: Binding<String>) -> some View {
+        let field = Group {
+            if type == .password {
+                SecureField(placeholder, text: draft)
+            } else {
+                TextField(placeholder, text: draft)
+            }
+        }
+        #if os(iOS)
+        field.keyboardType(keyboardType).submitLabel(submitLabel)
+        #else
+        field
+        #endif
+    }
+
+    #if os(iOS)
+    private var keyboardType: UIKeyboardType {
+        switch type {
+        case .text, .password: .default
+        case .number: .numberPad
+        case .email: .emailAddress
+        case .phone: .phonePad
+        }
+    }
+
+    private var submitLabel: SubmitLabel {
+        switch returnKey {
+        case nil: .return
+        case .done: .done
+        case .go: .go
+        case .next: .next
+        case .search: .search
+        case .send: .send
+        }
+    }
+    #endif
+}
+
+private struct InputLayout: Layout {
+    let sizing: WeftSizing
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let height = subviews.first?.sizeThatFits(.unspecified).height ?? 0
+        return sizing.nativeSize(proposal, ideal: CGSize(width: inputWidth, height: height))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
+    }
+}
 
 /// A binding to the value slot, rather than independent state in the control.
 /// Refused edits invalidate the control even when the value slot did not change.
@@ -175,12 +215,19 @@ private struct WeftControl<Value, Content: View>: View {
 public struct WeftTextArea: NSViewRepresentable {
     private let value: String
     private let placeholder: String
+    private let maxLength: CGFloat?
+    private let focused: Bool
+    private let onFocusChange: (@MainActor (Bool) -> Void)?
     private let edit: @MainActor (String) -> String?
     private var sizing = WeftSizing()
 
-    public init(value: String, placeholder: String, edit: @escaping @MainActor (String) -> String?) {
+    public init(value: String, placeholder: String, maxLength: CGFloat? = nil, focused: Bool = false,
+                onFocusChange: (@MainActor (Bool) -> Void)? = nil, edit: @escaping @MainActor (String) -> String?) {
         self.value = value
         self.placeholder = placeholder
+        self.maxLength = maxLength
+        self.focused = focused
+        self.onFocusChange = onFocusChange
         self.edit = edit
     }
 
@@ -202,7 +249,9 @@ public struct WeftTextArea: NSViewRepresentable {
         editor.font = .systemFont(ofSize: NSFont.systemFontSize)
         editor.textContainerInset = NSSize(width: 2, height: 4)
         editor.string = value
-        editor.delegate = context.coordinator
+        let coordinator = context.coordinator
+        editor.delegate = coordinator
+        editor.onFocusChange = { [weak coordinator] focused in coordinator?.area.onFocusChange?(focused) }
         editor.setAccessibilityIdentifier("WeftTextArea")
         return scroll
     }
@@ -220,6 +269,7 @@ public struct WeftTextArea: NSViewRepresentable {
         if editor.string != value, !editor.hasMarkedText() {
             editor.string = value
         }
+        editor.requestFocus(focused)
     }
 
     public func sizeThatFits(_ proposal: ProposedViewSize, nsView scroll: NSScrollView, context: Context) -> CGSize? {
@@ -238,11 +288,13 @@ public struct WeftTextArea: NSViewRepresentable {
 
         public func textDidChange(_ notification: Notification) {
             guard let editor = notification.object as? NSTextView, !editor.hasMarkedText() else { return }
-            // SwiftUI's vertical TextField keeps an AppKit edit buffer that can
-            // clear the displayed draft on rejection. Restore the editor itself.
-            if let restored = area.edit(editor.string) {
-                let caret = min(editor.selectedRange().location, restored.utf16.count)
-                editor.string = restored
+            let proposed = editor.string
+            let limited = limitTextEdit(proposed, maxLength: area.maxLength)
+            let accepted = area.edit(limited) ?? limited
+            // Restore the AppKit edit buffer even when the value slot did not change.
+            if accepted != proposed {
+                let caret = min(editor.selectedRange().location, accepted.utf16.count)
+                editor.string = accepted
                 editor.setSelectedRange(NSRange(location: caret, length: 0))
             }
         }
@@ -265,6 +317,51 @@ private final class TextAreaEditor: NSTextView {
     var placeholder = "" {
         didSet { if placeholder != oldValue { needsDisplay = true } }
     }
+    var onFocusChange: ((Bool) -> Void)?
+    private var focusRequest = TextFocusRequest()
+    private var pendingFocus: Bool?
+
+    func requestFocus(_ focused: Bool) {
+        guard let desired = focusRequest.update(focused) else { return }
+        pendingFocus = desired
+        applyPendingFocus()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        applyPendingFocus()
+    }
+
+    private func applyPendingFocus() {
+        guard pendingFocus != nil, window != nil else { return }
+        // Wait until the representable update (including attachment) is complete.
+        Task { @MainActor [weak self] in
+            guard let self, let window, let desired = pendingFocus else { return }
+            pendingFocus = nil
+            if desired, isEditable {
+                window.makeFirstResponder(self)
+            } else if !desired, window.firstResponder === self {
+                window.makeFirstResponder(nil)
+            }
+        }
+    }
+
+    override func becomeFirstResponder() -> Bool {
+        let accepted = super.becomeFirstResponder()
+        if accepted { reportFocus(true) }
+        return accepted
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let accepted = super.resignFirstResponder()
+        if accepted { reportFocus(false) }
+        return accepted
+    }
+
+    private func reportFocus(_ focused: Bool) {
+        // Dispatch after AppKit finishes changing its first responder.
+        Task { @MainActor [weak self] in self?.onFocusChange?(focused) }
+    }
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
@@ -282,28 +379,28 @@ private final class TextAreaEditor: NSTextView {
 public struct WeftTextArea: View {
     private let value: String
     private let placeholder: String
+    private let maxLength: CGFloat?
+    private let focused: Bool
+    private let onFocusChange: (@MainActor (Bool) -> Void)?
     private let edit: @MainActor (String) -> String?
-    @State private var draft: String
 
-    public init(value: String, placeholder: String, edit: @escaping @MainActor (String) -> String?) {
+    public init(value: String, placeholder: String, maxLength: CGFloat? = nil, focused: Bool = false,
+                onFocusChange: (@MainActor (Bool) -> Void)? = nil, edit: @escaping @MainActor (String) -> String?) {
         self.value = value
         self.placeholder = placeholder
+        self.maxLength = maxLength
+        self.focused = focused
+        self.onFocusChange = onFocusChange
         self.edit = edit
-        _draft = State(initialValue: value)
     }
 
     public var body: some View {
-        TextField("", text: $draft, prompt: Text(placeholder), axis: .vertical)
-            .lineLimit(3, reservesSpace: true)
-            .textFieldStyle(.roundedBorder)
-            .onChange(of: value) { _, value in draft = value }
-            .onChange(of: draft) { _, proposed in
-                // The vertical field keeps its edit buffer if only a computed binding
-                // is invalidated. Set the draft back to the slot explicitly on refusal.
-                if proposed != value, let restored = edit(proposed) {
-                    draft = restored
-                }
-            }
+        TextDraft(value: value, maxLength: maxLength, edit: edit) { draft in
+            TextField("", text: draft, prompt: Text(placeholder), axis: .vertical)
+                .lineLimit(3, reservesSpace: true)
+                .textFieldStyle(.roundedBorder)
+                .modifier(TextInputFocus(focused: focused, onFocusChange: onFocusChange))
+        }
     }
 }
 #endif

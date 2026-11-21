@@ -139,11 +139,42 @@ impl Body<'_> {
                 out.close("}");
                 out.close("}");
             }
-            Element::Input => {
+            Element::Input | Element::TextArea => {
+                let (control, value, placeholder) = if element == Element::Input {
+                    ("WeftInput", "text", "nil")
+                } else {
+                    ("WeftTextArea", "value", "\"\"")
+                };
+                let options = Properties::new(
+                    [
+                        "type",
+                        "returnKey",
+                        "maxLength",
+                        "focused",
+                        "onSubmit",
+                        "onFocusChange",
+                    ],
+                    |name| match name {
+                        "onSubmit" => self.template.event(node, name).map(Argument::Action),
+                        "onFocusChange" => self.template.event(node, name).map(Argument::BoolEvent),
+                        _ => prop(name).map(|source| match name {
+                            "type" => Argument::Union(Some(source), "InputType", ".text"),
+                            "returnKey" => Argument::Union(Some(source), "ReturnKey", "nil"),
+                            _ => Argument::Property(source),
+                        }),
+                    },
+                );
+                let options = fmt::from_fn(|f| {
+                    if options.is_empty() {
+                        Ok(())
+                    } else {
+                        write!(f, ", {options}")
+                    }
+                });
                 let (event, slot) = self.template.controlled(node);
+                let placeholder = with_default(prop("placeholder"), placeholder);
                 out.writer.line(format_args!(
-                    "WeftInput(text: s.v{slot}, placeholder: {}) {{ s.dispatch({event}, .string($0)) ? nil : s.v{slot} }}",
-                    optional(prop("placeholder")),
+                    "{control}({value}: s.v{slot}, placeholder: {placeholder}{options}) {{ s.dispatch({event}, .string($0)) ? nil : s.v{slot} }}"
                 ));
             }
             Element::Checkbox => {
@@ -156,13 +187,6 @@ impl Body<'_> {
                 let (event, slot) = self.template.controlled(node);
                 out.writer.line(format_args!(
                     "weftSwitch(checked: s.v{slot}) {{ s.dispatch({event}, .bool($0)) ? nil : s.v{slot} }}"
-                ));
-            }
-            Element::TextArea => {
-                let (event, slot) = self.template.controlled(node);
-                let placeholder = with_default(prop("placeholder"), "\"\"");
-                out.writer.line(format_args!(
-                    "WeftTextArea(value: s.v{slot}, placeholder: {placeholder}) {{ s.dispatch({event}, .string($0)) ? nil : s.v{slot} }}"
                 ));
             }
             Element::Slider => {
@@ -417,6 +441,8 @@ fn text_argument<'t>(name: &str, source: PropSource<'t>) -> Argument<'t> {
 enum Argument<'t> {
     Property(PropSource<'t>),
     Union(Option<PropSource<'t>>, &'static str, &'static str),
+    Action(usize),
+    BoolEvent(usize),
     Default(&'static str),
 }
 
@@ -437,6 +463,8 @@ impl Display for Argument<'_> {
             Self::Union(Some(PropSource::Constant(_)), name, _) => {
                 unreachable!("{name} is a string union")
             }
+            Self::Action(slot) => write!(f, "{{ _ = s.dispatch({slot}) }}"),
+            Self::BoolEvent(slot) => write!(f, "{{ _ = s.dispatch({slot}, .bool($0)) }}"),
             Self::Property(PropSource::Slot(slot)) => write!(f, "s.v{slot}"),
             Self::Property(PropSource::Constant(value)) => match value {
                 Constant::Int(v) => v.fmt(f),

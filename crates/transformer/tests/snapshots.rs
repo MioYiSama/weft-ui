@@ -16,6 +16,8 @@ struct Fixture {
     name: &'static str,
     source: &'static str,
     natives: &'static [Platform],
+    /// Platforms whose logic or layout differ because they ignore a member used in this fixture.
+    diverges: &'static [Platform],
 }
 
 impl Fixture {
@@ -50,16 +52,19 @@ const TODO_LIST: Fixture = Fixture {
     name: "TodoList",
     source: include_str!("fixtures/TodoList.weft"),
     natives: ALL_NATIVES,
+    diverges: &[],
 };
 const GALLERY: Fixture = Fixture {
     name: "Gallery",
     source: include_str!("fixtures/Gallery.weft"),
     natives: ALL_NATIVES,
+    diverges: &[],
 };
 const LANGUAGE: Fixture = Fixture {
     name: "Language",
     source: include_str!("fixtures/Language.weft"),
     natives: ALL_NATIVES,
+    diverges: &[],
 };
 
 const THEME: Fixture = Fixture {
@@ -72,6 +77,7 @@ const THEME: Fixture = Fixture {
         Platform::Windows,
         Platform::Linux,
     ],
+    diverges: &[],
 };
 
 const LAYOUT: Fixture = Fixture {
@@ -84,12 +90,14 @@ const LAYOUT: Fixture = Fixture {
         Platform::Windows,
         Platform::Linux,
     ],
+    diverges: &[],
 };
 
 const APPEARANCE: Fixture = Fixture {
     name: "Appearance",
     source: include_str!("fixtures/Appearance.weft"),
     natives: ALL_NATIVES,
+    diverges: &[],
 };
 
 const TYPOGRAPHY: Fixture = Fixture {
@@ -102,18 +110,21 @@ const TYPOGRAPHY: Fixture = Fixture {
         Platform::Windows,
         Platform::Linux,
     ],
+    diverges: &[],
 };
 
 const CONTROLS: Fixture = Fixture {
     name: "Controls",
     source: include_str!("fixtures/Controls.weft"),
     natives: ALL_NATIVES,
+    diverges: &[],
 };
 
 const INPUTS: Fixture = Fixture {
     name: "Inputs",
     source: include_str!("fixtures/Inputs.weft"),
-    natives: &[],
+    natives: ALL_NATIVES,
+    diverges: &[Platform::Macos, Platform::Windows, Platform::Linux],
 };
 
 /// Every generated file of the app, as the platform's output directory would
@@ -391,8 +402,9 @@ fn check_native(fixture: &Fixture, wechat: &BTreeMap<String, String>, layout: &s
     let name = fixture.name;
     let js = format!("{name}.js");
     let dts = format!("{name}.d.ts");
-    let shared_apple =
-        fixture.natives.contains(&Platform::Ios) && fixture.natives.contains(&Platform::Macos);
+    let shared_apple = [Platform::Ios, Platform::Macos]
+        .iter()
+        .all(|platform| fixture.natives.contains(platform) && !fixture.diverges.contains(platform));
     for &platform in fixture.natives {
         let view = match platform {
             Platform::Ios if shared_apple => continue,
@@ -410,12 +422,14 @@ fn check_native(fixture: &Fixture, wechat: &BTreeMap<String, String>, layout: &s
             expected,
             "{name}/{platform}"
         );
-        assert_eq!(native[&js], wechat[&js], "{name}/{platform}/{js}");
-        assert_eq!(native[&dts], wechat[&dts], "{name}/{platform}/{dts}");
-        assert_eq!(
-            native["layout.json"], layout,
-            "{name}/{platform}/layout.json"
-        );
+        if !fixture.diverges.contains(&platform) {
+            assert_eq!(native[&js], wechat[&js], "{name}/{platform}/{js}");
+            assert_eq!(native[&dts], wechat[&dts], "{name}/{platform}/{dts}");
+            assert_eq!(
+                native["layout.json"], layout,
+                "{name}/{platform}/layout.json"
+            );
+        }
         // iOS and macOS share one SwiftUI backend; differences live in WeftKit.
         if platform == Platform::Macos && shared_apple {
             let ios = generated_files(fixture.compile(Platform::Ios));

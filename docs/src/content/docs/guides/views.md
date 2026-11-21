@@ -124,7 +124,7 @@ component Preferences(choices: String[]) {
 
 ## Text entry
 
-`Input` edits one line. Set `type` to `text`, `password`, `number`, `email`, or `phone` to choose the field and keyboard; the value is still a string. `returnKey` hints the keyboard action (`done`, `go`, `next`, `search`, or `send`), and `onSubmit` handles submission. WeChat uses the numeric keyboard for `phone` and the default keyboard for `email`. See the [element reference](/reference/elements/#input) for platform support.
+`Input` edits one line. Set `type` to `text`, `password`, `number`, `email`, or `phone` to choose the field and keyboard; the value is still a string. `returnKey` hints the keyboard action (`done`, `go`, `next`, `search`, or `send`), and `onSubmit` handles submission. WeChat uses the numeric keyboard for `phone` and the default keyboard for `email`. macOS, Windows, and Linux have no on-screen keyboard: they ignore `returnKey`, and macOS distinguishes only `password` among the types. See the [element reference](/reference/elements/#input) for platform support.
 
 Both `Input` and `TextArea` can limit user edits with `maxLength`. The limit counts UTF-16 code units (the same as `String.length`), and `onChange` receives the truncated text. Changing `focused` to `true` requests focus; changing it back to `false` releases it. The request is not repeated while the value stays the same. Use `onFocusChange` to observe actual focus without writing back to `focused`.
 

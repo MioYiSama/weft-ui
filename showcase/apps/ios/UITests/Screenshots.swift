@@ -26,7 +26,46 @@ final class Screenshots: XCTestCase {
             try screenshot.pngRepresentation.write(to: directory.appendingPathComponent("\(id)\(suffix).png"))
             if id == "appearance" { checkVisibility(in: app) }
             if id == "controls" { checkControls(in: app) }
+            if id == "inputs" { checkInputs(in: app) }
         }
+    }
+
+    @MainActor
+    private func checkInputs(in app: XCUIApplication) {
+        let field = app.textFields["搜索，提交后清空"]
+        let password = app.secureTextFields["输入密码"]
+        let request = app.buttons["聚焦文本框"]
+        let release = app.buttons["放弃焦点"]
+        let focused = app.staticTexts["已聚焦"]
+        let blurred = app.staticTexts["未聚焦"]
+
+        XCTAssertTrue(blurred.exists)
+        request.tap()
+        XCTAssertTrue(focused.waitForExistence(timeout: 5))
+        release.tap()
+        XCTAssertTrue(blurred.waitForExistence(timeout: 5))
+
+        field.tap()
+        XCTAssertTrue(focused.waitForExistence(timeout: 5))
+        XCTAssertTrue(request.exists, "User focus must not write back to focused")
+        request.tap()
+        password.tap()
+        XCTAssertTrue(blurred.waitForExistence(timeout: 5))
+        XCTAssertTrue(release.exists, "User blur must not write back or refocus the field")
+        release.tap()
+
+        request.tap()
+        XCTAssertTrue(focused.waitForExistence(timeout: 5))
+        let prefix = String(repeating: "a", count: 19)
+        field.typeText(prefix + "🙂")
+        XCTAssertEqual(field.value as? String, prefix)
+        field.typeText("bcd")
+        XCTAssertEqual(field.value as? String, prefix + "b")
+        let search = app.keyboards.buttons["Search"]
+        XCTAssertTrue(search.exists)
+        search.tap()
+        XCTAssertTrue(app.staticTexts["0/20"].waitForExistence(timeout: 5))
+        XCTAssertEqual(field.value as? String, "搜索，提交后清空")
     }
 
     @MainActor

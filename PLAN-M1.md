@@ -948,10 +948,10 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R4.n | ☑ | 4090c41 | C-windows（core 19、壳 17）、C-ui 通过；showcase FlaUI 测试验证锁定恢复；Windows 截图已查看 |
 | R4.g | ☑ | f3740d0 | C-linux 7 组、C-ui、原生 conformance 7 项（含 `controls`）通过；showcase 测试验证锁定恢复；Linux 截图已查看 |
 | R5.w | ☑ | 30771d2 | 截图待维护者确认（`inputs`：web、wechat）；C-rust 130 项、C-ts 通过，`inputs` 在三个驱动上一致，tsc 计数不变；Chromium 中确认 5 种 `type` 的属性映射、`enterkeyhint`、UTF-16 截断、提交与焦点；小程序 WXML 属性已核对，模拟器不弹软键盘，数字键盘与回车键文字待真机确认；C-apps 仅 wechat 有差异，已重新录制基线 |
-| R5.a | ☐ | | |
-| R5.d | ☐ | | |
-| R5.n | ☐ | | |
-| R5.g | ☐ | | |
+| R5.a | ☑ | （本提交） | 截图待维护者确认（`inputs`：ios）；C-apple 21 项、iOS C-ui、macOS C-ui 与 showcase 截图（一次运行）通过；iOS showcase 自动化验证焦点、截断与提交；其余 ios 基线 0.000%；含本批共用的 schema、夹具（含新增 `diverges`）、`pages.json`、`pending.json` 与 views 指南的桌面平台说明 |
+| R5.d | ☑ | 358101f | 截图待维护者确认（`inputs`：android）；C-android、C-ui 与 showcase 仪器测试通过（焦点切换、Search 提交、emoji 截断）；已有截图与快照逐字节不变 |
+| R5.n | ☑ | 9af2989 | C-windows（core 20、壳 24）、C-ui 通过；showcase 测试验证密码遮罩、焦点、回车清空与两处上限的 Unicode 粘贴；Windows 截图已查看 |
+| R5.g | ☑ | a794102 | C-linux 7 组、C-ui、C-core 20 项（含 `conformance.inputs`）通过；showcase 测试验证回车提交、焦点与代理对边界截断；Linux 截图已查看 |
 | R6.w | ☐ | | |
 | R6.a | ☐ | | |
 | R6.d | ☐ | | |
@@ -1021,3 +1021,8 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R5.w] 微信开发者工具在绑定属性变为 `true` 时报告获得焦点；变为 `false` 时收到了值，但没有可观察到的 blur 事件；模拟器不弹软键盘，数字键盘与回车键文字只能在真机上确认。原生 conformance host 能重放布尔焦点事件，但启用 `inputs` 前还需要在宿主侧按 UTF-16 截断。结论：真机确认留给维护者；UTF-16 截断由 R5.g 处理
 - [R5.w 期间] macOS UI 测试改为用本地自签名证书「Weft Local Signing」稳定签名（`/tmp/weft-m1/signing.xcconfig`，经 `XCODE_XCCONFIG_FILE` 注入，不改仓库）：ad-hoc 签名的运行器每次重新编译 cdhash 都会变，系统权限（辅助功能、「文稿」文件夹）因此反复弹窗。自签名证书没有 Team ID，需要信任该证书并关闭 hardened runtime，否则 `amfid` 拒绝启动 App、库验证拒绝加载 App 自己的 dylib。`c-ui-macos.sh` 与新增的 `shot-macos.sh` 在运行期间切到 ABC 并停用拼音，结束后恢复。Android 模拟器改为无窗口运行。结论：接受（本机环境配置）
 - [R4.a 补验] 稳定签名后补做 macOS 的 showcase「锁定」验证：两个开关、`Checkbox`、`Slider`、两个 `Picker` 均恢复原值，但 `TextArea` 被拒绝后显示为空（AppKit 文本缓冲没有随 SwiftUI 绑定恢复）。修复为直接恢复 AppKit 文本缓冲，新增多行回滚回归测试（C-apple 17 项），macOS showcase 测试恢复锁定验证并通过，无权限弹窗；iOS 不变。结论：已修复，单独提交 `fix(apple): restore rejected TextArea edits on macOS`
+- [R5.n] 快照测试 `check_native` 假定原生平台的 JS、`.d.ts` 与布局表都与小程序相同；桌面平台忽略 `returnKey` 后少一个槽位，`Inputs` 在 macOS、Windows、Linux 上必然不同。`Fixture` 新增显式字段 `diverges`，列出的平台跳过与小程序的相等断言；macOS 在其中时 iOS 不再与 macOS 共用快照目录。结论：接受
+- [R5.a] 焦点语义：`focused` 从不回写；`onFocusChange` 对每次实际焦点变化都触发（程序或用户造成的），与 Web 一致。macOS 只区分 `password`，多行编辑器保留 AppKit 方框以便恢复被拒绝的编辑。结论：接受
+- [R5.g] GTK 打开页面时自动把焦点给第一个输入框，Web 打开时不聚焦，`inputs` 页初始显示不同。结论：接受，记录在案
+- [R5.d] Android 的 `TextArea` 是 Material 填充样式，`Input` 是描边样式（R4.d 起），同页对比时风格不一致。结论：记录在案，X1 前由维护者决定是否统一
+- [R5 期间] 维护者要求 macOS UI 自动化尽量少、尽量短：每个原生波次只在最后由编排者放行一次，`/tmp/weft-m1/macos-ui.sh <页面>` 依次跑 example 的 C-ui 与只含本任务页面的 showcase 截图；为此新增 `WEFT_SHOT_PAGES`（单独提交 8bbd947）。结论：接受

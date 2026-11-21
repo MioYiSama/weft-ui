@@ -3,7 +3,7 @@ title: Bundle images, icons and fonts
 description: Package local assets and use them in Weft UI views.
 ---
 
-Bundled images, SVG icons, and fonts currently work on the Web and in WeChat mini programs. URL images do not need the asset pipeline.
+Bundled images, SVG icons, and fonts work on every target platform. URL images do not need the asset pipeline.
 
 ## Images and icons
 

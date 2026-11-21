@@ -958,7 +958,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R6.n | ☑ | 0e101da | C-windows（core 21、壳 26）、C-ui 通过；showcase 测试用真实鼠标验证各计数独立、按压反馈、外部松开、Enter 与 UIA Invoke；Windows 截图已查看 |
 | R6.g | ☑ | f95fe48 | C-linux 7 组、C-ui、原生 conformance 21 项（含 `tap`）通过；X11 showcase 测试验证各计数独立、外部松开与键盘触发；Linux 截图已查看 |
 | R7.w | ☑ | 11b52f0 | 截图待维护者确认（`assets`：web、wechat）；C-rust 133 项、C-ts 231 项通过，tsc 计数不变；五个原生 showcase 目标在 `WEFT_NATIVE=0` 下生成成功；小程序主包 1,773,384 字节（字体 1630 KiB，构建给出警告），低于 2 MiB；开发者工具渲染三种 Inter 字重；C-apps 仅 web、wechat 有差异，已重新录制基线 |
-| R7.a | ☑ | （本提交） | 截图待维护者确认（`assets`：ios；`tap` 的 ios 截图 0.000% 不变）；C-apple 26 项（倍数选择、缺失图片、Inter 注册）、iOS C-ui、macOS C-ui 与 showcase 截图（一次运行）通过；Apple 的 Vite 资源断言通过；其余 ios 基线 0.000%；含本批共用的 schema、夹具、`pages.json`、`tap` 页改用打包图片 `asset:tap_card` 与 views、platforms 指南更新 |
+| R7.a | ☑ | b398130 | 截图待维护者确认（`assets`：ios；`tap` 的 ios 截图 0.000% 不变）；C-apple 26 项（倍数选择、缺失图片、Inter 注册）、iOS C-ui、macOS C-ui 与 showcase 截图（一次运行）通过；Apple 的 Vite 资源断言通过；其余 ios 基线 0.000%；含本批共用的 schema、夹具、`pages.json`、`tap` 页改用打包图片 `asset:tap_card` 与 views、platforms 指南更新 |
 | R7.d | ☑ | 15447d9 | 截图待维护者确认（`assets`：android；`tap` 的 android 基线在 Apple 提交中随图片显示而更新）；C-android 21 项、C-ui、3 个资源仪器测试与 Android 的 Vite 断言通过；其余 android 基线 0.000% |
 | R7.n | ☑ | 0df03db | C-windows（core 21、WinUI 37）、C-ui 与 Windows 的 Vite 断言通过；Windows `assets`、`tap` 截图已查看 |
 | R7.g | ☑ | 06781eb | C-linux 8 组、C-ui 与 Linux 的 Vite 断言通过，CMake 复制的资源与生成文件逐字节一致；Linux `assets`、`tap` 截图已查看 |

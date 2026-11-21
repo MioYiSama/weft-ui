@@ -38,6 +38,7 @@ async function play<A extends AppLike>(script: Script<A>): Promise<void> {
     const actions: Action[] = [];
     const ui: Actions = {
       click: (type, index, event) => void actions.push({ method: "click", type, index, event }),
+      focus: (type, index, value) => void actions.push({ method: "click", type, index, event: "onFocusChange", value }),
       edit: (type, index, value) => void actions.push({ method: "edit", type, index, value }),
     };
     step.run(ui, app.model);

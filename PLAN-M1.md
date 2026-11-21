@@ -943,11 +943,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R3.n | ☑ | 65ae9ac | C-windows（core 18、壳 12）、C-ui 通过；Windows 截图已查看，截断位置与 Web 一致；已有 Windows 快照未变 |
 | R3.g | ☑ | b0b69a2 | C-linux 6 组、C-ui 通过；Linux 截图已查看；已有 Linux 快照未变；没有待移出的 conformance 夹具 |
 | R4.w | ☑ | ae7e026 | 截图待维护者确认（`controls`：web、wechat）；C-rust 128 项、C-ts 通过，`controls` 在三个驱动上一致，tsc 计数不变；Web 上逐个操作控件并验证锁定时恢复；C-apps 仅 web、wechat 有差异，已重新录制基线 |
-| R4.a | ☑ | （本提交） | 截图待维护者确认（`controls`：ios；重新生成的 ios `hello`，差异 0.414%）；C-apple 16 项、example 的 iOS 与 macOS C-ui 通过；iOS 上自动操作验证锁定时恢复；macOS 截图已查看，未锁定时的操作已验证，锁定恢复因系统权限弹窗反复出现未完成；含本批共用的 schema、夹具、`pages.json`、`pending.json` |
+| R4.a | ☑ | 4f4d352 | 截图待维护者确认（`controls`：ios；重新生成的 ios `hello`，差异 0.414%）；C-apple 16 项、example 的 iOS 与 macOS C-ui 通过；iOS 上自动操作验证锁定时恢复；macOS 截图已查看，未锁定时的操作已验证，锁定恢复因系统权限弹窗反复出现未完成；含本批共用的 schema、夹具、`pages.json`、`pending.json` |
 | R4.d | ☑ | f9b7411 | 截图待维护者确认（`controls`：android）；C-android 20 项、C-ui 与 2 个 showcase 控件测试通过（含锁定恢复）；截图回归 0.000% |
 | R4.n | ☑ | 4090c41 | C-windows（core 19、壳 17）、C-ui 通过；showcase FlaUI 测试验证锁定恢复；Windows 截图已查看 |
 | R4.g | ☑ | f3740d0 | C-linux 7 组、C-ui、原生 conformance 7 项（含 `controls`）通过；showcase 测试验证锁定恢复；Linux 截图已查看 |
-| R5.w | ☐ | | |
+| R5.w | ☑ | （本提交） | 截图待维护者确认（`inputs`：web、wechat）；C-rust 130 项、C-ts 通过，`inputs` 在三个驱动上一致，tsc 计数不变；Chromium 中确认 5 种 `type` 的属性映射、`enterkeyhint`、UTF-16 截断、提交与焦点；小程序 WXML 属性已核对，模拟器不弹软键盘，数字键盘与回车键文字待真机确认；C-apps 仅 wechat 有差异，已重新录制基线 |
 | R5.a | ☐ | | |
 | R5.d | ☐ | | |
 | R5.n | ☐ | | |
@@ -1016,3 +1016,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R4.d] Compose `Slider` 的刻度只能均分区间，不均匀或过密的步长改用连续轨道，在壳里按步长取整；截图工具推进 Compose 时钟，使 `Spinner` 的帧可重复。结论：接受
 - [R4.n] Windows 截图窗口在 `controls` 页高 800（其他页 760），`text` 页宽 390（R3.n 起）；与 R3.a 不为单页改 macOS 窗口的做法不一致，WinUI 控件更高、页面不滚动截图时需要。结论：接受，记录在案
 - [R4.g] GTK `TextView` 没有原生占位文字，`TextArea` 用文本缓冲之外的覆盖层显示；被拒绝的 `Switch` 在重绘前恢复，使无障碍状态一并回退；Linux 镜像加装 `fonts-noto-cjk` 以显示中文标签。结论：接受
+- [R5.w] 计划没有写「预期变化」。实际变化：新增 `Inputs` 快照与 `inputs` 黄金文件；`Appearance`、`Gallery`、`Layout`、`TodoList` 的小程序 `view.wxml` 新增未设上限时的 `maxlength="-1"`；example 的小程序产物（`view.wxml` 与解码焦点载荷的 `js/index.js`）。Web、原生快照与原生 example 产物不变，`Input`、`TextArea` 原有成员顺序不变。结论：接受，已重新录制 C-apps 基线
+- [R5.w] 微信原生 `textarea` 有默认的固定宽度，挡住了交叉轴拉伸，`fill = true` 不生效（R4.w 起就存在）；只为用到 `TextArea` 的应用输出 `width:auto` 重置，显式宽度不受影响。结论：已修复
+- [R5.w] 微信开发者工具在绑定属性变为 `true` 时报告获得焦点；变为 `false` 时收到了值，但没有可观察到的 blur 事件；模拟器不弹软键盘，数字键盘与回车键文字只能在真机上确认。原生 conformance host 能重放布尔焦点事件，但启用 `inputs` 前还需要在宿主侧按 UTF-16 截断。结论：真机确认留给维护者；UTF-16 截断由 R5.g 处理
+- [R5.w 期间] macOS UI 测试改为用本地自签名证书「Weft Local Signing」稳定签名（`/tmp/weft-m1/signing.xcconfig`，经 `XCODE_XCCONFIG_FILE` 注入，不改仓库）：ad-hoc 签名的运行器每次重新编译 cdhash 都会变，系统权限（辅助功能、「文稿」文件夹）因此反复弹窗。自签名证书没有 Team ID，需要信任该证书并关闭 hardened runtime，否则 `amfid` 拒绝启动 App、库验证拒绝加载 App 自己的 dylib。`c-ui-macos.sh` 与新增的 `shot-macos.sh` 在运行期间切到 ABC 并停用拼音，结束后恢复。Android 模拟器改为无窗口运行。结论：接受（本机环境配置）

@@ -1,0 +1,19 @@
+type Kind = "text" | "password" | "number" | "email" | "phone"
+type Key = "done" | "go" | "next" | "search" | "send"
+
+component Inputs(kind: Kind, key: Key, limit: Int) {
+    state draft = ""
+    state note = ""
+    state requestFocus = false
+    state hasFocus = false
+    Column {
+        Input(draft, type = kind, returnKey = key, maxLength = limit, focused = requestFocus,
+            onChange = { text -> draft = text }, onSubmit = { draft = "" },
+            onFocusChange = { value -> hasFocus = value })
+        Input("", type = "password")
+        TextArea(note, maxLength = 10, focused = false, onChange = { text -> note = text },
+            onFocusChange = { value -> hasFocus = value })
+        Text(if (hasFocus) "Focused" else "Not focused")
+        Button(onClick = { requestFocus = !requestFocus }) { Text("Toggle focus") }
+    }
+}

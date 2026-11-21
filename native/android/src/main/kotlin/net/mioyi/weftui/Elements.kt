@@ -137,3 +137,39 @@ enum class WeftDecoration {
         }
     }
 }
+
+enum class WeftInputType {
+    TEXT,
+    PASSWORD,
+    NUMBER,
+    EMAIL,
+    PHONE;
+
+    companion object {
+        fun parse(value: String): WeftInputType = when (value) {
+            "password" -> PASSWORD
+            "number" -> NUMBER
+            "email" -> EMAIL
+            "phone" -> PHONE
+            else -> TEXT
+        }
+    }
+}
+
+enum class WeftReturnKey {
+    DONE,
+    GO,
+    NEXT,
+    SEARCH,
+    SEND;
+
+    companion object {
+        fun parse(value: String): WeftReturnKey = when (value) {
+            "go" -> GO
+            "next" -> NEXT
+            "search" -> SEARCH
+            "send" -> SEND
+            else -> DONE
+        }
+    }
+}

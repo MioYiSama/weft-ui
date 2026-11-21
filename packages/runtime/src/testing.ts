@@ -116,10 +116,19 @@ export class Renderer extends OpWriter implements Sink {
 
   /** Fires the named event (or the element's first event) without a payload. */
   click(element: ViewElement, event?: string): void {
+    this.#emit(element, event, undefined);
+  }
+
+  /** Reports a user focus change without modifying the input's requested focus. */
+  focus(element: ViewElement, value: boolean): void {
+    this.#emit(element, "onFocusChange", value);
+  }
+
+  #emit(element: ViewElement, event: string | undefined, payload: boolean | undefined): void {
     const [scope, node] = this.#node(element);
     const slot = scope.template.events.findIndex((e) => e.node === node && (event === undefined || e.event === event));
     if (slot < 0) throw new Error(`<${element.type}> has no event${event === undefined ? "" : ` ${event}`}`);
-    this.#session!.dispatch(scope.id, slot, undefined);
+    this.#session!.dispatch(scope.id, slot, payload);
   }
 
   /**

@@ -268,8 +268,14 @@ export class WechatSink implements Sink {
     if (!found || !session) return undefined;
     const [scope, slot] = found;
     const [, controls, kind] = scope.keys.e![slot]!;
-    const detail = event.type === "input" || event.type === "change" || event.type === "changing"
-      ? event.detail?.value : undefined;
+    let detail: unknown;
+    switch (event.type) {
+      case "focus": detail = true; break;
+      case "blur": detail = false; break;
+      case "input":
+      case "change":
+      case "changing": detail = event.detail?.value; break;
+    }
     // The selector's change event sends a string, even though its index is an Int.
     const value = kind === "number" ? Number(detail) : detail;
     if (session.dispatch(scope.id, slot, value) || scope.dead || controls < 0) return undefined;

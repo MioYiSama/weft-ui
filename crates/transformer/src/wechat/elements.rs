@@ -28,6 +28,8 @@ pub(crate) enum Target {
     Text,
     /// String, integer or array attribute.
     Attr(&'static str),
+    /// Maps an InputType to the native type and password attributes.
+    InputType,
     /// Boolean attribute; WXML treats every non-empty string as true, so
     /// values are always written as expressions.
     Flag {
@@ -47,6 +49,13 @@ pub(crate) fn target(element: Element, prop: &str) -> Target {
     match (element, prop) {
         (Element::Text | Element::Span, "value") => Target::Text,
         (Element::Input | Element::TextArea | Element::Slider, "value") => Target::Attr("value"),
+        (Element::Input, "type") => Target::InputType,
+        (Element::Input, "returnKey") => Target::Attr("confirm-type"),
+        (Element::Input | Element::TextArea, "maxLength") => Target::Attr("maxlength"),
+        (Element::Input | Element::TextArea, "focused") => Target::Flag {
+            name: "focus",
+            default: false,
+        },
         (Element::Slider, "min") => Target::Attr("min"),
         (Element::Slider, "max") => Target::Attr("max"),
         (Element::Slider, "step") => Target::Attr("step"),
@@ -80,6 +89,8 @@ pub(crate) fn target(element: Element, prop: &str) -> Target {
 pub(crate) fn event_types(element: Element, event: &str) -> &'static [&'static str] {
     match (element, event) {
         (Element::Input | Element::TextArea, "onChange") => &["input"],
+        (Element::Input, "onSubmit") => &["confirm"],
+        (Element::Input | Element::TextArea, "onFocusChange") => &["focus", "blur"],
         (Element::Checkbox | Element::Switch | Element::Picker, "onChange") => &["change"],
         (Element::Slider, "onChange") => &["changing", "change"],
         (Element::Button, "onClick") => &["tap"],

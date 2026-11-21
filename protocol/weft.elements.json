@@ -7,7 +7,9 @@
     "Shadow": ["none", "small", "medium", "large"],
     "Weight": ["regular", "light", "medium", "semibold", "bold"],
     "TextAlign": ["start", "center", "end"],
-    "Decoration": ["none", "underline", "lineThrough"]
+    "Decoration": ["none", "underline", "lineThrough"],
+    "InputType": ["text", "password", "number", "email", "phone"],
+    "ReturnKey": ["done", "go", "next", "search", "send"]
   },
   "groups": {
     "layout": [
@@ -331,6 +333,36 @@
           "name": "disabled",
           "type": "Bool",
           "doc": { "en": "Disables the input field.", "zh": "禁用输入框。" }
+        },
+        {
+          "name": "type", "type": "InputType", "default": "text",
+          "doc": { "en": "Chooses the kind of input field and its keyboard.", "zh": "选择输入框类型及对应的键盘。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        },
+        {
+          "name": "returnKey", "type": "ReturnKey",
+          "doc": { "en": "Hints what action the keyboard's return key should display.", "zh": "提示键盘的回车键显示哪种操作。" },
+          "support": { "ios": "no", "macos": "ignored", "android": "no", "windows": "ignored", "linux": "ignored" }
+        },
+        {
+          "name": "maxLength", "type": "Int",
+          "doc": { "en": "Limits user edits to this many UTF-16 code units; omit for no limit.", "zh": "限制用户编辑后的 UTF-16 码元个数；省略则不限。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        },
+        {
+          "name": "focused", "type": "Bool", "default": false,
+          "doc": { "en": "Requests focus when changed to true and releases it when changed to false.", "zh": "变为 true 时请求焦点，变为 false 时放弃焦点。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        },
+        {
+          "name": "onSubmit", "event": true,
+          "doc": { "en": "Fires when the user submits with the keyboard's return key.", "zh": "用户通过键盘回车键提交时触发。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        },
+        {
+          "name": "onFocusChange", "event": true, "payload": "Bool",
+          "doc": { "en": "Reports true when focus is gained and false when it is lost, without changing focused.", "zh": "获得焦点时提供 true，失去焦点时提供 false，不会改写 focused。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
         }
       ]
     },
@@ -468,6 +500,21 @@
         {
           "name": "onChange", "event": true, "payload": "String",
           "doc": { "en": "Reports the proposed text after an edit.", "zh": "提供用户编辑后的文本。" }
+        },
+        {
+          "name": "maxLength", "type": "Int",
+          "doc": { "en": "Limits user edits to this many UTF-16 code units; omit for no limit.", "zh": "限制用户编辑后的 UTF-16 码元个数；省略则不限。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        },
+        {
+          "name": "focused", "type": "Bool", "default": false,
+          "doc": { "en": "Requests focus when changed to true and releases it when changed to false.", "zh": "变为 true 时请求焦点，变为 false 时放弃焦点。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        },
+        {
+          "name": "onFocusChange", "event": true, "payload": "Bool",
+          "doc": { "en": "Reports true when focus is gained and false when it is lost, without changing focused.", "zh": "获得焦点时提供 true，失去焦点时提供 false，不会改写 focused。" },
+          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
         }
       ]
     },

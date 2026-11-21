@@ -82,4 +82,24 @@ enum class Decoration { None, Underline, LineThrough };
     return Decoration::None;
 }
 
+enum class InputType { Text, Password, Number, Email, Phone };
+
+[[nodiscard]] constexpr InputType parse_input_type(std::string_view value) noexcept {
+    if (value == "password") return InputType::Password;
+    if (value == "number") return InputType::Number;
+    if (value == "email") return InputType::Email;
+    if (value == "phone") return InputType::Phone;
+    return InputType::Text;
+}
+
+enum class ReturnKey { Done, Go, Next, Search, Send };
+
+[[nodiscard]] constexpr ReturnKey parse_return_key(std::string_view value) noexcept {
+    if (value == "go") return ReturnKey::Go;
+    if (value == "next") return ReturnKey::Next;
+    if (value == "search") return ReturnKey::Search;
+    if (value == "send") return ReturnKey::Send;
+    return ReturnKey::Done;
+}
+
 } // namespace weft

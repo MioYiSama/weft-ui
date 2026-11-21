@@ -186,7 +186,7 @@ fn transform_native(
     platform: Platform,
     transform_view: impl FnOnce(&Context<'_>) -> Vec<OutputFile>,
 ) -> (Vec<JsModule>, Vec<OutputFile>, Option<ViewLayout>) {
-    let layout = ViewLayout::new(program);
+    let layout = ViewLayout::for_platform(program, Some(platform));
     let layout_file = OutputFile {
         path: "layout.json".to_owned(),
         contents: layout.to_json(),

@@ -149,3 +149,41 @@ public enum WeftDecoration: String, Sendable {
         }
     }
 }
+
+public enum WeftInputType: String, Sendable {
+    case text
+    case password
+    case number
+    case email
+    case phone
+
+    public init(weft: String) {
+        if let value = Self(rawValue: weft) {
+            self = value
+        } else {
+            #if DEBUG
+            NSLog("weft: invalid InputType value: %@", weft)
+            #endif
+            self = .text
+        }
+    }
+}
+
+public enum WeftReturnKey: String, Sendable {
+    case done
+    case go
+    case next
+    case search
+    case send
+
+    public init(weft: String) {
+        if let value = Self(rawValue: weft) {
+            self = value
+        } else {
+            #if DEBUG
+            NSLog("weft: invalid ReturnKey value: %@", weft)
+            #endif
+            self = .done
+        }
+    }
+}

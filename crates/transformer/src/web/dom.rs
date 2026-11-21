@@ -50,6 +50,8 @@ fn component(program: &Program, id: ComponentId, consts: &mut Consts, out: &mut 
 enum Target {
     Text,
     Value,
+    InputType,
+    Focused,
     Checked,
     RangeValue,
     RangeAttr(&'static str),
@@ -71,6 +73,10 @@ fn target(element: Element, prop: &str, has_clamp: bool) -> Target {
     match (element, prop) {
         (Element::Text | Element::Span, "value") => Target::Text,
         (Element::Input | Element::TextArea, "value") => Target::Value,
+        (Element::Input, "type") => Target::InputType,
+        (Element::Input, "returnKey") => Target::Attr("enterkeyhint"),
+        (Element::Input | Element::TextArea, "maxLength") => Target::Attr("maxlength"),
+        (Element::Input | Element::TextArea, "focused") => Target::Focused,
         (Element::Checkbox | Element::Switch, "checked") => Target::Checked,
         (Element::Slider, "value") => Target::RangeValue,
         (Element::Slider, "min") => Target::RangeAttr("min"),
@@ -230,6 +236,8 @@ fn template_literal(prop: &Prop, target: Target) -> Option<Literal<'_>> {
         || matches!(
             target,
             Target::Value
+                | Target::InputType
+                | Target::Focused
                 | Target::Checked
                 | Target::RangeValue
                 | Target::PickerValue
@@ -246,6 +254,8 @@ fn apply(target: Target, mask: Option<u8>, node: &str, value: &str) -> String {
     match target {
         Target::Text => format!("{node}.textContent = {value};"),
         Target::Value => format!("$.value({node}, {value});"),
+        Target::InputType => format!("$.inputType({node}, {value});"),
+        Target::Focused => format!("$.focused({node}, {value});"),
         Target::Checked => format!("$.checked({node}, {value});"),
         Target::RangeValue => format!("$.rangeValue({node}, {value});"),
         Target::RangeAttr(name) => format!("$.rangeAttr({node}, {}, {value});", js::string(name)),
@@ -324,7 +334,7 @@ impl Gen {
                 (Target::Text, Literal::Str(s)) => text = Some(s),
                 (Target::Disabled, Literal::Bool(true)) => out.push_str(" disabled"),
                 (Target::Disabled | Target::Direction | Target::Orientation, _) => {}
-                (Target::RangeAttr(name), Literal::Int(v)) => {
+                (Target::RangeAttr(name) | Target::Attr(name), Literal::Int(v)) => {
                     use fmt::Write as _;
                     let _ = write!(out, " {name}=\"{v}\"");
                 }
@@ -491,7 +501,7 @@ impl Backend for Gen {
         let has_clamp =
             element == Element::Text && props.iter().any(|prop| prop.name == "maxLines");
         let mut sources = StyleSources::new(props);
-        let mut listened = false;
+        let mut listens_for_edits = false;
         for prop in props {
             match &prop.value {
                 PropValue::Expr(value) => {
@@ -515,16 +525,22 @@ impl Backend for Gen {
                 }
                 PropValue::Handler(_) if matches!(prop.name, "onMount" | "onUnmount") => {}
                 PropValue::Handler(handler) => {
-                    listened = true;
                     let body = element_handler_body(ir.program, ir.comp, id, prop, handler, parts);
                     parts.create.line(match (element, prop.name) {
                         (_, "onChange") => {
+                            listens_for_edits = true;
                             let helper =
                                 control(element).expect("onChange belongs to a controlled element");
                             format!("$.{helper}({n}, ($a) => {{ {body} }});")
                         }
                         (_, "onClick") => {
                             format!("{n}.addEventListener(\"click\", () => {{ {body} }});")
+                        }
+                        (Element::Input, "onSubmit") => {
+                            format!("$.onSubmit({n}, () => {{ {body} }});")
+                        }
+                        (Element::Input | Element::TextArea, "onFocusChange") => {
+                            format!("$.onFocusChange({n}, ($a) => {{ {body} }});")
                         }
                         (element, name) => {
                             unreachable!("`{}` has no handler `{name}`", element.name())
@@ -534,7 +550,7 @@ impl Backend for Gen {
             }
         }
         // Controlled inputs revert user edits the host did not accept.
-        if !listened && let Some(helper) = control(element) {
+        if !listens_for_edits && let Some(helper) = control(element) {
             parts.create.line(format!("$.{helper}({n}, null);"));
         }
         // The element DOM is in the template; dynamic children use their own anchors.

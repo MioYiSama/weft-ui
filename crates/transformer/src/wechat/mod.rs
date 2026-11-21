@@ -28,7 +28,13 @@ use crate::transform::{Context, OutputFile};
 pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
     let program = cx.program;
     let layout = cx.layout.expect("the mini program view needs the layout");
-    let templates = wxml::templates(program, layout);
+    let (templates, has_textarea) = wxml::templates(program, layout);
+    // WeChat gives textarea a fixed width that prevents cross-axis stretch.
+    let textarea_css = if has_textarea {
+        ".w-textarea.w-wx{width:auto}\n"
+    } else {
+        ""
+    };
     vec![
         OutputFile {
             path: "view.js".to_owned(),
@@ -49,7 +55,7 @@ pub fn transform(cx: &Context<'_>) -> Vec<OutputFile> {
         },
         OutputFile {
             path: "view.wxss".to_owned(),
-            contents: format!("{CSS}{}", style::theme_styles(layout.theme())),
+            contents: format!("{CSS}{textarea_css}{}", style::theme_styles(layout.theme())),
         },
         OutputFile {
             path: "index.js".to_owned(),

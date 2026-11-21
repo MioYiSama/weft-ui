@@ -110,6 +110,12 @@ const CONTROLS: Fixture = Fixture {
     natives: ALL_NATIVES,
 };
 
+const INPUTS: Fixture = Fixture {
+    name: "Inputs",
+    source: include_str!("fixtures/Inputs.weft"),
+    natives: &[],
+};
+
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
 fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
@@ -210,6 +216,11 @@ fn typography() {
 #[test]
 fn controls() {
     check_fixture(&CONTROLS);
+}
+
+#[test]
+fn inputs() {
+    check_fixture(&INPUTS);
 }
 
 fn check_fixture(fixture: &Fixture) {

@@ -197,14 +197,14 @@ Call        = IDENT "(" ArgList? ")" ;
 | `Text` | `value` | — | `Span` |
 | `Span` | `value` | — | 无 |
 | `Button` | — | `onClick` | 不限 |
-| `Input` | `value` | `onChange(String)` | 无 |
+| `Input` | `value` | `onChange(String)`, `onSubmit`, `onFocusChange(Bool)` | 无 |
 | `Checkbox` | `checked` | `onChange(Bool)` | 无 |
 | `Image` | `src` | — | 无 |
 | `Stack` | — | — | 不限 |
 | `Scroll` | — | — | 不限 |
 | `Spacer` | — | — | 无 |
 | `Switch` | `checked` | `onChange(Bool)` | 无 |
-| `TextArea` | `value` | `onChange(String)` | 无 |
+| `TextArea` | `value` | `onChange(String)`, `onFocusChange(Bool)` | 无 |
 | `Spinner` | — | — | 无 |
 | `Progress` | `value` | — | 无 |
 | `Divider` | — | — | 无 |

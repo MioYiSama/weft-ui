@@ -442,7 +442,7 @@ struct Host {
       uint32_t slot = renderer.event_of(scope, node, [name](const Event &event) {
         return !name || event.name == *name;
       });
-      dispatch(scope, slot, {});
+      dispatch(scope, slot, args.has("value") ? encode(args["value"]) : std::string{});
     } else if (call.method == "edit") {
       auto [scope, node] = renderer.find(args["type"].string(), args["index"].u32());
       edit(scope, node, args["value"]);

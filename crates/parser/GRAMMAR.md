@@ -197,14 +197,14 @@ The compiler rejects elements, properties, and events marked unsupported for the
 | `Text` | `value` | — | `Span` |
 | `Span` | `value` | — | None |
 | `Button` | — | `onClick` | Any |
-| `Input` | `value` | `onChange(String)` | None |
+| `Input` | `value` | `onChange(String)`, `onSubmit`, `onFocusChange(Bool)` | None |
 | `Checkbox` | `checked` | `onChange(Bool)` | None |
 | `Image` | `src` | — | None |
 | `Stack` | — | — | Any |
 | `Scroll` | — | — | Any |
 | `Spacer` | — | — | None |
 | `Switch` | `checked` | `onChange(Bool)` | None |
-| `TextArea` | `value` | `onChange(String)` | None |
+| `TextArea` | `value` | `onChange(String)`, `onFocusChange(Bool)` | None |
 | `Spinner` | — | — | None |
 | `Progress` | `value` | — | None |
 | `Divider` | — | — | None |

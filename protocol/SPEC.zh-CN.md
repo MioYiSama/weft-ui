@@ -146,7 +146,7 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 
 插槽数据的 `t` 字段保存插槽内容的模板名。调用方为被调用组件的第一个 `Children` 参数使用 `{组件}-s{N}`，其他插槽用 `{组件}-s{N}_{p}`。这里的 `N` 是调用节点编号，不是接收方数据键里的插槽节点编号。
 
-`$e` 从 `currentTarget.dataset["e" + event.type]` 取处理器 id。`tap` 不带 payload，`input` 和 `change` 的 payload 为 `detail.value`。
+`$e` 从 `currentTarget.dataset["e" + event.type]` 取处理器 id。`tap` 和 `confirm` 不带载荷；`input`、`change` 和 `changing` 的载荷为 `detail.value`。`focus` 和 `blur` 分别传入 `true` 和 `false`，两者绑定到同一个 `onFocusChange` 处理器 id。
 
 生成的视图表中，直接使用的值槽写成 `[key]`，样式值槽写成 `[key, cssIndex]`。sink 按 `CSS_PROPS[cssIndex]` 把样式值转换为完整的 CSS 声明。模板按 schema 的成员顺序拼接静态和动态声明，使单边等更具体的内外边距设置覆盖较宽泛的设置。
 
@@ -205,6 +205,8 @@ WXML 只渲染 `{{key}}`，`setData` 的路径就是块数据树中的路径（`
 ### 事件载荷
 
 `weft_runtime_dispatch(rt, scope, slot, payload, len)` 的 `payload` 是一个按[二进制编码](#二进制编码版本-2)的值（标签字节加数据）。字符串数组只用作视图值，不能作为事件载荷。无载荷的事件传空。返回值即 `Session.dispatch` 的返回值。
+
+若 `Input` 或 `TextArea` 设置了 `maxLength`，宿主在派发 `onChange` 前按 UTF-16 码元数截断用户编辑后的文本。内核收到的是截断后的载荷。
 
 ### 平台调用
 

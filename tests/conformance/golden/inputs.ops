@@ -1,0 +1,42 @@
+# mount
+create 1 0  # Inputs
+set 1 0 ""  # Input.value
+set 1 1 "text"  # Input.type
+set 1 2 false  # Input.focused
+set 1 3 ""  # TextArea.value
+set 1 4 5  # TextArea.maxLength
+set 1 5 "Note not focused"  # Text.value
+set 1 6 "Request focus"  # Text.value
+attach 0 0 1
+
+# request focus
+set 1 2 true  # Input.focused
+set 1 6 "Release focus"  # Text.value
+
+# limit a seven-character edit
+set 1 0 "abcde"  # Input.value
+
+# submit and clear the draft
+set 1 0 ""  # Input.value
+
+# release focus
+set 1 2 false  # Input.focused
+set 1 6 "Request focus"  # Text.value
+
+# focus the note
+set 1 5 "Note focused"  # Text.value
+
+# count an emoji as two UTF-16 units
+set 1 3 "a😀bc"  # TextArea.value
+
+# avoid splitting a surrogate pair
+set 1 3 "abcd"  # TextArea.value
+
+# blur the note
+set 1 5 "Note not focused"  # Text.value
+
+# switch to a numeric keyboard
+set 1 1 "number"  # Input.type
+
+# switch from numeric to password
+set 1 1 "password"  # Input.type

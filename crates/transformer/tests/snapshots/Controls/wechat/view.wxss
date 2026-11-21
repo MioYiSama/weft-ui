@@ -45,3 +45,4 @@ input.w-switch:disabled{opacity:.45;cursor:default}
   .w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#ffffff26}
   .w-divider,.w-divider-v,.w-progress{background-color:#ffffff26}
 }
+.w-textarea.w-wx{width:auto}

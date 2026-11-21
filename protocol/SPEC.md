@@ -146,7 +146,7 @@ WXML renders only `{{key}}`. The `setData` paths are paths in the block data tre
 
 Slot data holds `t`, the slot content template name. In the calling component, that name is `{Component}-s{N}` for the callee's first `Children` parameter and `{Component}-s{N}_{p}` for any other slot. Here `N` is the call node ID, rather than the slot node ID used in the receiving component's data key.
 
-`$e` reads `currentTarget.dataset["e" + event.type]`. `tap` carries no payload; `input` and `change` carry `detail.value`.
+`$e` reads `currentTarget.dataset["e" + event.type]`. `tap` and `confirm` carry no payload; `input`, `change` and `changing` carry `detail.value`. `focus` and `blur` carry `true` and `false`, respectively, and both bindings use the same `onFocusChange` handler ID.
 
 Each value slot in the generated view table is `[key]` for a raw value or `[key, cssIndex]` for a style. The sink converts a styled value into a complete declaration string with `CSS_PROPS[cssIndex]`. The template joins static and dynamic declarations in schema member order, so declarations for a more specific padding or margin edge follow and override broader ones.
 
@@ -205,6 +205,8 @@ When any field changes, the shell calls `weft_runtime_environment(rt, json, len)
 ### Event payloads
 
 The `payload` in `weft_runtime_dispatch(rt, scope, slot, payload, len)` is a value in the [binary encoding](#binary-encoding-version-2) (tag byte followed by data). String arrays are only used for view values, never as event payloads. Pass an empty payload for an event with no payload. The return value is that of `Session.dispatch`.
+
+For an `Input` or `TextArea` with `maxLength`, the host truncates a user edit to the limit in UTF-16 code units before dispatching `onChange`. The kernel receives the already truncated payload.
 
 ### Platform calls
 

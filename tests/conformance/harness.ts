@@ -14,6 +14,7 @@ import { ELEMENTS } from "@weft-ui/runtime/elements";
 import { type Value, tick as remoteTick } from "@weft-ui/runtime/remote";
 import { type Renderer, type ViewElement, render } from "@weft-ui/runtime/testing";
 import { Window } from "happy-dom";
+import { limitInput } from "../src/input.ts";
 import { type Element as WxElement, compile, loadView } from "../src/miniprogram.ts";
 
 const window = new Window();
@@ -36,6 +37,8 @@ export type AppClass<A extends AppLike> = new (model: A["model"]) => A;
 export interface Actions {
   /** Fires the named event, or the element's first event, without a payload. */
   click(type: string, index: number, event?: string): void;
+  /** Gives or takes away user focus. */
+  focus(type: string, index: number, value: boolean): void;
   /** Edits a controlled element with its UI event payload. */
   edit(type: string, index: number, value: string | boolean | number): void;
 }
@@ -111,6 +114,7 @@ function actionEvent(type: string, name?: string): { dom: string; wechat: string
   const first = ["Input", "TextArea", "Checkbox", "Switch", "Slider", "Picker"].includes(type) ? "onChange" : "onClick";
   switch (name ?? first) {
     case "onClick": return { dom: "click", wechat: "tap" };
+    case "onSubmit": return { dom: "keydown", wechat: "confirm" };
     case "onChange": {
       if (type === "Slider") return { dom: "input", wechat: "changing" };
       const event = type === "Input" || type === "TextArea" ? "input" : "change";
@@ -172,8 +176,10 @@ export function headless<A extends AppLike>(script: Script<A>, built: Built<A>):
     log,
     tree: () => reduce(renderer.tree(), classify),
     click: (type, index, event) => renderer.click(find(type, index), event),
+    focus: (type, index, value) => renderer.focus(find(type, index), value),
     edit: (type, index, value) => {
-      renderer.edit(find(type, index), value);
+      const element = find(type, index);
+      renderer.edit(element, typeof value === "string" ? limitInput(value, Number(element.props.maxLength ?? -1)) : value);
     },
     settle: built.tick,
   };
@@ -270,6 +276,7 @@ export async function wechat<A extends AppLike>(script: Script<A>, built: Built<
     click: (type, index, event) => {
       view.fire(find(type, index), actionEvent(type, event).wechat);
     },
+    focus: (type, index, value) => void view.fire(find(type, index), value ? "focus" : "blur"),
     edit: (type, index, value) => {
       const element = find(type, index);
       const { wechat } = actionEvent(type);
@@ -338,12 +345,18 @@ export function web<A extends AppLike>(script: Script<A>): Driver<A> {
       const element = find(type, index) as HTMLElement;
       const { dom } = actionEvent(type, name);
       if (dom === "click") element.click();
+      else if (dom === "keydown") element.dispatchEvent(new window.KeyboardEvent(dom, { key: "Enter" }) as unknown as Event);
       else element.dispatchEvent(new window.Event(dom) as unknown as Event);
+    },
+    focus: (type, index, value) => {
+      const element = find(type, index) as HTMLElement;
+      if (value) element.focus();
+      else element.blur();
     },
     edit: (type, index, value) => {
       const input = find(type, index) as HTMLInputElement;
       if (typeof value === "boolean") input.checked = value;
-      else input.value = String(value);
+      else input.value = limitInput(String(value), Number(input.getAttribute("maxlength") ?? -1));
       // Use the event class of the happy-dom window that owns the element.
       const event = new window.Event(actionEvent(type).dom) as unknown as Event;
       input.dispatchEvent(event);

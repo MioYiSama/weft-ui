@@ -49,9 +49,10 @@ pub(crate) fn slot_template(
     )
 }
 
-/// Templates for every component of the program.
-pub(crate) fn templates(program: &Program, layout: &ViewLayout) -> String {
+/// Templates for every component, and whether they use a textarea.
+pub(crate) fn templates(program: &Program, layout: &ViewLayout) -> (String, bool) {
     let mut out = String::new();
+    let mut has_textarea = false;
     for (index, comp) in program.components.iter().enumerate() {
         let mut markup = Markup {
             program,
@@ -59,15 +60,17 @@ pub(crate) fn templates(program: &Program, layout: &ViewLayout) -> String {
             id: ComponentId(u32::try_from(index).expect("component ids fit in u32")),
             comp,
             slots: Vec::new(),
+            has_textarea,
         };
         let mut body = String::new();
         markup.nodes(&comp.roots, "", Parent::Inherited, &mut body);
+        has_textarea = markup.has_textarea;
         template(&comp.name, &body, &mut out);
         for (name, body) in markup.slots {
             template(&name, &body, &mut out);
         }
     }
-    out
+    (out, has_textarea)
 }
 
 fn template(name: &str, body: &str, out: &mut String) {
@@ -93,7 +96,7 @@ fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
         Element::Text => ("text", "w-text", ""),
         Element::Span => ("text", "w-span", ""),
         Element::Button => ("button", "w-button w-wx", " size=\"mini\""),
-        Element::Input => ("input", "w-input w-wx", ""),
+        Element::Input => ("input", "w-input w-wx", " maxlength=\"-1\""),
         Element::Checkbox => ("switch", "w-checkbox", " type=\"checkbox\""),
         Element::Image => ("image", "w-image", ""),
         Element::Switch => ("switch", "w-switch", ""),
@@ -168,6 +171,7 @@ struct Markup<'a> {
     comp: &'a Component,
     /// Slot content templates found so far: name and body.
     slots: Vec<(String, String)>,
+    has_textarea: bool,
 }
 
 impl Markup<'_> {
@@ -242,7 +246,13 @@ impl Markup<'_> {
             unreachable!("caller checked the node kind");
         };
         let element = *element;
+        self.has_textarea |= element == Element::TextArea;
         let (tag, mut class, mut fixed) = tag(element);
+        if matches!(element, Element::Input | Element::TextArea)
+            && props.iter().any(|prop| prop.name == "maxLength")
+        {
+            fixed = "";
+        }
         let mut default_scrollbar = element == Element::Scroll;
         let mut default_grow = element == Element::Scroll;
         let mut default_fill = element == Element::Scroll;
@@ -273,6 +283,21 @@ impl Markup<'_> {
                 }
                 (Target::Attr(name), Value::Data) => {
                     let _ = write!(attrs, " {name}=\"{binding}\"");
+                }
+                (Target::InputType, Value::Inline(Constant::String(kind))) => {
+                    let mapping = match kind.as_str() {
+                        "password" => " password=\"{{true}}\"",
+                        "number" | "phone" => " type=\"number\"",
+                        "text" | "email" => " type=\"text\"",
+                        _ => unreachable!("invalid InputType {kind}"),
+                    };
+                    attrs.push_str(mapping);
+                }
+                (Target::InputType, Value::Data) => {
+                    let _ = write!(
+                        attrs,
+                        " type=\"{{{{{prefix}{key} === 'number' || {prefix}{key} === 'phone' ? 'number' : 'text'}}}}\" password=\"{{{{{prefix}{key} === 'password'}}}}\""
+                    );
                 }
                 (Target::Flag { name, default }, value) => {
                     if default {

@@ -4,6 +4,7 @@ use super::{
     Children, Css, CssTarget, CssUnit, CustomCss, ElementSpec, FeatureSpec, PropKind, PropSpec,
     PropType,
 };
+use crate::protocol::Platform;
 
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,6 +70,8 @@ const SHADOW: &[&str] = &["none", "small", "medium", "large"];
 const WEIGHT: &[&str] = &["regular", "light", "medium", "semibold", "bold"];
 const TEXT_ALIGN: &[&str] = &["start", "center", "end"];
 const DECORATION: &[&str] = &["none", "underline", "lineThrough"];
+const INPUT_TYPE: &[&str] = &["text", "password", "number", "email", "phone"];
+const RETURN_KEY: &[&str] = &["done", "go", "next", "search", "send"];
 
 pub(crate) const CSS_PROPS: &[Css<'static>] = &[
     Css {
@@ -1633,6 +1636,104 @@ const PROPS_4: &[PropSpec] = &[
         css: None,
         controlled_by: None,
         support: &[],
+    },
+    PropSpec {
+        name: "type",
+        kind: PropKind::Value(PropType::Union(INPUT_TYPE)),
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "returnKey",
+        kind: PropKind::Value(PropType::Union(RETURN_KEY)),
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::Ignored),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::Ignored),
+            (Platform::Linux, Level::Ignored),
+        ],
+    },
+    PropSpec {
+        name: "maxLength",
+        kind: PropKind::Value(PropType::Int),
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "focused",
+        kind: PropKind::Value(PropType::Bool),
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "onSubmit",
+        kind: PropKind::Handler { payload: None },
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "onFocusChange",
+        kind: PropKind::Handler {
+            payload: Some(PropType::Bool),
+        },
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
     },
 ];
 
@@ -3228,6 +3329,56 @@ const PROPS_11: &[PropSpec] = &[
         css: None,
         controlled_by: None,
         support: &[],
+    },
+    PropSpec {
+        name: "maxLength",
+        kind: PropKind::Value(PropType::Int),
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "focused",
+        kind: PropKind::Value(PropType::Bool),
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
+        name: "onFocusChange",
+        kind: PropKind::Handler {
+            payload: Some(PropType::Bool),
+        },
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
     },
 ];
 

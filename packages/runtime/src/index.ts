@@ -19,7 +19,7 @@ import {
   watch,
 } from "./core.ts";
 import { declarations } from "./css.ts";
-import { CSS, CSS_PROPS } from "./elements.ts";
+import { CSS, CSS_PROPS, type InputType } from "./elements.ts";
 import type { Value } from "./remote.ts";
 
 export * from "./core.ts";
@@ -504,7 +504,7 @@ export function template(html: string): () => DocumentFragment {
 
 /** An input whose displayed value follows the last bound value. */
 type Controlled<N, V> = N & { $v?: V };
-type TextControl = Controlled<HTMLInputElement | HTMLTextAreaElement, string>;
+type TextControl = Controlled<HTMLInputElement | HTMLTextAreaElement, string> & { $focused?: boolean };
 type CheckControl = Controlled<HTMLInputElement, boolean>;
 type RangeControl = Controlled<HTMLInputElement, number>;
 type PickerControl = Controlled<HTMLSelectElement, number> & { $options?: readonly string[] };
@@ -512,6 +512,36 @@ type PickerControl = Controlled<HTMLSelectElement, number> & { $options?: readon
 export function value(node: TextControl, value: string): void {
   node.$v = value;
   if (node.value !== value) node.value = value;
+}
+
+export function inputType(node: HTMLInputElement, type: InputType): void {
+  node.type = type === "phone" ? "tel" : type === "number" ? "text" : type;
+  if (type === "number") node.setAttribute("inputmode", "numeric");
+  else node.removeAttribute("inputmode");
+}
+
+export function focused(node: TextControl, value: boolean): void {
+  if ((node.$focused ?? false) === value) return;
+  node.$focused = value;
+  if (!value) node.blur();
+  else if (node.isConnected) node.focus();
+  else {
+    // Initial bindings run on a detached template; mount inserts it in this turn.
+    queueMicrotask(() => {
+      if (node.$focused && node.isConnected) node.focus();
+    });
+  }
+}
+
+export function onSubmit(node: HTMLInputElement, handler: () => void): void {
+  node.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.isComposing) handler();
+  });
+}
+
+export function onFocusChange(node: TextControl, handler: (focused: boolean) => void): void {
+  node.addEventListener("focus", () => handler(true));
+  node.addEventListener("blur", () => handler(false));
 }
 
 export function checked(node: CheckControl, value: boolean): void {

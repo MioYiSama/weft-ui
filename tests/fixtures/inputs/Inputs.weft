@@ -1,0 +1,29 @@
+type InputKind = "text" | "password" | "number" | "email" | "phone"
+
+model InputsModel {
+    kind: InputKind,
+    noteLimit: Int,
+}
+
+event DraftEdited(value: String)
+event NoteEdited(value: String)
+event FocusChanged(value: Bool)
+event Submitted
+
+component Inputs(model: InputsModel) {
+    state draft = ""
+    state note = ""
+    state requestFocus = false
+    state hasFocus = false
+    Column {
+        Input(draft, type = model.kind, returnKey = "done", maxLength = 5, focused = requestFocus,
+            onChange = { value -> draft = value; DraftEdited(value) },
+            onSubmit = { draft = ""; Submitted() })
+        TextArea(note, maxLength = model.noteLimit, onChange = { value -> note = value; NoteEdited(value) },
+            onFocusChange = { value -> hasFocus = value; FocusChanged(value) })
+        Text(if (hasFocus) "Note focused" else "Note not focused")
+        Button(onClick = { requestFocus = !requestFocus }) {
+            Text(if (requestFocus) "Release focus" else "Request focus")
+        }
+    }
+}

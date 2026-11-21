@@ -18,6 +18,10 @@ export type TextAlign = "start" | "center" | "end";
 
 export type Decoration = "none" | "underline" | "lineThrough";
 
+export type InputType = "text" | "password" | "number" | "email" | "phone";
+
+export type ReturnKey = "done" | "go" | "next" | "search" | "send";
+
 export const ELEMENTS: Record<string, { main: string | null; children: "any" | "none" | readonly string[] }> = {
   Column: { main: null, children: "any" },
   Row: { main: null, children: "any" },

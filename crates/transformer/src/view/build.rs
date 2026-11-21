@@ -1,9 +1,10 @@
 use crate::color::Color;
-use crate::elements::{ElementSpec, PropKind, PropType};
+use crate::elements::{ElementSpec, Level, PropKind, PropType};
 use crate::ir::{
     Coercion, Component, ComponentId, Expr, ExprKind, NodeId, NodeKind, Program, Prop, PropValue,
     UnaryOp, first_slot,
 };
+use crate::transform::Platform;
 
 use super::json::fnv1a;
 use super::{
@@ -15,8 +16,13 @@ impl ViewLayout {
     /// Derives the layout of every component of `program`.
     #[must_use]
     pub fn new(program: &Program) -> Self {
+        Self::for_platform(program, None)
+    }
+
+    pub(crate) fn for_platform(program: &Program, platform: Option<Platform>) -> Self {
         let mut builder = Builder {
             program,
+            platform,
             templates: program.components.iter().map(|_| None).collect(),
             components: program
                 .components
@@ -167,6 +173,7 @@ pub(super) fn element_events(
 
 struct Builder<'p> {
     program: &'p Program,
+    platform: Option<Platform>,
     /// Reserved templates are `None` until built.
     templates: Vec<Option<Template>>,
     components: Vec<Vec<Option<NodeMap>>>,
@@ -252,6 +259,12 @@ impl Builder<'_> {
                             let prop_spec = spec
                                 .prop(prop.name)
                                 .expect("every element value property has a spec");
+                            if self.platform.is_some_and(|platform| {
+                                prop_spec.support.contains(&(platform, Level::Ignored))
+                            }) {
+                                values.push(None);
+                                continue;
+                            }
                             let controlled_by = prop_spec.controlled_by;
                             let ty = prop_spec.prop_type();
                             let fixed = (prop.binding.is_none() && controlled_by.is_none())

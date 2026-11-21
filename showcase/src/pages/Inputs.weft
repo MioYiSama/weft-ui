@@ -1,0 +1,55 @@
+component InputRow(label: String, content: Children) {
+    Column(fill = true, gap = 4) {
+        Text(label, size = 13, weight = "semibold")
+        content
+    }
+}
+
+component Inputs() {
+    state draft = ""
+    state password = ""
+    state number = ""
+    state email = ""
+    state phone = ""
+    state notes = ""
+    state requestFocus = false
+    state textFocused = false
+    Scroll(indicators = false) {
+        Column(fill = true, padding = 18, gap = 10) {
+            Text("文本输入", size = 26, weight = "semibold")
+            InputRow("普通文本") {
+                Input(draft, type = "text", returnKey = "search", maxLength = 20,
+                    fill = true, placeholder = "搜索，提交后清空", focused = requestFocus,
+                    onChange = { value -> draft = value }, onSubmit = { draft = "" },
+                    onFocusChange = { value -> textFocused = value })
+                Row(fill = true, align = "center", justify = "spaceBetween") {
+                    Text("${draft.length}/20", size = 13)
+                    Text(if (textFocused) "已聚焦" else "未聚焦", size = 13)
+                }
+                Button(onClick = { requestFocus = !requestFocus }) {
+                    Text(if (requestFocus) "放弃焦点" else "聚焦文本框")
+                }
+            }
+            InputRow("密码") {
+                Input(password, type = "password", returnKey = "done", fill = true,
+                    placeholder = "输入密码", onChange = { value -> password = value })
+            }
+            InputRow("数字") {
+                Input(number, type = "number", returnKey = "next", fill = true,
+                    placeholder = "输入数字", onChange = { value -> number = value })
+            }
+            InputRow("邮箱") {
+                Input(email, type = "email", returnKey = "go", fill = true,
+                    placeholder = "输入邮箱地址", onChange = { value -> email = value })
+            }
+            InputRow("电话") {
+                Input(phone, type = "phone", returnKey = "send", fill = true,
+                    placeholder = "输入电话号码", onChange = { value -> phone = value })
+            }
+            InputRow("多行备注") {
+                TextArea(notes, maxLength = 80, fill = true,
+                    placeholder = "输入备注", onChange = { value -> notes = value })
+            }
+        }
+    }
+}

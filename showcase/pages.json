@@ -12,5 +12,10 @@
       "channels": ["稳定版", "测试版"],
       "unavailable": ["不可更改"]
     }
+  },
+  {
+    "id": "inputs",
+    "title": "Inputs",
+    "pending": ["ios", "macos", "android", "windows", "linux"]
   }
 ]

@@ -23,6 +23,7 @@ import { dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compileApp } from "@weft-ui/compiler";
 import { view } from "@weft-ui/runtime/wechat";
+import { limitInput } from "./input.ts";
 
 type Data = Record<string, unknown>;
 
@@ -259,6 +260,9 @@ function fire(view: TestView & Data, element: Element, type: string, value: unkn
   const handler = view[method];
   if (typeof handler !== "function") throw new Error(`the view has no method ${method}`);
   const key = `e${type}`;
+  if (type === "input" && typeof value === "string") {
+    value = limitInput(value, Number(element.attrs.maxlength ?? 140));
+  }
   return handler.call(view, {
     type,
     currentTarget: { dataset: { [key]: element.attrs[`data-${key}`] } },
@@ -410,6 +414,8 @@ function expression(expr: string, scope: Scope): unknown {
   }
   const conditional = /^(.+?)\s*\?\s*('[^']*')\s*:\s*('[^']*')$/.exec(expr);
   if (conditional) return expression(expression(conditional[1], scope) ? conditional[2] : conditional[3], scope);
+  const disjunction = /^([\w.[\]]+\s*===\s*'[^']*')\s*\|\|\s*(.+)$/.exec(expr);
+  if (disjunction) return expression(disjunction[1], scope) || expression(disjunction[2], scope);
   const comparison = /^(.+?)\s*===\s*(-?\d+|'[^']*')$/.exec(expr);
   if (comparison) return path(comparison[1], scope) === expression(comparison[2], scope);
   if (expr.startsWith("'") && expr.endsWith("'")) return expr.slice(1, -1);

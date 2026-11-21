@@ -86,6 +86,32 @@ mod tests {
     use super::*;
 
     #[test]
+    fn return_key_is_ignored_on_desktop_native_platforms() {
+        let path = "Main.weft";
+        let mut loader = MemoryLoader::new();
+        loader.insert(
+            path,
+            r#"
+type Key = "done" | "go" | "next" | "search" | "send"
+component Main(key: Key) {
+    Input("", returnKey = "done")
+    Input("", returnKey = key)
+}
+"#,
+        );
+        for platform in [Platform::Macos, Platform::Windows, Platform::Linux] {
+            let compiled = crate::compile_app(load(&[path], &mut loader), platform);
+            assert!(
+                compiled.compilation.diagnostics.is_empty(),
+                "{}",
+                compiled.compilation.render_diagnostics()
+            );
+            let layout = compiled.layout.expect("native apps have a layout");
+            assert!(!layout.to_json().contains("returnKey"), "{platform} layout");
+        }
+    }
+
+    #[test]
     fn reports_unsupported_elements_and_members_at_their_source_spans() {
         let source = r#"component Main() {
   Column {

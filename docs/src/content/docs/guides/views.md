@@ -122,6 +122,25 @@ component Preferences(choices: String[]) {
 }
 ```
 
+## Text entry
+
+`Input` edits one line. Set `type` to `text`, `password`, `number`, `email`, or `phone` to choose the field and keyboard; the value is still a string. `returnKey` hints the keyboard action (`done`, `go`, `next`, `search`, or `send`), and `onSubmit` handles submission. WeChat uses the numeric keyboard for `phone` and the default keyboard for `email`. See the [element reference](/reference/elements/#input) for platform support.
+
+Both `Input` and `TextArea` can limit user edits with `maxLength`. The limit counts UTF-16 code units (the same as `String.length`), and `onChange` receives the truncated text. Changing `focused` to `true` requests focus; changing it back to `false` releases it. The request is not repeated while the value stays the same. Use `onFocusChange` to observe actual focus without writing back to `focused`.
+
+```weft
+component SearchBox() {
+  state query = ""
+  state requestFocus = false
+  Column(gap = 8) {
+    Input(query, returnKey = "search", maxLength = 20, focused = requestFocus,
+      onChange = { value -> query = value }, onSubmit = { query = "" })
+    Text("${query.length}/20")
+    Button(onClick = { requestFocus = !requestFocus }) { Text("Toggle focus request") }
+  }
+}
+```
+
 ## Reuse element styles
 
 Declare a `style` at the top level and pass its name to a built-in element:

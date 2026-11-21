@@ -70,6 +70,24 @@ public enum WeftDecoration
     LineThrough,
 }
 
+public enum WeftInputType
+{
+    Text,
+    Password,
+    Number,
+    Email,
+    Phone,
+}
+
+public enum WeftReturnKey
+{
+    Done,
+    Go,
+    Next,
+    Search,
+    Send,
+}
+
 public static class WeftUnions
 {
     public static WeftCrossAlign ParseCrossAlign(string value) => value switch
@@ -138,5 +156,23 @@ public static class WeftUnions
         "underline" => WeftDecoration.Underline,
         "lineThrough" => WeftDecoration.LineThrough,
         _ => WeftDecoration.None,
+    };
+
+    public static WeftInputType ParseInputType(string value) => value switch
+    {
+        "password" => WeftInputType.Password,
+        "number" => WeftInputType.Number,
+        "email" => WeftInputType.Email,
+        "phone" => WeftInputType.Phone,
+        _ => WeftInputType.Text,
+    };
+
+    public static WeftReturnKey ParseReturnKey(string value) => value switch
+    {
+        "go" => WeftReturnKey.Go,
+        "next" => WeftReturnKey.Next,
+        "search" => WeftReturnKey.Search,
+        "send" => WeftReturnKey.Send,
+        _ => WeftReturnKey.Done,
     };
 }

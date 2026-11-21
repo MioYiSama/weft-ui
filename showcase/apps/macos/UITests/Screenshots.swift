@@ -37,6 +37,77 @@ final class Screenshots: XCTestCase {
             attachment.name = "weft-\(id)\(suffix)"
             attachment.lifetime = .keepAlways
             add(attachment)
+            if id == "controls" { checkControls(in: window, app: app) }
         }
+    }
+
+    @MainActor
+    private func checkControls(in window: XCUIElement, app: XCUIApplication) {
+        // macOS exposes switch-style Toggles as check boxes in its accessibility tree.
+        let toggles = window.checkBoxes
+        let lock = toggles.element(boundBy: 0)
+        let alerts = toggles.element(boundBy: 1)
+        let sounds = toggles.element(boundBy: 2)
+        let checkbox = toggles.element(boundBy: 3)
+        let slider = window.sliders.firstMatch
+        let textAreas = window.descendants(matching: .any).matching(identifier: "WeftTextArea")
+        let notes = textAreas.element(boundBy: 0)
+        let regions = window.menuButtons
+        let channel = regions["选择频道"]
+
+        XCTAssertTrue(window.activityIndicators.firstMatch.exists)
+        XCTAssertEqual(window.progressIndicators.element(boundBy: 0).value as? Double, 0.3)
+        XCTAssertEqual(window.progressIndicators.element(boundBy: 1).value as? Double, 0.8)
+        XCTAssertFalse(toggles.element(boundBy: 4).isEnabled)
+        XCTAssertFalse(toggles.element(boundBy: 5).isEnabled)
+        XCTAssertFalse(window.sliders.element(boundBy: 1).isEnabled)
+        XCTAssertFalse(regions["不可更改"].isEnabled)
+        XCTAssertFalse(textAreas.element(boundBy: 1).isEnabled)
+
+        XCTAssertEqual(lock.value as? Int, 0)
+        XCTAssertEqual(alerts.value as? Int, 1)
+        XCTAssertEqual(sounds.value as? Int, 0)
+        XCTAssertEqual(checkbox.value as? Int, 1)
+        alerts.click()
+        sounds.click()
+        checkbox.click()
+        XCTAssertEqual(alerts.value as? Int, 0)
+        XCTAssertEqual(sounds.value as? Int, 1)
+        XCTAssertEqual(checkbox.value as? Int, 0)
+
+        slider.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5)).click()
+        XCTAssertFalse(window.staticTexts["音量 · 40%"].exists)
+        let volume = slider.value as? Int
+        XCTAssertNotNil(volume)
+        regions["本地"].click()
+        app.menuItems["远程"].click()
+        XCTAssertTrue(regions["远程"].exists)
+        XCTAssertTrue(channel.exists)
+        notes.click()
+        notes.typeText("note")
+        XCTAssertEqual(notes.value as? String, "note")
+
+        lock.click()
+        XCTAssertEqual(lock.value as? Int, 1)
+        alerts.click()
+        sounds.click()
+        checkbox.click()
+        XCTAssertEqual(alerts.value as? Int, 0)
+        XCTAssertEqual(sounds.value as? Int, 1)
+        XCTAssertEqual(checkbox.value as? Int, 0)
+
+        slider.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).click()
+        XCTAssertEqual(slider.value as? Int, volume)
+        regions["远程"].click()
+        app.menuItems["本地"].click()
+        XCTAssertTrue(regions["远程"].exists)
+        channel.click()
+        app.menuItems["稳定版"].click()
+        XCTAssertTrue(channel.exists)
+        XCTAssertEqual(notes.value as? String, "note", "Locking must preserve the prior edit")
+        notes.click()
+        XCTAssertEqual(notes.value as? String, "note", "Focusing must preserve the prior edit")
+        notes.typeText("x")
+        XCTAssertEqual(notes.value as? String, "note")
     }
 }

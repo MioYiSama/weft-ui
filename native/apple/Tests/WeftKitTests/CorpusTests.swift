@@ -1,6 +1,9 @@
 import Foundation
 import Testing
 @testable import WeftKit
+#if os(macOS)
+import AppKit
+#endif
 
 private typealias JSONObject = [String: Any]
 
@@ -125,6 +128,33 @@ private func decode(_ bytes: [UInt8]) throws -> [Op] {
 func sliderRoundsItsIntegerPayload(input: Double, expected: Double) {
     #expect(roundedSliderValue(input) == expected)
 }
+
+#if os(macOS)
+@Test @MainActor func textAreaRestoresTheNativeEditBuffer() {
+    var value = ""
+    var locked = false
+    var proposals: [String] = []
+    let coordinator = WeftTextArea(value: value, placeholder: "Notes") { proposed in
+        proposals.append(proposed)
+        if locked { return value }
+        value = proposed
+        return nil
+    }.makeCoordinator()
+    let editor = NSTextView()
+    editor.delegate = coordinator
+
+    editor.string = "first\nsecond"
+    editor.didChangeText()
+    #expect(value == "first\nsecond")
+    #expect(editor.string == value)
+
+    locked = true
+    editor.string = "first\nsecond edited"
+    editor.didChangeText()
+    #expect(editor.string == "first\nsecond")
+    #expect(proposals == ["first\nsecond", "first\nsecond edited"])
+}
+#endif
 
 // Compare header JSON without depending on object key order or input formatting.
 private func canonicalJSON(_ json: JSONObject) throws -> Data {

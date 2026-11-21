@@ -170,6 +170,114 @@ private struct WeftControl<Value, Content: View>: View {
     }
 }
 
+#if os(macOS)
+/// A multiline text field with three lines reserved for its content.
+public struct WeftTextArea: NSViewRepresentable {
+    private let value: String
+    private let placeholder: String
+    private let edit: @MainActor (String) -> String?
+    private var sizing = WeftSizing()
+
+    public init(value: String, placeholder: String, edit: @escaping @MainActor (String) -> String?) {
+        self.value = value
+        self.placeholder = placeholder
+        self.edit = edit
+    }
+
+    public func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    public func makeNSView(context: Context) -> NSScrollView {
+        let scroll = TextAreaScrollView()
+        scroll.borderType = .bezelBorder
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        let editor = context.coordinator.editor
+        editor.autoresizingMask = [.width]
+        editor.isVerticallyResizable = true
+        editor.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        editor.textContainer?.containerSize = editor.maxSize
+        editor.textContainer?.widthTracksTextView = true
+        scroll.documentView = editor
+        editor.isRichText = false
+        editor.font = .systemFont(ofSize: NSFont.systemFontSize)
+        editor.textContainerInset = NSSize(width: 2, height: 4)
+        editor.string = value
+        editor.delegate = context.coordinator
+        editor.setAccessibilityIdentifier("WeftTextArea")
+        return scroll
+    }
+
+    public func updateNSView(_ scroll: NSScrollView, context: Context) {
+        let coordinator = context.coordinator
+        coordinator.area = self
+        let editor = coordinator.editor
+        let enabled = context.environment.isEnabled
+        editor.isEditable = enabled
+        editor.isSelectable = enabled
+        editor.setAccessibilityEnabled(enabled)
+        editor.placeholder = placeholder
+        editor.setAccessibilityPlaceholderValue(placeholder)
+        if editor.string != value, !editor.hasMarkedText() {
+            editor.string = value
+        }
+    }
+
+    public func sizeThatFits(_ proposal: ProposedViewSize, nsView scroll: NSScrollView, context: Context) -> CGSize? {
+        let editor = context.coordinator.editor
+        let lineHeight = editor.layoutManager?.defaultLineHeight(for: editor.font ?? .systemFont(ofSize: NSFont.systemFontSize)) ?? 0
+        let height = lineHeight * 3 + 2 * editor.textContainerInset.height + 2
+        return sizing.nativeSize(proposal, ideal: CGSize(width: inputWidth, height: height))
+    }
+
+    @MainActor
+    public final class Coordinator: NSObject, NSTextViewDelegate {
+        fileprivate let editor = TextAreaEditor()
+        fileprivate var area: WeftTextArea
+
+        init(_ area: WeftTextArea) { self.area = area }
+
+        public func textDidChange(_ notification: Notification) {
+            guard let editor = notification.object as? NSTextView, !editor.hasMarkedText() else { return }
+            // SwiftUI's vertical TextField keeps an AppKit edit buffer that can
+            // clear the displayed draft on rejection. Restore the editor itself.
+            if let restored = area.edit(editor.string) {
+                let caret = min(editor.selectedRange().location, restored.utf16.count)
+                editor.string = restored
+                editor.setSelectedRange(NSRange(location: caret, length: 0))
+            }
+        }
+    }
+}
+
+private final class TextAreaScrollView: NSScrollView {
+    override func layout() {
+        super.layout()
+        guard let editor = documentView as? NSTextView else { return }
+        let height = contentSize.height
+        if editor.minSize.height != height { editor.minSize.height = height }
+        if editor.frame.height < height {
+            editor.setFrameSize(NSSize(width: editor.frame.width, height: height))
+        }
+    }
+}
+
+private final class TextAreaEditor: NSTextView {
+    var placeholder = "" {
+        didSet { if placeholder != oldValue { needsDisplay = true } }
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        guard string.isEmpty, !placeholder.isEmpty, let font else { return }
+        let padding = textContainer?.lineFragmentPadding ?? 0
+        let origin = NSPoint(x: textContainerInset.width + padding, y: textContainerInset.height)
+        (placeholder as NSString).draw(at: origin, withAttributes: [
+            .font: font,
+            .foregroundColor: NSColor.placeholderTextColor,
+        ])
+    }
+}
+#else
 /// A multiline text field with three lines reserved for its content.
 public struct WeftTextArea: View {
     private let value: String
@@ -198,6 +306,7 @@ public struct WeftTextArea: View {
             }
     }
 }
+#endif
 
 /// A native slider with an integral event payload.
 @MainActor public func weftSlider(

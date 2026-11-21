@@ -75,8 +75,14 @@ impl Body<'_> {
                 &["disabled"]
             }
             Element::Text => {
-                args.push(KotlinProp(prop("value").expect("`Text` has a value"), None));
-                &["color", "size", "bold"]
+                if let Some(value) = prop("value") {
+                    args.push(KotlinProp(value, None));
+                }
+                &["bold", "align", "maxLines", "lineHeight"]
+            }
+            Element::Span => {
+                args.push(KotlinProp(prop("value").expect("`Span` has a value"), None));
+                &[]
             }
             Element::Input | Element::Checkbox => {
                 let (_, slot) = controlled.expect("input controls have value slots");
@@ -94,18 +100,25 @@ impl Body<'_> {
             Element::Stack => &["alignment"],
             Element::Scroll => &["direction", "gap", "align", "indicators"],
             Element::Spacer => &["size"],
-            Element::Span => unreachable!("platform support rejects `Span` before generation"),
         };
-        for &name in names.iter().chain(PADDING) {
+        let text_style = if matches!(element, Element::Text | Element::Span) {
+            TEXT_STYLE
+        } else {
+            &[]
+        };
+        for &name in text_style.iter().chain(names).chain(PADDING) {
             let Some(value) = prop(name) else { continue };
             if name == "disabled" && matches!(value, PropSource::Constant(Constant::Bool(false))) {
                 continue;
             }
             let union = match name {
+                "align" if element == Element::Text => Some("TextAlign"),
                 "align" => Some("CrossAlign"),
                 "justify" => Some("Justify"),
                 "alignment" => Some("Alignment"),
                 "direction" => Some("Axis"),
+                "weight" => Some("Weight"),
+                "decoration" => Some("Decoration"),
                 _ => None,
             };
             args.push(format_args!("{name} = {}", KotlinProp(value, union)));
@@ -125,9 +138,14 @@ impl Body<'_> {
                     " {{ s.dispatch({event}, WeftValue.Bool(it)) }}"
                 ));
             }
-            Element::Text | Element::Image | Element::Spacer => out.writer.end_line(""),
-            Element::Span => unreachable!("platform support rejects `Span` before generation"),
-            Element::Column | Element::Row | Element::Stack | Element::Scroll | Element::Button => {
+            Element::Text if children.is_empty() => out.writer.end_line(""),
+            Element::Span | Element::Image | Element::Spacer => out.writer.end_line(""),
+            Element::Column
+            | Element::Row
+            | Element::Stack
+            | Element::Scroll
+            | Element::Button
+            | Element::Text => {
                 out.open_after(" {");
                 for &child in children {
                     self.node(out, child);
@@ -161,6 +179,8 @@ impl Body<'_> {
         }
     }
 }
+
+const TEXT_STYLE: &[&str] = &["color", "size", "weight", "italic", "decoration"];
 
 const PADDING: &[&str] = &[
     "padding",

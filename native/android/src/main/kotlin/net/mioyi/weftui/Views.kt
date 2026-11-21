@@ -3,7 +3,6 @@ package net.mioyi.weftui
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -22,9 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 /**
@@ -64,36 +61,6 @@ fun WeftRoot(layoutHash: ULong, theme: WeftTheme = WeftTheme.Empty, make: WeftMa
             }
         }
     }
-}
-
-/** `Text`; unset style properties keep the theme's. Sizes are dp, like every length. */
-@Composable
-fun WeftText(
-    value: String,
-    color: WeftColor? = null,
-    size: Float? = null,
-    bold: Boolean? = null,
-    modifier: Modifier = Modifier,
-    padding: Float? = null,
-    paddingX: Float? = null,
-    paddingY: Float? = null,
-    paddingTop: Float? = null,
-    paddingBottom: Float? = null,
-    paddingStart: Float? = null,
-    paddingEnd: Float? = null,
-) {
-    val insets = paddingEdges(padding, paddingX, paddingY, paddingTop, paddingBottom, paddingStart, paddingEnd)
-    val box = if (insets == WeftEdges()) modifier else modifier.weftPadding(insets).absolutePadding(
-        left = insets.start.dp, top = insets.top.dp, right = insets.end.dp, bottom = insets.bottom.dp,
-    )
-    val fontSize = if (size != null) with(LocalDensity.current) { size.dp.toSp() } else TextUnit.Unspecified
-    Text(
-        value,
-        modifier = box,
-        color = color?.resolve() ?: Color.Unspecified,
-        fontSize = fontSize,
-        fontWeight = if (bold == true) FontWeight.Bold else null,
-    )
 }
 
 /** `Button`: a Material button around its children. */

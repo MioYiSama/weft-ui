@@ -72,6 +72,10 @@ fn generate(layout: &ViewLayout) -> String {
         "constexpr uint64_t kLayoutHash = 0x{:016x}ull;",
         layout.hash()
     ));
+    out.writer.line(format_args!(
+        "constexpr bool safe_area = {};",
+        layout.safe_area()
+    ));
     for (index, template) in layout.templates().iter().enumerate() {
         out.writer.blank();
         out.writer
@@ -96,7 +100,7 @@ fn generate(layout: &ViewLayout) -> String {
     out.writer.blank();
     if layout.theme().is_empty() {
         out.writer.line(
-            "GtkWidget *weft::start_app() { return Session::start(kLayoutHash, make_scope); }",
+            "GtkWidget *weft::start_app() { return Session::start(kLayoutHash, safe_area, make_scope); }",
         );
     } else {
         out.open("GtkWidget *weft::start_app()");
@@ -112,7 +116,7 @@ fn generate(layout: &ViewLayout) -> String {
         out.close(";");
         out.writer.line("theme::set(kTheme);");
         out.writer
-            .line("return Session::start(kLayoutHash, make_scope);");
+            .line("return Session::start(kLayoutHash, safe_area, make_scope);");
         out.close("");
     }
     out.writer.finish()
@@ -175,6 +179,8 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::AppOptions;
+    use crate::transform::Platform;
     use weft_ui_parser::MemoryLoader;
 
     fn cpp(source: &str) -> String {
@@ -185,6 +191,43 @@ mod tests {
             panic!("{}", compilation.render_diagnostics());
         };
         generate(&ViewLayout::new(program))
+    }
+
+    #[test]
+    fn passes_safe_area_to_session_with_or_without_a_theme() {
+        for source in [
+            r#"component App() { Text("safe area") }"#,
+            r##"theme { accent = "#123" }
+                component App() { Text("safe area") }"##,
+        ] {
+            for (options, expected) in [
+                (AppOptions::default(), "true"),
+                (AppOptions { safe_area: false }, "false"),
+            ] {
+                let mut loader = MemoryLoader::new();
+                loader.insert("App.weft", source);
+                let output = crate::compile_app(
+                    weft_ui_parser::load(&["App.weft"], &mut loader),
+                    Platform::Linux,
+                    &options,
+                );
+                let code = &output
+                    .views
+                    .iter()
+                    .find(|file| file.path == VIEWS)
+                    .unwrap_or_else(|| panic!("{}", output.compilation.render_diagnostics()))
+                    .contents;
+                let declaration = format!("constexpr bool safe_area = {expected};");
+                assert!(
+                    code.contains(&declaration),
+                    "missing {declaration:?}\n{code}"
+                );
+                assert!(
+                    code.contains("Session::start(kLayoutHash, safe_area, make_scope)"),
+                    "{code}"
+                );
+            }
+        }
     }
 
     #[test]

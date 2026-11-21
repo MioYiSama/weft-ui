@@ -102,7 +102,7 @@ struct Session::Environment {
   guint idle = 0;
 };
 
-GtkWidget *Session::start(uint64_t layout_hash, Factory make) {
+GtkWidget *Session::start(uint64_t layout_hash, [[maybe_unused]] bool safe_area, Factory make) {
   register_asset_fonts();
   GtkWidget *page = linear_new(Axis::Vertical);
   gtk_widget_set_overflow(page, GTK_OVERFLOW_HIDDEN);

@@ -11,6 +11,7 @@ namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
 constexpr uint64_t kLayoutHash = 0x7cc75271705805faull;
+constexpr bool safe_area = true;
 
 // 0 Badge
 
@@ -87,5 +88,5 @@ GtkWidget *weft::start_app() {
     {"accent"sv, 0x0a84ffffu, 0x409cffffu},
   };
   theme::set(kTheme);
-  return Session::start(kLayoutHash, make_scope);
+  return Session::start(kLayoutHash, safe_area, make_scope);
 }

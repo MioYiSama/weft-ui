@@ -11,6 +11,7 @@ namespace {
 
 /// Hash of the layout; the kernel refuses bundles compiled with another layout.
 constexpr uint64_t kLayoutHash = 0x61c5242ca67945f7ull;
+constexpr bool safe_area = true;
 
 // 0 Panel
 
@@ -171,4 +172,4 @@ std::unique_ptr<weft::Scope> make_scope(uint32_t tpl, uint32_t id, weft::Session
 
 }  // namespace
 
-GtkWidget *weft::start_app() { return Session::start(kLayoutHash, make_scope); }
+GtkWidget *weft::start_app() { return Session::start(kLayoutHash, safe_area, make_scope); }

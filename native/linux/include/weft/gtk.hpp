@@ -645,7 +645,8 @@ class Session {
 
   /// Starts the app compiled to `weft/bundle.hbc` next to the executable,
   /// whose views implement the layout with hash `layout_hash`; see `start_app`.
-  static GtkWidget *start(uint64_t layout_hash, Factory make);
+  /// GTK has no safe-area insets, so `safe_area` does not affect the root layout.
+  static GtkWidget *start(uint64_t layout_hash, bool safe_area, Factory make);
 
   Session(const Session &) = delete;
   Session &operator=(const Session &) = delete;

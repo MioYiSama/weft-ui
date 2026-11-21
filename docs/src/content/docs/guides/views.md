@@ -100,6 +100,28 @@ Text(width = 200, lineHeight = 22) {
 
 Give `Text` either a string value or one or more direct `Span` children, not both. Each `Span` takes a string and can override the text styling for that run. Include any spaces needed between spans in their strings. Use a string expression inside a `Span` for dynamic text rather than placing an `if`, `for`, component call, or slot directly inside `Text`.
 
+## Form controls and progress
+
+Use `Switch` for on/off settings, `TextArea` for multiline text, `Slider` to choose an integer, and `Picker` to choose from a list. These controls are controlled: `onChange` proposes a new value, and the displayed value follows the bound property. If the handler leaves that property unchanged, the control returns to its previous value. Use `disabled = true` when the user should not be able to propose an edit at all.
+
+`Picker` requires named `options` of type `String[]`. The selection and its change event use zero-based indices. An out-of-range index (such as `-1`) shows the placeholder instead. `Slider` defaults to a range of 0–100 with a step of 1.
+
+`Spinner` indicates activity without a known fraction, while `Progress` takes a fraction from 0 to 1. Use `Divider()` for a horizontal line or `Divider(vertical = true)` for a vertical line. The orientation must be a compile-time constant. Check the [element reference](/reference/elements/) for platform support.
+
+```weft
+component Preferences(choices: String[]) {
+  state locked = false
+  state choice = -1
+  Column(gap = 8, width = 240) {
+    Switch(locked, onChange = { value -> locked = value })
+    Picker(choice, options = choices, placeholder = "Choose a location",
+      onChange = { value -> choice = if (locked) choice else value })
+    Divider()
+    Progress(0.3)
+  }
+}
+```
+
 ## Reuse element styles
 
 Declare a `style` at the top level and pass its name to a built-in element:

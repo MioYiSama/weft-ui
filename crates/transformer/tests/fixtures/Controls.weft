@@ -1,0 +1,20 @@
+component Controls(options: String[], color: Color, progress: Float, limit: Int) {
+    state enabled = true
+    state note = ""
+    state level = 30
+    state selected = -1
+    Column(fill = true, gap = 8) {
+        Switch(enabled, onChange = { value -> enabled = value })
+        Switch(false, disabled = true)
+        Checkbox(true)
+        TextArea(note, placeholder = "Write a note", onChange = { value -> note = value })
+        Spinner(color = color)
+        Progress(progress, height = 6, color = color)
+        Progress(0.8, width = 120, color = "#218670")
+        Divider()
+        Row(height = 24) { Divider(vertical = true, color = color) }
+        Slider(level, min = 10, max = limit, step = 5, onChange = { value -> level = value })
+        Picker(selected, options = options, placeholder = "Choose an option", onChange = { value -> selected = value })
+        Picker(0, options = options, disabled = true)
+    }
+}

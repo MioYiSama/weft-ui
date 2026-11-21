@@ -36,8 +36,8 @@ export type AppClass<A extends AppLike> = new (model: A["model"]) => A;
 export interface Actions {
   /** Fires the named event, or the element's first event, without a payload. */
   click(type: string, index: number, event?: string): void;
-  /** Edits a controlled `Input` or `Checkbox`. */
-  edit(type: string, index: number, value: string | boolean): void;
+  /** Edits a controlled element with its UI event payload. */
+  edit(type: string, index: number, value: string | boolean | number): void;
 }
 
 export interface Step<M> {
@@ -78,9 +78,7 @@ export interface Driver<A extends AppLike> extends Actions {
 }
 
 /** Props compared across platforms; styling differs by design. */
-const MAIN: Record<string, readonly string[]> = Object.fromEntries(
-  Object.entries(ELEMENTS).flatMap(([name, { main }]) => main === null ? [] : [[name, [main]] as const]),
-);
+const MAIN = Object.fromEntries(Object.entries(ELEMENTS).map(([name, { main }]) => [name, main]));
 
 /** A raw platform element's neutral type and main props, with its raw children. */
 interface Classified<R> {
@@ -110,11 +108,12 @@ function nth<R>(found: [R, string][], type: string, index: number): R {
 }
 
 function actionEvent(type: string, name?: string): { dom: string; wechat: string } {
-  const first = type === "Input" || type === "Checkbox" ? "onChange" : "onClick";
+  const first = ["Input", "TextArea", "Checkbox", "Switch", "Slider", "Picker"].includes(type) ? "onChange" : "onClick";
   switch (name ?? first) {
     case "onClick": return { dom: "click", wechat: "tap" };
     case "onChange": {
-      const event = type === "Input" ? "input" : "change";
+      if (type === "Slider") return { dom: "input", wechat: "changing" };
+      const event = type === "Input" || type === "TextArea" ? "input" : "change";
       return { dom: event, wechat: event };
     }
     default: throw new Error(`no mapping for ${type}.${name}`);
@@ -156,11 +155,16 @@ export function headless<A extends AppLike>(script: Script<A>, built: Built<A>):
     reduce(renderer.tree(), classify, found);
     return nth(found, type, index);
   };
-  const classify = (e: ViewElement) => ({
-    type: e.type,
-    props: Object.fromEntries((MAIN[e.type] ?? []).map((p) => [p, e.props[p]])),
-    children: e.children,
-  });
+  const classify = (e: ViewElement) => {
+    const main = MAIN[e.type];
+    let props = main ? { [main]: e.props[main]! } : {};
+    if (e.type === "Picker") {
+      const options = e.props.options as readonly string[];
+      const selected = pickerIndex(Number(e.props.selected), options.length);
+      props = { selected, options, label: options[selected] ?? e.props.placeholder ?? "" };
+    }
+    return { type: e.type, props, children: e.children };
+  };
   return {
     name: "headless",
     renderer,
@@ -182,6 +186,10 @@ const CONTAINERS = {
   "w-scroll-v": "Scroll",
   "w-scroll-h": "Scroll",
   "w-spacer": "Spacer",
+  "w-spinner": "Spinner",
+  "w-progress": "Progress",
+  "w-divider": "Divider",
+  "w-divider-v": "Divider",
 };
 
 function containerType(has: (name: string) => boolean): string {
@@ -189,6 +197,14 @@ function containerType(has: (name: string) => boolean): string {
     if (has(name)) return type;
   }
   throw new Error("expected a Weft container class");
+}
+
+function pickerIndex(index: number, count: number): number {
+  return index >= 0 && index < count ? index : -1;
+}
+
+function progressValue(style: string): number {
+  return Number.parseFloat(/(?:^|;)\s*width:\s*([^;]+)%/.exec(style)?.[1] ?? "") / 100;
 }
 
 function wxClassify(e: WxElement | string): Classified<WxElement | string> | null {
@@ -199,6 +215,11 @@ function wxClassify(e: WxElement | string): Classified<WxElement | string> | nul
     case "view": {
       const classes = String(e.attrs.class).split(/\s+/);
       const type = containerType((name) => classes.includes(name));
+      if (type === "Progress") {
+        const bar = e.children[0];
+        if (!bar || typeof bar === "string") throw new Error("expected a Progress bar");
+        return { type, props: { value: progressValue(String(bar.attrs.style)) }, children: [] };
+      }
       return { type, props: {}, children: e.children };
     }
     case "scroll-view": {
@@ -214,8 +235,17 @@ function wxClassify(e: WxElement | string): Classified<WxElement | string> | nul
       return { type: "Button", props: {}, children: e.children };
     case "input":
       return { type: "Input", props: { value: String(e.attrs.value ?? "") }, children: [] };
+    case "textarea":
+      return { type: "TextArea", props: { value: String(e.attrs.value ?? "") }, children: [] };
     case "switch":
-      return { type: "Checkbox", props: { checked: e.attrs.checked === true }, children: [] };
+      return { type: e.attrs.type === "checkbox" ? "Checkbox" : "Switch", props: { checked: e.attrs.checked === true }, children: [] };
+    case "slider":
+      return { type: "Slider", props: { value: Number(e.attrs.value) }, children: [] };
+    case "picker": {
+      const options = e.attrs.range as readonly string[];
+      const selected = pickerIndex(Number(e.attrs.value), options.length);
+      return { type: "Picker", props: { selected, options, label: text(e) }, children: [] };
+    }
     case "image":
       return { type: "Image", props: { src: String(e.attrs.src ?? "") }, children: [] };
     default:
@@ -242,8 +272,8 @@ export async function wechat<A extends AppLike>(script: Script<A>, built: Built<
     },
     edit: (type, index, value) => {
       const element = find(type, index);
-      if (type === "Input") view.input(element, value as string);
-      else view.change(element, value);
+      const { wechat } = actionEvent(type);
+      view.fire(element, wechat, type === "Picker" ? String(value) : value);
     },
     settle: built.tick,
   };
@@ -252,17 +282,35 @@ export async function wechat<A extends AppLike>(script: Script<A>, built: Built<
 function domClassify(e: Element): Classified<Element> {
   const children = [...e.children];
   switch (e.tagName) {
-    case "DIV":
-      return { type: containerType((name) => e.classList.contains(name)), props: {}, children };
+    case "DIV": {
+      const type = containerType((name) => e.classList.contains(name));
+      if (type === "Progress") {
+        const value = Number.parseFloat((children[0] as HTMLElement).style.width) / 100;
+        return { type, props: { value }, children: [] };
+      }
+      return { type, props: {}, children };
+    }
     case "SPAN":
       return { type: "Text", props: { value: e.textContent ?? "" }, children: [] };
     case "BUTTON":
       return { type: "Button", props: {}, children };
     case "INPUT": {
       const input = e as HTMLInputElement;
-      return input.type === "checkbox"
-        ? { type: "Checkbox", props: { checked: input.checked }, children: [] }
-        : { type: "Input", props: { value: input.value }, children: [] };
+      if (input.type === "checkbox") {
+        const type = input.getAttribute("role") === "switch" ? "Switch" : "Checkbox";
+        return { type, props: { checked: input.checked }, children: [] };
+      }
+      if (input.type === "range") return { type: "Slider", props: { value: Number(input.value) }, children: [] };
+      return { type: "Input", props: { value: input.value }, children: [] };
+    }
+    case "TEXTAREA":
+      return { type: "TextArea", props: { value: (e as HTMLTextAreaElement).value }, children: [] };
+    case "SELECT": {
+      const select = e as HTMLSelectElement;
+      const options = [...select.options].slice(1).map((option) => option.textContent ?? "");
+      const selected = Number(select.value);
+      const label = select.options[select.selectedIndex]?.textContent ?? "";
+      return { type: "Picker", props: { selected, options, label }, children: [] };
     }
     case "IMG":
       return { type: "Image", props: { src: e.getAttribute("src") ?? "" }, children: [] };
@@ -294,10 +342,10 @@ export function web<A extends AppLike>(script: Script<A>): Driver<A> {
     },
     edit: (type, index, value) => {
       const input = find(type, index) as HTMLInputElement;
-      if (type === "Input") input.value = value as string;
-      else input.checked = value as boolean;
+      if (typeof value === "boolean") input.checked = value;
+      else input.value = String(value);
       // Use the event class of the happy-dom window that owns the element.
-      const event = new window.Event(type === "Input" ? "input" : "change") as unknown as Event;
+      const event = new window.Event(actionEvent(type).dom) as unknown as Event;
       input.dispatchEvent(event);
     },
     settle: webTick,

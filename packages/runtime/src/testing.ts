@@ -23,7 +23,7 @@ export interface TemplateLayout {
   kind: "component" | "branch" | "row" | "slot";
   roots: number[];
   nodes: NodeLayout[];
-  values: { node: number; prop: string; type: "Int" | "Float" | "Bool" | "String" | "Color" }[];
+  values: { node: number; prop: string; type: "Int" | "Float" | "Bool" | "String" | "Color" | "Strings" }[];
   events: { node: number; event: string; payload: string | null; controls: number | null }[];
   points: PointLayout[];
 }
@@ -230,6 +230,7 @@ export class Renderer extends OpWriter implements Sink {
           slot.type === "Int" ? Number.isInteger(op.value)
           : slot.type === "Float" ? typeof op.value === "number"
           : slot.type === "Bool" ? typeof op.value === "boolean"
+          : slot.type === "Strings" ? Array.isArray(op.value)
           : typeof op.value === "string";
         if (!ok) throw new Error(`weft protocol: ${formatOp(op)} does not fit a ${slot.type} slot`);
         scope.values[op.slot] = op.value;

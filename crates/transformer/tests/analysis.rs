@@ -35,6 +35,26 @@ fn diagnostics(files: &[(&str, &str)]) -> Vec<String> {
 }
 
 #[test]
+fn controls_require_string_options_and_a_constant_divider_orientation() {
+    let source = r#"
+component Bad(options: Int[], vertical: Bool) {
+    Picker(0, options = options)
+    Divider(vertical = vertical)
+}
+"#;
+    let errors = diagnostics(&[("controls.weft", source)]);
+    assert_eq!(errors.len(), 2, "{errors:?}");
+    assert!(
+        errors[0].contains("String[]") && errors[0].contains("Int[]"),
+        "{errors:?}"
+    );
+    assert!(
+        errors[1].ends_with("`Divider.vertical` must be a constant"),
+        "{errors:?}"
+    );
+}
+
+#[test]
 fn themes_are_unique_and_theme_is_a_reserved_binding() {
     let source = r##"theme { accent = "#fff" }
 theme {}
@@ -124,13 +144,13 @@ component Example(tint: Color, input: String) {
 type Tint = Color
 model Model { tint: Tint }
 event Pick(tint: Color)
-component Picker(onPick: Event<Color>) {
+component ColorPicker(onPick: Event<Color>) {
   Button(onClick = { onPick(theme.accent) }) { Text("Pick") }
 }
 component Screen(model: Model) {
   state tint: Color = "#123"
   Text("custom", color = model.tint)
-  Picker(onPick = { value -> tint = value; Pick(tint) })
+  ColorPicker(onPick = { value -> tint = value; Pick(tint) })
 }"##;
     assert!(diagnostics(&[("color.weft", source)]).is_empty());
 }

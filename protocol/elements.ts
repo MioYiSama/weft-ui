@@ -69,7 +69,7 @@ interface LocatedMember {
 }
 
 const header = "// Generated from protocol/weft.elements.json by protocol/elements.ts; do not edit.\n";
-const propTypes = { Int: true, Float: true, Bool: true, String: true, Color: true };
+const propTypes = { Int: true, Float: true, Bool: true, String: true, Color: true, Strings: true };
 const payloadTypes = { Int: true, Float: true, Bool: true, String: true };
 const rustUnits = { px: "Px", number: "Number", color: "Color", percent: "Percent" };
 const rustCustom = { hidden: "Hidden", maxLines: "MaxLines", shadow: "Shadow", grow: "Grow", fill: "Fill", border: "Border", spacer: "Spacer" };
@@ -155,7 +155,7 @@ function expand(schema: Schema, platforms: Platforms): ExpandedElement[] {
   for (const [name, values] of Object.entries(unions)) {
     const path = `unions.${name}`;
     if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) invalid(path, "expected a PascalCase union name");
-    if (Object.hasOwn(propTypes, name) || name === "Strings") {
+    if (Object.hasOwn(propTypes, name)) {
       invalid(path, `duplicate name ${quote(name)}`);
     }
     if (!Array.isArray(values) || values.length === 0) invalid(path, "expected a nonempty union");

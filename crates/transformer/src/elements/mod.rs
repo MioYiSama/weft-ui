@@ -22,6 +22,7 @@ pub(crate) enum PropType {
     Bool,
     String,
     Color,
+    Strings,
     Union(&'static [&'static str]),
 }
 
@@ -33,6 +34,7 @@ impl PropType {
             Self::Bool => Type::Bool,
             Self::String => Type::String,
             Self::Color => Type::Color,
+            Self::Strings => Type::Array(Box::new(Type::String)),
             Self::Union(values) => {
                 Type::Union(values.iter().map(|value| (*value).to_owned()).collect())
             }
@@ -55,7 +57,6 @@ pub(crate) enum PropKind {
 pub(crate) struct Css<'a> {
     pub properties: &'a [&'a str],
     pub unit: CssUnit<'a>,
-    #[expect(dead_code, reason = "the inner-node target is first used by Progress")]
     pub target: CssTarget,
 }
 
@@ -65,7 +66,6 @@ pub(crate) enum CssUnit<'a> {
     Px,
     Number,
     Color,
-    #[cfg_attr(not(test), expect(dead_code, reason = "first used by Progress"))]
     Percent,
     Keyword(&'a [(&'a str, &'a str)]),
     Custom(CustomCss),
@@ -74,7 +74,6 @@ pub(crate) enum CssUnit<'a> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CssTarget {
     Node,
-    #[cfg_attr(not(test), expect(dead_code, reason = "first used by Progress"))]
     Inner,
 }
 

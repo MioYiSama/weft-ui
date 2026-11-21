@@ -389,3 +389,241 @@ Must be a direct child of: `Column`, `Row`, `Scroll`.
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
 | `size` | `Int` | — | Reserves a fixed length; if omitted, shares the remaining space. | — |
+
+## Switch
+
+Toggles a setting on or off.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** None.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | — |
+| `minWidth` | `Int` | — | Sets the minimum content width. | — |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | — |
+| `minHeight` | `Int` | — | Sets the minimum content height. | — |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | — |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | — |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | — |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | — |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | — |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | — |
+| `marginTop` | `Int` | `0` | Sets the top margin. | — |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
+| `checked` (positional) | `Bool` | Required | The current switch state. | — |
+| `disabled` | `Bool` | — | Prevents changes to the switch. | — |
+
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onChange` | `Bool` | Reports the proposed switch state. | — |
+
+## TextArea
+
+Edits multiple lines of text.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** None.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | — |
+| `minWidth` | `Int` | — | Sets the minimum content width. | — |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | — |
+| `minHeight` | `Int` | — | Sets the minimum content height. | — |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | — |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | — |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | — |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | — |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | — |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | — |
+| `marginTop` | `Int` | `0` | Sets the top margin. | — |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
+| `value` (positional) | `String` | Required | The current text. | — |
+| `placeholder` | `String` | — | Shows a hint when the text is empty. | — |
+| `disabled` | `Bool` | — | Prevents editing the text. | — |
+
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onChange` | `String` | Reports the proposed text after an edit. | — |
+
+## Spinner
+
+Indicates that work is in progress without showing an amount.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** None.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | — |
+| `minWidth` | `Int` | — | Sets the minimum content width. | — |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | — |
+| `minHeight` | `Int` | — | Sets the minimum content height. | — |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | — |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | — |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | — |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | — |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | — |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | — |
+| `marginTop` | `Int` | `0` | Sets the top margin. | — |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
+| `color` | `Color` | — | Sets the color of the spinning ring. | — |
+
+## Progress
+
+Displays the completed fraction of a task.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** None.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | — |
+| `minWidth` | `Int` | — | Sets the minimum content width. | — |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | — |
+| `minHeight` | `Int` | — | Sets the minimum content height. | — |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | — |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | — |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | — |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | — |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | — |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | — |
+| `marginTop` | `Int` | `0` | Sets the top margin. | — |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
+| `value` (positional) | `Float` | Required | The fraction complete, from zero to one. | — |
+| `color` | `Color` | `"#007aff"` | Sets the color of the filled bar. | — |
+
+## Divider
+
+Separates adjacent content with a line.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** None.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | — |
+| `minWidth` | `Int` | — | Sets the minimum content width. | — |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | — |
+| `minHeight` | `Int` | — | Sets the minimum content height. | — |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | — |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | — |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | — |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | — |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | — |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | — |
+| `marginTop` | `Int` | `0` | Sets the top margin. | — |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
+| `vertical` | `Bool` | `false` | Selects a vertical instead of a horizontal line; must be constant. | — |
+| `color` | `Color` | `"#0000001f"` | Sets the line color; the dark-mode default is `#ffffff26`. | — |
+
+## Slider
+
+Selects an integer within a range.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** None.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | — |
+| `minWidth` | `Int` | — | Sets the minimum content width. | — |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | — |
+| `minHeight` | `Int` | — | Sets the minimum content height. | — |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | — |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | — |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | — |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | — |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | — |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | — |
+| `marginTop` | `Int` | `0` | Sets the top margin. | — |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
+| `value` (positional) | `Int` | Required | The current slider value. | — |
+| `min` | `Int` | `0` | Sets the lower bound. | — |
+| `max` | `Int` | `100` | Sets the upper bound. | — |
+| `step` | `Int` | `1` | Sets the increment between values. | — |
+| `disabled` | `Bool` | — | Prevents changes to the slider. | — |
+
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onChange` | `Int` | Reports the proposed value as the slider moves. | — |
+
+## Picker
+
+Selects one option from a list of strings.
+
+**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
+
+**Children:** None.
+
+| Property | Type | Default | Description | Platform exceptions |
+| --- | --- | --- | --- | --- |
+| `width` | `Int` | — | Sets the width of the content box. | — |
+| `height` | `Int` | — | Sets the height of the content box. | — |
+| `grow` | `Float` | `0` | Sets the share of remaining main-axis space for a child in a linear container. | — |
+| `minWidth` | `Int` | — | Sets the minimum content width. | — |
+| `maxWidth` | `Int` | — | Sets the maximum content width. | — |
+| `minHeight` | `Int` | — | Sets the minimum content height. | — |
+| `maxHeight` | `Int` | — | Sets the maximum content height. | — |
+| `fill` | `Bool` | `false` | Fills the cross axis in a linear container or both axes in a Stack. | — |
+| `aspectRatio` | `Float` | — | Sets width divided by height when one dimension determines the other. | — |
+| `margin` | `Int` | `0` | Sets the outer spacing on all four sides. | — |
+| `marginX` | `Int` | `0` | Sets the outer spacing on the left and right. | — |
+| `marginY` | `Int` | `0` | Sets the outer spacing on the top and bottom. | — |
+| `marginTop` | `Int` | `0` | Sets the top margin. | — |
+| `marginBottom` | `Int` | `0` | Sets the bottom margin. | — |
+| `marginStart` | `Int` | `0` | Sets the left margin in left-to-right layout. | — |
+| `marginEnd` | `Int` | `0` | Sets the right margin in left-to-right layout. | — |
+| `opacity` | `Float` | `1` | Sets the opacity of the element and its children. | — |
+| `hidden` | `Bool` | `false` | Hides the element and removes it from layout. | — |
+| `selected` (positional) | `Int` | Required | The zero-based index; an out-of-range index means there is no selection. | — |
+| `options` | `Strings` | Required | The list of option labels, in display order. | — |
+| `placeholder` | `String` | — | Shows a hint when there is no selection. | — |
+| `disabled` | `Bool` | — | Prevents selecting another option. | — |
+
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onChange` | `Int` | Reports the zero-based index of the proposed option. | — |

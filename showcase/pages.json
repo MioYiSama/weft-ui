@@ -3,5 +3,15 @@
   { "id": "layout", "title": "Layout" },
   { "id": "appearance", "title": "Appearance" },
   { "id": "theme", "title": "Theme", "dark": true },
-  { "id": "text", "title": "Typography", "component": "Typography" }
+  { "id": "text", "title": "Typography", "component": "Typography" },
+  {
+    "id": "controls",
+    "title": "Controls",
+    "pending": ["ios", "macos", "android", "windows", "linux"],
+    "props": {
+      "regions": ["本地", "远程"],
+      "channels": ["稳定版", "测试版"],
+      "unavailable": ["不可更改"]
+    }
+  }
 ]

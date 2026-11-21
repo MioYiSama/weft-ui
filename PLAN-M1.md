@@ -938,11 +938,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R2.n | ☑ | b0a94d5 | C-windows（core 18、WinUI 12）、C-ui 通过；Windows 截图已查看，隐藏卡片不留空隙；已有 Windows 快照未变 |
 | R2.g | ☑ | 43cf97b | C-linux 5 组、C-ui 通过；Linux 截图（含真正的深色 `theme-dark`）已查看；已有 Linux 快照未变 |
 | R3.w | ☑ | a962e07 | 截图待维护者确认（`text`：web、wechat；改用系统字体后重新生成的 web `hello`、`layout`、`appearance`、`theme`、`theme-dark`）；C-rust 125 项、C-ts 218 项通过，tsc 计数不变；conformance 黄金文件不变；C-apps 7 个平台有差异，已重新录制基线 |
-| R3.a | ☑ | （本提交） | 截图待维护者确认（`text`：ios；重新生成的 ios `hello`、`layout`、`appearance`、`theme`、`theme-dark`，差异 0.297–0.702%）；C-apple 14 项、iOS 与 macOS 的 C-ui 通过；macOS 截图已查看；含本批共用的 schema、夹具、`pages.json` 与 `text` 页改动；C-apps 仅 ios、macOS 的 `Generated.swift` 有差异，已重新录制基线 |
+| R3.a | ☑ | cb92071 | 截图待维护者确认（`text`：ios；重新生成的 ios `hello`、`layout`、`appearance`、`theme`、`theme-dark`，差异 0.297–0.702%）；C-apple 14 项、iOS 与 macOS 的 C-ui 通过；macOS 截图已查看；含本批共用的 schema、夹具、`pages.json` 与 `text` 页改动；C-apps 仅 ios、macOS 的 `Generated.swift` 有差异，已重新录制基线 |
 | R3.d | ☑ | 162f3e0 | 截图待维护者确认（`text`：android）；C-android（含 4 个文本测试）、C-ui 通过；6 张截图回归 0.000%（`text` 页改动后复查仍为 0.000%） |
 | R3.n | ☑ | 65ae9ac | C-windows（core 18、壳 12）、C-ui 通过；Windows 截图已查看，截断位置与 Web 一致；已有 Windows 快照未变 |
 | R3.g | ☑ | b0b69a2 | C-linux 6 组、C-ui 通过；Linux 截图已查看；已有 Linux 快照未变；没有待移出的 conformance 夹具 |
-| R4.w | ☐ | | |
+| R4.w | ☑ | （本提交） | 截图待维护者确认（`controls`：web、wechat）；C-rust 128 项、C-ts 通过，`controls` 在三个驱动上一致，tsc 计数不变；Web 上逐个操作控件并验证锁定时恢复；C-apps 仅 web、wechat 有差异，已重新录制基线 |
 | R4.a | ☐ | | |
 | R4.d | ☐ | | |
 | R4.n | ☐ | | |
@@ -1007,3 +1007,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R3.g] GTK 的 `gtk_label_set_lines` 按段落分别限制行数，含显式换行的文本改用对整个标签生效的回退实现；Linux 镜像加装 `fonts-inter-variable`，否则 Noto Sans 无法区分 5 种字重。结论：接受
 - [R3.a–R3.g] 并行编辑 `protocol/weft.elements.json` 时互相覆盖：一次把 Apple 已删除的 `groups.text` 标记写回，另一次把 `lineHeight` 的 `css` 键顺序改成 `unit` 在前，导致 runtime 的 `CSS_PROPS` 与 example 的 web、wechat 产物变化；提交前已改回。结论：原生波次结束后由编排者核对 schema 的 diff 与 C-apps
 - [R3.a–R3.g] 一次 `shot:wechat` 因开发者工具 websocket 异常中途退出，重跑通过。结论：偶发，记录在案
+- [R4.w] 计划没有写「预期变化」。实际变化：新增的 `Controls` 快照与 `controls` 黄金文件；所有小程序快照的 `view.wxss`（新增控件规则）；example 的 web、wechat 产物（共享 CSS 与 runtime）。原生快照、原生 example 产物、已有 CSS 下标与 conformance 黄金文件不变。结论：接受，已重新录制 C-apps 基线
+- [R4.w] Weft 没有数组字面量，`Picker.options` 只能来自参数。showcase 的 `pages.json` 新增可选字段 `props`（目前只支持字符串数组），目录脚本据此生成 `model ShowcaseModel` 并按顺序传给页面，`src/index.ts` 从同一份清单构造模型；已写入 showcase/README.md。结论：接受
+- [R4.w] 小程序 `picker` 的 `change` 事件载荷中索引是字符串，`textarea` 不能靠 `bindinput` 的返回值恢复文本；sink 分别转换索引，并用 `setData` 恢复文本。结论：接受
+- [R4.w] 原生 C++ conformance host 还不支持 `Float`、`Strings` 值槽与数字编辑载荷；R4.g 把 `controls` 移出 `pending.json` 前需要补齐。结论：R4.g 处理

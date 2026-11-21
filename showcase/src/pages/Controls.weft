@@ -1,0 +1,74 @@
+component ControlSetting(label: String, content: Children) {
+    Row(fill = true, gap = 12, align = "center", justify = "spaceBetween") {
+        Text(label, size = 14)
+        content
+    }
+}
+
+component Controls(regions: String[], channels: String[], unavailable: String[]) {
+    state locked = false
+    state alerts = true
+    state sounds = false
+    state accepted = true
+    state volume = 40
+    state region = 0
+    state channel = -1
+    state notes = ""
+    Scroll(indicators = false) {
+        Column(fill = true, padding = 18, gap = 10) {
+            Column(gap = 3) {
+                Text("控件设置", size = 26, weight = "semibold")
+                Text("打开锁定后，控件会恢复到修改前的值。", size = 13)
+            }
+            ControlSetting("锁定") {
+                Switch(locked, onChange = { value -> locked = value })
+            }
+            Divider()
+            ControlSetting("通知") {
+                Switch(alerts, onChange = { value -> alerts = if (locked) alerts else value })
+            }
+            ControlSetting("声音") {
+                Switch(sounds, onChange = { value -> sounds = if (locked) sounds else value })
+            }
+            ControlSetting("接受更新") {
+                Checkbox(accepted, onChange = { value -> accepted = if (locked) accepted else value })
+            }
+            ControlSetting("音量 · ${volume}%") {
+                Slider(volume, width = 136, step = 5, onChange = { value -> volume = if (locked) volume else value })
+            }
+            ControlSetting("地区") {
+                Picker(region, options = regions, width = 122, onChange = { value -> region = if (locked) region else value })
+            }
+            ControlSetting("频道") {
+                Picker(channel, options = channels, placeholder = "选择频道", width = 122, onChange = { value -> channel = if (locked) channel else value })
+            }
+            ControlSetting("备注") {
+                TextArea(notes, placeholder = "添加备注", width = 146, onChange = { value -> notes = if (locked) notes else value })
+            }
+            Divider()
+            ControlSetting("正在同步") { Spinner(color = "#007aff") }
+            Row(fill = true, gap = 12, align = "center", height = 26) {
+                Row(grow = 1, gap = 8, align = "center") {
+                    Text("30%", size = 13)
+                    Column(grow = 1) { Progress(0.3) }
+                }
+                Divider(vertical = true)
+                Row(grow = 1, gap = 8, align = "center") {
+                    Text("80%", size = 13)
+                    Column(grow = 1) { Progress(0.8, color = "#218670") }
+                }
+            }
+            Divider()
+            Text("禁用状态", size = 15, weight = "semibold")
+            Row(fill = true, gap = 12, align = "center", justify = "spaceBetween") {
+                Switch(false, disabled = true)
+                Checkbox(false, disabled = true)
+                Slider(40, width = 136, disabled = true)
+            }
+            Row(fill = true, gap = 12, align = "center", justify = "spaceBetween") {
+                Picker(0, options = unavailable, width = 112, disabled = true)
+                TextArea("", placeholder = "不可编辑", width = 146, disabled = true)
+            }
+        }
+    }
+}

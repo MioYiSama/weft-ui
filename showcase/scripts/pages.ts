@@ -9,9 +9,11 @@ interface Page {
   component?: string;
   dark?: boolean;
   pending?: Platform[];
+  props?: Record<string, string[]>;
 }
 
-export function pages(platform: Platform): Page[] {
-  const list: Page[] = JSON.parse(readFileSync(new URL("../pages.json", import.meta.url), "utf8"));
-  return list.filter(({ pending }) => !pending?.includes(platform));
+const manifest: Page[] = JSON.parse(readFileSync(new URL("../pages.json", import.meta.url), "utf8"));
+
+export function pages(platform?: Platform): Page[] {
+  return platform === undefined ? manifest : manifest.filter(({ pending }) => !pending?.includes(platform));
 }

@@ -1,0 +1,33 @@
+# mount
+create 1 0  # Controls
+set 1 0 false  # Switch.checked
+set 1 1 ""  # TextArea.value
+set 1 2 0.3  # Progress.value
+set 1 3 30  # Slider.value
+set 1 4 -1  # Picker.selected
+set 1 5 ["Local","mïlk 🥛"]  # Picker.options
+set 1 6 "Choose a location"  # Picker.placeholder
+attach 0 0 1
+
+# toggle the switch
+set 1 0 true  # Switch.checked
+
+# move the slider
+set 1 3 45  # Slider.value
+
+# choose the first option
+set 1 4 0  # Picker.selected
+
+# edit multiple lines
+set 1 1 "First\nSecond"  # TextArea.value
+
+# advance progress and relabel the selection
+set 1 2 0.8  # Progress.value
+set 1 5 ["Remote <site>","mïlk 🥛"]  # Picker.options
+
+# reject a selection without changing state
+(no ops)
+
+# replace the options with an empty list
+set 1 5 []  # Picker.options
+set 1 6 "No locations"  # Picker.placeholder

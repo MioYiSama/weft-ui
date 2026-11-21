@@ -8,14 +8,16 @@
 
 use std::fmt::{self, Write as _};
 
-use crate::elements::{CSS_PROPS, CssUnit, CustomCss, Element};
+use crate::elements::{CSS_PROPS, CssTarget, CssUnit, CustomCss, Element};
 use crate::ir::{
     Component, ComponentId, NodeId, NodeKind, ParamId, Program, PropValue, first_slot,
 };
 use crate::style;
 use crate::view::{Constant, ViewLayout};
 
-use super::elements::{Target, Value, event_key, event_type, prop_value, target, value_key};
+use super::elements::{
+    Target, Value, event_key, event_types, picker_label_key, prop_value, target, value_key,
+};
 
 fn slot_name(base: fmt::Arguments<'_>, callee: &Component, param: ParamId) -> String {
     if first_slot(&callee.params) == Some(param) {
@@ -94,6 +96,13 @@ fn tag(element: Element) -> (&'static str, &'static str, &'static str) {
         Element::Input => ("input", "w-input w-wx", ""),
         Element::Checkbox => ("switch", "w-checkbox", " type=\"checkbox\""),
         Element::Image => ("image", "w-image", ""),
+        Element::Switch => ("switch", "w-switch", ""),
+        Element::TextArea => ("textarea", "w-textarea w-wx", " maxlength=\"-1\""),
+        Element::Slider => ("slider", "w-slider", ""),
+        Element::Picker => ("picker", "w-picker-host", " mode=\"selector\""),
+        Element::Spinner => ("view", "w-spinner", ""),
+        Element::Progress => ("view", "w-progress", ""),
+        Element::Divider => ("view", "w-divider", ""),
     }
 }
 
@@ -134,7 +143,15 @@ impl Parent {
 }
 
 fn is_void(element: Element) -> bool {
-    matches!(element, Element::Input | Element::Checkbox | Element::Image)
+    matches!(
+        element,
+        Element::Input
+            | Element::Checkbox
+            | Element::Switch
+            | Element::Slider
+            | Element::Image
+            | Element::TextArea
+    )
 }
 
 fn push_style(out: &mut String, part: impl fmt::Display) {
@@ -232,7 +249,8 @@ impl Markup<'_> {
         let mut attrs = String::new();
         let mut classes = String::new();
         let mut style = String::new();
-        let mut scroll_content_style = String::new();
+        let mut inner_style = String::new();
+        let mut picker_classes = String::new();
         // Text values are emitted after the opening tag has been written.
         let mut text = None;
         let has_clamp =
@@ -250,12 +268,29 @@ impl Markup<'_> {
                 (Target::Attr(name), Value::Inline(Constant::String(s))) => {
                     let _ = write!(attrs, " {name}=\"{s}\"");
                 }
+                (Target::Attr(name), Value::Inline(Constant::Int(v))) => {
+                    let _ = write!(attrs, " {name}=\"{{{{{v}}}}}\"");
+                }
                 (Target::Attr(name), Value::Data) => {
                     let _ = write!(attrs, " {name}=\"{binding}\"");
                 }
                 (Target::Flag { name, default }, value) => {
                     if default {
                         default_scrollbar = false;
+                    }
+                    if element == Element::Picker && name == "disabled" {
+                        match value {
+                            Value::Inline(Constant::Bool(true)) => {
+                                picker_classes.push_str(" w-picker-disabled")
+                            }
+                            Value::Data => {
+                                let _ = write!(
+                                    picker_classes,
+                                    "{{{{{prefix}{key} ? ' w-picker-disabled' : ''}}}}"
+                                );
+                            }
+                            _ => {}
+                        }
                     }
                     match value {
                         Value::Inline(Constant::Bool(value)) if *value || default => {
@@ -292,12 +327,13 @@ impl Markup<'_> {
                     if css.unit == CssUnit::Custom(CustomCss::Fill) {
                         default_fill = false;
                     }
-                    let style =
-                        if element == Element::Scroll && matches!(prop.name, "gap" | "align") {
-                            &mut scroll_content_style
-                        } else {
-                            &mut style
-                        };
+                    let style = if css.target == CssTarget::Inner
+                        || element == Element::Scroll && matches!(prop.name, "gap" | "align")
+                    {
+                        &mut inner_style
+                    } else {
+                        &mut style
+                    };
                     match value {
                         Value::Inline(value) => {
                             let declarations = style::declarations(css, value);
@@ -347,6 +383,12 @@ impl Markup<'_> {
                     class = "w-scroll-h";
                     fixed = " scroll-x enable-flex enhanced";
                 }
+                (Target::Orientation, Value::Inline(Constant::Bool(vertical))) => {
+                    if *vertical {
+                        class = "w-divider-v";
+                    }
+                }
+                (Target::PickerPlaceholder, Value::Data) => {}
                 _ => unreachable!("invalid WXML property {}.{}", element.name(), prop.name),
             }
         }
@@ -366,12 +408,13 @@ impl Markup<'_> {
         );
         let (template, local) = self.layout.location(self.id, id);
         for (k, (_, event)) in self.layout.template(template).events(local).enumerate() {
-            let kind = event_type(element, event.event);
             let key = event_key(id, k);
-            let _ = write!(
-                out,
-                " bind{kind}=\"$e\" data-e{kind}=\"{{{{{prefix}{key}}}}}\""
-            );
+            for kind in event_types(element, event.event) {
+                let _ = write!(
+                    out,
+                    " bind{kind}=\"$e\" data-e{kind}=\"{{{{{prefix}{key}}}}}\""
+                );
+            }
         }
         if !style.is_empty() {
             let _ = write!(out, " style=\"{style}\"");
@@ -393,10 +436,22 @@ impl Markup<'_> {
         if element == Element::Scroll {
             let axis = if class == "w-scroll-h" { 'h' } else { 'v' };
             let _ = write!(out, "<view class=\"w-scroll-content-{axis}\"");
-            if !scroll_content_style.is_empty() {
-                let _ = write!(out, " style=\"{scroll_content_style}\"");
+            if !inner_style.is_empty() {
+                let _ = write!(out, " style=\"{inner_style}\"");
             }
             out.push('>');
+        } else if element == Element::Progress {
+            out.push_str("<view class=\"w-progress-bar\"");
+            if !inner_style.is_empty() {
+                let _ = write!(out, " style=\"{inner_style}\"");
+            }
+            out.push_str("></view>");
+        } else if element == Element::Picker {
+            let label = picker_label_key(id);
+            let _ = write!(
+                out,
+                "<view class=\"w-picker w-wx{picker_classes}\">{{{{{prefix}{label}}}}}</view>"
+            );
         }
         self.nodes(children, prefix, Parent::of(element), out);
         if element == Element::Scroll {

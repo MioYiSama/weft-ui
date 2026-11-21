@@ -100,6 +100,28 @@ Text(width = 200, lineHeight = 22) {
 
 `Text` 接受字符串或至少一个直接写出的 `Span`，不能同时使用。每个 `Span` 接收一个字符串，可单独设置该片段的样式。片段之间如果需要空格，要写进字符串。动态文字可以写成 `Span` 内的字符串表达式；不要在 `Text` 中直接写 `if`、`for`、组件调用或插槽。
 
+## 表单控件与进度
+
+用 `Switch` 切换设置，用 `TextArea` 编辑多行文本，用 `Slider` 选择整数，用 `Picker` 从列表中选一项。这些控件都是受控的：用户操作时，`onChange` 提供新值，控件仍以绑定的属性为准。如果处理器没有修改该属性，控件就恢复原值。如果不希望用户操作，设为 `disabled = true`。
+
+`Picker` 必须通过具名参数 `options` 提供 `String[]`。当前选项和事件载荷都是从 0 开始的索引。索引越界（例如 `-1`）时显示占位文字。`Slider` 默认范围为 0–100，步长为 1。
+
+无法确定完成比例时，用 `Spinner` 表示操作仍在进行；有明确进度时，给 `Progress` 传入 0 到 1 的比例。`Divider()` 绘制横线，`Divider(vertical = true)` 绘制竖线，方向必须是编译期常量。各平台支持情况见[元素参考](/zh/reference/elements/)。
+
+```weft
+component Preferences(choices: String[]) {
+  state locked = false
+  state choice = -1
+  Column(gap = 8, width = 240) {
+    Switch(locked, onChange = { value -> locked = value })
+    Picker(choice, options = choices, placeholder = "选择位置",
+      onChange = { value -> choice = if (locked) choice else value })
+    Divider()
+    Progress(0.3)
+  }
+}
+```
+
 ## 复用元素样式
 
 在文件顶层声明 `style`，再把样式名传给内置元素：

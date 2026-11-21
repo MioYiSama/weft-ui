@@ -5,6 +5,7 @@
 //! | Key        | Value                                                  |
 //! | ---------- | ------------------------------------------------------ |
 //! | `n{N}_{i}` | property `i` of an element                             |
+//! | `q{N}`     | computed display label of a picker                     |
 //! | `e{N}_{k}` | handler id for event `k` of an element (`data-e<type>`) |
 //! | `i{N}`     | index of the active `if` branch, `-1` for none         |
 //! | `b{N}`     | data of the active `if` branch, or `null`              |
@@ -25,7 +26,7 @@ use crate::view::{Constant, ViewLayout, ViewNodeKind};
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Target {
     Text,
-    /// String attribute.
+    /// String, integer or array attribute.
     Attr(&'static str),
     /// Boolean attribute; WXML treats every non-empty string as true, so
     /// values are always written as expressions.
@@ -36,13 +37,24 @@ pub(crate) enum Target {
     Style(usize),
     /// A constant selecting the scroll axis and base class.
     Direction,
+    /// A constant selecting the divider's axis and class.
+    Orientation,
+    /// A Picker placeholder is read by the sink rather than from markup.
+    PickerPlaceholder,
 }
 
 pub(crate) fn target(element: Element, prop: &str) -> Target {
     match (element, prop) {
         (Element::Text | Element::Span, "value") => Target::Text,
-        (Element::Input, "value") => Target::Attr("value"),
-        (Element::Checkbox, "checked") => Target::Flag {
+        (Element::Input | Element::TextArea | Element::Slider, "value") => Target::Attr("value"),
+        (Element::Slider, "min") => Target::Attr("min"),
+        (Element::Slider, "max") => Target::Attr("max"),
+        (Element::Slider, "step") => Target::Attr("step"),
+        (Element::Picker, "selected") => Target::Attr("value"),
+        (Element::Picker, "options") => Target::Attr("range"),
+        (Element::Picker, "placeholder") => Target::PickerPlaceholder,
+        (Element::Divider, "vertical") => Target::Orientation,
+        (Element::Checkbox | Element::Switch, "checked") => Target::Flag {
             name: "checked",
             default: false,
         },
@@ -65,11 +77,12 @@ pub(crate) fn target(element: Element, prop: &str) -> Target {
 }
 
 /// The mini program event type bound to an element's handler.
-pub(crate) fn event_type(element: Element, event: &str) -> &'static str {
+pub(crate) fn event_types(element: Element, event: &str) -> &'static [&'static str] {
     match (element, event) {
-        (Element::Input, "onChange") => "input",
-        (Element::Checkbox, "onChange") => "change",
-        (Element::Button, "onClick") => "tap",
+        (Element::Input | Element::TextArea, "onChange") => &["input"],
+        (Element::Checkbox | Element::Switch | Element::Picker, "onChange") => &["change"],
+        (Element::Slider, "onChange") => &["changing", "change"],
+        (Element::Button, "onClick") => &["tap"],
         _ => unreachable!("`{}` has no handler `{event}`", element.name()),
     }
 }
@@ -82,6 +95,11 @@ pub(crate) fn event_key(node: NodeId, index: usize) -> impl fmt::Display {
 /// Data key of property `index` of element `node`.
 pub(crate) fn value_key(node: NodeId, index: usize) -> impl fmt::Display {
     fmt::from_fn(move |f| write!(f, "n{}_{index}", node.0))
+}
+
+/// Data key of the computed label of a picker.
+pub(crate) fn picker_label_key(node: NodeId) -> impl fmt::Display {
+    fmt::from_fn(move |f| write!(f, "q{}", node.0))
 }
 
 /// Where the view reads a property from.
@@ -105,7 +123,8 @@ fn markup_safe(s: &str) -> bool {
 
 /// Constants whose text has to be sent through data instead of markup.
 pub(crate) fn needs_data(target: Target, constant: &Constant) -> bool {
-    matches!((target, constant), (Target::Text | Target::Attr(_), Constant::String(s)) if !markup_safe(s))
+    matches!(target, Target::PickerPlaceholder)
+        || matches!((target, constant), (Target::Text | Target::Attr(_), Constant::String(s)) if !markup_safe(s))
 }
 
 /// How property `index` of element node `node` appears in the view.

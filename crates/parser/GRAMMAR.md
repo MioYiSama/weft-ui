@@ -203,11 +203,22 @@ The compiler rejects elements, properties, and events marked unsupported for the
 | `Stack` | — | — | Any |
 | `Scroll` | — | — | Any |
 | `Spacer` | — | — | None |
+| `Switch` | `checked` | `onChange(Bool)` | None |
+| `TextArea` | `value` | `onChange(String)` | None |
+| `Spinner` | — | — | None |
+| `Progress` | `value` | — | None |
+| `Divider` | — | — | None |
+| `Slider` | `value` | `onChange(Int)` | None |
+| `Picker` | `selected` | `onChange(Int)` | None |
 
 See the [element reference](https://weftui.mioyi.net/reference/elements/) for full properties, events, and platform support.
 <!-- elements:end -->
 
 All elements also have `onMount` / `onUnmount`.
+
+- **Controlled values**: `Input`, `TextArea`, `Checkbox`, `Switch`, `Slider`, and `Picker` display their bound values. Their `onChange` handlers receive the proposed value; if the binding does not accept it, the host restores the bound value.
+- **`Picker` / `Slider`**: `Picker.options` is a required named `String[]`. Its `selected` value and change payload are zero-based indices; an out-of-range index displays the placeholder. `Slider` uses integers for its value, bounds, step, and change payload.
+- **`Progress` / `Divider`**: `Progress` takes a fraction between 0 and 1. `Divider` is horizontal by default; `vertical` must be a compile-time constant.
 
 - **Lengths**: `Int`, measured in logical pixels: pt on iOS / macOS, dp on Android, DIP on Windows, and CSS px on the web. Mini programs use `px`, not `rpx`.
 - **Box model**: `width`, `height`, and their `min*` / `max*` limits apply to the content box. Padding, any border, and margin surround it, in that order. `padding` sets all four edges, `paddingX` sets left and right, `paddingY` sets top and bottom, and a single-edge value overrides both. `margin` follows the same precedence. `Start` and `End` mean left and right, respectively, for edge properties.

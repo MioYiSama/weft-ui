@@ -69,6 +69,7 @@ impl ValueType {
             PropType::Bool => ValueType::Bool,
             PropType::String | PropType::Union(_) => ValueType::String,
             PropType::Color => ValueType::Color,
+            PropType::Strings => ValueType::Strings,
         }
     }
 }

@@ -112,6 +112,15 @@ impl Body<'_> {
                 None => out.writer.line("WeftSpacer()"),
             },
             Element::Span => unreachable!("`Span` is rendered inline by its parent `Text`"),
+            Element::Switch
+            | Element::TextArea
+            | Element::Spinner
+            | Element::Progress
+            | Element::Divider
+            | Element::Slider
+            | Element::Picker => {
+                unreachable!("unsupported elements are rejected before code generation")
+            }
             Element::Text => self.text(out, node, props, children),
             Element::Button => {
                 match self.template.event(node, "onClick") {

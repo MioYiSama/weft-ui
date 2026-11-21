@@ -203,11 +203,22 @@ Call        = IDENT "(" ArgList? ")" ;
 | `Stack` | — | — | 不限 |
 | `Scroll` | — | — | 不限 |
 | `Spacer` | — | — | 无 |
+| `Switch` | `checked` | `onChange(Bool)` | 无 |
+| `TextArea` | `value` | `onChange(String)` | 无 |
+| `Spinner` | — | — | 无 |
+| `Progress` | `value` | — | 无 |
+| `Divider` | — | — | 无 |
+| `Slider` | `value` | `onChange(Int)` | 无 |
+| `Picker` | `selected` | `onChange(Int)` | 无 |
 
 完整的属性、事件及各平台的支持情况见[元素参考](https://weftui.mioyi.net/zh/reference/elements/)。
 <!-- elements:end -->
 
 所有元素另有 `onMount` / `onUnmount`。
+
+- **受控值**：`Input`、`TextArea`、`Checkbox`、`Switch`、`Slider` 和 `Picker` 显示绑定值。`onChange` 将用户提出的新值传给处理器；绑定未接受新值时，宿主恢复绑定值。
+- **`Picker` / `Slider`**：`Picker.options` 是必填的具名参数，类型为 `String[]`。`selected` 和事件载荷都是从 0 开始的索引；索引越界时显示占位文字。`Slider` 的当前值、上下限、步长和事件载荷均为整数。
+- **`Progress` / `Divider`**：`Progress` 接收 0 到 1 的比例。`Divider` 默认绘制横线，`vertical` 必须是编译期常量。
 
 - **长度**：`Int`，单位是逻辑像素：iOS / macOS 的 pt、Android 的 dp、Windows 的 DIP、Web 的 CSS px；小程序用 `px`，不用 `rpx`。
 - **盒模型**：`width`、`height` 及对应的 `min*`、`max*` 限制作用于内容盒，内容盒外依次是内边距、元素的边框（如果有）和外边距。`padding` 设置四边，`paddingX` 设置左右，`paddingY` 设置上下，单边属性覆盖前两种写法。`margin` 按相同规则处理。边距属性中的 `Start` 和 `End` 分别指左边和右边。

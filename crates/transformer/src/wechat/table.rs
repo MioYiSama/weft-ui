@@ -12,14 +12,17 @@
 //! | `e`   | `[key, controlled value slot or -1]` per event slot; the key holds the handler id |
 //! | `p`   | key per mount point; `[indexKey, dataKey]` for branches         |
 //! | `d`   | constants that cannot be inlined into WXML, by key             |
+//! | `q`   | picker bindings: label, selected index, options and optional placeholder keys |
 
+use std::collections::BTreeMap;
 use std::fmt;
 
 use crate::bridge::js::{self, Code};
+use crate::elements::Element;
 use crate::ir::{NodeKind, Program, Prop};
 use crate::view::{PointKind, Template, TemplateKind, ViewLayout, ViewNodeKind};
 
-use super::elements::{Target, event_key, needs_data, target, value_key};
+use super::elements::{Target, event_key, needs_data, picker_label_key, target, value_key};
 use super::wxml::{slot_key, slot_template};
 
 /// The table object literal passed to the view runtime.
@@ -78,6 +81,35 @@ fn entry(program: &Program, template: &Template) -> String {
         TemplateKind::Branch { index, .. } => fields.push(format!("i: {index}")),
         TemplateKind::Row { .. } => {}
     }
+    let mut picker_indices = BTreeMap::new();
+    let mut pickers = Vec::new();
+    for node in &template.nodes {
+        let NodeKind::Element {
+            element: Element::Picker,
+            props,
+            ..
+        } = &comp.node(node.source).kind
+        else {
+            continue;
+        };
+        let label = picker_label_key(node.source);
+        let selected = value_key(node.source, index_of(props, "selected"));
+        let options = value_key(node.source, index_of(props, "options"));
+        let placeholder = fmt::from_fn(|out| {
+            if let Some(index) = props.iter().position(|prop| prop.name == "placeholder") {
+                write!(out, ", \"{}\"", value_key(node.source, index))
+            } else {
+                Ok(())
+            }
+        });
+        picker_indices.insert(node.source.0, pickers.len());
+        pickers.push(format!(
+            "[\"{label}\", \"{selected}\", \"{options}\"{placeholder}]"
+        ));
+    }
+    if !pickers.is_empty() {
+        fields.push(format!("q: [{}]", pickers.join(", ")));
+    }
     if !template.values.is_empty() {
         let values: Vec<String> = template
             .values
@@ -87,6 +119,11 @@ fn entry(program: &Program, template: &Template) -> String {
                 let key = value_key(source, index_of(props, slot.prop));
                 if let Target::Style(index) = target(element, slot.prop) {
                     format!("[\"{key}\", {index}]")
+                } else if element == Element::Picker
+                    && matches!(slot.prop, "selected" | "options" | "placeholder")
+                {
+                    let picker = picker_indices[&source.0];
+                    format!("[\"{key}\", null, {picker}]")
                 } else {
                     format!("[\"{key}\"]")
                 }
@@ -99,11 +136,16 @@ fn entry(program: &Program, template: &Template) -> String {
             .events
             .chunk_by(|left, right| left.node == right.node)
             .flat_map(|slots| {
-                let node = template.nodes[slots[0].node as usize].source;
+                let (_, (element, node)) = props_of(slots[0].node);
                 slots.iter().enumerate().map(move |(k, slot)| {
                     let key = event_key(node, k);
                     let controls = slot.controls.map_or(-1, i64::from);
-                    format!("[\"{key}\", {controls}]")
+                    let hint = match element {
+                        Element::TextArea => ", \"textarea\"",
+                        Element::Picker => ", \"number\"",
+                        _ => "",
+                    };
+                    format!("[\"{key}\", {controls}{hint}]")
                 })
             })
             .collect();

@@ -417,7 +417,7 @@ let webThemeColors: ReadonlySet<string> | null = null;
 export function style(node: HTMLElement, index: number, value: Value, mask = -1): void {
   const css = CSS_PROPS[index]!;
   const output = declarations(css, value, webThemeColors);
-  const inline = node.style;
+  const inline = (css.target === "inner" ? node.firstElementChild as HTMLElement : node).style;
   if (css.unit === "custom") {
     switch (css.custom) {
       case "fill":
@@ -503,14 +503,18 @@ export function template(html: string): () => DocumentFragment {
 }
 
 /** An input whose displayed value follows the last bound value. */
-type Controlled = HTMLInputElement & { $v?: unknown };
+type Controlled<N, V> = N & { $v?: V };
+type TextControl = Controlled<HTMLInputElement | HTMLTextAreaElement, string>;
+type CheckControl = Controlled<HTMLInputElement, boolean>;
+type RangeControl = Controlled<HTMLInputElement, number>;
+type PickerControl = Controlled<HTMLSelectElement, number> & { $options?: readonly string[] };
 
-export function value(node: Controlled, value: string): void {
+export function value(node: TextControl, value: string): void {
   node.$v = value;
   if (node.value !== value) node.value = value;
 }
 
-export function checked(node: Controlled, value: boolean): void {
+export function checked(node: CheckControl, value: boolean): void {
   node.$v = value;
   if (node.checked !== value) node.checked = value;
 }
@@ -519,20 +523,75 @@ export function checked(node: Controlled, value: boolean): void {
  * Text input events. After the flush triggered by the handler, the input is
  * reset to the bound value, so only the host decides what it shows.
  */
-export function input(node: Controlled, handler: ((value: string) => void) | null): void {
+export function input(node: TextControl, handler: ((value: string) => void) | null): void {
   node.addEventListener("input", () => {
     handler?.(node.value);
     restoreAfterFlush(() => {
-      if (node.value !== node.$v) node.value = node.$v as string;
+      if (node.$v !== undefined) value(node, node.$v);
     });
   });
 }
 
-export function checkbox(node: Controlled, handler: ((value: boolean) => void) | null): void {
+export function checkbox(node: CheckControl, handler: ((value: boolean) => void) | null): void {
   node.addEventListener("change", () => {
     handler?.(node.checked);
     restoreAfterFlush(() => {
-      if (node.checked !== node.$v) node.checked = node.$v as boolean;
+      if (node.$v !== undefined) checked(node, node.$v);
+    });
+  });
+}
+
+export function rangeValue(node: RangeControl, value: number): void {
+  node.$v = value;
+  const text = String(value);
+  if (node.value !== text) node.value = text;
+}
+
+export function rangeAttr(node: RangeControl, name: string, value: number): void {
+  node.setAttribute(name, String(value));
+  // The browser can sanitize the current value as a bound or step changes.
+  if (node.$v !== undefined) rangeValue(node, node.$v);
+}
+
+export function slider(node: RangeControl, handler: ((value: number) => void) | null): void {
+  node.addEventListener("input", () => {
+    handler?.(Number(node.value));
+    restoreAfterFlush(() => {
+      if (node.$v !== undefined) rangeValue(node, node.$v);
+    });
+  });
+}
+
+export function selected(node: PickerControl, value: number): void {
+  node.$v = value;
+  const index = value >= 0 && value < node.options.length - 1 ? value + 1 : 0;
+  if (node.selectedIndex !== index) node.selectedIndex = index;
+}
+
+export function options(node: PickerControl, labels: readonly string[]): void {
+  const old = node.$options;
+  if (old === labels || (old?.length === labels.length && labels.every((label, i) => label === old[i]))) return;
+  node.$options = labels;
+  const fragment = node.ownerDocument.createDocumentFragment();
+  for (const [index, label] of labels.entries()) {
+    const option = node.ownerDocument.createElement("option");
+    option.value = String(index);
+    option.textContent = label;
+    fragment.append(option);
+  }
+  node.replaceChildren(node.options[0]!, fragment);
+  if (node.$v !== undefined) selected(node, node.$v);
+}
+
+export function placeholder(node: PickerControl, text: string): void {
+  node.options[0]!.textContent = text;
+}
+
+export function picker(node: PickerControl, handler: ((value: number) => void) | null): void {
+  node.addEventListener("change", () => {
+    handler?.(Number(node.value));
+    restoreAfterFlush(() => {
+      if (node.$v !== undefined) selected(node, node.$v);
     });
   });
 }

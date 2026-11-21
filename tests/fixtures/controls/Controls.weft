@@ -1,0 +1,30 @@
+model ControlsModel {
+    options: String[],
+    placeholder: String,
+    progress: Float,
+    locked: Bool,
+}
+
+event SwitchChanged(value: Bool)
+event SliderChanged(value: Int)
+event PickerChanged(value: Int)
+event NoteChanged(value: String)
+
+component Controls(model: ControlsModel) {
+    state enabled = false
+    state level = 30
+    state selected = -1
+    state note = ""
+    Column {
+        Switch(enabled, onChange = { value -> enabled = value; SwitchChanged(value) })
+        TextArea(note, placeholder = "Add a note", onChange = { value -> note = value; NoteChanged(value) })
+        Spinner(color = "#007aff")
+        Progress(model.progress, width = 120, color = "#218670")
+        Divider()
+        Slider(level, min = 10, max = 90, step = 5, onChange = { value -> level = value; SliderChanged(value) })
+        Picker(selected, options = model.options, placeholder = model.placeholder, onChange = { value ->
+            selected = if (model.locked) selected else value
+            PickerChanged(value)
+        })
+    }
+}

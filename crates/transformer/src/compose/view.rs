@@ -100,6 +100,15 @@ impl Body<'_> {
             Element::Stack => &["alignment"],
             Element::Scroll => &["direction", "gap", "align", "indicators"],
             Element::Spacer => &["size"],
+            Element::Switch
+            | Element::TextArea
+            | Element::Spinner
+            | Element::Progress
+            | Element::Divider
+            | Element::Slider
+            | Element::Picker => {
+                unreachable!("unsupported elements are rejected before code generation")
+            }
         };
         let text_style = if matches!(element, Element::Text | Element::Span) {
             TEXT_STYLE
@@ -140,6 +149,15 @@ impl Body<'_> {
             }
             Element::Text if children.is_empty() => out.writer.end_line(""),
             Element::Span | Element::Image | Element::Spacer => out.writer.end_line(""),
+            Element::Switch
+            | Element::TextArea
+            | Element::Spinner
+            | Element::Progress
+            | Element::Divider
+            | Element::Slider
+            | Element::Picker => {
+                unreachable!("unsupported elements are rejected before code generation")
+            }
             Element::Column
             | Element::Row
             | Element::Stack

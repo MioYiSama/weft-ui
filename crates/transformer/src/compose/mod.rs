@@ -121,6 +121,9 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
             ValueType::Bool => "mutableStateOf(false)",
             ValueType::String => "mutableStateOf(\"\")",
             ValueType::Color => "mutableStateOf(WeftColor.Transparent)",
+            ValueType::Strings => {
+                unreachable!("string list slots are not supported on this platform yet")
+            }
         };
         out.writer.line(format_args!("var v{slot} by {state}"));
     }
@@ -149,6 +152,9 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
                 ValueType::Bool => "bool",
                 ValueType::String => "string",
                 ValueType::Color => "color",
+                ValueType::Strings => {
+                    unreachable!("string list slots are not supported on this platform yet")
+                }
             };
             out.writer
                 .line(format_args!("{slot} -> v{slot} = value.{accessor}"));

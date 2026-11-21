@@ -135,6 +135,8 @@ pub enum ValueType {
     Bool,
     String,
     Color,
+    /// An array of strings (property slots only).
+    Strings,
 }
 
 impl ValueType {
@@ -146,6 +148,7 @@ impl ValueType {
             ValueType::Bool => "Bool",
             ValueType::String => "String",
             ValueType::Color => "Color",
+            ValueType::Strings => "Strings",
         }
     }
 }
@@ -168,7 +171,7 @@ pub struct EventSlot {
     pub event: &'static str,
     /// Type of the element's value sent with the event, if any.
     pub payload: Option<ValueType>,
-    /// Value slot the user edits (controlled `Input` / `Checkbox`). The view
+    /// Value slot the user edits on a controlled element. The view
     /// restores it to the last value it received when `dispatch` reports
     /// that the edit was not accepted.
     pub controls: Option<u32>,

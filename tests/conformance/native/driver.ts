@@ -20,7 +20,7 @@ interface Action {
   type: string;
   index: number;
   event?: string;
-  value?: string | boolean;
+  value?: string | boolean | number;
 }
 
 function host(method: string, args: object): Promise<ArrayBuffer> {

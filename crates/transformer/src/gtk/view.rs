@@ -47,6 +47,15 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                 Element::Text if !children.is_empty() => children.len().to_string(),
                 Element::Stack | Element::Spacer | Element::Text | Element::Image => String::new(),
                 Element::Span => unreachable!("Span is emitted by its parent Text"),
+                Element::Switch
+                | Element::TextArea
+                | Element::Spinner
+                | Element::Progress
+                | Element::Divider
+                | Element::Slider
+                | Element::Picker => {
+                    unreachable!("unsupported elements are rejected before code generation")
+                }
             };
             let made = format!("make<weft::{}>({args})", wrapper(*element));
             let member = initialize(out, template, index, &made);
@@ -133,6 +142,15 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Input => "Input",
         Element::Checkbox => "Checkbox",
         Element::Image => "Image",
+        Element::Switch
+        | Element::TextArea
+        | Element::Spinner
+        | Element::Progress
+        | Element::Divider
+        | Element::Slider
+        | Element::Picker => {
+            unreachable!("unsupported elements are rejected before code generation")
+        }
     }
 }
 
@@ -175,6 +193,9 @@ pub(crate) fn slot_value(element: Element, prop: &str, ty: ValueType) -> String 
         ValueType::Bool => "boolean",
         ValueType::String => "string",
         ValueType::Color => "color",
+        ValueType::Strings => {
+            unreachable!("string list slots are not supported on this platform yet")
+        }
     };
     format!("weft::{accessor}(value)")
 }

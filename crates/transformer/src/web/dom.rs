@@ -13,7 +13,7 @@ use crate::bridge::blocks::{
 use crate::bridge::expr::{Env, expr};
 use crate::bridge::flow::{Backend, ComponentIr, Flow};
 use crate::bridge::js::{self, Code};
-use crate::elements::{CSS_PROPS, Css, CssUnit, CustomCss, Element, PropType};
+use crate::elements::{CSS_PROPS, Css, CssTarget, CssUnit, CustomCss, Element, PropType};
 use crate::ir::{Component, ComponentId, NodeId, NodeKind, Program, Prop, PropValue};
 use crate::style::{self, Edge};
 use crate::view::{Constant, Literal, constant, literal};
@@ -51,6 +51,12 @@ enum Target {
     Text,
     Value,
     Checked,
+    RangeValue,
+    RangeAttr(&'static str),
+    PickerValue,
+    PickerOptions,
+    PickerPlaceholder,
+    Orientation,
     Disabled,
     Attr(&'static str),
     Class(&'static str),
@@ -64,8 +70,16 @@ fn target(element: Element, prop: &str, has_clamp: bool) -> Target {
     }
     match (element, prop) {
         (Element::Text | Element::Span, "value") => Target::Text,
-        (Element::Input, "value") => Target::Value,
-        (Element::Checkbox, "checked") => Target::Checked,
+        (Element::Input | Element::TextArea, "value") => Target::Value,
+        (Element::Checkbox | Element::Switch, "checked") => Target::Checked,
+        (Element::Slider, "value") => Target::RangeValue,
+        (Element::Slider, "min") => Target::RangeAttr("min"),
+        (Element::Slider, "max") => Target::RangeAttr("max"),
+        (Element::Slider, "step") => Target::RangeAttr("step"),
+        (Element::Picker, "selected") => Target::PickerValue,
+        (Element::Picker, "options") => Target::PickerOptions,
+        (Element::Picker, "placeholder") => Target::PickerPlaceholder,
+        (Element::Divider, "vertical") => Target::Orientation,
         (_, "disabled") => Target::Disabled,
         (_, "placeholder") => Target::Attr("placeholder"),
         (_, "src") => Target::Attr("src"),
@@ -114,6 +128,24 @@ fn tag(element: Element, props: &[Prop]) -> (&'static str, &'static str, &'stati
         Element::Input => ("input", "", "w-input"),
         Element::Checkbox => ("input", " type=\"checkbox\"", "w-checkbox"),
         Element::Image => ("img", "", "w-image"),
+        Element::Switch => ("input", " type=\"checkbox\" role=\"switch\"", "w-switch"),
+        Element::TextArea => ("textarea", " rows=\"3\"", "w-textarea"),
+        Element::Slider => ("input", " type=\"range\"", "w-slider"),
+        Element::Picker => ("select", "", "w-picker"),
+        Element::Spinner => ("div", "", "w-spinner"),
+        Element::Progress => ("div", "", "w-progress"),
+        Element::Divider => {
+            let vertical = props.iter().any(|prop| {
+                prop.name == "vertical"
+                    && matches!(&prop.value, PropValue::Expr(value)
+                    if matches!(literal(value), Some(Literal::Bool(true))))
+            });
+            (
+                "div",
+                "",
+                if vertical { "w-divider-v" } else { "w-divider" },
+            )
+        }
     }
 }
 
@@ -182,7 +214,10 @@ impl<'props> StyleSources<'props> {
 }
 
 fn is_void(element: Element) -> bool {
-    matches!(element, Element::Input | Element::Checkbox | Element::Image)
+    matches!(
+        element,
+        Element::Input | Element::Checkbox | Element::Switch | Element::Slider | Element::Image
+    )
 }
 
 /// Whether a property is written into the template instead of by code.
@@ -191,7 +226,17 @@ fn template_literal(prop: &Prop, target: Target) -> Option<Literal<'_>> {
     let PropValue::Expr(value) = &prop.value else {
         return None;
     };
-    if prop.binding.is_some() || matches!(target, Target::Value | Target::Checked) {
+    if prop.binding.is_some()
+        || matches!(
+            target,
+            Target::Value
+                | Target::Checked
+                | Target::RangeValue
+                | Target::PickerValue
+                | Target::PickerOptions
+                | Target::PickerPlaceholder
+        )
+    {
         return None;
     }
     literal(value)
@@ -202,10 +247,17 @@ fn apply(target: Target, mask: Option<u8>, node: &str, value: &str) -> String {
         Target::Text => format!("{node}.textContent = {value};"),
         Target::Value => format!("$.value({node}, {value});"),
         Target::Checked => format!("$.checked({node}, {value});"),
+        Target::RangeValue => format!("$.rangeValue({node}, {value});"),
+        Target::RangeAttr(name) => format!("$.rangeAttr({node}, {}, {value});", js::string(name)),
+        Target::PickerValue => format!("$.selected({node}, {value});"),
+        Target::PickerOptions => format!("$.options({node}, {value});"),
+        Target::PickerPlaceholder => format!("$.placeholder({node}, {value});"),
         Target::Disabled => format!("{node}.disabled = {value};"),
         Target::Attr(name) => format!("{node}.setAttribute({}, {value});", js::string(name)),
         Target::Class(name) => format!("{node}.classList.toggle({}, {value});", js::string(name)),
-        Target::Direction => unreachable!("scroll direction was resolved statically"),
+        Target::Direction | Target::Orientation => {
+            unreachable!("orientation was resolved statically")
+        }
         Target::Style(index, _) => match mask {
             Some(mask) => format!("$.style({node}, {index}, {value}, {mask});"),
             None => format!("$.style({node}, {index}, {value});"),
@@ -221,6 +273,16 @@ fn append_style(out: &mut String, decl: &str) {
         out.push(';');
     }
     out.push_str(decl);
+}
+
+fn control(element: Element) -> Option<&'static str> {
+    match element {
+        Element::Input | Element::TextArea => Some("input"),
+        Element::Checkbox | Element::Switch => Some("checkbox"),
+        Element::Slider => Some("slider"),
+        Element::Picker => Some("picker"),
+        _ => None,
+    }
 }
 
 struct Gen;
@@ -243,6 +305,7 @@ impl Gen {
         let mut sources = StyleSources::new(props);
         let mut classes = String::new();
         let mut style = String::new();
+        let mut inner_style = String::new();
         let mut text = None;
         let mut fill = element == Element::Scroll;
         let mut grow = element == Element::Scroll;
@@ -260,7 +323,11 @@ impl Gen {
             match (target, value) {
                 (Target::Text, Literal::Str(s)) => text = Some(s),
                 (Target::Disabled, Literal::Bool(true)) => out.push_str(" disabled"),
-                (Target::Disabled | Target::Direction, _) => {}
+                (Target::Disabled | Target::Direction | Target::Orientation, _) => {}
+                (Target::RangeAttr(name), Literal::Int(v)) => {
+                    use fmt::Write as _;
+                    let _ = write!(out, " {name}=\"{v}\"");
+                }
                 (Target::Class(name), Literal::Bool(true)) => {
                     classes.push(' ');
                     classes.push_str(name);
@@ -294,14 +361,19 @@ impl Gen {
                         _ => {}
                     }
                     let declarations = style::declarations(css, &value);
+                    let style = if css.target == CssTarget::Inner {
+                        &mut inner_style
+                    } else {
+                        &mut style
+                    };
                     if let Some(mask) = mask {
                         for (i, decl) in declarations.split(';').enumerate() {
                             if mask & (1 << i) != 0 {
-                                append_style(&mut style, decl);
+                                append_style(style, decl);
                             }
                         }
                     } else {
-                        append_style(&mut style, &declarations);
+                        append_style(style, &declarations);
                     }
                 }
                 (target, _) => unreachable!("literal of the wrong type for {target:?}"),
@@ -326,6 +398,19 @@ impl Gen {
         out.push('>');
         if is_void(element) {
             return;
+        }
+        match element {
+            Element::Progress => {
+                out.push_str("<div class=\"w-progress-bar\"");
+                if !inner_style.is_empty() {
+                    out.push_str(" style=\"");
+                    html_attr(&inner_style, out);
+                    out.push('"');
+                }
+                out.push_str("></div>");
+            }
+            Element::Picker => out.push_str("<option value=\"-1\" disabled hidden></option>"),
+            _ => {}
         }
         if let Some(text) = text {
             html_text(text, out);
@@ -433,11 +518,10 @@ impl Backend for Gen {
                     listened = true;
                     let body = element_handler_body(ir.program, ir.comp, id, prop, handler, parts);
                     parts.create.line(match (element, prop.name) {
-                        (Element::Input, "onChange") => {
-                            format!("$.input({n}, ($a) => {{ {body} }});")
-                        }
-                        (Element::Checkbox, "onChange") => {
-                            format!("$.checkbox({n}, ($a) => {{ {body} }});")
+                        (_, "onChange") => {
+                            let helper =
+                                control(element).expect("onChange belongs to a controlled element");
+                            format!("$.{helper}({n}, ($a) => {{ {body} }});")
                         }
                         (_, "onClick") => {
                             format!("{n}.addEventListener(\"click\", () => {{ {body} }});")
@@ -450,12 +534,8 @@ impl Backend for Gen {
             }
         }
         // Controlled inputs revert user edits the host did not accept.
-        if !listened {
-            match element {
-                Element::Input => parts.create.line(format!("$.input({n}, null);")),
-                Element::Checkbox => parts.create.line(format!("$.checkbox({n}, null);")),
-                _ => {}
-            }
+        if !listened && let Some(helper) = control(element) {
+            parts.create.line(format!("$.{helper}({n}, null);"));
         }
         // The element DOM is in the template; dynamic children use their own anchors.
         parent

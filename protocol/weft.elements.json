@@ -428,6 +428,157 @@
           "doc": { "en": "Reserves a fixed length; if omitted, shares the remaining space.", "zh": "占用固定长度；未设置时，参与分配剩余空间。" }
         }
       ]
+    },
+    {
+      "name": "Switch",
+      "doc": { "en": "Toggles a setting on or off.", "zh": "打开或关闭一项设置。" },
+      "groups": ["layout", "visibility"],
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
+      "members": [
+        {
+          "name": "checked", "type": "Bool", "positional": true, "required": true, "controlledBy": "onChange",
+          "doc": { "en": "The current switch state.", "zh": "当前的开关状态。" }
+        },
+        {
+          "name": "disabled", "type": "Bool",
+          "doc": { "en": "Prevents changes to the switch.", "zh": "禁止切换开关。" }
+        },
+        {
+          "name": "onChange", "event": true, "payload": "Bool",
+          "doc": { "en": "Reports the proposed switch state.", "zh": "提供用户切换后的开关状态。" }
+        }
+      ]
+    },
+    {
+      "name": "TextArea",
+      "doc": { "en": "Edits multiple lines of text.", "zh": "编辑多行文本。" },
+      "groups": ["layout", "visibility"],
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
+      "members": [
+        {
+          "name": "value", "type": "String", "positional": true, "required": true, "controlledBy": "onChange",
+          "doc": { "en": "The current text.", "zh": "当前文本。" }
+        },
+        {
+          "name": "placeholder", "type": "String",
+          "doc": { "en": "Shows a hint when the text is empty.", "zh": "文本为空时显示提示。" }
+        },
+        {
+          "name": "disabled", "type": "Bool",
+          "doc": { "en": "Prevents editing the text.", "zh": "禁止编辑文本。" }
+        },
+        {
+          "name": "onChange", "event": true, "payload": "String",
+          "doc": { "en": "Reports the proposed text after an edit.", "zh": "提供用户编辑后的文本。" }
+        }
+      ]
+    },
+    {
+      "name": "Spinner",
+      "doc": { "en": "Indicates that work is in progress without showing an amount.", "zh": "表示操作正在进行，不显示具体进度。" },
+      "groups": ["layout", "visibility"],
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
+      "members": [
+        {
+          "name": "color", "type": "Color", "css": { "property": "color", "unit": "color" },
+          "doc": { "en": "Sets the color of the spinning ring.", "zh": "设置旋转圆环的颜色。" }
+        }
+      ]
+    },
+    {
+      "name": "Progress",
+      "doc": { "en": "Displays the completed fraction of a task.", "zh": "显示任务已完成的比例。" },
+      "groups": ["layout", "visibility"],
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
+      "members": [
+        {
+          "name": "value", "type": "Float", "positional": true, "required": true,
+          "css": { "property": "width", "unit": "percent", "target": "inner" },
+          "doc": { "en": "The fraction complete, from zero to one.", "zh": "已完成的比例，取值从 0 到 1。" }
+        },
+        {
+          "name": "color", "type": "Color", "default": "#007aff",
+          "css": { "property": "background-color", "unit": "color", "target": "inner" },
+          "doc": { "en": "Sets the color of the filled bar.", "zh": "设置进度条已填充部分的颜色。" }
+        }
+      ]
+    },
+    {
+      "name": "Divider",
+      "doc": { "en": "Separates adjacent content with a line.", "zh": "用线条分隔相邻内容。" },
+      "groups": ["layout", "visibility"],
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
+      "members": [
+        {
+          "name": "vertical", "type": "Bool", "constant": true, "default": false,
+          "doc": { "en": "Selects a vertical instead of a horizontal line; must be constant.", "zh": "改为绘制竖线；必须是常量。" }
+        },
+        {
+          "name": "color", "type": "Color", "default": "#0000001f",
+          "css": { "property": "background-color", "unit": "color" },
+          "doc": { "en": "Sets the line color; the dark-mode default is `#ffffff26`.", "zh": "设置分隔线颜色；深色模式默认使用 `#ffffff26`。" }
+        }
+      ]
+    },
+    {
+      "name": "Slider",
+      "doc": { "en": "Selects an integer within a range.", "zh": "在指定范围内选择整数。" },
+      "groups": ["layout", "visibility"],
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
+      "members": [
+        {
+          "name": "value", "type": "Int", "positional": true, "required": true, "controlledBy": "onChange",
+          "doc": { "en": "The current slider value.", "zh": "滑块当前的值。" }
+        },
+        {
+          "name": "min", "type": "Int", "default": 0,
+          "doc": { "en": "Sets the lower bound.", "zh": "设置最小值。" }
+        },
+        {
+          "name": "max", "type": "Int", "default": 100,
+          "doc": { "en": "Sets the upper bound.", "zh": "设置最大值。" }
+        },
+        {
+          "name": "step", "type": "Int", "default": 1,
+          "doc": { "en": "Sets the increment between values.", "zh": "设置相邻可选值的间隔。" }
+        },
+        {
+          "name": "disabled", "type": "Bool",
+          "doc": { "en": "Prevents changes to the slider.", "zh": "禁止移动滑块。" }
+        },
+        {
+          "name": "onChange", "event": true, "payload": "Int",
+          "doc": { "en": "Reports the proposed value as the slider moves.", "zh": "提供拖动滑块时选中的值。" }
+        }
+      ]
+    },
+    {
+      "name": "Picker",
+      "doc": { "en": "Selects one option from a list of strings.", "zh": "从字符串列表中选择一项。" },
+      "groups": ["layout", "visibility"],
+      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
+      "members": [
+        {
+          "name": "selected", "type": "Int", "positional": true, "required": true, "controlledBy": "onChange",
+          "doc": { "en": "The zero-based index; an out-of-range index means there is no selection.", "zh": "从 0 开始的索引；超出范围表示未选择。" }
+        },
+        {
+          "name": "options", "type": "Strings", "required": true,
+          "doc": { "en": "The list of option labels, in display order.", "zh": "按显示顺序排列的选项标签列表。" }
+        },
+        {
+          "name": "placeholder", "type": "String",
+          "doc": { "en": "Shows a hint when there is no selection.", "zh": "未选择时显示提示。" }
+        },
+        {
+          "name": "disabled", "type": "Bool",
+          "doc": { "en": "Prevents selecting another option.", "zh": "禁止更改选项。" }
+        },
+        {
+          "name": "onChange", "event": true, "payload": "Int",
+          "doc": { "en": "Reports the zero-based index of the proposed option.", "zh": "提供用户选择的选项索引（从 0 开始）。" }
+        }
+      ]
     }
   ]
 }

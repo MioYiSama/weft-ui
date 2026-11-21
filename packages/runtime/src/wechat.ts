@@ -26,10 +26,12 @@ export interface TemplateKeys {
   t?: string;
   /** Branch index of an `if` branch template. */
   i?: number;
-  /** `[key]` for a raw value slot or `[key, cssIndex]` for CSS declarations. */
-  v?: [key: string, cssIndex?: number][];
-  /** `[key, controlled value slot or -1]` per event slot. */
-  e?: [string, number][];
+  /** Value key, optional CSS mapping index, and optional picker binding index. */
+  v?: [key: string, cssIndex?: number | null, picker?: number][];
+  /** Handler key, controlled value slot or -1, and optional event behavior. */
+  e?: [key: string, controls: number, kind?: "number" | "textarea"][];
+  /** Label, selected index, options and optional placeholder data keys per picker. */
+  q?: [label: string, selected: string, options: string, placeholder?: string][];
   /** Key per mount point; `[indexKey, dataKey]` for branches. */
   p?: (string | [string, string])[];
   /** Constants that cannot be inlined into WXML. */
@@ -136,11 +138,21 @@ export class WechatSink implements Sink {
 
   set(id: number, slot: number, value: Value): void {
     const scope = this.#scope(id);
-    const [key, cssIndex] = scope.keys.v![slot];
-    const next = cssIndex === undefined ? value : declarations(CSS_PROPS[cssIndex], value, this.#theme);
+    const [key, cssIndex, picker] = scope.keys.v![slot];
+    const next = cssIndex == null ? value : declarations(CSS_PROPS[cssIndex], value, this.#theme);
     if (sameValue(scope.o[key], next)) return;
     scope.o[key] = next;
     if (!scope.fresh) this.#pend(scope, key);
+    if (picker !== undefined) {
+      const [label, selected, options, placeholder] = scope.keys.q![picker]!;
+      const index = scope.o[selected] as number;
+      const labels = scope.o[options] as readonly string[] | undefined;
+      const text = labels?.[index] ?? (placeholder === undefined ? "" : scope.o[placeholder] ?? "");
+      if (scope.o[label] !== text) {
+        scope.o[label] = text;
+        if (!scope.fresh) this.#pend(scope, label);
+      }
+    }
   }
 
   branch(id: number, point: number, child: number): void {
@@ -246,22 +258,24 @@ export class WechatSink implements Sink {
   }
 
   /**
-   * Dispatches a view event. A rejected text edit is replaced by returning
-   * the bound value (`bindinput` replaces the input's content with the
-   * return value); a rejected switch toggle is reverted by two `setData`
-   * calls, because the view's data still holds the bound value.
+   * Dispatches a view event. Input can return replacement text from bindinput;
+   * textarea and the other controls instead need two setData calls because
+   * the view's data still holds the bound value.
    */
   event(event: ViewEvent): string | undefined {
     const found = this.#handlers.get(Number(event.currentTarget.dataset[`e${event.type}`]));
     const session = this.#session;
     if (!found || !session) return undefined;
     const [scope, slot] = found;
-    const value = event.type === "input" || event.type === "change" ? event.detail?.value : undefined;
-    if (session.dispatch(scope.id, slot, value) || scope.dead) return undefined;
-    const controls = scope.keys.e![slot][1];
+    const [, controls, kind] = scope.keys.e![slot]!;
+    const detail = event.type === "input" || event.type === "change" || event.type === "changing"
+      ? event.detail?.value : undefined;
+    // The selector's change event sends a string, even though its index is an Int.
+    const value = kind === "number" ? Number(detail) : detail;
+    if (session.dispatch(scope.id, slot, value) || scope.dead || controls < 0) return undefined;
     const key = scope.keys.v![controls][0];
     const bound = scope.o[key];
-    if (typeof bound === "string") return bound;
+    if (typeof bound === "string" && kind !== "textarea") return bound;
     const path = this.#locate(scope, key);
     if (path !== null) {
       this.#view.setData({ [path]: value });

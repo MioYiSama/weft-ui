@@ -19,6 +19,23 @@
 .w-text-clip{overflow:hidden}
 .w-button.w-wx{margin:0}
 .w-input.w-wx{border:1px solid #ccc;padding:4px 8px}
+input.w-switch{appearance:none;display:inline-flex;align-items:center;box-sizing:border-box;width:51px;height:31px;margin:0;padding:2px;border:0;border-radius:999px;background:#78788052;cursor:pointer}
+input.w-switch::before{content:"";width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #00000026}
+input.w-switch:checked{justify-content:flex-end;background:#34c759}
+input.w-switch:disabled{opacity:.45;cursor:default}
+.w-textarea,.w-picker{font:inherit;color:inherit;border:1px solid #78788066;border-radius:6px;padding:4px 8px}
+.w-textarea{line-height:1.4}
+.w-textarea.w-wx{height:4.2em}
+.w-picker.w-wx{min-height:1.4em}
+.w-picker-disabled{opacity:.45}
+.w-spinner{box-sizing:border-box;width:20px;height:20px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:w-spin .8s linear infinite}
+@keyframes w-spin{to{transform:rotate(1turn)}}
+@media (prefers-reduced-motion:reduce){.w-spinner{animation:none}}
+.w-progress{align-self:stretch;height:4px;border-radius:2px;background:#0000001f;overflow:hidden}
+.w-progress-bar{height:100%;border-radius:inherit;background:#007aff}
+.w-divider,.w-divider-v{align-self:stretch;background-color:#0000001f}
+.w-divider{height:1px}
+.w-divider-v{width:1px}
 /* The mini program scroll-view owns its viewport; its child owns the layout. */
 .w-scroll-content-v,.w-scroll-content-h{display:flex;align-items:flex-start;flex:none}
 .w-scroll-content-v{flex-direction:column;width:100%;min-height:100%}
@@ -26,6 +43,7 @@
 .w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#0000001f}
 @media (prefers-color-scheme:dark){
   .w-column,.w-row,.w-stack,.w-scroll-v,.w-scroll-h,.w-text,.w-image{border-color:#ffffff26}
+  .w-divider,.w-divider-v,.w-progress{background-color:#ffffff26}
 }
 .w-root{--weft-accent:#0a84ffff;}
 @media (prefers-color-scheme: dark){.w-root{--weft-accent:#409cffff;}}

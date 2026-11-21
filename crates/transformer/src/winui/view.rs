@@ -53,6 +53,15 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                 }
                 Element::Stack | Element::Spacer | Element::Text | Element::Image => Ok(()),
                 Element::Span => write!(out, "n{}", parent.expect("a Span belongs to a Text node")),
+                Element::Switch
+                | Element::TextArea
+                | Element::Spinner
+                | Element::Progress
+                | Element::Divider
+                | Element::Slider
+                | Element::Picker => {
+                    unreachable!("unsupported elements are rejected before code generation")
+                }
             });
             out.writer.line(format_args!(
                 "{declaration}n{index} = new {}({args});",
@@ -98,6 +107,15 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Stack => "WeftOverlay",
         Element::Scroll => "WeftScroll",
         Element::Spacer => "WeftSpacer",
+        Element::Switch
+        | Element::TextArea
+        | Element::Spinner
+        | Element::Progress
+        | Element::Divider
+        | Element::Slider
+        | Element::Picker => {
+            unreachable!("unsupported elements are rejected before code generation")
+        }
     }
 }
 

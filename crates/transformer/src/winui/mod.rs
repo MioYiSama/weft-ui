@@ -164,6 +164,9 @@ fn scope(out: &mut Code, index: usize, template: &Template, has_theme: bool) {
                 ValueType::Bool => "value.Bool",
                 ValueType::String => "value.String",
                 ValueType::Color => "value.Color",
+                ValueType::Strings => {
+                    unreachable!("string list slots are not supported on this platform yet")
+                }
             };
             let expression = std::fmt::from_fn(|out| match view::union(element, value.prop) {
                 Some(ty) => write!(out, "WeftUnions.Parse{ty}({accessor})"),

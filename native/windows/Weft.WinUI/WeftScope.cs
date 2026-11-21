@@ -36,6 +36,7 @@ public abstract class WeftScope
     }
 
     private List<WeftDecoratedElement>? painted;
+    private List<WeftSpan>? paintedSpans;
 
     /// <summary>Tracks an element whose colors can refer to theme tokens.</summary>
     protected void TrackColors(WeftDecoratedElement element)
@@ -44,10 +45,19 @@ public abstract class WeftScope
         (painted ??= []).Add(element);
     }
 
+    /// <summary>Tracks an inline run whose color can refer to a theme token.</summary>
+    protected void TrackColors(WeftSpan span)
+    {
+        span.AttachTheme(Session);
+        (paintedSpans ??= []).Add(span);
+    }
+
     internal void ReapplyColors()
     {
-        if (painted is null) return;
-        foreach (var element in painted) element.ReapplyColors();
+        if (painted is not null)
+            foreach (var element in painted) element.ReapplyColors();
+        if (paintedSpans is not null)
+            foreach (var span in paintedSpans) span.ReapplyColors();
     }
 
     /// <summary>Writes value slot <paramref name="slot"/> (a <c>set</c> op).</summary>

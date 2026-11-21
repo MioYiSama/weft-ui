@@ -13,10 +13,10 @@ pub(crate) fn body(out: &mut Code, template: &Template, has_theme: bool) {
 }
 
 fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent: Option<u32>) {
-    let region = match parent {
-        Some(parent) => format!("n{parent}.Children"),
-        None => "Roots".to_owned(),
-    };
+    let region = std::fmt::from_fn(|out| match parent {
+        Some(parent) => write!(out, "n{parent}.Children"),
+        None => out.write_str("Roots"),
+    });
     match &template.nodes[index as usize].kind {
         ViewNodeKind::Element {
             element,
@@ -29,26 +29,31 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                 .filter(|v| v.node == index)
                 .peekable();
             let declaration = if slots.peek().is_some() { "" } else { "var " };
-            let args = match element {
-                Element::Column => "vertical: true".to_owned(),
-                Element::Row => "vertical: false".to_owned(),
+            let args = std::fmt::from_fn(|out| match element {
+                Element::Column => out.write_str("vertical: true"),
+                Element::Row => out.write_str("vertical: false"),
                 Element::Button => match template.event(index, "onClick") {
-                    Some(slot) => format!("() => Dispatch({slot})"),
-                    None => "null".to_owned(),
+                    Some(slot) => write!(out, "() => Dispatch({slot})"),
+                    None => out.write_str("null"),
                 },
                 Element::Input | Element::Checkbox => {
                     let (slot, _) = template.controlled(index);
-                    format!("v => Dispatch({slot}, WeftValue.Of(v))")
+                    write!(out, "v => Dispatch({slot}, WeftValue.Of(v))")
                 }
-                Element::Scroll => props
-                    .iter()
-                    .find(|prop| prop.name == "direction")
-                    .map_or_else(String::new, |prop| {
-                        format!("direction: {}", literal(*element, prop.name, &prop.value))
-                    }),
-                Element::Stack | Element::Spacer | Element::Text | Element::Image => String::new(),
-                Element::Span => unreachable!("platform support rejects `Span` before generation"),
-            };
+                Element::Scroll => {
+                    if let Some(prop) = props.iter().find(|prop| prop.name == "direction") {
+                        write!(
+                            out,
+                            "direction: {}",
+                            literal(*element, prop.name, &prop.value)
+                        )
+                    } else {
+                        Ok(())
+                    }
+                }
+                Element::Stack | Element::Spacer | Element::Text | Element::Image => Ok(()),
+                Element::Span => write!(out, "n{}", parent.expect("a Span belongs to a Text node")),
+            });
             out.writer.line(format_args!(
                 "{declaration}n{index} = new {}({args});",
                 wrapper(*element)
@@ -67,10 +72,12 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                     literal(*element, prop.name, &prop.value)
                 ));
             }
-            out.writer
-                .line(format_args!("{region}.Add(n{index}.Element);"));
-            for &child in children {
-                node(out, template, has_theme, child, Some(index));
+            if *element != Element::Span {
+                out.writer
+                    .line(format_args!("{region}.Add(n{index}.Element);"));
+                for &child in children {
+                    node(out, template, has_theme, child, Some(index));
+                }
             }
         }
         ViewNodeKind::Point(point) => out
@@ -83,7 +90,7 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
     match element {
         Element::Column | Element::Row => "WeftStack",
         Element::Text => "WeftText",
-        Element::Span => unreachable!("platform support rejects `Span` before generation"),
+        Element::Span => "WeftSpan",
         Element::Button => "WeftButton",
         Element::Input => "WeftInput",
         Element::Checkbox => "WeftCheckbox",
@@ -107,6 +114,9 @@ pub(super) fn union(element: Element, name: &str) -> Option<&'static str> {
         (Element::Column | Element::Row, "justify") => Some("Justify"),
         (Element::Stack, "alignment") => Some("Alignment"),
         (Element::Scroll, "direction") => Some("Axis"),
+        (Element::Text, "align") => Some("TextAlign"),
+        (Element::Text | Element::Span, "weight") => Some("Weight"),
+        (Element::Text | Element::Span, "decoration") => Some("Decoration"),
         (
             Element::Column
             | Element::Row

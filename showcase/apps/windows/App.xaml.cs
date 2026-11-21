@@ -22,8 +22,9 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         window = new Window { Title = "Weft Showcase", Content = WeftApp.Start() };
-        // Show the whole layout page in reference captures without changing the preview window.
-        WeftWindow.Resize(window, 480, shotAppearance is null ? 640 : 760);
+        // Match the Web capture width for the typography wrapping specimens.
+        var width = Environment.GetEnvironmentVariable("WEFT_SHOT_PAGE") == "text" ? 390 : 480;
+        WeftWindow.Resize(window, width, shotAppearance is null ? 640 : 760);
         window.Activate();
     }
 }

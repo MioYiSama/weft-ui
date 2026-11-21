@@ -2,8 +2,10 @@ using System;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.UI.Text;
 
 namespace Weft.WinUI;
 
@@ -129,10 +131,85 @@ public sealed class WeftText : WeftPaddedElement
         set => block.FontSize = value;
     }
 
-    public bool Bold
+    public bool Bold { set => Weight = value ? WeftWeight.Bold : WeftWeight.Regular; }
+    public WeftWeight Weight { set => block.FontWeight = WeftTextStyle.Weight(value); }
+    public bool Italic { set => block.FontStyle = WeftTextStyle.Style(value); }
+    public WeftDecoration Decoration { set => block.TextDecorations = WeftTextStyle.Decorations(value); }
+
+    public WeftTextAlign Align
     {
-        set => block.FontWeight = value ? FontWeights.Bold : FontWeights.Normal;
+        set => block.TextAlignment = value switch
+        {
+            WeftTextAlign.Center => TextAlignment.Center,
+            WeftTextAlign.End => TextAlignment.Right,
+            _ => TextAlignment.Left,
+        };
     }
+
+    public double MaxLines
+    {
+        set
+        {
+            var lines = (int)Math.Clamp(value, 0, int.MaxValue);
+            block.MaxLines = lines;
+            block.TextTrimming = lines > 0 ? TextTrimming.CharacterEllipsis : TextTrimming.None;
+        }
+    }
+
+    public double LineHeight
+    {
+        set
+        {
+            block.LineHeight = Math.Max(0, value);
+            block.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        }
+    }
+
+    internal void AppendSpan(Run run) => block.Inlines.Add(run);
+}
+
+/// <summary><c>Span</c>: a styled <see cref="Run"/> in its parent text block.</summary>
+public sealed class WeftSpan
+{
+    private readonly Run run = new();
+    private WeftSession? session;
+    private WeftBrush foreground;
+
+    public WeftSpan(WeftText parent) => parent.AppendSpan(run);
+
+    internal void AttachTheme(WeftSession owner) => session = owner;
+    internal void ReapplyColors() => foreground.Reapply(session?.Theme, session?.ActualTheme ?? ElementTheme.Default);
+
+    public string Value { set => run.Text = value; }
+    public WeftColor Color
+    {
+        set => run.Foreground = foreground.Set(value, session?.Theme, session?.ActualTheme ?? ElementTheme.Default);
+    }
+    public double Size { set => run.FontSize = value; }
+    public WeftWeight Weight { set => run.FontWeight = WeftTextStyle.Weight(value); }
+    public bool Italic { set => run.FontStyle = WeftTextStyle.Style(value); }
+    public WeftDecoration Decoration { set => run.TextDecorations = WeftTextStyle.Decorations(value); }
+}
+
+internal static class WeftTextStyle
+{
+    internal static FontWeight Weight(WeftWeight weight) => weight switch
+    {
+        WeftWeight.Light => FontWeights.Light,
+        WeftWeight.Medium => FontWeights.Medium,
+        WeftWeight.Semibold => FontWeights.SemiBold,
+        WeftWeight.Bold => FontWeights.Bold,
+        _ => FontWeights.Normal,
+    };
+
+    internal static FontStyle Style(bool italic) => italic ? FontStyle.Italic : FontStyle.Normal;
+
+    internal static TextDecorations Decorations(WeftDecoration decoration) => decoration switch
+    {
+        WeftDecoration.Underline => TextDecorations.Underline,
+        WeftDecoration.LineThrough => TextDecorations.Strikethrough,
+        _ => TextDecorations.None,
+    };
 }
 
 /// <summary><c>Button</c>: a <see cref="Button"/> whose content is a horizontal stack of its children.</summary>

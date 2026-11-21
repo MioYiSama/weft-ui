@@ -16,6 +16,7 @@
 //! | `Scroll`   | `WeftScroll`       | `ScrollViewer`             |
 //! | `Spacer`   | `WeftSpacer`       | Empty `FrameworkElement`   |
 //! | `Text`     | `WeftText`         | `TextBlock`                 |
+//! | `Span`     | `WeftSpan`         | `Run` in its parent        |
 //! | `Button`   | `WeftButton`       | `Button`                    |
 //! | `Input`    | `WeftInput`        | Controlled `TextBox`        |
 //! | `Checkbox` | `WeftCheckbox`     | Controlled `CheckBox`       |
@@ -267,6 +268,53 @@ mod tests {
             assert!(code.contains(expected), "missing {expected:?}\n{code}");
         }
         assert!(!code.contains("var n0"), "{code}");
+    }
+
+    #[test]
+    fn text_properties_and_spans_keep_independent_value_slots() {
+        let code = csharp(
+            r##"
+                type Weight = "regular" | "light" | "medium" | "semibold" | "bold"
+                type Decoration = "none" | "underline" | "lineThrough"
+                type TextAlign = "start" | "center" | "end"
+                theme { accent = "#158" }
+                component A(label: String, weight: Weight, decoration: Decoration, italic: Bool,
+                            align: TextAlign, lines: Int, height: Int, color: String) {
+                    Text(weight = weight, decoration = "lineThrough", align = align,
+                         maxLines = lines, lineHeight = height) {
+                        Span("before ", weight = "bold", color = theme.accent)
+                        Span(label, weight = weight, italic = italic, decoration = decoration,
+                             size = 14, color = color)
+                        Span(" after", decoration = "underline")
+                    }
+                }
+            "##,
+        );
+        for expected in [
+            "n0 = new WeftText();",
+            "n0.Decoration = WeftDecoration.LineThrough;",
+            "var n1 = new WeftSpan(n0);\n        TrackColors(n1);",
+            "n1.Weight = WeftWeight.Bold;",
+            "n1.Color = WeftColor.Token(\"accent\");",
+            "private readonly WeftSpan n2;",
+            "n2 = new WeftSpan(n0);\n        TrackColors(n2);",
+            "n2.Size = 14;",
+            "var n3 = new WeftSpan(n0);",
+            "n3.Decoration = WeftDecoration.Underline;",
+            "n0.Weight = WeftUnions.ParseWeight(value.String); break;",
+            "n0.Align = WeftUnions.ParseTextAlign(value.String); break;",
+            "n0.MaxLines = value.Number; break;",
+            "n0.LineHeight = value.Number; break;",
+            "n2.Value = value.String; break;",
+            "n2.Weight = WeftUnions.ParseWeight(value.String); break;",
+            "n2.Italic = value.Bool; break;",
+            "n2.Decoration = WeftUnions.ParseDecoration(value.String); break;",
+            "n2.Color = value.Color; break;",
+        ] {
+            assert!(code.contains(expected), "missing {expected:?}\n{code}");
+        }
+        assert_eq!(code.matches(".Add(").count(), 1, "{code}");
+        assert!(code.contains("Roots.Add(n0.Element);"), "{code}");
     }
 
     #[test]

@@ -30,6 +30,7 @@ public sealed class Screenshots
             var scheme = parts[1];
             var start = new ProcessStartInfo(UITests.AppPath()) { UseShellExecute = false };
             start.Environment["WEFT_SHOT_APPEARANCE"] = scheme;
+            start.Environment["WEFT_SHOT_PAGE"] = id;
             using var automation = new UIA3Automation();
             using var app = FlaUI.Core.Application.Launch(start);
             try
@@ -51,6 +52,7 @@ public sealed class Screenshots
                 var suffix = scheme == "dark" ? "-dark" : "";
                 CaptureWindow(window, Path.Combine(directory, $"{id}{suffix}.png"));
                 if (id == "appearance") VerifyVisibility(window);
+                if (id == "text") VerifyTypography(window);
             }
             finally
             {
@@ -90,6 +92,31 @@ public sealed class Screenshots
         Assert.IsNotNull(FindButton(window, "Hide card"));
         Assert.IsNotNull(Retry.WhileNull(() => window.FindFirstDescendant(cf => cf.ByName(cardLabel)),
             TimeSpan.FromSeconds(5)).Result);
+    }
+
+    private static void VerifyTypography(Window window)
+    {
+        var texts = window.FindAllDescendants(cf => cf.ByControlType(ControlType.Text));
+        AutomationElement Text(string prefix)
+        {
+            var matches = texts.Where(element =>
+                element.Properties.Name.ValueOrDefault?.StartsWith(prefix, StringComparison.Ordinal) == true).ToArray();
+            Assert.AreEqual(1, matches.Length, $"Expected one text block beginning with {prefix}");
+            return matches[0];
+        }
+
+        Assert.AreEqual("Read closely, pause often, then turn the page.",
+            Text("Read closely").Properties.Name.ValueOrDefault, "Spans must read as one text block");
+
+        var oneLine = Text("Italic").BoundingRectangle.Height;
+        Assert.IsTrue(oneLine > 0);
+        var limited = Text("The wind lifted").BoundingRectangle.Height;
+        Assert.AreEqual(2.0 * oneLine, limited, 2.0, "The limited paragraph must occupy two lines");
+
+        var compact = Text("18 px").BoundingRectangle.Height;
+        var expanded = Text("28 px").BoundingRectangle.Height;
+        Assert.IsTrue(compact > 0);
+        Assert.AreEqual(28.0 / 18.0, (double)expanded / compact, 0.08, "Both lines must use the requested height");
     }
 
     private static void CaptureWindow(Window window, string path)

@@ -84,6 +84,9 @@ Size measure_widget(const void *pointer, Proposal proposal);
 Size measure_native(GtkWidget *widget, Proposal proposal) {
   const auto [w, h] = proposal;
   if (w.is_exact() && h.is_exact()) return {w.value, h.value};
+  if (GTK_IS_LABEL(widget) && gtk_label_get_ellipsize(GTK_LABEL(widget)) != PANGO_ELLIPSIZE_NONE) {
+    if (auto clipped = TextLayout::measure(widget, proposal)) return *clipped;
+  }
   const Insets margin = native_margin(widget);
   const auto measure = [&](GtkOrientation orientation, Length length, int for_size) {
     if (length.is_exact()) return length.value;
@@ -208,6 +211,8 @@ void allocate(GtkLayoutManager *manager, GtkWidget *widget, int width, int heigh
     GtkAllocation allocation{x - pixels(margin.left), y - pixels(margin.top),
                              pixels(frame.x + frame.size.width) - x + pixels(margin.horizontal()),
                              pixels(frame.y + frame.size.height) - y + pixels(margin.vertical())};
+    if (GTK_IS_LABEL(native) && gtk_label_get_ellipsize(GTK_LABEL(native)) != PANGO_ELLIPSIZE_NONE)
+      TextLayout::before_allocate(native, allocation.width - pixels(margin.horizontal()));
     gtk_widget_size_allocate(native, &allocation, -1);
   }
   if (const auto callback = reinterpret_cast<WeftLinear *>(widget)->on_allocate) callback(widget);

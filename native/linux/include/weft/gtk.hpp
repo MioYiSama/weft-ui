@@ -262,22 +262,74 @@ class Spacer final : public Element {
 
 /// `Text`: a `GtkLabel` styled with Pango attributes.
 class Text final : public Padded {
+  struct Style {
+    std::optional<Color> color;
+    std::optional<int> size;
+    std::optional<Weight> weight;
+    std::optional<bool> italic;
+    std::optional<Decoration> decoration;
+
+    void apply(PangoAttrList *attributes, const Style &inherited, guint start, guint end) const;
+  };
+
  public:
-  Text();
+  /// A styled UTF-8 run owned by its Text, with no widget of its own.
+  class Span {
+   public:
+    explicit Span(Text &text) : text_(text) {}
+
+    void set_value(std::string_view value);
+    void set_color(Color color);
+    void set_size(double size);
+    void set_weight(Weight weight);
+    void set_italic(bool italic);
+    void set_decoration(Decoration decoration);
+
+   private:
+    friend class Text;
+    void restyle();
+
+    Text &text_;
+    std::string value_;
+    Style style_;
+  };
+
+  explicit Text(size_t span_count = 0);
+  ~Text() override;
+  Span &span(size_t index) { return spans_[index]; }
 
   void set_value(std::string_view value);
   void set_color(Color color);
   void set_size(double size);
+  void set_weight(Weight weight);
+  void set_italic(bool italic);
+  void set_decoration(Decoration decoration);
+  void set_align(TextAlign align);
+  void set_max_lines(double lines);
+  void set_line_height(double height);
   void set_bold(bool bold);
   void reapply_colors() override;
 
  private:
+  friend struct TextLayout;
+  void show_value();
+  void join_spans();
   void restyle();
+  PangoLayout *source_layout() const;
+  void clip_paragraphs(PangoLayout *layout, int width);
 
   GtkLabel *label_;
-  std::optional<Color> color_;
-  double size_ = 0;
-  bool bold_ = false;
+  std::vector<Span> spans_;
+  std::string value_;
+  Style style_;
+  std::optional<int> line_height_;
+  int max_lines_ = -1;
+  int clipped_width_ = -1;
+  int clipped_height_ = 0;
+  guint clipped_context_ = 0;
+  std::string clipped_value_;
+  bool has_legacy_bold_ = false;
+  bool limit_paragraphs_ = false;
 };
 
 /// `Button`: a `GtkButton` whose content is a horizontal stack of its children.

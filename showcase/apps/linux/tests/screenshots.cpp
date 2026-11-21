@@ -51,6 +51,8 @@ void capture(GtkWidget *window, const std::filesystem::path &path) {
 int main(int argc, char **argv) {
   if (argc < 3) fail("Usage: screenshots DIRECTORY <id:light|id:dark> ...");
   if (!gtk_init_check()) fail("Screenshots need a GTK desktop (DISPLAY or WAYLAND_DISPLAY)");
+  // The Docker desktop ships Inter Variable so the weight ladder shows all five weights.
+  g_object_set(gtk_settings_get_default(), "gtk-font-name", "Inter Variable, Sans 10", nullptr);
 
   for (int i = 2; i < argc; ++i) {
     std::string_view page = argv[i];
@@ -62,8 +64,8 @@ int main(int argc, char **argv) {
     auto *window = gtk_window_new();
     auto *root = weft::start_app();
     gtk_window_set_child(GTK_WINDOW(window), root);
-    // Keep the entire layout sample visible in the desktop screenshot.
-    gtk_window_set_default_size(GTK_WINDOW(window), 480, 720);
+    // Match the Web reference's logical viewport so wrapping is comparable.
+    gtk_window_set_default_size(GTK_WINDOW(window), 390, 844);
     gtk_window_present(GTK_WINDOW(window));
     GtkWidget *button = nullptr;
     const auto label = "page:" + id;

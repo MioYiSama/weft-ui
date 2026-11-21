@@ -212,49 +212,293 @@ void Spacer::set_size(double size) {
 
 // Text.
 
-Text::Text() : Padded(linear_new(Axis::Vertical, CrossAlign::Stretch)), label_(GTK_LABEL(gtk_label_new(nullptr))) {
-  gtk_label_set_xalign(label_, 0);
+namespace {
+
+int pango_length(double pixels) { return int(std::min<double>(pixels * PANGO_SCALE, G_MAXINT)); }
+
+GQuark paragraph_limit_key() {
+  static const GQuark key = g_quark_from_static_string("weft-paragraph-limit");
+  return key;
+}
+
+Text *paragraph_limited_text(GtkWidget *widget) {
+  return static_cast<Text *>(g_object_get_qdata(G_OBJECT(widget), paragraph_limit_key()));
+}
+
+PangoWeight pango_weight(Weight weight) {
+  switch (weight) {
+    case Weight::Light: return PANGO_WEIGHT_LIGHT;
+    case Weight::Medium: return PANGO_WEIGHT_MEDIUM;
+    case Weight::Semibold: return PANGO_WEIGHT_SEMIBOLD;
+    case Weight::Bold: return PANGO_WEIGHT_BOLD;
+    case Weight::Regular: return PANGO_WEIGHT_NORMAL;
+  }
+  return PANGO_WEIGHT_NORMAL;
+}
+
+}  // namespace
+
+Text::Text(size_t span_count)
+    : Padded(linear_new(Axis::Vertical, CrossAlign::Stretch)), label_(GTK_LABEL(gtk_label_new(nullptr))) {
+  spans_.reserve(span_count);
+  for (size_t index = 0; index < span_count; ++index) spans_.emplace_back(*this);
+  gtk_widget_set_direction(GTK_WIDGET(label_), GTK_TEXT_DIR_LTR);
+  set_align(TextAlign::Start);
   gtk_label_set_wrap(label_, true);
   gtk_label_set_wrap_mode(label_, PANGO_WRAP_WORD_CHAR);
   gtk_widget_set_parent(GTK_WIDGET(label_), widget());
 }
 
-void Text::set_value(std::string_view value) { gtk_label_set_text(label_, owned(value).c_str()); }
+Text::~Text() {
+  if (limit_paragraphs_) g_object_set_qdata(G_OBJECT(label_), paragraph_limit_key(), nullptr);
+}
+
+void Text::set_value(std::string_view value) {
+  if (value_ == value) return;
+  value_ = value;
+  show_value();
+}
+
+void Text::show_value() {
+  gtk_label_set_text(label_, value_.c_str());
+  clipped_width_ = -1;
+  const bool limit = max_lines_ > 0 && (value_.find_first_of("\r\n") != std::string::npos ||
+                                      value_.find("\u2028") != std::string::npos || value_.find("\u2029") != std::string::npos);
+  if (limit_paragraphs_ != limit) {
+    limit_paragraphs_ = limit;
+    g_object_set_qdata(G_OBJECT(label_), paragraph_limit_key(), limit ? this : nullptr);
+  }
+}
 
 void Text::set_color(Color color) {
-  color_ = color;
+  style_.color = color;
+  restyle();
+}
+
+void Text::set_size(double size) {
+  style_.size = size > 0 ? std::optional(pango_length(size)) : std::nullopt;
+  restyle();
+}
+
+void Text::set_weight(Weight weight) {
+  if (has_legacy_bold_) return;
+  style_.weight = weight;
+  restyle();
+}
+
+void Text::set_italic(bool italic) {
+  style_.italic = italic;
+  restyle();
+}
+
+void Text::set_decoration(Decoration decoration) {
+  style_.decoration = decoration;
+  restyle();
+}
+
+void Text::set_align(TextAlign align) {
+  switch (align) {
+    case TextAlign::Start:
+      gtk_label_set_justify(label_, GTK_JUSTIFY_LEFT);
+      gtk_label_set_xalign(label_, 0);
+      break;
+    case TextAlign::Center:
+      gtk_label_set_justify(label_, GTK_JUSTIFY_CENTER);
+      gtk_label_set_xalign(label_, 0.5);
+      break;
+    case TextAlign::End:
+      gtk_label_set_justify(label_, GTK_JUSTIFY_RIGHT);
+      gtk_label_set_xalign(label_, 1);
+      break;
+  }
+}
+
+void Text::set_max_lines(double lines) {
+  const int limit = lines >= 1 ? int(std::min<double>(lines, G_MAXINT)) : -1;
+  if (max_lines_ == limit) return;
+  max_lines_ = limit;
+  gtk_label_set_lines(label_, limit);
+  gtk_label_set_ellipsize(label_, limit > 0 ? PANGO_ELLIPSIZE_END : PANGO_ELLIPSIZE_NONE);
+  show_value();
+}
+
+void Text::set_line_height(double height) {
+  line_height_ = height >= 0 ? std::optional(pango_length(height)) : std::nullopt;
+  restyle();
+}
+
+void Text::set_bold(bool bold) {
+  has_legacy_bold_ = true;
+  style_.weight = bold ? Weight::Bold : Weight::Regular;
   restyle();
 }
 
 void Text::reapply_colors() {
   Decorated::reapply_colors();
-  if (color_ && color_->is_token()) restyle();
+  const auto token = [](const Style &style) { return style.color && style.color->is_token(); };
+  if (token(style_) || std::ranges::any_of(spans_, [&](const Span &span) { return token(span.style_); })) restyle();
 }
 
-void Text::set_size(double size) {
-  size_ = size;
+void Text::Span::set_value(std::string_view value) {
+  if (value_ == value) return;
+  value_ = value;
+  text_.join_spans();
+}
+
+void Text::Span::set_color(Color color) {
+  style_.color = color;
   restyle();
 }
 
-void Text::set_bold(bool bold) {
-  bold_ = bold;
+void Text::Span::set_size(double size) {
+  style_.size = size > 0 ? std::optional(pango_length(size)) : std::nullopt;
   restyle();
+}
+
+void Text::Span::set_weight(Weight weight) {
+  style_.weight = weight;
+  restyle();
+}
+
+void Text::Span::set_italic(bool italic) {
+  style_.italic = italic;
+  restyle();
+}
+
+void Text::Span::set_decoration(Decoration decoration) {
+  style_.decoration = decoration;
+  restyle();
+}
+
+void Text::Span::restyle() {
+  if (!value_.empty()) text_.restyle();
+}
+
+void Text::join_spans() {
+  size_t length = 0;
+  for (const auto &span : spans_) length += span.value_.size();
+  value_.clear();
+  value_.reserve(length);
+  for (const auto &span : spans_) value_ += span.value_;
+  show_value();
+  restyle();
+}
+
+void Text::Style::apply(PangoAttrList *attributes, const Style &inherited, guint start, guint end) const {
+  const auto choose = []<class T>(const std::optional<T> &local, const std::optional<T> &parent)
+      -> const std::optional<T> & { return local ? local : parent; };
+  const auto insert = [=](PangoAttribute *attr) {
+    attr->start_index = start;
+    attr->end_index = end;
+    pango_attr_list_insert(attributes, attr);
+  };
+  if (const auto &value = choose(color, inherited.color)) {
+    const auto rgba = value->resolve();
+    const auto channel = [](float value) { return guint16(std::lround(value * 65535)); };
+    insert(pango_attr_foreground_new(channel(rgba.red), channel(rgba.green), channel(rgba.blue)));
+    // Pango reserves alpha 0 for inheriting the renderer's foreground alpha.
+    insert(pango_attr_foreground_alpha_new(std::max<guint16>(channel(rgba.alpha), 1)));
+  }
+  if (auto value = choose(size, inherited.size)) insert(pango_attr_size_new_absolute(*value));
+  if (auto value = choose(weight, inherited.weight)) insert(pango_attr_weight_new(pango_weight(*value)));
+  if (auto value = choose(italic, inherited.italic))
+    insert(pango_attr_style_new(*value ? PANGO_STYLE_ITALIC : PANGO_STYLE_NORMAL));
+  switch (choose(decoration, inherited.decoration).value_or(Decoration::None)) {
+    case Decoration::Underline: insert(pango_attr_underline_new(PANGO_UNDERLINE_SINGLE)); break;
+    case Decoration::LineThrough: insert(pango_attr_strikethrough_new(true)); break;
+    case Decoration::None: break;
+  }
 }
 
 void Text::restyle() {
-  PangoAttrList *attributes = pango_attr_list_new();
-  if (color_) {
-    const GdkRGBA color = color_->resolve();
-    auto channel = [](float value) { return guint16(std::lround(value * 65535)); };
-    pango_attr_list_insert(attributes,
-                           pango_attr_foreground_new(channel(color.red), channel(color.green), channel(color.blue)));
-    pango_attr_list_insert(attributes, pango_attr_foreground_alpha_new(std::max<guint16>(channel(color.alpha), 1)));
+  auto *attributes = pango_attr_list_new();
+  if (line_height_) pango_attr_list_insert(attributes, pango_attr_line_height_new_absolute(*line_height_));
+  if (spans_.empty()) {
+    style_.apply(attributes, style_, 0, PANGO_ATTR_INDEX_TO_TEXT_END);
+  } else {
+    // Pango ranges are byte offsets, including for non-ASCII and emoji runs.
+    guint start = 0;
+    for (const auto &span : spans_) {
+      const guint end = start + guint(span.value_.size());
+      if (start != end) span.style_.apply(attributes, style_, start, end);
+      start = end;
+    }
   }
-  // Absolute sizes are in logical pixels, like CSS `font-size`.
-  if (size_ > 0) pango_attr_list_insert(attributes, pango_attr_size_new_absolute(int(size_ * PANGO_SCALE)));
-  if (bold_) pango_attr_list_insert(attributes, pango_attr_weight_new(PANGO_WEIGHT_BOLD));
   gtk_label_set_attributes(label_, attributes);
   pango_attr_list_unref(attributes);
+  clipped_width_ = -1;
+}
+
+PangoLayout *Text::source_layout() const {
+  auto *layout = pango_layout_copy(gtk_label_get_layout(label_));
+  pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_NONE);
+  pango_layout_set_height(layout, -1);
+  pango_layout_set_text(layout, value_.c_str(), -1);
+  return layout;
+}
+
+void Text::clip_paragraphs(PangoLayout *layout, int width) {
+  clipped_width_ = width;
+  clipped_context_ = pango_context_get_serial(pango_layout_get_context(layout));
+  clipped_value_.clear();
+  pango_layout_set_width(layout, pango_length(width));
+  if (pango_layout_get_line_count(layout) > max_lines_) {
+    const auto *line = pango_layout_get_line_readonly(layout, max_lines_ - 1);
+    const char *first = value_.data() + line->start_index;
+    const char *end = first + line->length;
+    // Keep hard breaks before the last visible line. Trim only the tail,
+    // backing up by grapheme clusters if the ellipsis itself needs room.
+    while (end > first && g_unichar_isspace(g_utf8_get_char(g_utf8_prev_char(end)))) end = g_utf8_prev_char(end);
+    for (;;) {
+      clipped_value_.assign(value_.data(), end - value_.data());
+      clipped_value_ += "…";
+      pango_layout_set_text(layout, clipped_value_.c_str(), -1);
+      if (end == first || pango_layout_get_line_count(layout) <= max_lines_) break;
+      int count;
+      const auto *attributes = pango_layout_get_log_attrs_readonly(layout, &count);
+      // There is one log attribute per character plus one at end of text.
+      int previous = count - 3;  // Boundary before the character preceding the ellipsis.
+      do {
+        end = g_utf8_prev_char(end);
+      } while (end > first && !attributes[previous--].is_cursor_position);
+    }
+  }
+  pango_layout_get_pixel_size(layout, nullptr, &clipped_height_);
+}
+
+std::optional<layout::Size> TextLayout::measure(GtkWidget *widget, layout::Proposal proposal) {
+  auto *text = paragraph_limited_text(widget);
+  if (!text) return std::nullopt;
+  const auto [width, height] = proposal;
+  g_autoptr(PangoLayout) layout = nullptr;
+  double fitted_width = width.value;
+  if (!width.is_exact()) {
+    layout = text->source_layout();
+    pango_layout_set_width(layout, -1);
+    int natural;
+    pango_layout_get_pixel_size(layout, &natural, nullptr);
+    fitted_width = width.fit(natural);
+  }
+  if (height.is_exact()) return layout::Size{fitted_width, height.value};
+  const int fitted_pixels = pixels(fitted_width);
+  if (text->clipped_width_ != fitted_pixels ||
+      text->clipped_context_ != pango_context_get_serial(gtk_widget_get_pango_context(widget))) {
+    if (!layout) layout = text->source_layout();
+    text->clip_paragraphs(layout, fitted_pixels);
+  }
+  return layout::Size{fitted_width, height.fit(text->clipped_height_)};
+}
+
+void TextLayout::before_allocate(GtkWidget *widget, int width) {
+  auto *text = paragraph_limited_text(widget);
+  if (!text) return;
+  if (text->clipped_width_ != width ||
+      text->clipped_context_ != pango_context_get_serial(gtk_widget_get_pango_context(widget))) {
+    g_autoptr(PangoLayout) layout = text->source_layout();
+    text->clip_paragraphs(layout, width);
+  }
+  const auto &value = text->clipped_value_.empty() ? text->value_ : text->clipped_value_;
+  gtk_label_set_text(text->label_, value.c_str());
 }
 
 // Button.

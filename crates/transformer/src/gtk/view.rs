@@ -44,35 +44,58 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
                     .map_or_else(String::new, |prop| {
                         literal(*element, prop.name, &prop.value)
                     }),
+                Element::Text if !children.is_empty() => children.len().to_string(),
                 Element::Stack | Element::Spacer | Element::Text | Element::Image => String::new(),
-                Element::Span => unreachable!("platform support rejects `Span` before generation"),
+                Element::Span => unreachable!("Span is emitted by its parent Text"),
             };
             let made = format!("make<weft::{}>({args})", wrapper(*element));
-            let member = member(template, index);
-            if is_field(template, index) {
-                out.writer.line(format_args!("n{index}_ = &{made};"));
-            } else {
-                out.writer.line(format_args!("auto &n{index} = {made};"));
-            }
-            for prop in props.iter().filter(|prop| prop.name != "direction") {
-                out.writer.line(format_args!(
-                    "{member}{}({});",
-                    setter(prop.name),
-                    literal(*element, prop.name, &prop.value)
-                ));
-            }
+            let member = initialize(out, template, index, &made);
             out.writer.line(format_args!(
                 "{region}.add({});",
                 reference(template, index)
             ));
-            for &child in children {
-                node(out, template, child, Some(index));
+            if *element == Element::Text {
+                for (position, &child) in children.iter().enumerate() {
+                    span(out, template, child, &member, position);
+                }
+            } else {
+                for &child in children {
+                    node(out, template, child, Some(index));
+                }
             }
         }
         ViewNodeKind::Point(point) => out
             .writer
             .line(format_args!("{region}.point(*this, {point});")),
     }
+}
+
+fn span(out: &mut Code, template: &Template, index: u32, text: &str, position: usize) {
+    initialize(out, template, index, &format!("{text}span({position})"));
+}
+
+/// Binds a widget or inline run and writes its constant properties.
+fn initialize(out: &mut Code, template: &Template, index: u32, instance: &str) -> String {
+    let ViewNodeKind::Element { element, props, .. } = &template.nodes[index as usize].kind else {
+        unreachable!("only elements have properties");
+    };
+    let is_field = is_field(template, index);
+    let member = if is_field {
+        out.writer.line(format_args!("n{index}_ = &{instance};"));
+        format!("n{index}_->")
+    } else {
+        out.writer
+            .line(format_args!("auto &n{index} = {instance};"));
+        format!("n{index}.")
+    };
+    for prop in props.iter().filter(|prop| prop.name != "direction") {
+        out.writer.line(format_args!(
+            "{member}{}({});",
+            setter(prop.name),
+            literal(*element, prop.name, &prop.value)
+        ));
+    }
+    member
 }
 
 /// Whether node `index` is kept in a field `n{index}_` for `apply`.
@@ -105,7 +128,7 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Scroll => "Scroll",
         Element::Spacer => "Spacer",
         Element::Text => "Text",
-        Element::Span => unreachable!("platform support rejects `Span` before generation"),
+        Element::Span => "Text::Span",
         Element::Button => "Button",
         Element::Input => "Input",
         Element::Checkbox => "Checkbox",
@@ -135,6 +158,9 @@ fn union_type(element: Element, prop: &str) -> Option<&'static str> {
         (Element::Column | Element::Row, "justify") => Some("Justify"),
         (Element::Stack, "alignment") => Some("Alignment"),
         (Element::Scroll, "direction") => Some("Axis"),
+        (Element::Text, "align") => Some("TextAlign"),
+        (Element::Text | Element::Span, "weight") => Some("Weight"),
+        (Element::Text | Element::Span, "decoration") => Some("Decoration"),
         (_, "shadow") => Some("Shadow"),
         _ => None,
     }

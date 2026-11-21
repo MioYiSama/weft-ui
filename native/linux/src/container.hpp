@@ -47,4 +47,11 @@ void container_set_alignment(GtkWidget *widget, Alignment alignment);
 void container_set_padding(GtkWidget *widget, Edge edge, double value);
 void container_on_allocate(GtkWidget *widget, void (*callback)(GtkWidget *));
 
+// GtkLabel's line limit applies to each paragraph. Labels that need an
+// overall limit supply their width-dependent measurement and text here.
+struct TextLayout {
+  static std::optional<layout::Size> measure(GtkWidget *label, layout::Proposal proposal);
+  static void before_allocate(GtkWidget *label, int width);
+};
+
 }  // namespace weft

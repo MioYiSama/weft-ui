@@ -2,10 +2,14 @@ package net.mioyi.weftui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -22,8 +26,16 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.PointerInputModifierNode
 import androidx.compose.ui.platform.LocalGraphicsContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
@@ -38,7 +50,7 @@ private fun WeftShadow.composeShadow(): Shadow? = when (this) {
     WeftShadow.LARGE -> largeShadow
 }
 
-/** Applies visibility and draws the border box outside the element's content and padding. */
+/** Applies visibility, optional tap handling, and decoration to the element's border box. */
 @Composable
 fun Modifier.weftAppearance(
     opacity: Float = 1f,
@@ -49,17 +61,26 @@ fun Modifier.weftAppearance(
     borderColor: WeftColor? = null,
     shadow: WeftShadow = WeftShadow.NONE,
     clip: Boolean = false,
+    onTap: (() -> Unit)? = null,
 ): Modifier {
     if (hidden) return weftHidden()
+    var box = this
+    var alpha = opacity.coerceIn(0f, 1f)
+    if (onTap != null) {
+        val interactions = remember { MutableInteractionSource() }
+        // Blend the whole box once, including its shadow and any visible overflow.
+        if (interactions.collectIsPressedAsState().value) alpha *= 0.6f
+        box = box.clickable(interactionSource = interactions, indication = null, role = Role.Button, onClick = onTap)
+            .then(TapReleaseBounds)
+    }
     val preset = shadow.composeShadow()
-    val alpha = opacity.coerceIn(0f, 1f)
-    var box = when {
-        alpha == 1f -> this
-        alpha == 0f || (clip && preset == null) -> alpha(alpha)
+    box = when {
+        alpha == 1f -> box
+        alpha == 0f || (clip && preset == null) -> box.alpha(alpha)
         // Modifier.alpha clips its layer to the element's bounds, losing shadows and overflow.
         else -> {
             val layerAlpha = (alpha * 255).roundToInt()
-            drawWithContent {
+            box.drawWithContent {
                 drawIntoCanvas { canvas ->
                     val native = canvas.nativeCanvas
                     val saved = native.saveLayerAlpha(null, layerAlpha)
@@ -86,6 +107,28 @@ fun Modifier.weftAppearance(
         if (clip) box = box.clip(roundedShape(radius - border))
     }
     return box
+}
+
+// Clickable can accept an up outside a small element's box because Compose expands its touch target.
+// The inner guard sees the up before clickable in the Main pass, without interfering with scroll moves.
+private data object TapReleaseBounds : ModifierNodeElement<TapReleaseBoundsNode>() {
+    override fun create() = TapReleaseBoundsNode()
+    override fun update(node: TapReleaseBoundsNode) = Unit
+}
+
+private class TapReleaseBoundsNode : Modifier.Node(), PointerInputModifierNode {
+    override fun onPointerEvent(pointerEvent: PointerEvent, pass: PointerEventPass, bounds: IntSize) {
+        if (pass != PointerEventPass.Main || pointerEvent.type != PointerEventType.Release) return
+        val changes = pointerEvent.changes
+        for (i in changes.indices) {
+            val change = changes[i]
+            if (!change.changedToUp()) continue
+            val (x, y) = change.position
+            if (x < 0f || x >= bounds.width || y < 0f || y >= bounds.height) change.consume()
+        }
+    }
+
+    override fun onCancelPointerInput() = Unit
 }
 
 private fun roundedShape(radius: Float) = if (radius > 0f) RoundedCornerShape(radius.dp) else RectangleShape

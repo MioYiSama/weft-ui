@@ -168,7 +168,7 @@ impl Body<'_> {
                 "onFocusChange = {{ s.dispatch({slot}, WeftValue.Bool(it)) }}"
             ));
         }
-        modifiers(&mut args, prop);
+        modifiers(&mut args, prop, self.template.event(node, "onTap"));
         args.finish(matches!(
             element,
             Element::Spacer | Element::Spinner | Element::Divider
@@ -284,21 +284,26 @@ const APPEARANCE: &[&str] = &[
     "clip",
 ];
 
-fn modifiers<'t>(args: &mut CallArgs<'_>, prop: impl Fn(&str) -> Option<PropSource<'t>>) {
+fn modifiers<'t>(
+    args: &mut CallArgs<'_>,
+    prop: impl Fn(&str) -> Option<PropSource<'t>>,
+    tap: Option<usize>,
+) {
     let groups = [
-        ("weftSize", SIZE),
-        ("weftChild", CHILD),
-        ("weftAppearance", APPEARANCE),
+        ("weftSize", SIZE, None),
+        ("weftChild", CHILD, None),
+        ("weftAppearance", APPEARANCE, tap),
     ];
-    if !groups
-        .iter()
-        .any(|(_, names)| names.iter().any(|name| prop(name).is_some()))
+    if tap.is_none()
+        && !groups
+            .iter()
+            .any(|(_, names, _)| names.iter().any(|name| prop(name).is_some()))
     {
         return;
     }
     args.push(fmt::from_fn(|f| {
         f.write_str("modifier = Modifier")?;
-        for (method, names) in groups {
+        for (method, names, tap) in groups {
             let mut first = true;
             for &name in names {
                 let Some(value) = prop(name) else { continue };
@@ -310,6 +315,15 @@ fn modifiers<'t>(args: &mut CallArgs<'_>, prop: impl Fn(&str) -> Option<PropSour
                 }
                 let union = (name == "shadow").then_some("Shadow");
                 write!(f, "{name} = {}", KotlinProp(value, union))?;
+            }
+            if let Some(slot) = tap {
+                if first {
+                    write!(f, ".{method}(")?;
+                    first = false;
+                } else {
+                    f.write_str(", ")?;
+                }
+                write!(f, "onTap = {{ s.dispatch({slot}) }}")?;
             }
             if !first {
                 f.write_char(')')?;

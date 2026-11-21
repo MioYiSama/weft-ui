@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.layout.layout
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import net.mioyi.weftui.WeftAlignment
@@ -112,6 +114,44 @@ class AppearanceTest {
         val outside = overflowing[overflowing.width / 4, overflowing.height / 2]
         assertEquals(1f, outside.red, 0.01f)
         assertTrue(outside.green in 0.48f..0.52f)
+    }
+
+    @Test
+    fun pressedOpacityMultipliesOwnOpacityAndRestoresOnReleaseOrCancel() {
+        var taps = 0
+        compose.setContent {
+            Box(Modifier.size(120.dp).background(Color.White)) {
+                Box(Modifier.size(40.dp).testTag("target").weftAppearance(
+                    opacity = 0.5f, background = WeftColor.Fixed(Color.Red), onTap = { taps++ },
+                ))
+            }
+        }
+        val target = compose.onNodeWithTag("target")
+        fun green(): Float {
+            val pixels = target.captureToImage().toPixelMap()
+            return pixels[pixels.width / 2, pixels.height / 2].green
+        }
+        assertEquals(0.5f, green(), 0.02f)
+        target.performTouchInput { down(center) }
+        assertEquals(0.7f, green(), 0.02f)
+        compose.runOnIdle { assertEquals(0, taps) }
+        target.performTouchInput { up() }
+        assertEquals(0.5f, green(), 0.02f)
+        compose.runOnIdle { assertEquals(1, taps) }
+
+        target.performTouchInput { down(center) }
+        assertEquals(0.7f, green(), 0.02f)
+        target.performTouchInput { cancel() }
+        assertEquals(0.5f, green(), 0.02f)
+        compose.runOnIdle { assertEquals(1, taps) }
+
+        target.performTouchInput {
+            down(center)
+            moveTo(Offset(right + 2f, centerY))
+            up()
+        }
+        assertEquals(0.5f, green(), 0.02f)
+        compose.runOnIdle { assertEquals(1, taps) }
     }
 
     @Test

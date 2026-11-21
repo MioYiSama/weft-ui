@@ -117,7 +117,7 @@ impl Body<'_> {
             }
             Element::Image => {
                 args.push(KotlinProp(prop("src").expect("`Image` has a source"), None));
-                &[]
+                &["fit", "placeholder"]
             }
             Element::Stack => &["alignment"],
             Element::Scroll => &["direction", "gap", "align", "indicators"],
@@ -148,6 +148,7 @@ impl Body<'_> {
                 "justify" => Some("Justify"),
                 "alignment" => Some("Alignment"),
                 "direction" => Some("Axis"),
+                "fit" => Some("ImageFit"),
                 "weight" => Some("Weight"),
                 "decoration" => Some("Decoration"),
                 "type" => Some("InputType"),
@@ -168,7 +169,15 @@ impl Body<'_> {
                 "onFocusChange = {{ s.dispatch({slot}, WeftValue.Bool(it)) }}"
             ));
         }
-        modifiers(&mut args, prop, self.template.event(node, "onTap"));
+        // Image pixels follow the radius of their own box, independent of child clipping.
+        let modifier_prop = |name: &str| {
+            if element == Element::Image && name == "clip" {
+                prop("radius").map(|_| PropSource::Constant(&Constant::Bool(true)))
+            } else {
+                prop(name)
+            }
+        };
+        modifiers(&mut args, modifier_prop, self.template.event(node, "onTap"));
         args.finish(matches!(
             element,
             Element::Spacer | Element::Spinner | Element::Divider
@@ -239,7 +248,7 @@ impl Body<'_> {
     }
 }
 
-const TEXT_STYLE: &[&str] = &["color", "size", "weight", "italic", "decoration"];
+const TEXT_STYLE: &[&str] = &["color", "size", "weight", "italic", "decoration", "font"];
 
 const PADDING: &[&str] = &[
     "padding",

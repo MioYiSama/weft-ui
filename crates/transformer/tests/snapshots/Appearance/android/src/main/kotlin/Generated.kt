@@ -83,7 +83,7 @@ private fun V0(s: S0) {
             WeftText("Label", padding = 6f, modifier = Modifier.weftAppearance(background = WeftColor.Fixed(Color(0xfff4c989L)), radius = 4f))
         }
         WeftStack(modifier = Modifier.weftSize(width = 160f, height = 80f).weftAppearance(background = WeftColor.Fixed(Color(0xffdaf1efL)), radius = 12f, border = 2f, borderColor = WeftColor.Fixed(Color(0xff4c888aL)), shadow = WeftShadow.MEDIUM, clip = true)) {
-            WeftImage("wide.png", modifier = Modifier.weftSize(width = 240f, height = 96f).weftAppearance(opacity = 0.8f, radius = 6f))
+            WeftImage("wide.png", modifier = Modifier.weftSize(width = 240f, height = 96f).weftAppearance(opacity = 0.8f, radius = 6f, clip = true))
         }
         WeftScroll(modifier = Modifier.weftSize(height = 64f).weftAppearance(radius = 8f, border = 1f, shadow = WeftShadow.LARGE, clip = s.v8)) {
             WeftText("Scroll", modifier = Modifier.weftSize(height = 96f))

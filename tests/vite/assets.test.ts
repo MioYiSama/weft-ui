@@ -134,12 +134,15 @@ test("WeChat copies assets, chooses density, and embeds Inter in the page styles
 });
 
 test("Linux passes the asset directory to weft_views and copies media and fonts", async () => {
+test("Android packages density variants, VectorDrawables and Inter font faces", async () => {
   await cp(join(root, "res/images/logo@2x.png"), join(root, "res/images/logo@3x.png"));
   vi.stubEnv("WEFT_PLATFORM", "linux");
+  vi.stubEnv("WEFT_PLATFORM", "android");
   vi.stubEnv("WEFT_NATIVE", "0");
   await (await createBuilder({
     ...config(),
     plugins: [weft({ assets: "res", platforms: ["linux"], app: { id: "com.example.assets" } })],
+    plugins: [weft({ assets: "res", platforms: ["android"], app: { id: "com.example.assets" } })],
   })).buildApp();
   const weftDir = join(root, "apps/linux/weft");
   const cmake = await readFile(join(weftDir, "CMakeLists.txt"), "utf8");
@@ -156,6 +159,18 @@ test("Linux passes the asset directory to weft_views and copies media and fonts"
   ] as [string, string][]) {
     const copied = await readFile(join(directory, output));
     expect(copied.equals(await readFile(join(root, "res", input))), output).toBe(true);
+  const res = join(root, "apps/android/weft/src/main/res");
+  expect(await readdir(join(res, "drawable-mdpi"))).toEqual(["weft_logo.png"]);
+  expect((await readdir(join(res, "drawable-xhdpi"))).sort()).toEqual(["weft_logo.png", "weft_only_high.png"]);
+  expect(await readdir(join(res, "drawable-xxhdpi"))).toEqual(["weft_logo.png"]);
+  const icon = await readFile(join(res, "drawable/weft_star.xml"), "utf8");
+  expect(icon).toContain('<vector xmlns:android="http://schemas.android.com/apk/res/android"');
+  expect(icon).toMatch(/android:pathData="[Mm][^"]+"/);
+  const fonts = join(res, "font");
+  expect((await readdir(fonts)).sort()).toEqual(["weft_inter.xml", "weft_inter_400.ttf", "weft_inter_700.ttf"]);
+  const family = await readFile(join(fonts, "weft_inter.xml"), "utf8");
+  for (const weight of [400, 700]) {
+    expect(family).toContain(`<font android:font="@font/weft_inter_${weight}" android:fontWeight="${weight}" android:fontStyle="normal" />`);
   }
 });
 

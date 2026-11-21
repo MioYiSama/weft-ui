@@ -11,6 +11,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -42,6 +43,7 @@ fun WeftText(
     paddingBottom: Float? = null,
     paddingStart: Float? = null,
     paddingEnd: Float? = null,
+    font: String? = null,
     spans: (@Composable AnnotatedString.Builder.() -> Unit)? = null,
 ) {
     val insets = paddingEdges(padding, paddingX, paddingY, paddingTop, paddingBottom, paddingStart, paddingEnd)
@@ -49,8 +51,9 @@ fun WeftText(
         left = insets.start.dp, top = insets.top.dp, right = insets.end.dp, bottom = insets.bottom.dp,
     )
     val textColor = color?.resolve() ?: Color.Unspecified
+    val family = weftFontFamily(font)
     val style = with(LocalDensity.current) {
-        weftTypography(LocalTextStyle.current, size, bold, weight, italic, decoration, align, lineHeight)
+        weftTypography(LocalTextStyle.current, size, bold, weight, italic, decoration, align, lineHeight, family)
     }
     val limit = maxLines.lineLimit()
     val lines = if (limit > 0) limit else Int.MAX_VALUE
@@ -71,10 +74,11 @@ fun AnnotatedString.Builder.WeftSpan(
     weight: WeftWeight? = null,
     italic: Boolean? = null,
     decoration: WeftDecoration? = null,
+    font: String? = null,
 ) {
     appendWeftSpan(
         value, color?.resolve() ?: Color.Unspecified, with(LocalDensity.current) { textSize(size) },
-        weight, italic, decoration,
+        weight, italic, decoration, weftFontFamily(font),
     )
 }
 
@@ -85,15 +89,17 @@ internal fun AnnotatedString.Builder.appendWeftSpan(
     weight: WeftWeight? = null,
     italic: Boolean? = null,
     decoration: WeftDecoration? = null,
+    family: FontFamily? = null,
 ) {
     if (value.isEmpty()) return
     val start = length
     append(value)
-    if (color != Color.Unspecified || size != TextUnit.Unspecified || weight != null || italic != null || decoration != null) {
+    if (color != Color.Unspecified || size != TextUnit.Unspecified || weight != null || italic != null || decoration != null || family != null) {
         addStyle(
             SpanStyle(
                 color = color,
                 fontSize = size,
+                fontFamily = family,
                 fontWeight = weight?.compose(),
                 fontStyle = italic.fontStyle(),
                 textDecoration = decoration?.compose(),
@@ -112,8 +118,10 @@ internal fun Density.weftTypography(
     decoration: WeftDecoration? = null,
     align: WeftTextAlign? = null,
     lineHeight: Float? = null,
+    family: FontFamily? = null,
 ): TextStyle = base.merge(
     fontSize = textSize(size),
+    fontFamily = family,
     // The legacy property follows weight in the schema, so it takes precedence when specified.
     fontWeight = bold?.let { if (it) FontWeight.W700 else FontWeight.W400 } ?: weight?.compose(),
     fontStyle = italic.fontStyle(),

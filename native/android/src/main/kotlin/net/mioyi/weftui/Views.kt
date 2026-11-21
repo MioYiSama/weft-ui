@@ -24,11 +24,9 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
-/**
- * Starts the app's session and renders its root component or startup failure inside the system bars.
- */
+/** Starts the app's session and renders its root, padding for system bars when [safeArea] is enabled. */
 @Composable
-fun WeftRoot(layoutHash: ULong, theme: WeftTheme = WeftTheme.Empty, make: WeftMake) {
+fun WeftRoot(layoutHash: ULong, safeArea: Boolean, theme: WeftTheme = WeftTheme.Empty, make: WeftMake) {
     val context = LocalContext.current
     val session = remember { WeftSession.start(context, layoutHash.toLong(), make) }
     DisposableEffect(session) { onDispose { session.close() } }
@@ -46,10 +44,9 @@ fun WeftRoot(layoutHash: ULong, theme: WeftTheme = WeftTheme.Empty, make: WeftMa
             end = with(density) { safe.getRight(this, LayoutDirection.Ltr).toDp().value },
         )
         LaunchedEffect(session, environment) { session.updateEnvironment(environment) }
-        WeftLinear(
-            WeftAxis.VERTICAL,
-            Modifier.fillMaxSize().safeDrawingPadding().clipToBounds(),
-        ) {
+        val fill = Modifier.fillMaxSize()
+        val rootModifier = if (safeArea) fill.safeDrawingPadding() else fill
+        WeftLinear(WeftAxis.VERTICAL, rootModifier.clipToBounds()) {
             val failure = session.failure
             val root = session.root
             if (failure != null) {

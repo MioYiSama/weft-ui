@@ -19,7 +19,7 @@ private val appTheme = WeftTheme.register(mapOf(
 /** Root view of the app: starts the kernel with the bundle and renders the root component. */
 @Composable
 fun WeftApp() {
-    WeftRoot(layoutHash = 0x7cc75271705805fauL, theme = appTheme, make = ::makeScope)
+    WeftRoot(layoutHash = 0x7cc75271705805fauL, safeArea = true, theme = appTheme, make = ::makeScope)
 }
 
 /** Scope of a `create` op. */

@@ -79,8 +79,9 @@ fn generate(layout: &ViewLayout) -> String {
         ", theme = appTheme"
     };
     out.writer.line(format_args!(
-        "WeftRoot(layoutHash = 0x{:016x}uL{theme_arg}, make = ::makeScope)",
-        layout.hash()
+        "WeftRoot(layoutHash = 0x{:016x}uL, safeArea = {}{theme_arg}, make = ::makeScope)",
+        layout.hash(),
+        layout.safe_area()
     ));
     out.close("}");
     out.writer.blank();
@@ -193,6 +194,37 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
 mod tests {
     use super::*;
     use weft_ui_parser::MemoryLoader;
+
+    #[test]
+    fn root_uses_the_app_safe_area_option() {
+        use crate::{AppOptions, compile_app, transform::Platform};
+
+        let mut loader = MemoryLoader::new();
+        loader.insert("App.weft", r#"component App() { Text("hello") }"#);
+        for options in [AppOptions::default(), AppOptions { safe_area: false }] {
+            let output = compile_app(
+                weft_ui_parser::load(&["App.weft"], &mut loader),
+                Platform::Android,
+                &options,
+            );
+            assert!(
+                !output.compilation.has_errors(),
+                "{}",
+                output.compilation.render_diagnostics()
+            );
+            let view = output
+                .views
+                .iter()
+                .find(|view| view.path == VIEWS)
+                .expect("Android compilation emits the Compose views");
+            assert!(
+                view.contents
+                    .contains(&format!(", safeArea = {},", options.safe_area)),
+                "{}",
+                view.contents
+            );
+        }
+    }
 
     #[test]
     fn strings_are_escaped_and_never_interpolated() {

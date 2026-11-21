@@ -192,15 +192,15 @@ Call        = IDENT "(" ArgList? ")" ;
 
 | 元素 | 位置属性 | 事件 | 子节点 |
 | --- | --- | --- | --- |
-| `Column` | — | — | 不限 |
-| `Row` | — | — | 不限 |
-| `Text` | `value` | — | `Span` |
+| `Column` | — | `onTap` | 不限 |
+| `Row` | — | `onTap` | 不限 |
+| `Text` | `value` | `onTap` | `Span` |
 | `Span` | `value` | — | 无 |
 | `Button` | — | `onClick` | 不限 |
 | `Input` | `value` | `onChange(String)`, `onSubmit`, `onFocusChange(Bool)` | 无 |
 | `Checkbox` | `checked` | `onChange(Bool)` | 无 |
-| `Image` | `src` | — | 无 |
-| `Stack` | — | — | 不限 |
+| `Image` | `src` | `onTap` | 无 |
+| `Stack` | — | `onTap` | 不限 |
 | `Scroll` | — | — | 不限 |
 | `Spacer` | — | — | 无 |
 | `Switch` | `checked` | `onChange(Bool)` | 无 |

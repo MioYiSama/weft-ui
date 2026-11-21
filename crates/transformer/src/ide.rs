@@ -681,6 +681,7 @@ component Example(kind: Kind) { Text(kind) }"#;
                 "weight",
                 "italic",
                 "decoration",
+                "onTap",
                 "value",
                 "align",
                 "maxLines",

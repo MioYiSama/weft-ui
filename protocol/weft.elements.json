@@ -184,6 +184,13 @@
         "css": { "property": "text-decoration-line", "unit": "keyword", "keywords": { "lineThrough": "line-through" } },
         "doc": { "en": "Underlines or strikes through the text.", "zh": "为文字添加下划线或删除线。" }
       }
+    ],
+    "tap": [
+      {
+        "name": "onTap", "event": true,
+        "doc": { "en": "Runs when the element is activated; this event has no payload and does not bubble.", "zh": "元素被激活时触发；事件不携带数据，也不会冒泡。" },
+        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      }
     ]
   },
   "features": {
@@ -198,7 +205,7 @@
     {
       "name": "Column",
       "doc": { "en": "Stacks children vertically.", "zh": "将子节点纵向排列。" },
-      "groups": ["layout", "visibility", "padding", "decoration"],
+      "groups": ["layout", "visibility", "padding", "decoration", "tap"],
       "memberSupport": { "padding": {}, "width": {}, "height": {}, "background": {} },
       "children": "any",
       "members": [
@@ -221,7 +228,7 @@
     {
       "name": "Row",
       "doc": { "en": "Places children side by side.", "zh": "将子节点横向排列。" },
-      "groups": ["layout", "visibility", "padding", "decoration"],
+      "groups": ["layout", "visibility", "padding", "decoration", "tap"],
       "memberSupport": { "padding": {}, "width": {}, "height": {}, "background": {} },
       "children": "any",
       "members": [
@@ -244,7 +251,7 @@
     {
       "name": "Text",
       "doc": { "en": "Displays plain text or a sequence of styled spans.", "zh": "显示纯文本或由多个行内片段组成的文本。" },
-      "groups": ["layout", "visibility", "padding", "decoration", "text"],
+      "groups": ["layout", "visibility", "padding", "decoration", "text", "tap"],
       "memberSupport": { "color": {}, "size": {} },
       "children": ["Span"],
       "content": "value",
@@ -390,7 +397,7 @@
     {
       "name": "Image",
       "doc": { "en": "Displays an image from a URL.", "zh": "显示指定 URL 的图片。" },
-      "groups": ["layout", "visibility", "decoration"],
+      "groups": ["layout", "visibility", "decoration", "tap"],
       "memberSupport": { "width": {}, "height": {} },
       "members": [
         {
@@ -405,7 +412,7 @@
     {
       "name": "Stack",
       "doc": { "en": "Overlays children in declaration order.", "zh": "按声明顺序叠放子元素。" },
-      "groups": ["layout", "visibility", "padding", "decoration"],
+      "groups": ["layout", "visibility", "padding", "decoration", "tap"],
       "children": "any",
       "members": [
         {

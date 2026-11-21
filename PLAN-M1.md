@@ -948,11 +948,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R4.n | ☑ | 4090c41 | C-windows（core 19、壳 17）、C-ui 通过；showcase FlaUI 测试验证锁定恢复；Windows 截图已查看 |
 | R4.g | ☑ | f3740d0 | C-linux 7 组、C-ui、原生 conformance 7 项（含 `controls`）通过；showcase 测试验证锁定恢复；Linux 截图已查看 |
 | R5.w | ☑ | 30771d2 | 截图待维护者确认（`inputs`：web、wechat）；C-rust 130 项、C-ts 通过，`inputs` 在三个驱动上一致，tsc 计数不变；Chromium 中确认 5 种 `type` 的属性映射、`enterkeyhint`、UTF-16 截断、提交与焦点；小程序 WXML 属性已核对，模拟器不弹软键盘，数字键盘与回车键文字待真机确认；C-apps 仅 wechat 有差异，已重新录制基线 |
-| R5.a | ☑ | （本提交） | 截图待维护者确认（`inputs`：ios）；C-apple 21 项、iOS C-ui、macOS C-ui 与 showcase 截图（一次运行）通过；iOS showcase 自动化验证焦点、截断与提交；其余 ios 基线 0.000%；含本批共用的 schema、夹具（含新增 `diverges`）、`pages.json`、`pending.json` 与 views 指南的桌面平台说明 |
+| R5.a | ☑ | 1116223 | 截图待维护者确认（`inputs`：ios）；C-apple 21 项、iOS C-ui、macOS C-ui 与 showcase 截图（一次运行）通过；iOS showcase 自动化验证焦点、截断与提交；其余 ios 基线 0.000%；含本批共用的 schema、夹具（含新增 `diverges`）、`pages.json`、`pending.json` 与 views 指南的桌面平台说明 |
 | R5.d | ☑ | 358101f | 截图待维护者确认（`inputs`：android）；C-android、C-ui 与 showcase 仪器测试通过（焦点切换、Search 提交、emoji 截断）；已有截图与快照逐字节不变 |
 | R5.n | ☑ | 9af2989 | C-windows（core 20、壳 24）、C-ui 通过；showcase 测试验证密码遮罩、焦点、回车清空与两处上限的 Unicode 粘贴；Windows 截图已查看 |
 | R5.g | ☑ | a794102 | C-linux 7 组、C-ui、C-core 20 项（含 `conformance.inputs`）通过；showcase 测试验证回车提交、焦点与代理对边界截断；Linux 截图已查看 |
-| R6.w | ☐ | | |
+| R6.w | ☑ | （本提交） | 截图待维护者确认（`tap`：web、wechat）；C-rust 131 项、C-ts 通过，`tap` 在三个驱动上一致，tsc 计数不变；Chromium 中用 Tab、Enter、Space 触发并确认嵌套点击只触发内层；微信开发者工具确认嵌套点击与按压只作用于内层；C-apps 仅 web、wechat 有差异，已重新录制基线 |
 | R6.a | ☐ | | |
 | R6.d | ☐ | | |
 | R6.n | ☐ | | |
@@ -1026,3 +1026,6 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R5.g] GTK 打开页面时自动把焦点给第一个输入框，Web 打开时不聚焦，`inputs` 页初始显示不同。结论：接受，记录在案
 - [R5.d] Android 的 `TextArea` 是 Material 填充样式，`Input` 是描边样式（R4.d 起），同页对比时风格不一致。结论：记录在案，X1 前由维护者决定是否统一
 - [R5 期间] 维护者要求 macOS UI 自动化尽量少、尽量短：每个原生波次只在最后由编排者放行一次，`/tmp/weft-m1/macos-ui.sh <页面>` 依次跑 example 的 C-ui 与只含本任务页面的 showcase 截图；为此新增 `WEFT_SHOT_PAGES`（单独提交 8bbd947）。结论：接受
+- [R6.w] 计划没有写「预期变化」。实际变化：新增 `Tap` 快照与 `tap` 黄金文件；`Gallery`、`Inputs`、`Language`、`TodoList` 的 Web JS 为 `Button` 加阻止冒泡，小程序 `view.wxml` 改用 `catchtap`；所有小程序快照的 `view.wxss` 增加共享规则；两个 IDE 补全的精确断言只加入新的 `onTap` 一项；example 的 web、wechat 产物随之变化。原生快照、原生 example 产物、CSS 与事件槽下标、已有 conformance 黄金文件不变。结论：接受，已重新录制 C-apps 基线
+- [R6.w] 微信的 `text`、`image` 不支持 `hover-class`，WXSS 也不能编译 `:has()`：小程序用外层 `view` 承接按压反馈与按钮角色；Web 另外注入 `:has()` 规则，使按住内层时外层不变暗。结论：接受
+- [R6.w] showcase `tap` 页的图片卡片用内嵌 PNG（data URI），Web 与小程序能显示，原生平台目前不能加载 data URI；卡片主体是色块，图片缺失不影响点击验证。结论：R7 把它换成打包的本地资源

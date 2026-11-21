@@ -322,6 +322,10 @@ impl Gen {
         out.push('<');
         out.push_str(tag);
         out.push_str(fixed);
+        let tappable = props.iter().any(|prop| prop.name == "onTap");
+        if tappable {
+            out.push_str(" role=\"button\" tabindex=\"0\"");
+        }
         for prop in props {
             let PropValue::Expr(expr) = &prop.value else {
                 continue;
@@ -393,6 +397,9 @@ impl Gen {
         out.push_str(class);
         out.push_str(context);
         out.push_str(&classes);
+        if tappable {
+            out.push_str(" w-tap");
+        }
         if fill {
             out.push_str(" w-fill");
         }
@@ -533,9 +540,10 @@ impl Backend for Gen {
                                 control(element).expect("onChange belongs to a controlled element");
                             format!("$.{helper}({n}, ($a) => {{ {body} }});")
                         }
-                        (_, "onClick") => {
-                            format!("{n}.addEventListener(\"click\", () => {{ {body} }});")
+                        (Element::Button, "onClick") => {
+                            format!("{n}.addEventListener(\"click\", ($event) => {{ $event.stopPropagation(); {body} }});")
                         }
+                        (_, "onTap") => format!("$.onTap({n}, () => {{ {body} }});"),
                         (Element::Input, "onSubmit") => {
                             format!("$.onSubmit({n}, () => {{ {body} }});")
                         }

@@ -141,6 +141,22 @@ component SearchBox() {
 }
 ```
 
+## Make an element tappable
+
+Add `onTap` to a `Column`, `Row`, `Stack`, `Text`, or `Image` to make it act as a button. While pressed, the whole element is drawn at 60% of its usual opacity. On the Web, Tab focuses the element and Enter or Space activates it. `onTap` takes no arguments.
+
+```weft
+component TapRow() {
+  state tapCount = 0
+  Row(padding = 12, gap = 8, onTap = { tapCount = tapCount + 1 }) {
+    Text("Taps: ${tapCount}")
+    Text("›")
+  }
+}
+```
+
+When a tappable element contains another tappable element or a `Button` with an `onClick` handler, only the inner handler runs for that click. See the [element reference](/reference/elements/#row) for platform support.
+
 ## Reuse element styles
 
 Declare a `style` at the top level and pass its name to a built-in element:

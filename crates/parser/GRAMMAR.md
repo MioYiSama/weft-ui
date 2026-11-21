@@ -192,15 +192,15 @@ The compiler rejects elements, properties, and events marked unsupported for the
 
 | Element | Positional property | Events | Children |
 | --- | --- | --- | --- |
-| `Column` | — | — | Any |
-| `Row` | — | — | Any |
-| `Text` | `value` | — | `Span` |
+| `Column` | — | `onTap` | Any |
+| `Row` | — | `onTap` | Any |
+| `Text` | `value` | `onTap` | `Span` |
 | `Span` | `value` | — | None |
 | `Button` | — | `onClick` | Any |
 | `Input` | `value` | `onChange(String)`, `onSubmit`, `onFocusChange(Bool)` | None |
 | `Checkbox` | `checked` | `onChange(Bool)` | None |
-| `Image` | `src` | — | None |
-| `Stack` | — | — | Any |
+| `Image` | `src` | `onTap` | None |
+| `Stack` | — | `onTap` | Any |
 | `Scroll` | — | — | Any |
 | `Spacer` | — | — | None |
 | `Switch` | `checked` | `onChange(Bool)` | None |

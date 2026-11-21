@@ -1,0 +1,20 @@
+model TapModel {
+    image: String,
+    opacity: Float,
+}
+
+event Activated(target: String)
+
+component Tap(model: TapModel) {
+    Column(opacity = model.opacity, onTap = { Activated("column") }) {
+        Row(opacity = 0.8, gap = 8, onTap = { Activated("row") }) {
+            Button(onClick = { Activated("button") }) { Text("Button") }
+            Text(maxLines = 2, onTap = { Activated("text") }) {
+                Span("Tap me", weight = "semibold")
+            }
+        }
+        Stack(onTap = { Activated("stack") }) {
+            Image(model.image, width = 48, height = 48, onTap = { Activated("image") })
+        }
+    }
+}

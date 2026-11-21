@@ -46,7 +46,7 @@ export function Inputs$c(app, args, children, depth) {
   $.focused(n2, false);
   $.onFocusChange(n2, ($a) => { c.state(3, $a); });
   n3.textContent = (c.s[3] ? "Focused" : "Not focused");
-  n5.addEventListener("click", () => { c.state(2, (!c.s[2])); });
+  n5.addEventListener("click", ($event) => { $event.stopPropagation(); c.state(2, (!c.s[2])); });
   c.init(f);
   c.u = () => {
     if (c.d[0] & 8) $.value(n0, c.s[0]);

@@ -127,6 +127,13 @@ const INPUTS: Fixture = Fixture {
     diverges: &[Platform::Macos, Platform::Windows, Platform::Linux],
 };
 
+const TAP: Fixture = Fixture {
+    name: "Tap",
+    source: include_str!("fixtures/Tap.weft"),
+    natives: &[],
+    diverges: &[],
+};
+
 /// Every generated file of the app, as the platform's output directory would
 /// hold it: logic modules at `X.js` / `X.d.ts`, then the view files.
 fn generated_files(output: AppOutput) -> BTreeMap<String, String> {
@@ -232,6 +239,11 @@ fn controls() {
 #[test]
 fn inputs() {
     check_fixture(&INPUTS);
+}
+
+#[test]
+fn tap() {
+    check_fixture(&TAP);
 }
 
 fn check_fixture(fixture: &Fixture) {

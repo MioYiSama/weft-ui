@@ -16,6 +16,7 @@ import { script as controls } from "../fixtures/controls/script.ts";
 import { script as gallery } from "../fixtures/gallery/script.ts";
 import { script as inputs } from "../fixtures/inputs/script.ts";
 import { script as language } from "../fixtures/language/script.ts";
+import { script as tap } from "../fixtures/tap/script.ts";
 import { script as theme } from "../fixtures/theme/script.ts";
 import { script as todo } from "../fixtures/todo/script.ts";
 
@@ -26,6 +27,7 @@ const fixtures: [string, Script<AppLike>][] = [
   ["gallery", gallery as unknown as Script<AppLike>],
   ["inputs", inputs as unknown as Script<AppLike>],
   ["language", language as unknown as Script<AppLike>],
+  ["tap", tap as unknown as Script<AppLike>],
   ["theme", theme as unknown as Script<AppLike>],
 ];
 
@@ -62,6 +64,7 @@ test.each(fixtures)("%s renders alike on every platform and matches its golden o
     if (name === "controls") expect(renderer.log).toEqual(["switch true", "slider 45", "picker 0", "note First\nSecond", "picker 1"]);
     if (name === "inputs") expect(renderer.log).toEqual(["draft abcde", "submit", "focus true", "note a😀bc", "note abcd", "focus false"]);
     if (name === "language") expect(renderer.log).toEqual(["Rated 1", "Rated 2", "Rated 4", "Rated 5"]);
+    if (name === "tap") expect(renderer.log).toEqual(["row", "button", "text", "image"]);
     for (const driver of drivers) driver.app.unmount();
   } finally {
     await rm(built.out, { recursive: true, force: true });

@@ -52,7 +52,7 @@ export interface View {
   $sink?: WechatSink;
 }
 
-/** The event object of `bindtap` / `bindinput` / `bindchange`. */
+/** The event object of WXML `bind` and `catch` handlers. */
 interface ViewEvent {
   type: string;
   currentTarget: { dataset: Data };

@@ -1,0 +1,54 @@
+style TapLabel { color = "#173643", size = 16, weight = "semibold" }
+style TapNote { color = "#45606c", size = 13 }
+
+component Tap() {
+    state rows = 0
+    state buttons = 0
+    state texts = 0
+    state images = 0
+
+    Scroll(fill = true, background = "#f2f6f8", indicators = false) {
+        Column(fill = true, padding = 20, gap = 14) {
+            Column(fill = true, gap = 5) {
+                Text("Tap targets", color = "#173643", size = 29, weight = "bold")
+                Text("Click a target or focus it with Tab.", style = TapNote)
+            }
+            Column(fill = true, gap = 5, padding = 12, background = "#e0ecf0", radius = 10) {
+                Row(fill = true, justify = "spaceBetween") {
+                    Text("Rows: ${rows}", style = TapLabel)
+                    Text("Cards: ${images}", style = TapLabel)
+                }
+                Row(fill = true, justify = "spaceBetween") {
+                    Text("Buttons: ${buttons}", style = TapNote)
+                    Text("Text: ${texts}", style = TapNote)
+                }
+            }
+            Row(fill = true, justify = "spaceBetween", align = "center", padding = 14,
+                background = "#ffffff", radius = 10, opacity = 0.85,
+                onTap = { rows = rows + 1 }) {
+                Text("Open details", style = TapLabel)
+                Text("›", color = "#176a7a", size = 22)
+            }
+            Row(fill = true, justify = "spaceBetween", align = "center", padding = 14,
+                background = "#ffffff", radius = 10, onTap = { rows = rows + 1 }) {
+                Text("Nested actions", style = TapLabel)
+                Button(onClick = { buttons = buttons + 1 }) { Text("Save") }
+                Text("Preview", color = "#176a7a", size = 15, weight = "semibold",
+                    onTap = { texts = texts + 1 })
+            }
+            Row(fill = true, align = "center", gap = 12, padding = 16,
+                background = "#194e61", radius = 12, onTap = { images = images + 1 }) {
+                // The colored tile stays visible even on hosts without a data-URL image loader.
+                Stack(width = 48, height = 48, alignment = "center", background = "#28677b", radius = 8) {
+                    Image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAf0lEQVR4nO3RwQ2AIAyFYbZ2O3dwAg8OgtFEY1Aqhdf28pr0yv+lpMThcIwmL1MOC5cLDczrJj5oCjji17bGYYhnXIswidcQcIAU/7vEULg1LiHc4nBET7yGUMNG4iVCfR1EvPuLrOMiwiv+ifCOvxBRgBsRCTgRBBBAAAHRgB2p2M047p3XawAAAABJRU5ErkJggg==",
+                        width = 32, height = 32, onTap = { images = images + 1 })
+                }
+                Column(grow = 1, gap = 4) {
+                    Text("Image card", color = "#ffffff", size = 17, weight = "semibold")
+                    Text("Tap the image or the card", color = "#c3e3e9", size = 13)
+                }
+                Text("›", color = "#c3e3e9", size = 22)
+            }
+        }
+    }
+}

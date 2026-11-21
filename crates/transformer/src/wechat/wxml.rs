@@ -248,6 +248,10 @@ impl Markup<'_> {
         let element = *element;
         self.has_textarea |= element == Element::TextArea;
         let (tag, mut class, mut fixed) = tag(element);
+        let tappable = props.iter().any(|prop| prop.name == "onTap");
+        // Unlike view, text and image do not implement WeChat's hover behavior.
+        let wraps_text = tappable && element == Element::Text;
+        let wraps_image = tappable && element == Element::Image;
         if matches!(element, Element::Input | Element::TextArea)
             && props.iter().any(|prop| prop.name == "maxLength")
         {
@@ -257,6 +261,7 @@ impl Markup<'_> {
         let mut default_grow = element == Element::Scroll;
         let mut default_fill = element == Element::Scroll;
         let mut attrs = String::new();
+        let mut image_attrs = String::new();
         let mut classes = String::new();
         let mut style = String::new();
         let mut inner_style = String::new();
@@ -273,6 +278,11 @@ impl Markup<'_> {
             let value = prop_value(self.layout, self.id, id, index, prop, target);
             let key = value_key(id, index);
             let binding = fmt::from_fn(|out| write!(out, "{{{{{prefix}{key}}}}}"));
+            let attrs = if wraps_image && prop.name == "src" {
+                &mut image_attrs
+            } else {
+                &mut attrs
+            };
             match (target, value) {
                 (Target::Text, value) => text = Some((index, value)),
                 (Target::Attr(name), Value::Inline(Constant::String(s))) => {
@@ -426,29 +436,59 @@ impl Markup<'_> {
         if default_fill {
             classes.push_str(" w-fill");
         }
+        if wraps_image {
+            classes.push_str(" w-wx-tap-image");
+        }
+        let outer_tag = if wraps_text || wraps_image {
+            "view"
+        } else {
+            tag
+        };
         let _ = write!(
             out,
-            "<{tag} class=\"{class}{}{classes}\"{fixed}{attrs}",
+            "<{outer_tag} class=\"{class}{}{classes}\"{fixed}{attrs}",
             parent.class()
         );
+        if tappable {
+            out.push_str(concat!(
+                " aria-role=\"button\" hover-class=\"w-pressed\"",
+                " hover-start-time=\"{{0}}\" hover-stay-time=\"{{0}}\"",
+            ));
+        }
         let (template, local) = self.layout.location(self.id, id);
         for (k, (_, event)) in self.layout.template(template).events(local).enumerate() {
             let key = event_key(id, k);
             for kind in event_types(element, event.event) {
+                let binding = if *kind == "tap" {
+                    out.push_str(" hover-stop-propagation=\"{{true}}\"");
+                    "catch"
+                } else {
+                    "bind"
+                };
                 let _ = write!(
                     out,
-                    " bind{kind}=\"$e\" data-e{kind}=\"{{{{{prefix}{key}}}}}\""
+                    " {binding}{kind}=\"$e\" data-e{kind}=\"{{{{{prefix}{key}}}}}\""
                 );
             }
         }
         if !style.is_empty() {
             let _ = write!(out, " style=\"{style}\"");
         }
+        if wraps_image {
+            let _ = write!(
+                out,
+                "><image class=\"w-wx-tap-image-content\"{image_attrs}/></view>"
+            );
+            return;
+        }
         if is_void(element) {
             out.push_str("/>");
             return;
         }
         out.push('>');
+        if wraps_text {
+            out.push_str("<text>");
+        }
         match text {
             Some((_, Value::Inline(Constant::String(text)))) => out.push_str(text),
             Some((_, Value::Inline(_))) => unreachable!("text content is a string"),
@@ -481,7 +521,9 @@ impl Markup<'_> {
         self.nodes(children, prefix, Parent::of(element), out);
         if element == Element::Scroll {
             out.push_str("</view>");
+        } else if wraps_text {
+            out.push_str("</text>");
         }
-        let _ = write!(out, "</{tag}>");
+        let _ = write!(out, "</{outer_tag}>");
     }
 }

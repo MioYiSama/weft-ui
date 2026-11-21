@@ -62,9 +62,9 @@ export interface TestView {
   texts(): string[];
   /** Rendered elements with tag `tag`, in document order. */
   all(tag: string): Element[];
-  /** Fires an event bound on the element. */
+  /** Fires a bound event; taps propagate until a catch handler stops them. */
   fire(element: Element, type: string, value?: unknown): unknown;
-  /** Fires the element's `bindtap`. */
+  /** Taps the element. */
   tap(element: Element): void;
   /** Fires `bindinput`; returns what the handler returned (the replacement text, if any). */
   input(element: Element, value: string): unknown;
@@ -253,21 +253,32 @@ function createView(options: ViewOptions, templates: Templates): TestView {
   return view;
 }
 
+const parents = new WeakMap<Element, Element>();
+
 function fire(view: TestView & Data, element: Element, type: string, value: unknown): unknown {
-  const attr = `bind${type}`;
-  const method = element.attrs[attr];
-  if (typeof method !== "string") throw new Error(`<${element.tag}> has no ${attr}`);
-  const handler = view[method];
-  if (typeof handler !== "function") throw new Error(`the view has no method ${method}`);
+  const bindAttr = `bind${type}`;
+  const catchAttr = `catch${type}`;
   const key = `e${type}`;
-  if (type === "input" && typeof value === "string") {
-    value = limitInput(value, Number(element.attrs.maxlength ?? 140));
+  let handled = false;
+  let result: unknown;
+  for (let node: Element | undefined = element; node; node = type === "tap" ? parents.get(node) : undefined) {
+    const method = node.attrs[catchAttr] ?? node.attrs[bindAttr];
+    if (typeof method !== "string") continue;
+    const handler = view[method];
+    if (typeof handler !== "function") throw new Error(`the view has no method ${method}`);
+    if (type === "input" && typeof value === "string") {
+      value = limitInput(value, Number(node.attrs.maxlength ?? 140));
+    }
+    result = handler.call(view, {
+      type,
+      currentTarget: { dataset: { [key]: node.attrs[`data-${key}`] } },
+      detail: { value },
+    });
+    handled = true;
+    if (catchAttr in node.attrs) break;
   }
-  return handler.call(view, {
-    type,
-    currentTarget: { dataset: { [key]: element.attrs[`data-${key}`] } },
-    detail: { value },
-  });
+  if (!handled) throw new Error(`<${element.tag}> has no ${bindAttr} or ${catchAttr} handler`);
+  return result;
 }
 
 /** Applies a `setData` path such as `r.b8.l7[2].n3_0`. */
@@ -388,7 +399,11 @@ function renderElement(node: Source, scope: Scope, templates: Templates, out: (E
   }
   const children: (Element | string)[] = [];
   renderInto(node.children, scope, templates, children);
-  out.push({ tag: node.tag, attrs, children });
+  const element = { tag: node.tag, attrs, children };
+  for (const child of children) {
+    if (typeof child !== "string") parents.set(child, element);
+  }
+  out.push(element);
 }
 
 /** An attribute value: a lone `{{expr}}` keeps its type, anything else is a string. */

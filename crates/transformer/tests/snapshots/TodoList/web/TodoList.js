@@ -40,7 +40,7 @@ export function TodoList$c(app, args, children, depth) {
   const n8 = n2.nextSibling;
   $.value(n0, c.p[0].$v[1]);
   $.input(n0, ($a) => { c.app.$emit("TextChanged", { value: $a }); });
-  n2.addEventListener("click", () => { c.state(0, (!c.s[0])); });
+  n2.addEventListener("click", ($event) => { $event.stopPropagation(); c.state(0, (!c.s[0])); });
   n1.textContent = (c.s[0] ? "collapse" : "expand");
   const i8 = new $.Branches(n8, (i) => {
     switch (i) {
@@ -56,7 +56,7 @@ export function TodoList$c(app, args, children, depth) {
           const n5 = n3.nextSibling;
           const n4 = n5.firstChild;
           n3.textContent = r0.item.$v[1];
-          n5.addEventListener("click", () => { c.app.$emit("Remove", { id: r0.item.$v[0] }); });
+          n5.addEventListener("click", ($event) => { $event.stopPropagation(); c.app.$emit("Remove", { id: r0.item.$v[0] }); });
           r0.init(f);
           r0.u = () => {
             if (r0.d[0] & 2) n3.textContent = r0.item.$v[1];

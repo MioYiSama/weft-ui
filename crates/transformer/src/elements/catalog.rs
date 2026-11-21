@@ -381,6 +381,11 @@ input.w-switch:disabled{opacity:.45;cursor:default}
 .w-divider,.w-divider-v{align-self:stretch;background-color:#0000001f}
 .w-divider{height:1px}
 .w-divider-v{width:1px}
+.w-tap{cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* The filter multiplies the bound opacity, including any inline value. */
+.w-pressed{filter:opacity(.6)}
+.w-wx-tap-image{display:inline-block;width:320px;height:240px}
+.w-wx-tap-image-content{display:block;width:100%;height:100%;border-radius:inherit}
 /* The mini program scroll-view owns its viewport; its child owns the layout. */
 .w-scroll-content-v,.w-scroll-content-h{display:flex;align-items:flex-start;flex:none}
 .w-scroll-content-v{flex-direction:column;width:100%;min-height:100%}
@@ -702,6 +707,22 @@ const PROPS_0: &[PropSpec] = &[
         css: Some(30),
         controlled_by: None,
         support: &[],
+    },
+    PropSpec {
+        name: "onTap",
+        kind: PropKind::Handler { payload: None },
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
     },
     PropSpec {
         name: "gap",
@@ -1095,6 +1116,22 @@ const PROPS_1: &[PropSpec] = &[
         css: Some(38),
         controlled_by: None,
         support: &[],
+    },
+    PropSpec {
+        name: "onTap",
+        kind: PropKind::Handler { payload: None },
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
     },
     PropSpec {
         name: "value",
@@ -2162,6 +2199,22 @@ const PROPS_6: &[PropSpec] = &[
         support: &[],
     },
     PropSpec {
+        name: "onTap",
+        kind: PropKind::Handler { payload: None },
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
+    },
+    PropSpec {
         name: "src",
         kind: PropKind::Value(PropType::String),
         positional: true,
@@ -2483,6 +2536,22 @@ const PROPS_7: &[PropSpec] = &[
         css: Some(30),
         controlled_by: None,
         support: &[],
+    },
+    PropSpec {
+        name: "onTap",
+        kind: PropKind::Handler { payload: None },
+        positional: false,
+        required: false,
+        constant: false,
+        css: None,
+        controlled_by: None,
+        support: &[
+            (Platform::Ios, Level::No),
+            (Platform::Macos, Level::No),
+            (Platform::Android, Level::No),
+            (Platform::Windows, Level::No),
+            (Platform::Linux, Level::No),
+        ],
     },
     PropSpec {
         name: "alignment",

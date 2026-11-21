@@ -113,7 +113,8 @@ function nth<R>(found: [R, string][], type: string, index: number): R {
 function actionEvent(type: string, name?: string): { dom: string; wechat: string } {
   const first = ["Input", "TextArea", "Checkbox", "Switch", "Slider", "Picker"].includes(type) ? "onChange" : "onClick";
   switch (name ?? first) {
-    case "onClick": return { dom: "click", wechat: "tap" };
+    case "onClick":
+    case "onTap": return { dom: "click", wechat: "tap" };
     case "onSubmit": return { dom: "keydown", wechat: "confirm" };
     case "onChange": {
       if (type === "Slider") return { dom: "input", wechat: "changing" };
@@ -220,6 +221,12 @@ function wxClassify(e: WxElement | string): Classified<WxElement | string> | nul
   switch (e.tag) {
     case "view": {
       const classes = String(e.attrs.class).split(/\s+/);
+      if (classes.includes("w-wx-tap-image")) {
+        const image = e.children[0];
+        if (!image || typeof image === "string") throw new Error("expected a tappable image");
+        return { type: "Image", props: { src: String(image.attrs.src ?? "") }, children: [] };
+      }
+      if (classes.includes("w-text")) return { type: "Text", props: { value: text(e) }, children: [] };
       const type = containerType((name) => classes.includes(name));
       if (type === "Progress") {
         const bar = e.children[0];

@@ -79,10 +79,10 @@ export function Rating$c(app, args, children, depth) {
   const n5 = n6.firstChild;
   n0.textContent = ("Rating: " + $.str(c.p[0]));
   const $h2_onClick = 1;
-  n2.addEventListener("click", () => { c.p[1]?.($h2_onClick); });
-  n4.addEventListener("click", () => { c.p[1]?.(2); });
+  n2.addEventListener("click", ($event) => { $event.stopPropagation(); c.p[1]?.($h2_onClick); });
+  n4.addEventListener("click", ($event) => { $event.stopPropagation(); c.p[1]?.(2); });
   let $h6_onClick = c.p[0];
-  n6.addEventListener("click", () => { c.p[1]?.($h6_onClick); });
+  n6.addEventListener("click", ($event) => { $event.stopPropagation(); c.p[1]?.($h6_onClick); });
   c.init(f);
   c.u = () => {
     if (c.d[0] & 1) n0.textContent = ("Rating: " + $.str(c.p[0]));

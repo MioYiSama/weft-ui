@@ -93,7 +93,7 @@ pub(crate) fn event_types(element: Element, event: &str) -> &'static [&'static s
         (Element::Input | Element::TextArea, "onFocusChange") => &["focus", "blur"],
         (Element::Checkbox | Element::Switch | Element::Picker, "onChange") => &["change"],
         (Element::Slider, "onChange") => &["changing", "change"],
-        (Element::Button, "onClick") => &["tap"],
+        (Element::Button, "onClick") | (_, "onTap") => &["tap"],
         _ => unreachable!("`{}` has no handler `{event}`", element.name()),
     }
 }

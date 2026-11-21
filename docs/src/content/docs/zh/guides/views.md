@@ -141,6 +141,22 @@ component SearchBox() {
 }
 ```
 
+## 让元素可点击
+
+给 `Column`、`Row`、`Stack`、`Text` 或 `Image` 加上 `onTap`，就能像按钮一样点击它。按住时，整个元素的不透明度降为平时的 60%。在 Web 上，可用 Tab 聚焦，再按 Enter 或空格激活。`onTap` 不接收参数。
+
+```weft
+component TapRow() {
+  state tapCount = 0
+  Row(padding = 12, gap = 8, onTap = { tapCount = tapCount + 1 }) {
+    Text("点击次数：${tapCount}")
+    Text("›")
+  }
+}
+```
+
+如果可点击元素内部还有带 `onTap` 的元素，或带 `onClick` 的 `Button`，点击内层时只执行内层的处理器。各平台的支持情况见[元素参考](/zh/reference/elements/#row)。
+
 ## 复用元素样式
 
 在文件顶层声明 `style`，再把样式名传给内置元素：

@@ -50,6 +50,10 @@ Stacks children vertically.
 | `align` | `CrossAlign` | `"start"` | Positions children on the horizontal cross axis. | — |
 | `justify` | `Justify` | `"start"` | Distributes remaining space on the vertical main axis. | — |
 
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+
 ## Row
 
 Places children side by side.
@@ -92,6 +96,10 @@ Places children side by side.
 | `gap` | `Int` | `0` | Adds space between neighboring children. | — |
 | `align` | `CrossAlign` | `"start"` | Positions children on the vertical cross axis. | — |
 | `justify` | `Justify` | `"start"` | Distributes remaining space on the horizontal main axis. | — |
+
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 
 ## Text
 
@@ -142,6 +150,10 @@ Only these direct child elements are accepted: `Span`.
 | `maxLines` | `Int` | `0` | Truncates overflowing lines with an ellipsis; zero or less leaves the text unlimited. | — |
 | `lineHeight` | `Int` | — | Sets the line height in logical pixels. | — |
 | `bold` | `Bool` | — | Displays the text in bold. | — |
+
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 
 ## Span
 
@@ -299,6 +311,10 @@ Displays an image from a URL.
 | `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `src` (positional) | `String` | Required | The image URL. | — |
 
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+
 ## Stack
 
 Overlays children in declaration order.
@@ -339,6 +355,10 @@ Overlays children in declaration order.
 | `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
 | `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `alignment` | `Alignment` | `"topStart"` | Positions children along both axes of the stack. | — |
+
+| Event | Payload | Description | Platform exceptions |
+| --- | --- | --- | --- |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
 
 ## Scroll
 

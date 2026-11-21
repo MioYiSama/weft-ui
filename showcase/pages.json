@@ -16,5 +16,10 @@
   {
     "id": "inputs",
     "title": "Inputs"
+  },
+  {
+    "id": "tap",
+    "title": "Tap",
+    "pending": ["ios", "macos", "android", "windows", "linux"]
   }
 ]

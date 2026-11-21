@@ -137,7 +137,7 @@ WXML renders only `{{key}}`. The `setData` paths are paths in the block data tre
 | Key             | Contents |
 | --------------- | -------- |
 | `n{N}_{i}`      | Property value or text. |
-| `e{N}_{k}`      | Handler ID (assigned by the sink) for the element's `k`-th event, zero-based. WXML binds `bind<type>="$e"` and `data-e<type>="{{e{N}_{k}}}"`, where `type` is the lowercase mini program event name. |
+| `e{N}_{k}`      | Handler ID (assigned by the sink) for the element's `k`-th event, zero-based. WXML binds `bind<type>="$e"` and `data-e<type>="{{e{N}_{k}}}"`, where `type` is the lowercase mini program event name. The `tap` type uses `catchtap` instead of `bindtap` so only the innermost handler runs. |
 | `i{N}` / `b{N}` | Current `if` branch index / branch data. |
 | `l{N}`          | Array of `for` rows. Each row carries `k` (the row's scope ID, used as `wx:key`). |
 | `c{N}`          | Component instance data. |

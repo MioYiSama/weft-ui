@@ -390,7 +390,8 @@ export class App extends AppBase {
     if (!doc.querySelector("style[data-weft]")) {
       const base = doc.createElement("style");
       base.dataset.weft = "";
-      base.textContent = `${CSS}\n:root{color-scheme:light dark}`;
+      // WXSS cannot compile :has(); WeChat stops ancestor hover via WXML instead.
+      base.textContent = `${CSS}\n:root{color-scheme:light dark}\n.w-tap:active:not(:has(.w-tap:active,.w-button:active)){filter:opacity(.6)}`;
       doc.head.append(base);
     }
     if (target.nodeType === 1) (target as Element).classList.add("w-root");
@@ -531,6 +532,36 @@ export function focused(node: TextControl, value: boolean): void {
       if (node.$focused && node.isConnected) node.focus();
     });
   }
+}
+
+/** Gives a non-button DOM element button keyboard behavior. */
+export function onTap(node: HTMLElement, handler: () => void): void {
+  node.addEventListener("click", (event) => {
+    event.stopPropagation();
+    handler();
+  });
+  let pressedKey: string | undefined;
+  node.addEventListener("keydown", (event) => {
+    if (event.target !== node || (event.key !== "Enter" && event.key !== " ") || event.isComposing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.repeat || pressedKey !== undefined) return;
+    pressedKey = event.key;
+    node.classList.add("w-pressed");
+    if (pressedKey === "Enter") node.click();
+  });
+  node.addEventListener("keyup", (event) => {
+    if (event.target !== node || event.key !== pressedKey) return;
+    event.preventDefault();
+    event.stopPropagation();
+    pressedKey = undefined;
+    node.classList.remove("w-pressed");
+    if (event.key === " ") node.click();
+  });
+  node.addEventListener("blur", () => {
+    pressedKey = undefined;
+    node.classList.remove("w-pressed");
+  });
 }
 
 export function onSubmit(node: HTMLInputElement, handler: () => void): void {

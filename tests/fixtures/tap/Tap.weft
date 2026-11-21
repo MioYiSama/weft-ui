@@ -1,0 +1,22 @@
+event Activated(target: String)
+
+model TapModel { image: String }
+
+component Tap(model: TapModel) {
+    state rows = 0
+    state buttons = 0
+    state texts = 0
+    state images = 0
+    Column {
+        Row(onTap = { rows = rows + 1; Activated("row") }) {
+            Text("Rows: ${rows}")
+            Button(onClick = { buttons = buttons + 1; Activated("button") }) {
+                Text("Buttons: ${buttons}")
+            }
+            Text("Texts: ${texts}", onTap = { texts = texts + 1; Activated("text") })
+        }
+        Image(model.image, width = 32, height = 32,
+            onTap = { images = images + 1; Activated("image") })
+        Text("Images: ${images}")
+    }
+}

@@ -58,7 +58,7 @@ export function Panel$c(app, args, children, depth) {
   const n1 = n2.firstChild;
   const y0 = c.children[0]?.create() ?? null;
   if (y0) y0.mount(n0.parentNode, n0);
-  n2.addEventListener("click", () => { c.state(0, c.s[0] + 1); });
+  n2.addEventListener("click", ($event) => { $event.stopPropagation(); c.state(0, c.s[0] + 1); });
   n1.textContent = ("Panel clicks: " + $.str(c.s[0]));
   c.init(f);
   c.u = () => {

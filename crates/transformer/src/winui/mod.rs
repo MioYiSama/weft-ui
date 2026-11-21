@@ -69,6 +69,10 @@ fn generate(layout: &ViewLayout) -> String {
         "public const ulong LayoutHash = 0x{:016x}UL;",
         layout.hash()
     ));
+    out.writer.line(format_args!(
+        "public const bool SafeArea = {};",
+        layout.safe_area()
+    ));
     out.writer.blank();
     out.writer.line(
         "/// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>",
@@ -78,7 +82,7 @@ fn generate(layout: &ViewLayout) -> String {
         out.writer
             .line("public static Microsoft.UI.Xaml.UIElement Start() =>");
         out.writer.indent();
-        out.open("WeftSession.Start(LayoutHash, MakeScope, WeftTheme.Register(new()");
+        out.open("WeftSession.Start(LayoutHash, SafeArea, MakeScope, WeftTheme.Register(new()");
         for (name, light, dark) in layout.theme() {
             out.writer.line(format_args!(
                 "[{}] = ({}, {}),",
@@ -90,7 +94,7 @@ fn generate(layout: &ViewLayout) -> String {
         out.close("));");
         out.writer.dedent();
     } else {
-        out.writer.line("public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);");
+        out.writer.line("public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, SafeArea, MakeScope);");
     }
     out.writer.blank();
     out.writer
@@ -185,6 +189,8 @@ fn scope(out: &mut Code, index: usize, template: &Template, has_theme: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::transform::Platform;
+    use crate::{AppOptions, compile_app};
     use weft_ui_parser::MemoryLoader;
 
     fn csharp(source: &str) -> String {
@@ -195,6 +201,31 @@ mod tests {
             panic!("{}", compilation.render_diagnostics());
         };
         generate(&ViewLayout::new(program))
+    }
+
+    #[test]
+    fn registers_safe_area_opt_out() {
+        let mut loader = MemoryLoader::new();
+        loader.insert("App.weft", "component App() { Text(\"hello\") }");
+        let output = compile_app(
+            weft_ui_parser::load(&["App.weft"], &mut loader),
+            Platform::Windows,
+            &AppOptions { safe_area: false },
+        );
+        let generated = output
+            .views
+            .iter()
+            .find(|view| view.path == VIEWS)
+            .unwrap_or_else(|| panic!("{}", output.compilation.render_diagnostics()));
+        for expected in [
+            "public const bool SafeArea = false;",
+            "WeftSession.Start(LayoutHash, SafeArea, MakeScope);",
+        ] {
+            assert!(
+                generated.contents.contains(expected),
+                "missing {expected:?}"
+            );
+        }
     }
 
     #[test]

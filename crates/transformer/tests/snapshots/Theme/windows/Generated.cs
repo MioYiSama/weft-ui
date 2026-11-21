@@ -11,10 +11,11 @@ public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
     public const ulong LayoutHash = 0x7cc75271705805faUL;
+    public const bool SafeArea = true;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
     public static Microsoft.UI.Xaml.UIElement Start() =>
-        WeftSession.Start(LayoutHash, MakeScope, WeftTheme.Register(new()
+        WeftSession.Start(LayoutHash, SafeArea, MakeScope, WeftTheme.Register(new()
         {
             ["accent"] = (0x0a84ffffu, 0x409cffffu),
         }));

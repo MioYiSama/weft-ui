@@ -11,9 +11,10 @@ public static class WeftApp
 {
     /// <summary>Hash of the layout; the kernel refuses bundles compiled with another layout.</summary>
     public const ulong LayoutHash = 0xd2a4d4e0ff976a2eUL;
+    public const bool SafeArea = true;
 
     /// <summary>Starts the app's bundle in the kernel and returns its root view.</summary>
-    public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, MakeScope);
+    public static Microsoft.UI.Xaml.UIElement Start() => WeftSession.Start(LayoutHash, SafeArea, MakeScope);
 
     /// <summary>Scope of a <c>create</c> op.</summary>
     private static WeftScope? MakeScope(uint template, uint id, WeftSession session) => template switch

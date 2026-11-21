@@ -80,8 +80,12 @@ public abstract class WeftScope
 /// <summary>Scope 0: holds the root component instance at mount point 0.</summary>
 internal sealed class WeftRootScope : WeftScope
 {
-    public WeftRootScope(WeftSession session, Panel panel) : base(0, session, 1)
+    // WinUI content already has zero safe-area insets, so this does not affect layout.
+    internal bool SafeArea { get; }
+
+    public WeftRootScope(WeftSession session, Panel panel, bool safeArea) : base(0, session, 1)
     {
+        SafeArea = safeArea;
         new WeftRegion(panel).Point(this, 0);
     }
 }

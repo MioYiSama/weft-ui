@@ -61,7 +61,7 @@ public sealed class WeftSession
     /// whose views implement the layout with hash <paramref name="layoutHash"/>,
     /// and returns its root layout, showing the startup error if the app failed.
     /// </summary>
-    public static UIElement Start(ulong layoutHash, Factory make, WeftTheme? theme = null)
+    public static UIElement Start(ulong layoutHash, bool safeArea, Factory make, WeftTheme? theme = null)
     {
         // A ThemeResource stays live when the appearance changes, unlike a resource dictionary lookup.
         var root = new WeftLinearPanel(WeftAxis.Vertical, fillAvailable: true)
@@ -72,11 +72,11 @@ public sealed class WeftSession
                 </Style>
                 """),
         };
-        _ = new WeftSession(Path.Combine(AppContext.BaseDirectory, "weft", "bundle.hbc"), layoutHash, make, root, theme);
+        _ = new WeftSession(Path.Combine(AppContext.BaseDirectory, "weft", "bundle.hbc"), layoutHash, safeArea, make, root, theme);
         return root;
     }
 
-    private unsafe WeftSession(string bundle, ulong layoutHash, Factory make, Panel root, WeftTheme? theme)
+    private unsafe WeftSession(string bundle, ulong layoutHash, bool safeArea, Factory make, Panel root, WeftTheme? theme)
     {
         this.make = make;
         this.root = root;
@@ -91,7 +91,7 @@ public sealed class WeftSession
             timer.Stop();
             if (runtime != 0) Native.RuntimeTick(runtime);
         };
-        scopes[0] = new WeftRootScope(this, root);
+        scopes[0] = new WeftRootScope(this, root, safeArea);
 
         byte[] data;
         try

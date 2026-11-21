@@ -101,7 +101,15 @@ impl Body<'_> {
                 let (_, slot) = controlled.expect("controlled elements have value slots");
                 args.push(format_args!("s.v{slot}"));
                 match element {
-                    Element::Input | Element::TextArea => &["placeholder", "disabled"],
+                    Element::Input => &[
+                        "placeholder",
+                        "disabled",
+                        "type",
+                        "returnKey",
+                        "maxLength",
+                        "focused",
+                    ],
+                    Element::TextArea => &["placeholder", "disabled", "maxLength", "focused"],
                     Element::Slider => &["min", "max", "step", "disabled"],
                     Element::Picker => &["options", "placeholder", "disabled"],
                     _ => &["disabled"],
@@ -142,9 +150,23 @@ impl Body<'_> {
                 "direction" => Some("Axis"),
                 "weight" => Some("Weight"),
                 "decoration" => Some("Decoration"),
+                "type" => Some("InputType"),
+                "returnKey" => Some("ReturnKey"),
                 _ => None,
             };
             args.push(format_args!("{name} = {}", KotlinProp(value, union)));
+        }
+        if element == Element::Input
+            && let Some(slot) = self.template.event(node, "onSubmit")
+        {
+            args.push(format_args!("onSubmit = {{ s.dispatch({slot}) }}"));
+        }
+        if matches!(element, Element::Input | Element::TextArea)
+            && let Some(slot) = self.template.event(node, "onFocusChange")
+        {
+            args.push(format_args!(
+                "onFocusChange = {{ s.dispatch({slot}, WeftValue.Bool(it)) }}"
+            ));
         }
         modifiers(&mut args, prop);
         args.finish(matches!(

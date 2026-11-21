@@ -188,8 +188,7 @@
     "tap": [
       {
         "name": "onTap", "event": true,
-        "doc": { "en": "Runs when the element is activated; this event has no payload and does not bubble.", "zh": "元素被激活时触发；事件不携带数据，也不会冒泡。" },
-        "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+        "doc": { "en": "Runs when the element is activated; this event has no payload and does not bubble.", "zh": "元素被激活时触发；事件不携带数据，也不会冒泡。" }
       }
     ]
   },

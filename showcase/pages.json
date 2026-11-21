@@ -19,7 +19,6 @@
   },
   {
     "id": "tap",
-    "title": "Tap",
-    "pending": ["ios", "macos", "android", "windows", "linux"]
+    "title": "Tap"
   }
 ]

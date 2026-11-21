@@ -716,13 +716,7 @@ const PROPS_0: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "gap",
@@ -1125,13 +1119,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "value",
@@ -2206,13 +2194,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "src",
@@ -2545,13 +2527,7 @@ const PROPS_7: &[PropSpec] = &[
         constant: false,
         css: None,
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "alignment",

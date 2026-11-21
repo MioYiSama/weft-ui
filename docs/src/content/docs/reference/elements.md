@@ -52,7 +52,7 @@ Stacks children vertically.
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
-| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | — |
 
 ## Row
 
@@ -99,7 +99,7 @@ Places children side by side.
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
-| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | — |
 
 ## Text
 
@@ -153,7 +153,7 @@ Only these direct child elements are accepted: `Span`.
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
-| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | — |
 
 ## Span
 
@@ -313,7 +313,7 @@ Displays an image from a URL.
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
-| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | — |
 
 ## Stack
 
@@ -358,7 +358,7 @@ Overlays children in declaration order.
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
-| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `onTap` | — | Runs when the element is activated; this event has no payload and does not bubble. | — |
 
 ## Scroll
 

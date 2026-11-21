@@ -56,6 +56,19 @@ impl Body<'_> {
                 write!(f, ", padding: .init({padding})")
             }
         });
+        let tap = self.template.event(node, "onTap");
+        let interactive_label = (tap.is_some() || element == Element::Button)
+            && self.has_interactive_children(children);
+        let button = if interactive_label {
+            "weftButtonWithChildren"
+        } else {
+            "Button"
+        };
+        if let Some(slot) = tap {
+            out.open(format_args!(
+                "{button}(action: {{ _ = s.dispatch({slot}) }}) {{"
+            ));
+        }
         let leaf = matches!(
             element,
             Element::Text
@@ -126,11 +139,11 @@ impl Body<'_> {
             Element::Button => {
                 match self.template.event(node, "onClick") {
                     Some(slot) => {
-                        out.open("Button {");
+                        out.open(format_args!("{button} {{"));
                         out.writer.line(format_args!("_ = s.dispatch({slot})"));
                         out.reopen("} label: {");
                     }
-                    None => out.open("Button {} label: {"),
+                    None => out.open(format_args!("{button} {{}} label: {{")),
                 }
                 out.open("weftButtonLabel {");
                 for &child in children {
@@ -242,6 +255,10 @@ impl Body<'_> {
             out.writer
                 .line(format_args!(".weftDecoration({decoration})"));
         }
+        if tap.is_some() {
+            out.close("}");
+            out.writer.line(".buttonStyle(WeftPressStyle())");
+        }
         if let Some(opacity) = prop("opacity") {
             let opacity = Argument::Property(opacity);
             out.writer
@@ -274,6 +291,31 @@ impl Body<'_> {
         if !child.is_empty() {
             out.writer.line(format_args!(".weftChild({child})"));
         }
+    }
+
+    fn has_interactive_children(&self, children: &[u32]) -> bool {
+        children.iter().copied().any(|child| {
+            match &self.template.nodes[child as usize].kind {
+                ViewNodeKind::Element {
+                    element, children, ..
+                } => {
+                    matches!(
+                        element,
+                        Element::Button
+                            | Element::Input
+                            | Element::TextArea
+                            | Element::Switch
+                            | Element::Checkbox
+                            | Element::Slider
+                            | Element::Picker
+                            | Element::Scroll
+                    ) || self.template.event(child, "onTap").is_some()
+                        || self.has_interactive_children(children)
+                }
+                // A component, branch, loop, or slot can supply controls at runtime.
+                ViewNodeKind::Point(_) => true,
+            }
+        })
     }
 
     fn text(&self, out: &mut Code, node: u32, props: &[StaticProp], children: &[u32]) {

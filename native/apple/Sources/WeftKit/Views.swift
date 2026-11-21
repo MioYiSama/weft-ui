@@ -46,6 +46,32 @@ public struct WeftRoot: View {
     }
 }
 
+/// Gives tappable Weft elements native button behavior without changing their layout or colors.
+public struct WeftPressStyle: ButtonStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.6 : 1)
+    }
+}
+
+/// Keeps interactive descendants of a button label individually accessible.
+@MainActor public func weftButtonWithChildren<Label: View>(
+    action: @escaping () -> Void,
+    @ViewBuilder label: () -> Label
+) -> some View {
+    let content = label()
+    let button = Button(action: action) { content }
+    #if os(macOS)
+    // SwiftUI exposes the button label but drops its interactive descendants on macOS.
+    return button.accessibilityChildren { content.buttonStyle(.automatic) }
+    #else
+    return button
+    #endif
+}
+
 /// `Image`: a remote image. With one fixed side the other follows the
 /// aspect ratio, with both the image fills them, and with neither it keeps
 /// its own size.

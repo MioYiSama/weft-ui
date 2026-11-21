@@ -952,11 +952,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R5.d | ☑ | 358101f | 截图待维护者确认（`inputs`：android）；C-android、C-ui 与 showcase 仪器测试通过（焦点切换、Search 提交、emoji 截断）；已有截图与快照逐字节不变 |
 | R5.n | ☑ | 9af2989 | C-windows（core 20、壳 24）、C-ui 通过；showcase 测试验证密码遮罩、焦点、回车清空与两处上限的 Unicode 粘贴；Windows 截图已查看 |
 | R5.g | ☑ | a794102 | C-linux 7 组、C-ui、C-core 20 项（含 `conformance.inputs`）通过；showcase 测试验证回车提交、焦点与代理对边界截断；Linux 截图已查看 |
-| R6.w | ☑ | （本提交） | 截图待维护者确认（`tap`：web、wechat）；C-rust 131 项、C-ts 通过，`tap` 在三个驱动上一致，tsc 计数不变；Chromium 中用 Tab、Enter、Space 触发并确认嵌套点击只触发内层；微信开发者工具确认嵌套点击与按压只作用于内层；C-apps 仅 web、wechat 有差异，已重新录制基线 |
-| R6.a | ☐ | | |
-| R6.d | ☐ | | |
-| R6.n | ☐ | | |
-| R6.g | ☐ | | |
+| R6.w | ☑ | 5994149 | 截图待维护者确认（`tap`：web、wechat）；C-rust 131 项、C-ts 通过，`tap` 在三个驱动上一致，tsc 计数不变；Chromium 中用 Tab、Enter、Space 触发并确认嵌套点击只触发内层；微信开发者工具确认嵌套点击与按压只作用于内层；C-apps 仅 web、wechat 有差异，已重新录制基线 |
+| R6.a | ☑ | （本提交） | 截图待维护者确认（`tap`：ios）；C-apple 22 项、iOS C-ui、macOS C-ui 与 showcase 截图通过（macOS 两次运行，第二次验证无障碍修复）；showcase XCTest 验证各计数独立，iOS 另验证直接点图片与拖离取消；其余 ios 基线 0.000%；含本批共用的 schema、夹具、`pages.json` 与 `pending.json` |
+| R6.d | ☑ | 7815a11 | 截图待维护者确认（`tap`：android）；C-android 21 项、C-ui 与 5 个 showcase 仪器测试通过（各计数独立、按压像素、松开与取消恢复、外部松开不触发）；其余 android 基线 0.000% |
+| R6.n | ☑ | 0e101da | C-windows（core 21、壳 26）、C-ui 通过；showcase 测试用真实鼠标验证各计数独立、按压反馈、外部松开、Enter 与 UIA Invoke；Windows 截图已查看 |
+| R6.g | ☑ | f95fe48 | C-linux 7 组、C-ui、原生 conformance 21 项（含 `tap`）通过；X11 showcase 测试验证各计数独立、外部松开与键盘触发；Linux 截图已查看 |
 | R7.w | ☐ | | |
 | R7.a | ☐ | | |
 | R7.d | ☐ | | |
@@ -1029,3 +1029,9 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R6.w] 计划没有写「预期变化」。实际变化：新增 `Tap` 快照与 `tap` 黄金文件；`Gallery`、`Inputs`、`Language`、`TodoList` 的 Web JS 为 `Button` 加阻止冒泡，小程序 `view.wxml` 改用 `catchtap`；所有小程序快照的 `view.wxss` 增加共享规则；两个 IDE 补全的精确断言只加入新的 `onTap` 一项；example 的 web、wechat 产物随之变化。原生快照、原生 example 产物、CSS 与事件槽下标、已有 conformance 黄金文件不变。结论：接受，已重新录制 C-apps 基线
 - [R6.w] 微信的 `text`、`image` 不支持 `hover-class`，WXSS 也不能编译 `:has()`：小程序用外层 `view` 承接按压反馈与按钮角色；Web 另外注入 `:has()` 规则，使按住内层时外层不变暗。结论：接受
 - [R6.w] showcase `tap` 页的图片卡片用内嵌 PNG（data URI），Web 与小程序能显示，原生平台目前不能加载 data URI；卡片主体是色块，图片缺失不影响点击验证。结论：R7 把它换成打包的本地资源
+- [R6.d] Compose 的最小触控区域会接受落在小元素外侧（但在 48dp 触控区内）的松开并触发点击，与「指针仍在元素内才触发」不符。松开时另行检查元素边界，保留原生按压、滚动与无障碍行为。结论：接受
+- [R6.g] Linux 镜像新增 `xdotool`，showcase 的 `ui.tap` 测试用 X11 真实点击；没有显示服务时返回 77 跳过。结论：接受
+- [R6.n] `shot:windows` 从 macOS 调用时把 `WEFT_SHOT_PAGES` 传进虚拟机。结论：接受
+- [R6.a] macOS 上 SwiftUI `Button` 包裹内容后，整行在无障碍树里成为一个按钮元素，内层的 `Save`、`Preview` 对 XCTest 与 VoiceOver 都不可见（iOS 不受影响）。改为保留内层元素各自的无障碍节点，需要多一次 macOS UI 运行验证。结论：已修复
+- [R6.a] SwiftUI 的原生触控容差会接受落在行外侧附近的松开并触发点击（Android 已用边界检查去掉同类容差）。这是 iOS 系统按钮的一贯行为，保留。结论：接受，记录在案
+- [R6.a] 内嵌 PNG（data URI）在 iOS 和 macOS 都能显示；Android、Windows、Linux 目前不显示。结论：R7 换成打包资源后各平台一致

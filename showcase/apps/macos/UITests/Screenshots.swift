@@ -38,7 +38,30 @@ final class Screenshots: XCTestCase {
             attachment.lifetime = .keepAlways
             add(attachment)
             if id == "controls" { checkControls(in: window, app: app) }
+            if id == "tap" { checkTap(in: window) }
         }
+    }
+
+    @MainActor
+    private func checkTap(in window: XCUIElement) {
+        func checkCounts(_ rows: Int, _ cards: Int, _ buttons: Int, _ text: Int) {
+            for label in ["Rows: \(rows)", "Cards: \(cards)", "Buttons: \(buttons)", "Text: \(text)"] {
+                XCTAssertTrue(window.staticTexts[label].waitForExistence(timeout: 3), "Expected \(label)")
+            }
+        }
+
+        let row = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Open details")).firstMatch
+        let card = window.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Image card")).firstMatch
+        checkCounts(0, 0, 0, 0)
+        row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        checkCounts(1, 0, 0, 0)
+        card.click()
+        checkCounts(1, 1, 0, 0)
+        let nested = window.buttons["Nested actions"]
+        nested.buttons["Save"].click()
+        checkCounts(1, 1, 1, 0)
+        nested.buttons["Preview"].click()
+        checkCounts(1, 1, 1, 1)
     }
 
     @MainActor

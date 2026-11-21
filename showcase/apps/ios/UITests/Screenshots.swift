@@ -27,7 +27,36 @@ final class Screenshots: XCTestCase {
             if id == "appearance" { checkVisibility(in: app) }
             if id == "controls" { checkControls(in: app) }
             if id == "inputs" { checkInputs(in: app) }
+            if id == "tap" { checkTap(in: app) }
         }
+    }
+
+    @MainActor
+    private func checkTap(in app: XCUIApplication) {
+        func checkCounts(_ rows: Int, _ cards: Int, _ buttons: Int, _ text: Int) {
+            for label in ["Rows: \(rows)", "Cards: \(cards)", "Buttons: \(buttons)", "Text: \(text)"] {
+                XCTAssertTrue(app.staticTexts[label].waitForExistence(timeout: 3), "Expected \(label)")
+            }
+        }
+
+        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Open details")).firstMatch
+        let card = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Image card")).firstMatch
+        checkCounts(0, 0, 0, 0)
+        // Releasing outside cancels; the empty space in the center still accepts a tap.
+        let center = row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let outside = row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: -1))
+        center.press(forDuration: 0.1, thenDragTo: outside)
+        checkCounts(0, 0, 0, 0)
+        center.tap()
+        checkCounts(1, 0, 0, 0)
+        card.tap()
+        checkCounts(1, 1, 0, 0)
+        card.buttons.firstMatch.tap()
+        checkCounts(1, 2, 0, 0)
+        app.buttons["Save"].tap()
+        checkCounts(1, 2, 1, 0)
+        app.buttons["Preview"].tap()
+        checkCounts(1, 2, 1, 1)
     }
 
     @MainActor

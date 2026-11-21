@@ -152,6 +152,25 @@ private struct LayoutProbe: Layout {
     #expect(placedVisible)
 }
 
+@Test @MainActor func pressStylePreservesTappableBoxLayout() throws {
+    var placedContent = false
+    let renderer = ImageRenderer(content: weftLinear(axis: .vertical) {
+        weftButtonWithChildren(action: {}) {
+            weftLinear(axis: .horizontal, padding: .init(padding: 3)) {
+                LayoutProbe(size: CGSize(width: 8, height: 12), onPlace: { placedContent = true }) { Color.red }
+            }
+            .weftDecoration(background: .rgba(0x0000ffff), border: 2)
+        }
+        .buttonStyle(WeftPressStyle())
+        .weftOpacity(opacity: 0.85)
+        .weftFrame(width: 40)
+        .weftChild(margin: 4)
+    })
+    let image = try #require(renderer.nsImage)
+    #expect(image.size == CGSize(width: 58, height: 30))
+    #expect(placedContent)
+}
+
 @Test func roundedClippingUsesTheInsideOfTheBorder() {
     let path = WeftPaddingShape(radius: 12, border: 4).path(in: CGRect(x: 0, y: 0, width: 40, height: 30))
     #expect(path.boundingRect == CGRect(x: 4, y: 4, width: 32, height: 22))

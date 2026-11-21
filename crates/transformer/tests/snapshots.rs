@@ -130,7 +130,7 @@ const INPUTS: Fixture = Fixture {
 const TAP: Fixture = Fixture {
     name: "Tap",
     source: include_str!("fixtures/Tap.weft"),
-    natives: &[],
+    natives: ALL_NATIVES,
     diverges: &[],
 };
 

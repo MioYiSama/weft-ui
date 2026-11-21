@@ -9,6 +9,7 @@ import { checkShellProtocol, nativeShell } from "./shells.ts";
 import { type Assets, hasAssets, scanAssets } from "./assets/scan.ts";
 import { WEB_ASSETS_ID, RESOLVED_WEB_ASSETS_ID, serveWebAssets, webAssets } from "./assets/web.ts";
 import { writeWechatAssets } from "./assets/wechat.ts";
+import { writeWindowsAssets } from "./assets/windows.ts";
 import { writeLinuxAssets } from "./assets/linux.ts";
 
 /** Options of the Weft Vite plugin. */
@@ -378,6 +379,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
         return;
       }
       if (!isNativePlatform(platform)) return;
+      if (platform === "windows") writeWindowsAssets(assets(), generated);
       if (platform === "linux") writeLinuxAssets(assets(), generated);
       const shell = shells.get(platform)!;
       const adapter = nativeAdapter(platform, shell);

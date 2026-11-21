@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.UI.Text;
 
 namespace Weft.WinUI;
@@ -107,7 +107,9 @@ public sealed class WeftSpacer
 public sealed class WeftText : WeftPaddedElement
 {
     private readonly TextBlock block = new() { TextWrapping = TextWrapping.Wrap };
-
+    private List<WeftSpan>? fontSpans;
+    private string? font;
+    private WeftAssets.FontVariant? face;
     private WeftBrush foreground;
 
     public WeftText(Action? tap = null)
@@ -138,8 +140,29 @@ public sealed class WeftText : WeftPaddedElement
     }
 
     public bool Bold { set => Weight = value ? WeftWeight.Bold : WeftWeight.Regular; }
-    public WeftWeight Weight { set => block.FontWeight = WeftTextStyle.Weight(value); }
-    public bool Italic { set => block.FontStyle = WeftTextStyle.Style(value); }
+    public WeftWeight Weight { set { block.FontWeight = WeftTextStyle.Weight(value); UpdateFont(); } }
+    public bool Italic { set { block.FontStyle = WeftTextStyle.Style(value); UpdateFont(); } }
+    public string Font { set { font = value; UpdateFont(); } }
+
+    internal WeftAssets.FontVariant? FindFont(string? family, ushort? weight, FontStyle? style) =>
+        (family ?? font) is { Length: > 0 } name
+            ? WeftAssets.Current?.FindFont(name, weight ?? block.FontWeight.Weight, (style ?? block.FontStyle) == FontStyle.Italic)
+            : null;
+
+    internal void TrackFont(WeftSpan span) => (fontSpans ??= []).Add(span);
+
+    private void UpdateFont()
+    {
+        var next = FindFont(null, null, null);
+        if (next != face)
+        {
+            face = next;
+            if (next is null) block.ClearValue(TextBlock.FontFamilyProperty);
+            else block.FontFamily = new FontFamily(next.Source);
+        }
+        if (fontSpans is not null)
+            foreach (var span in fontSpans) span.UpdateFont();
+    }
     public WeftDecoration Decoration { set => block.TextDecorations = WeftTextStyle.Decorations(value); }
 
     public WeftTextAlign Align
@@ -178,10 +201,20 @@ public sealed class WeftText : WeftPaddedElement
 public sealed class WeftSpan
 {
     private readonly Run run = new();
+    private readonly WeftText parent;
     private WeftSession? session;
     private WeftBrush foreground;
+    private string? font;
+    private ushort? weight;
+    private FontStyle? style;
+    private WeftAssets.FontVariant? face;
+    private bool tracksFont;
 
-    public WeftSpan(WeftText parent) => parent.AppendSpan(run);
+    public WeftSpan(WeftText parent)
+    {
+        this.parent = parent;
+        parent.AppendSpan(run);
+    }
 
     internal void AttachTheme(WeftSession owner) => session = owner;
     internal void ReapplyColors() => foreground.Reapply(session?.Theme, session?.ActualTheme ?? ElementTheme.Default);
@@ -192,9 +225,47 @@ public sealed class WeftSpan
         set => run.Foreground = foreground.Set(value, session?.Theme, session?.ActualTheme ?? ElementTheme.Default);
     }
     public double Size { set => run.FontSize = value; }
-    public WeftWeight Weight { set => run.FontWeight = WeftTextStyle.Weight(value); }
-    public bool Italic { set => run.FontStyle = WeftTextStyle.Style(value); }
+    public WeftWeight Weight
+    {
+        set
+        {
+            var next = WeftTextStyle.Weight(value);
+            run.FontWeight = next;
+            weight = next.Weight;
+            TrackFont();
+        }
+    }
+    public bool Italic
+    {
+        set
+        {
+            var next = WeftTextStyle.Style(value);
+            run.FontStyle = next;
+            style = next;
+            TrackFont();
+        }
+    }
+    public string Font { set { font = value; TrackFont(); } }
     public WeftDecoration Decoration { set => run.TextDecorations = WeftTextStyle.Decorations(value); }
+
+    private void TrackFont()
+    {
+        if (!tracksFont)
+        {
+            tracksFont = true;
+            parent.TrackFont(this);
+        }
+        UpdateFont();
+    }
+
+    internal void UpdateFont()
+    {
+        var next = parent.FindFont(font, weight, style);
+        if (next == face) return;
+        face = next;
+        if (next is null) run.ClearValue(Run.FontFamilyProperty);
+        else run.FontFamily = new FontFamily(next.Source);
+    }
 }
 
 internal static class WeftTextStyle
@@ -241,34 +312,4 @@ public sealed class WeftButton : WeftElement
     }
 }
 
-/// <summary>
-/// <c>Image</c>: a remote image. With one fixed side the other follows the
-/// aspect ratio, with both the image fills them, and with neither it keeps
-/// its own size.
-/// </summary>
-public sealed class WeftImage : WeftDecoratedElement
-{
-    private readonly Image image = new() { Stretch = Stretch.None };
 
-    public WeftImage(Action? tap = null)
-    {
-        Box.Border.Child = image;
-        if (tap is not null) Box.EnableTap(tap);
-    }
-
-    public string Src
-    {
-        set => image.Source = Uri.TryCreate(value, UriKind.Absolute, out var uri) ? new BitmapImage(uri) : null;
-    }
-
-    protected override void Resize()
-    {
-        base.Resize();
-        image.Stretch = (double.IsNaN(Box.Width), double.IsNaN(Box.Height)) switch
-        {
-            (true, true) => Stretch.None,
-            (false, false) => Stretch.Fill,
-            _ => Stretch.Uniform,
-        };
-    }
-}

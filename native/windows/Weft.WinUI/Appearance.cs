@@ -30,6 +30,17 @@ public abstract class WeftDecoratedElement : WeftPaintedElement
     private protected override void SetOpacity(double value) => Box.SetOpacity(value);
 
     private WeftBrush background, borderColor;
+    private SolidColorBrush? backgroundOverride;
+
+    private protected SolidColorBrush? BackgroundOverride
+    {
+        set
+        {
+            if (backgroundOverride == value) return;
+            backgroundOverride = value;
+            Box.Paint.Background = value ?? background.Brush;
+        }
+    }
 
     internal override void ReapplyColors()
     {
@@ -39,7 +50,11 @@ public abstract class WeftDecoratedElement : WeftPaintedElement
 
     public WeftColor Background
     {
-        set => Box.Paint.Background = background.Set(value, Theme, Appearance);
+        set
+        {
+            var brush = background.Set(value, Theme, Appearance);
+            if (backgroundOverride is null) Box.Paint.Background = brush;
+        }
     }
 
     public double Radius { set => Box.Radius = Math.Max(0, value); }
@@ -65,6 +80,7 @@ internal struct WeftBrush
 {
     private WeftColor color;
     private SolidColorBrush? brush;
+    internal readonly SolidColorBrush? Brush => brush;
 
     internal SolidColorBrush Set(WeftColor value, WeftTheme? theme, ElementTheme appearance)
     {
@@ -87,6 +103,8 @@ internal sealed partial class WeftBox : Grid
 {
     internal Border Border { get; } = new() { BackgroundSizing = BackgroundSizing.OuterBorderEdge };
     internal Border Paint => useChrome ? chrome! : Border;
+    // Image pixels, unlike layout children, are always clipped by their own rounded border.
+    internal bool RoundContent { get; set; }
     private Border? chrome;
     private bool useChrome;
     private bool clip;
@@ -171,7 +189,7 @@ internal sealed partial class WeftBox : Grid
 
     private void UpdateChrome()
     {
-        var needsChrome = radius > 0 && !clip;
+        var needsChrome = radius > 0 && !clip && !RoundContent;
         if (needsChrome != useChrome)
         {
             var previous = Paint;

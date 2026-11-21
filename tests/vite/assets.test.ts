@@ -159,6 +159,35 @@ test("Linux passes the asset directory to weft_views and copies media and fonts"
   }
 });
 
+test("Windows copies asset content through Weft.targets", async () => {
+  await cp(join(root, "res/images/logo@2x.png"), join(root, "res/images/logo@3x.png"));
+  vi.stubEnv("WEFT_PLATFORM", "windows");
+  vi.stubEnv("WEFT_NATIVE", "0");
+  await (await createBuilder({
+    ...config(),
+    plugins: [weft({ assets: "res", platforms: ["windows"], app: { id: "com.example.assets" } })],
+  })).buildApp();
+  const weftDir = join(root, "apps/windows/weft");
+  const targets = await readFile(join(weftDir, "Weft.targets"), "utf8");
+  expect(targets).toContain(String.raw`<Content Include="$(MSBuildThisFileDirectory)assets\**\*" Link="weft\assets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />`);
+  const directory = join(weftDir, "assets");
+  expect((await readdir(directory)).sort()).toEqual([
+    "fonts", "index.json", "logo.scale-100.png", "logo.scale-200.png", "logo.scale-300.png", "only_high.scale-200.png", "star.svg",
+  ]);
+  expect((await readdir(join(directory, "fonts"))).sort()).toEqual(["Inter-Bold.ttf", "Inter-Regular.ttf"]);
+  expect(JSON.parse(await readFile(join(directory, "index.json"), "utf8"))).toEqual({
+    Images: {
+      logo: [100, 200, 300].map((scale) => ({ File: `logo.scale-${scale}.png`, Scale: scale / 100 })),
+      only_high: [{ File: "only_high.scale-200.png", Scale: 2 }],
+      star: [{ File: "star.svg", Scale: 1 }],
+    },
+    Fonts: [
+      { File: "Inter-Bold.ttf", Family: "Inter", Weight: 700, Italic: false },
+      { File: "Inter-Regular.ttf", Family: "Inter", Weight: 400, Italic: false },
+    ],
+  });
+});
+
 test("dev server reloads after a variant is added to the configured asset directory", async () => {
   const server = await createServer({
     ...config(), base: "/dev/", plugins: [weft({ assets: "res" })], server: { host: "127.0.0.1", port: 0 },

@@ -126,7 +126,11 @@ internal abstract class WeftPanel : Panel
         var child = visible[index];
         ref readonly var data = ref children[index];
         var constrained = Constrain(index, proposal);
-        if (child is WeftBox box && box.Border.Child is WeftPanel panel) panel.SetProposal(constrained);
+        if (child is WeftBox box)
+        {
+            if (box.Border.Child is WeftPanel panel) panel.SetProposal(constrained);
+            if (box.Border.Child is WeftImageContent image) image.SetProposal(constrained);
+        }
         child.Measure(new Size(Math.Max(0, constrained.Width.Value + data.Margin.Width),
             Math.Max(0, constrained.Height.Value + data.Margin.Height)));
         var desired = child.DesiredSize;

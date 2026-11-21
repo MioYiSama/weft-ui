@@ -1,0 +1,27 @@
+{
+  "hash": "d34eada039763be7",
+  "templates": [
+    {
+      "label": "Assets",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {"gap": 8}, "children": [1, 2, 3, 4]},
+        {"element": "Image", "props": {"width": 96, "height": 56, "src": "asset:logo", "fit": "contain", "placeholder": "#334455"}, "children": []},
+        {"element": "Image", "props": {"width": 48, "height": 48}, "children": []},
+        {"element": "Image", "props": {"width": 24, "src": "asset:star"}, "children": []},
+        {"element": "Text", "props": {"weight": "bold", "font": "Inter"}, "children": [5, 6]},
+        {"element": "Span", "props": {"value": "Bundled fonts"}, "children": []},
+        {"element": "Span", "props": {"italic": true, "value": "Family"}, "children": []}
+      ],
+      "values": [
+        {"node": 2, "prop": "src", "type": "String"},
+        {"node": 2, "prop": "fit", "type": "String"},
+        {"node": 2, "prop": "placeholder", "type": "Color"},
+        {"node": 6, "prop": "font", "type": "String"}
+      ],
+      "events": [],
+      "points": []
+    }
+  ]
+}

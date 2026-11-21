@@ -153,6 +153,7 @@ pub(super) fn union(element: Element, name: &str) -> Option<&'static str> {
         (Element::Stack, "alignment") => Some("Alignment"),
         (Element::Scroll, "direction") => Some("Axis"),
         (Element::Input, "type") => Some("InputType"),
+        (Element::Image, "fit") => Some("ImageFit"),
         (Element::Text, "align") => Some("TextAlign"),
         (Element::Text | Element::Span, "weight") => Some("Weight"),
         (Element::Text | Element::Span, "decoration") => Some("Decoration"),

@@ -933,7 +933,7 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R1.g | ☑ | 7f2d2e3 | C-linux 4 组含 32 个布局样例、C-ui 通过；Linux 截图已查看；已有 GTK 快照仅把 `Column`/`Row` 的包装从 `Stack` 改名为 `Linear` |
 | R1.z | ☑ | 8e6f4f6 | C-ui 7 个平台、C-shot 与 C-shot-local 通过，页面基线不变；iOS 与 Web 上 example 能滚动到底部，没有外层二次滚动（证据 `/tmp/weft-m1/r1z-evidence/`）；C-apps 7 个平台有差异，已重新录制基线 |
 | R2.w | ☑ | e30ceb9 | 截图待维护者确认（`appearance`、`theme`、`theme-dark`：web、wechat）；Web 与基线一致，小程序最大差异 0.021%；隐藏卡片时让出布局空间；C-apps 仅 web、wechat 有差异，已重新录制基线 |
-| R2.a | ☑ | （本提交） | 截图待维护者确认（`appearance`、`theme`、`theme-dark`：ios）；C-apple 11 项、iOS 与 macOS 的 C-ui 通过；iOS 截图回归 0.000%；macOS 截图已查看；含本批共用的 schema、夹具、`pages.json`，以及 `appearance` 页改动与重新生成的 web、wechat `appearance` 基线 |
+| R2.a | ☑ | a8c5203 | 截图待维护者确认（`appearance`、`theme`、`theme-dark`：ios）；C-apple 11 项、iOS 与 macOS 的 C-ui 通过；iOS 截图回归 0.000%；macOS 截图已查看；含本批共用的 schema、夹具、`pages.json`，以及 `appearance` 页改动与重新生成的 web、wechat `appearance` 基线 |
 | R2.d | ☑ | 4fbced6 | 截图待维护者确认（`appearance`、`theme`、`theme-dark`：android）；C-android、C-ui 与 3 个外观仪器测试通过；截图回归 0.000% |
 | R2.n | ☑ | b0a94d5 | C-windows（core 18、WinUI 12）、C-ui 通过；Windows 截图已查看，隐藏卡片不留空隙；已有 Windows 快照未变 |
 | R2.g | ☑ | 43cf97b | C-linux 5 组、C-ui 通过；Linux 截图（含真正的深色 `theme-dark`）已查看；已有 Linux 快照未变 |
@@ -997,3 +997,4 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R2.n] 计划标为 unverified 的 WinUI 阴影遮罩：虚拟机上 `Rectangle.GetAlphaMask()` 得到直角阴影，改用计划中的回退方案 `CompositionRoundedRectangleGeometry` 的 `ShapeVisual` 投影，圆角正确。结论：采用回退方案
 - [R2.g] T1 的 Linux 截图工具只切换 `GtkSettings`，而 L6.g 启动时会按 XDG 门户覆盖它，容器里没有门户，深色截图实际是浅色。截图工具改为通过与门户 `SettingChanged` 相同的外观更新路径切换深浅色，普通应用仍跟随门户。结论：接受
 - [R2.a–R2.g] 已有快照中只有 `Gallery` 的 Swift 与 Kotlin 生成代码改用新的装饰修饰符；C-apps 无差异，未重新录制基线。结论：接受
+- [R2.a–R2.g] 原生波次提交时漏改 views 指南「设置元素外观与可见性」一节中「在 Web 和微信小程序中」的说法，另用一个文档提交改为所有目标平台。结论：接受

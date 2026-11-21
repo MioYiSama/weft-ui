@@ -73,7 +73,7 @@ Column(width = 240, padding = 12, gap = 8) {
 
 ## 设置元素外观与可见性
 
-在 Web 和微信小程序中，可以为布局容器、`Text` 和 `Image` 设置 `background`、`radius`、`border`、`borderColor`、`shadow` 和 `clip`。`border` 用逻辑像素指定边框宽度。省略 `borderColor` 时，浅色模式默认使用 `#0000001f`，深色模式默认使用 `#ffffff26`。
+在所有目标平台上，都可以为布局容器、`Text` 和 `Image` 设置 `background`、`radius`、`border`、`borderColor`、`shadow` 和 `clip`。`border` 用逻辑像素指定边框宽度。省略 `borderColor` 时，浅色模式默认使用 `#0000001f`，深色模式默认使用 `#ffffff26`。
 
 ```weft
 Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "medium", clip = true) {

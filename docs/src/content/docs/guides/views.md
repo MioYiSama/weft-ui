@@ -73,7 +73,7 @@ Colors such as `Text.color` or `Row.background` are strings in `#RGB`, `#RRGGBB`
 
 ## Set appearance and visibility
 
-On the web and in WeChat mini programs, layout containers, `Text`, and `Image` can take `background`, `radius`, `border`, `borderColor`, `shadow`, and `clip`. `border` is a width in logical pixels. If you omit `borderColor`, it defaults to `#0000001f` in light mode and `#ffffff26` in dark mode.
+On every target platform, layout containers, `Text`, and `Image` can take `background`, `radius`, `border`, `borderColor`, `shadow`, and `clip`. `border` is a width in logical pixels. If you omit `borderColor`, it defaults to `#0000001f` in light mode and `#ffffff26` in dark mode.
 
 ```weft
 Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "medium", clip = true) {

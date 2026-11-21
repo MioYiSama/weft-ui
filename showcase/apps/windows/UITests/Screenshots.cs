@@ -53,6 +53,7 @@ public sealed class Screenshots
                 CaptureWindow(window, Path.Combine(directory, $"{id}{suffix}.png"));
                 if (id == "appearance") VerifyVisibility(window);
                 if (id == "text") VerifyTypography(window);
+                if (id == "controls") VerifyControls(window);
             }
             finally
             {
@@ -117,6 +118,95 @@ public sealed class Screenshots
         var expanded = Text("28 px").BoundingRectangle.Height;
         Assert.IsTrue(compact > 0);
         Assert.AreEqual(28.0 / 18.0, (double)expanded / compact, 0.08, "Both lines must use the requested height");
+    }
+
+    private static void VerifyControls(Window window)
+    {
+        AutomationElement[] Elements(string className, int count)
+        {
+            var matches = window.FindAllDescendants(cf => cf.ByClassName(className));
+            Assert.AreEqual(count, matches.Length, $"Expected {count} {className} controls");
+            return matches;
+        }
+
+        var switches = Elements("ToggleSwitch", 4);
+        var locked = switches[0].Patterns.Toggle.Pattern;
+        var alerts = switches[1].Patterns.Toggle.Pattern;
+        var sounds = switches[2].Patterns.Toggle.Pattern;
+        var checkboxes = Elements("CheckBox", 2);
+        var checkbox = checkboxes[0].AsCheckBox();
+        var sliders = Elements("Slider", 2);
+        var slider = sliders[0].AsSlider();
+        var pickers = Elements("ComboBox", 3);
+        var region = pickers[0].AsComboBox();
+        var channel = pickers[1].AsComboBox();
+        var textAreas = Elements("TextBox", 2);
+        var notes = textAreas[0].AsTextBox();
+        Assert.IsTrue(notes.BoundingRectangle.Height > region.BoundingRectangle.Height * 1.5,
+            "The multiline box should reserve three lines even while empty");
+        foreach (var disabled in new[] { switches[3], checkboxes[1], sliders[1], pickers[2], textAreas[1] })
+            Assert.IsFalse(disabled.IsEnabled, $"{disabled.Properties.ClassName.Value} should be disabled");
+
+        void Volume(double value)
+        {
+            Assert.AreEqual(value, slider.Value, "The slider thumb must match the controlled value");
+            Assert.IsNotNull(window.FindFirstDescendant(cf => cf.ByName($"音量 · {value}%")),
+                "The Weft state must also hold the stepped value");
+        }
+
+        void Select(ComboBox picker, string label)
+        {
+            picker.Expand();
+            var item = Retry.WhileNull(() => picker.FindFirstDescendant(cf => cf.ByName(label)
+                .And(cf.ByControlType(ControlType.ListItem))), TimeSpan.FromSeconds(3)).Result;
+            Assert.IsNotNull(item, $"No picker option {label}");
+            item.Patterns.SelectionItem.Pattern.Select();
+            picker.Collapse();
+        }
+
+        string Notes() => notes.Text.Replace("\r\n", "\n").Replace('\r', '\n');
+
+        Assert.AreEqual(ToggleState.Off, locked.ToggleState.Value);
+        Assert.AreEqual(ToggleState.On, alerts.ToggleState.Value);
+        Assert.AreEqual(ToggleState.Off, sounds.ToggleState.Value);
+        Assert.AreEqual(ToggleState.On, checkbox.ToggleState);
+        Assert.AreEqual("本地", region.SelectedItem?.Text);
+        Assert.IsNull(channel.SelectedItem, "An out-of-range value must show the placeholder");
+        Volume(40);
+
+        alerts.Toggle();
+        sounds.Toggle();
+        checkbox.Toggle();
+        slider.Value = 66;
+        Select(region, "远程");
+        notes.Text = "first\r\nsecond";
+        Assert.AreEqual(ToggleState.Off, alerts.ToggleState.Value);
+        Assert.AreEqual(ToggleState.On, sounds.ToggleState.Value);
+        Assert.AreEqual(ToggleState.Off, checkbox.ToggleState);
+        Volume(65);
+        Assert.AreEqual("远程", region.SelectedItem?.Text);
+        Assert.AreEqual("first\nsecond", Notes());
+
+        locked.Toggle();
+        Assert.AreEqual(ToggleState.On, locked.ToggleState.Value);
+        alerts.Toggle();
+        sounds.Toggle();
+        checkbox.Toggle();
+        slider.Value = 40;
+        Select(region, "本地");
+        Select(channel, "测试版");
+        notes.Text = "rejected";
+        Assert.AreEqual(ToggleState.Off, alerts.ToggleState.Value);
+        Assert.AreEqual(ToggleState.On, sounds.ToggleState.Value);
+        Assert.AreEqual(ToggleState.Off, checkbox.ToggleState);
+        Volume(65);
+        Assert.AreEqual("远程", region.SelectedItem?.Text);
+        Assert.IsNull(channel.SelectedItem, "A refused selection must bring back the placeholder");
+        Assert.AreEqual("first\nsecond", Notes());
+
+        locked.Toggle();
+        Select(channel, "测试版");
+        Assert.AreEqual("测试版", channel.SelectedItem?.Text);
     }
 
     private static void CaptureWindow(Window window, string path)

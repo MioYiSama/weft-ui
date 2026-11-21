@@ -15,6 +15,7 @@ internal sealed class WeftLayout : DependencyObject
     public static readonly DependencyProperty SpacerSizeProperty = Register("SpacerSize", double.NaN);
     public static readonly DependencyProperty AspectRatioProperty = Register("AspectRatio", 0.0);
     public static readonly DependencyProperty PreferredWidthProperty = Register("PreferredWidth", double.NaN);
+    public static readonly DependencyProperty PreferredHeightProperty = Register("PreferredHeight", double.NaN);
 
     private static DependencyProperty Register<T>(string name, T fallback) where T : struct =>
         DependencyProperty.RegisterAttached(name, typeof(T), typeof(WeftLayout), new PropertyMetadata(fallback, Changed));
@@ -146,6 +147,12 @@ internal abstract class WeftPanel : Panel
             var preferred = (double)visible[index].GetValue(WeftLayout.PreferredWidthProperty);
             if (!double.IsNaN(preferred))
                 constrained = constrained with { Width = new(Math.Max(bounds.MinWidth, constrained.Width.Resolve(preferred)), true) };
+        }
+        if (!constrained.Height.IsExact)
+        {
+            var preferred = (double)visible[index].GetValue(WeftLayout.PreferredHeightProperty);
+            if (!double.IsNaN(preferred))
+                constrained = constrained with { Height = new(Math.Max(bounds.MinHeight, constrained.Height.Resolve(preferred)), true) };
         }
         return constrained;
     }

@@ -36,32 +36,35 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                     Some(slot) => write!(out, "() => Dispatch({slot})"),
                     None => out.write_str("null"),
                 },
-                Element::Input | Element::Checkbox => {
+                Element::Input
+                | Element::Checkbox
+                | Element::Switch
+                | Element::TextArea
+                | Element::Slider
+                | Element::Picker => {
                     let (slot, _) = template.controlled(index);
                     write!(out, "v => Dispatch({slot}, WeftValue.Of(v))")
                 }
-                Element::Scroll => {
-                    if let Some(prop) = props.iter().find(|prop| prop.name == "direction") {
-                        write!(
-                            out,
-                            "direction: {}",
-                            literal(*element, prop.name, &prop.value)
-                        )
+                Element::Scroll | Element::Divider => {
+                    let name = if *element == Element::Scroll {
+                        "direction"
                     } else {
-                        Ok(())
+                        "vertical"
+                    };
+                    match props.iter().find(|prop| prop.name == name) {
+                        Some(prop) => {
+                            write!(out, "{name}: {}", literal(*element, name, &prop.value))
+                        }
+                        None => Ok(()),
                     }
                 }
-                Element::Stack | Element::Spacer | Element::Text | Element::Image => Ok(()),
-                Element::Span => write!(out, "n{}", parent.expect("a Span belongs to a Text node")),
-                Element::Switch
-                | Element::TextArea
+                Element::Stack
+                | Element::Spacer
+                | Element::Text
+                | Element::Image
                 | Element::Spinner
-                | Element::Progress
-                | Element::Divider
-                | Element::Slider
-                | Element::Picker => {
-                    unreachable!("unsupported elements are rejected before code generation")
-                }
+                | Element::Progress => Ok(()),
+                Element::Span => write!(out, "n{}", parent.expect("a Span belongs to a Text node")),
             });
             out.writer.line(format_args!(
                 "{declaration}n{index} = new {}({args});",
@@ -74,7 +77,10 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
             {
                 out.writer.line(format_args!("TrackColors(n{index});"));
             }
-            for prop in props.iter().filter(|p| p.name != "direction") {
+            for prop in props
+                .iter()
+                .filter(|p| !matches!(p.name, "direction" | "vertical"))
+            {
                 out.writer.line(format_args!(
                     "n{index}.{} = {};",
                     property(prop.name),
@@ -107,15 +113,13 @@ pub(crate) fn wrapper(element: Element) -> &'static str {
         Element::Stack => "WeftOverlay",
         Element::Scroll => "WeftScroll",
         Element::Spacer => "WeftSpacer",
-        Element::Switch
-        | Element::TextArea
-        | Element::Spinner
-        | Element::Progress
-        | Element::Divider
-        | Element::Slider
-        | Element::Picker => {
-            unreachable!("unsupported elements are rejected before code generation")
-        }
+        Element::Switch => "WeftSwitch",
+        Element::TextArea => "WeftTextArea",
+        Element::Spinner => "WeftSpinner",
+        Element::Progress => "WeftProgress",
+        Element::Divider => "WeftDivider",
+        Element::Slider => "WeftSlider",
+        Element::Picker => "WeftPicker",
     }
 }
 

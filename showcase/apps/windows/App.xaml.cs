@@ -22,9 +22,11 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         window = new Window { Title = "Weft Showcase", Content = WeftApp.Start() };
-        // Match the Web capture width for the typography wrapping specimens.
-        var width = Environment.GetEnvironmentVariable("WEFT_SHOT_PAGE") == "text" ? 390 : 480;
-        WeftWindow.Resize(window, width, shotAppearance is null ? 640 : 760);
+        var page = Environment.GetEnvironmentVariable("WEFT_SHOT_PAGE");
+        // Match the Web width for typography, and fit the taller native controls in the capture.
+        var width = page == "text" ? 390 : 480;
+        var height = shotAppearance is null ? 640 : page == "controls" ? 800 : 760;
+        WeftWindow.Resize(window, width, height);
         window.Activate();
     }
 }

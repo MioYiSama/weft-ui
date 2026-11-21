@@ -10,21 +10,27 @@ using Windows.Foundation;
 
 namespace Weft.WinUI;
 
+/// <summary>A control whose colors can reference theme tokens.</summary>
+public abstract class WeftPaintedElement : WeftElement
+{
+    private WeftSession? session;
+    private protected WeftTheme? Theme => session?.Theme;
+    private protected ElementTheme Appearance => session?.ActualTheme ?? Control.ActualTheme;
+
+    internal void AttachTheme(WeftSession owner) => session = owner;
+    internal abstract void ReapplyColors();
+}
+
 /// <summary>A Weft border box with a separately styled background, border, and content.</summary>
-public abstract class WeftDecoratedElement : WeftElement
+public abstract class WeftDecoratedElement : WeftPaintedElement
 {
     private protected WeftBox Box { get; } = new();
     protected sealed override FrameworkElement Control => Box;
     private protected override LayoutInsets ContentInsets => Box.ContentInsets;
 
-    private WeftSession? session;
     private WeftBrush background, borderColor;
 
-    private protected WeftTheme? Theme => session?.Theme;
-    private protected ElementTheme Appearance => session?.ActualTheme ?? Box.ActualTheme;
-
-    internal void AttachTheme(WeftSession owner) => session = owner;
-    internal virtual void ReapplyColors()
+    internal override void ReapplyColors()
     {
         background.Reapply(Theme, Appearance);
         borderColor.Reapply(Theme, Appearance);

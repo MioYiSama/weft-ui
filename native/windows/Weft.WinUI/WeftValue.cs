@@ -37,7 +37,7 @@ public readonly struct WeftValue : IEquatable<WeftValue>
     /// <summary>The value of a <c>Bool</c> slot.</summary>
     public bool Bool => kind == Kind.Bool && boolean;
 
-    /// <summary>The value of an <c>Int</c> slot: a length in DIPs.</summary>
+    /// <summary>The value of an <c>Int</c> or <c>Float</c> slot.</summary>
     public double Number => kind == Kind.Number ? number : 0;
 
     /// <summary>The value of a <c>String</c> slot.</summary>

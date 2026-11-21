@@ -10,7 +10,7 @@ option(WEFT_LINUX_TESTS "Build the shell's unit tests" OFF)
 
 find_package(PkgConfig REQUIRED)
 # GTK 4.10 is the minimum supported version.
-pkg_check_modules(WEFT_DEPS REQUIRED IMPORTED_TARGET gtk4>=4.10 libsoup-3.0 json-glib-1.0)
+pkg_check_modules(WEFT_DEPS REQUIRED IMPORTED_TARGET gtk4>=4.10 libsoup-3.0 json-glib-1.0 fontconfig pangocairo pangoft2)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
   set(weft_arch x64)
@@ -39,6 +39,7 @@ set_target_properties(weft_core_shared PROPERTIES
 # the C++ ops decoder itself.
 add_library(weft_linux STATIC
   src/appearance.cpp
+  src/assets.cpp
   src/color.cpp
   src/container.cpp
   src/controls.cpp
@@ -57,16 +58,26 @@ target_compile_features(weft_linux PUBLIC cxx_std_20)
 target_link_libraries(weft_linux PUBLIC PkgConfig::WEFT_DEPS weft_core_shared)
 install(FILES include/weft/gtk.hpp include/weft/elements.hpp include/weft/layout.hpp DESTINATION include/weft)
 
+# Vite configures each build. Replace the staged tree so removed assets do
+# not linger; copy the directory as a whole to preserve arbitrary font names.
+function(weft_copy_assets assets destination)
+  file(REMOVE_RECURSE "${destination}")
+  if(IS_DIRECTORY "${assets}")
+    file(COPY "${assets}/" DESTINATION "${destination}")
+  endif()
+endfunction()
+
 if(WEFT_LINUX_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
 
-# The app's generated views and bytecode (called by the generated weft/CMakeLists.txt).
-function(weft_views views bundle)
+# The app's generated views, bytecode and assets (called by weft/CMakeLists.txt).
+function(weft_views views bundle assets)
   add_library(weft_views STATIC ${views})
   target_link_libraries(weft_views PUBLIC weft::linux)
   set_property(GLOBAL PROPERTY WEFT_BUNDLE ${bundle})
+  weft_copy_assets("${assets}" "${CMAKE_BINARY_DIR}/weft/assets")
 endfunction()
 
 # Makes `target` a Weft app executable: it links the generated views and is

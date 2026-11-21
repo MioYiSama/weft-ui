@@ -78,6 +78,7 @@ jobs:
               - *kernel
               - *compiler
               - native/linux/**
+              - tests/vite/fixtures/assets/assets/**
             apple:
               - *kernel
               - native/apple/**
@@ -186,6 +187,7 @@ jobs:
           restore-keys: linux-x64-${{ env.HERMES_TAG }}-
       # The container's user (ubuntu, uid 1000) writes to the mounted workspace.
       - run: sudo chown -R 1000:1000 "$GITHUB_WORKSPACE"
+      # The shell tests use the Dockerfile's Fontconfig and GdkPixbuf SVG loader.
       - run: docker compose -f native/linux/docker/compose.yaml up -d --build
       - name: C-linux
         run: |

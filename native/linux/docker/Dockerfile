@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential cmake ninja-build pkg-config python3 git ca-certificates curl xz-utils \
-      libgtk-4-dev libsoup-3.0-dev libjson-glib-dev \
+      libgtk-4-dev libsoup-3.0-dev libjson-glib-dev libfontconfig-dev librsvg2-common \
       xfce4 xfce4-terminal dbus-x11 at-spi2-core \
       tigervnc-standalone-server tigervnc-tools xdotool \
       fonts-noto-core fonts-noto-cjk fonts-inter-variable imagemagick \

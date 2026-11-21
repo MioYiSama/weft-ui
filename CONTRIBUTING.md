@@ -14,7 +14,7 @@ The versions match the CI workflows in `.github/workflows/`.
 | Apple | macOS 26 with Xcode 27 |
 | Android | Android SDK (platform 37) and NDK, JDK 21 |
 | Windows | Windows 11, Visual Studio Build Tools with the C++ workload (includes CMake and Ninja), .NET SDK 10, PowerShell 7 |
-| Linux | Docker (the `native/linux/docker` image has everything), or a Linux host with a C++20 compiler and the GTK 4, libsoup 3 and json-glib development packages |
+| Linux | Docker (the `native/linux/docker` image has everything), or a Linux host with a C++20 compiler, GTK 4, libsoup 3, json-glib and Fontconfig development packages, and the GdkPixbuf SVG loader (`libfontconfig-dev` and `librsvg2-common` on Debian/Ubuntu for the asset dependencies) |
 | Docs | Nothing beyond the workspace |
 
 You only need the rows of the platforms you change. A change to the compiler or the runtime is checked on every platform by CI.

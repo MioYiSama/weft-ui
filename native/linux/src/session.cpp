@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "appearance.hpp"
+#include "assets.hpp"
 #include "platform.hpp"
 #include "point.hpp"
 #include "container.hpp"
@@ -29,18 +30,6 @@ struct OpError : std::runtime_error {
 void write_log(int level, std::string_view message) {
   static constexpr const char *kLevels[] = {"debug", "info", "warn", "error"};
   std::fprintf(stderr, "[weft %s] %.*s\n", kLevels[std::clamp(level, 0, 3)], int(message.size()), message.data());
-}
-
-/// `weft/bundle.hbc` next to the executable.
-std::string bundle_path() {
-  char *executable = g_file_read_link("/proc/self/exe", nullptr);
-  char *directory = g_path_get_dirname(executable ? executable : ".");
-  char *path = g_build_filename(directory, "weft", "bundle.hbc", nullptr);
-  std::string result(path);
-  g_free(path);
-  g_free(directory);
-  g_free(executable);
-  return result;
 }
 
 /// The OS version reported as `platform.version`: the distribution's
@@ -114,6 +103,7 @@ struct Session::Environment {
 };
 
 GtkWidget *Session::start(uint64_t layout_hash, Factory make) {
+  register_asset_fonts();
   GtkWidget *page = linear_new(Axis::Vertical);
   gtk_widget_set_overflow(page, GTK_OVERFLOW_HIDDEN);
   // The session ends with the root widget.
@@ -127,7 +117,7 @@ GtkWidget *Session::start(uint64_t layout_hash, Factory make) {
   g_signal_connect(page, "notify::scale-factor", G_CALLBACK(+[](GtkWidget *, GParamSpec *, gpointer data) {
     static_cast<Session *>(data)->queue_environment();
   }), session);
-  session->open(bundle_path(), layout_hash);
+  session->open(weft_directory() + "/bundle.hbc", layout_hash);
   return page;
 }
 

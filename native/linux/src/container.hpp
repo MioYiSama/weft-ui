@@ -28,6 +28,7 @@ struct WidgetLayout {
 
 struct WidgetStyle {
   GdkRGBA background{};
+  std::optional<GdkRGBA> placeholder;
   GdkRGBA border_color{};
   double radius = 0;
   double border = 0;
@@ -38,6 +39,7 @@ struct WidgetStyle {
 WidgetLayout &attach_layout(GtkWidget *widget);
 WidgetStyle &widget_style(GtkWidget *widget);
 GtkWidget *widget_new(GtkWidget *child = nullptr);
+void picture_set_density(GtkPicture *picture, int density);
 GtkWidget *spinner_new();
 void spinner_set_color(GtkWidget *widget, GdkRGBA color);
 GtkWidget *progress_new();

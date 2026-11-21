@@ -6,10 +6,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <string>
 #include <utility>
 
 #include "appearance.hpp"
+#include "assets.hpp"
 #include "container.hpp"
 #include "texture_cache.hpp"
 #include "weft/gtk.hpp"
@@ -355,6 +357,12 @@ void Text::set_color(Color color) {
   restyle();
 }
 
+void Text::set_font(std::string_view font) {
+  if (style_.font == font) return;
+  style_.font.assign(font);
+  restyle();
+}
+
 void Text::set_size(double size) {
   style_.size = size > 0 ? std::optional(pango_length(size)) : std::nullopt;
   restyle();
@@ -430,6 +438,12 @@ void Text::Span::set_color(Color color) {
   restyle();
 }
 
+void Text::Span::set_font(std::string_view font) {
+  if (style_.font == font) return;
+  style_.font.assign(font);
+  restyle();
+}
+
 void Text::Span::set_size(double size) {
   style_.size = size > 0 ? std::optional(pango_length(size)) : std::nullopt;
   restyle();
@@ -479,6 +493,8 @@ void Text::Style::apply(PangoAttrList *attributes, const Style &inherited, guint
     // Pango reserves alpha 0 for inheriting the renderer's foreground alpha.
     insert(pango_attr_foreground_alpha_new(std::max<guint16>(channel(rgba.alpha), 1)));
   }
+  const auto &family = font.empty() ? inherited.font : font;
+  if (!family.empty()) insert(pango_attr_family_new(family.c_str()));
   if (auto value = choose(size, inherited.size)) insert(pango_attr_size_new_absolute(*value));
   if (auto value = choose(weight, inherited.weight)) insert(pango_attr_weight_new(pango_weight(*value)));
   if (auto value = choose(italic, inherited.italic))
@@ -743,8 +759,10 @@ void loaded(Load *load, GBytes *bytes, GError *error) {
                  error ? error->message : "unknown error");
   }
   if (auto *picture = static_cast<GtkPicture *>(g_weak_ref_get(&load->picture))) {
-    auto *shown = static_cast<const char *>(g_object_get_data(G_OBJECT(picture), "weft-src"));
-    if (texture && shown && load->src == shown) gtk_picture_set_paintable(picture, GDK_PAINTABLE(texture));
+    if (g_object_get_data(G_OBJECT(picture), "weft-load") == load) {
+      g_object_set_data(G_OBJECT(picture), "weft-load", nullptr);
+      if (texture) gtk_picture_set_paintable(picture, GDK_PAINTABLE(texture));
+    }
     g_object_unref(picture);
   }
   if (texture) {
@@ -761,21 +779,37 @@ void loaded(Load *load, GBytes *bytes, GError *error) {
 
 Image::Image() : Decorated(widget_new(gtk_picture_new())), picture_(GTK_PICTURE(gtk_widget_get_first_child(widget()))) {
   gtk_picture_set_can_shrink(picture_, true);
+  gtk_widget_set_overflow(GTK_WIDGET(picture_), GTK_OVERFLOW_HIDDEN);
+  set_fit(ImageFit::Cover);
+  g_signal_connect(widget(), "notify::scale-factor", G_CALLBACK(+[](GtkWidget *, GParamSpec *, Image *image) {
+    if (!image->asset_name_.empty()) image->load_asset(image->asset_name_);
+  }), this);
 }
 
 void Image::set_src(std::string_view src) {
+  g_object_set_data(G_OBJECT(picture_), "weft-load", nullptr);
+  if (src.starts_with("asset:")) {
+    asset_name_.assign(src.substr(6));
+    load_asset(asset_name_);
+    return;
+  }
+  asset_name_.clear();
+  picture_set_density(picture_, 1);
+  if (src.empty()) {
+    gtk_picture_set_paintable(picture_, nullptr);
+    return;
+  }
   std::string source(src);
-  g_object_set_data_full(G_OBJECT(picture_), "weft-src", g_strdup(source.c_str()), g_free);
   if (auto *cached = textures().find(source)) {
     gtk_picture_set_paintable(picture_, GDK_PAINTABLE(cached));
     return;
   }
   gtk_picture_set_paintable(picture_, nullptr);
-  if (source.empty()) return;
-  auto *load = new Load{{}, source};
+  auto *load = new Load{{}, std::move(source)};
   g_weak_ref_init(&load->picture, picture_);
-  if (g_str_has_prefix(source.c_str(), "http:") || g_str_has_prefix(source.c_str(), "https:")) {
-    SoupMessage *message = soup_message_new(SOUP_METHOD_GET, source.c_str());
+  g_object_set_data(G_OBJECT(picture_), "weft-load", load);
+  if (src.starts_with("http:") || src.starts_with("https:")) {
+    SoupMessage *message = soup_message_new(SOUP_METHOD_GET, load->src.c_str());
     if (!message) {
       loaded(load, nullptr, g_error_new(G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT, "invalid URL"));
       return;
@@ -797,7 +831,7 @@ void Image::set_src(std::string_view src) {
     g_object_unref(message);
     return;
   }
-  GFile *file = g_file_new_for_commandline_arg(source.c_str());
+  GFile *file = g_file_new_for_commandline_arg(load->src.c_str());
   g_file_load_bytes_async(
       file, nullptr,
       [](GObject *file, GAsyncResult *result, gpointer data) {
@@ -809,19 +843,56 @@ void Image::set_src(std::string_view src) {
   g_object_unref(file);
 }
 
-void Image::set_width(double width) {
-  Element::set_width(width);
-  update_fit();
+void Image::load_asset(std::string_view name) {
+  const int scale = gtk_widget_get_scale_factor(widget());
+  auto asset = find_asset(asset_directory(), name, scale);
+  picture_set_density(picture_, asset ? asset->density : 1);
+  g_autoptr(GError) error = nullptr;
+  if (asset) {
+    if (asset->path.ends_with(".svg")) {
+      g_autoptr(GdkPaintable) svg = svg_paintable(asset->path.c_str(), scale, &error);
+      if (svg) {
+        gtk_picture_set_paintable(picture_, svg);
+        return;
+      }
+    } else {
+      auto &cache = textures();
+      if (auto *cached = cache.find(asset->path)) {
+        gtk_picture_set_paintable(picture_, GDK_PAINTABLE(cached));
+        return;
+      }
+      g_autoptr(GdkTexture) texture = gdk_texture_new_from_filename(asset->path.c_str(), &error);
+      if (texture) {
+        gtk_picture_set_paintable(picture_, GDK_PAINTABLE(texture));
+        cache.insert(std::move(asset->path), texture);
+        return;
+      }
+    }
+  }
+  gtk_picture_set_paintable(picture_, nullptr);
+#ifndef NDEBUG
+  std::fprintf(stderr, "[weft warn] weft: cannot load asset:%.*s (%s)\n", int(name.size()), name.data(),
+               error ? error->message : "asset not found");
+#endif
 }
 
-void Image::set_height(double height) {
-  Element::set_height(height);
-  update_fit();
+void Image::set_fit(ImageFit fit) {
+  switch (fit) {
+    case ImageFit::Cover: gtk_picture_set_content_fit(picture_, GTK_CONTENT_FIT_COVER); break;
+    case ImageFit::Contain: gtk_picture_set_content_fit(picture_, GTK_CONTENT_FIT_CONTAIN); break;
+    case ImageFit::Fill: gtk_picture_set_content_fit(picture_, GTK_CONTENT_FIT_FILL); break;
+  }
 }
 
-void Image::update_fit() {
-  const auto &size = layout().size;
-  gtk_picture_set_content_fit(picture_, size.width && size.height ? GTK_CONTENT_FIT_FILL : GTK_CONTENT_FIT_CONTAIN);
+void Image::set_placeholder(Color color) {
+  placeholder_ = color;
+  widget_style(widget()).placeholder = color.resolve();
+  gtk_widget_queue_draw(widget());
+}
+
+void Image::reapply_colors() {
+  Decorated::reapply_colors();
+  if (placeholder_.is_token()) set_placeholder(placeholder_);
 }
 
 }  // namespace weft

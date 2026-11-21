@@ -98,6 +98,11 @@ Insets native_margin(GtkWidget *widget) {
 
 Size measure_widget(const void *pointer, Proposal proposal);
 
+GQuark picture_density_key() {
+  static const auto key = g_quark_from_static_string("weft-picture-density");
+  return key;
+}
+
 Size measure_native(GtkWidget *widget, Proposal proposal) {
   const auto [w, h] = proposal;
   if (w.is_exact() && h.is_exact()) return {w.value, h.value};
@@ -119,6 +124,14 @@ Size measure_native(GtkWidget *widget, Proposal proposal) {
       if (ratio > 0) {
         if (w.is_exact()) return {w.value, h.fit(w.value / ratio)};
         if (h.is_exact()) return {w.fit(h.value * ratio), h.value};
+        const int intrinsic_width = gdk_paintable_get_intrinsic_width(image);
+        const int intrinsic_height = gdk_paintable_get_intrinsic_height(image);
+        if (intrinsic_width > 0 && intrinsic_height > 0) {
+          const int density = std::max(1, GPOINTER_TO_INT(g_object_get_qdata(G_OBJECT(widget), picture_density_key())));
+          const double width = std::min(w.fit(double(intrinsic_width) / density),
+                                        h.fit(double(intrinsic_height) / density) * ratio);
+          return {width, width / ratio};
+        }
       }
     }
   }
@@ -266,8 +279,15 @@ void widget_allocate(GtkWidget *widget, int width, int height, int) {
 
 void snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
   const auto &style = widget_style(widget);
+  const auto &background = [&]() -> const GdkRGBA & {
+    if (style.placeholder && !gtk_picture_get_paintable(GTK_PICTURE(gtk_widget_get_first_child(widget)))) {
+      return *style.placeholder;
+    }
+    return style.background;
+  }();
   const bool border = style.border > 0 && style.border_color.alpha > 0;
-  if (style.shadow != Shadow::None || style.background.alpha > 0 || border || style.clip) {
+  const bool clip = style.clip || (style.radius > 0 && GTK_IS_PICTURE(gtk_widget_get_first_child(widget)));
+  if (style.shadow != Shadow::None || background.alpha > 0 || border || clip) {
     const auto bounds = GRAPHENE_RECT_INIT(0, 0, float(gtk_widget_get_width(widget)), float(gtk_widget_get_height(widget)));
     GskRoundedRect outline;
     gsk_rounded_rect_init_from_rect(&outline, &bounds, float(style.radius));
@@ -281,9 +301,9 @@ void snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
       case Shadow::Medium: shadow(4, 12, 38 / 255.0f); break;
       case Shadow::Large: shadow(12, 32, 46 / 255.0f); break;
     }
-    if (style.background.alpha > 0) {
+    if (background.alpha > 0) {
       gtk_snapshot_push_rounded_clip(snapshot, &outline);
-      gtk_snapshot_append_color(snapshot, &style.background, &bounds);
+      gtk_snapshot_append_color(snapshot, &background, &bounds);
       gtk_snapshot_pop(snapshot);
     }
     const float thickness = style.border;
@@ -292,13 +312,13 @@ void snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
       const GdkRGBA colors[]{style.border_color, style.border_color, style.border_color, style.border_color};
       gtk_snapshot_append_border(snapshot, &outline, widths, colors);
     }
-    if (style.clip) {
+    if (clip) {
       gsk_rounded_rect_shrink(&outline, thickness, thickness, thickness, thickness);
       gtk_snapshot_push_rounded_clip(snapshot, &outline);
     }
   }
   GTK_WIDGET_CLASS(weft_widget_parent_class)->snapshot(widget, snapshot);
-  if (style.clip) gtk_snapshot_pop(snapshot);
+  if (clip) gtk_snapshot_pop(snapshot);
 }
 
 gboolean spin(GtkWidget *widget, GdkFrameClock *clock, gpointer) {
@@ -472,6 +492,15 @@ void progress_set_value(GtkWidget *widget, double value) {
   progress.fraction = std::isnan(value) ? 0 : std::clamp(value, 0.0, 1.0);
   gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_VALUE_NOW, progress.fraction, -1);
   gtk_widget_queue_draw(widget);
+}
+
+void picture_set_density(GtkPicture *picture, int density) {
+  auto *object = G_OBJECT(picture);
+  const auto key = picture_density_key();
+  auto *value = density > 1 ? GINT_TO_POINTER(density) : nullptr;
+  if (g_object_get_qdata(object, key) == value) return;
+  g_object_set_qdata(object, key, value);
+  gtk_widget_queue_resize(GTK_WIDGET(picture));
 }
 
 void container_set_gap(GtkWidget *widget, double gap) {

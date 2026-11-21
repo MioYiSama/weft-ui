@@ -79,6 +79,31 @@ void spans_merge() {
   weft::theme::set({});
 }
 
+void font_families() {
+  weft::Text text(2);
+  text.set_font("Inter");
+  text.span(0).set_value("base");
+  text.span(1).set_value("override");
+  text.span(1).set_font("Noto Sans");
+  auto *label = label_of(text);
+  const auto family = [](PangoAttrIterator *iter) {
+    auto *attr = pango_attr_iterator_get(iter, PANGO_ATTR_FAMILY);
+    g_assert_nonnull(attr);
+    return reinterpret_cast<PangoAttrString *>(attr)->value;
+  };
+  {
+    g_autoptr(PangoAttrIterator) attrs = pango_attr_list_get_iterator(gtk_label_get_attributes(label));
+    g_assert_cmpstr(family(attrs), ==, "Inter");
+    g_assert_true(pango_attr_iterator_next(attrs));
+    g_assert_cmpstr(family(attrs), ==, "Noto Sans");
+  }
+  text.span(1).set_font("");
+  g_autoptr(PangoAttrIterator) attrs = pango_attr_list_get_iterator(gtk_label_get_attributes(label));
+  g_assert_cmpstr(family(attrs), ==, "Inter");
+  g_assert_true(pango_attr_iterator_next(attrs));
+  g_assert_cmpstr(family(attrs), ==, "Inter");
+}
+
 void line_height_and_limit() {
   weft::Text text;
   text.set_size(15);
@@ -129,6 +154,7 @@ int main(int argc, char **argv) {
   g_setenv("GTK_A11Y", "none", false);
   if (!gtk_init_check()) return 77;
   g_test_add_func("/text/spans-merge", spans_merge);
+  g_test_add_func("/text/font-families", font_families);
   g_test_add_func("/text/line-height-and-limit", line_height_and_limit);
   g_test_add_func("/text/limit-across-paragraphs", line_limit_across_paragraphs);
   return g_test_run();

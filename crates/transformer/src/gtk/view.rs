@@ -210,6 +210,7 @@ fn union_type(element: Element, prop: &str) -> Option<&'static str> {
         (Element::Text | Element::Span, "weight") => Some("Weight"),
         (Element::Text | Element::Span, "decoration") => Some("Decoration"),
         (Element::Input, "type") => Some("InputType"),
+        (Element::Image, "fit") => Some("ImageFit"),
         (_, "shadow") => Some("Shadow"),
         _ => None,
     }

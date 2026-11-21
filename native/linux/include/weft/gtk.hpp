@@ -271,6 +271,7 @@ class Spacer final : public Element {
 class Text final : public Padded {
   struct Style {
     std::optional<Color> color;
+    std::string font;
     std::optional<int> size;
     std::optional<Weight> weight;
     std::optional<bool> italic;
@@ -287,6 +288,7 @@ class Text final : public Padded {
 
     void set_value(std::string_view value);
     void set_color(Color color);
+    void set_font(std::string_view font);
     void set_size(double size);
     void set_weight(Weight weight);
     void set_italic(bool italic);
@@ -307,6 +309,7 @@ class Text final : public Padded {
 
   void set_value(std::string_view value);
   void set_color(Color color);
+  void set_font(std::string_view font);
   void set_size(double size);
   void set_weight(Weight weight);
   void set_italic(bool italic);
@@ -557,22 +560,24 @@ class Divider final : public Element {
   std::optional<Color> color_;
 };
 
-/// `Image`: a `GtkPicture` of a remote (`http:` / `https:`) or local image,
-/// downloaded once per process. With one fixed side the other follows the
-/// aspect ratio, with both the image fills them, and with neither it keeps
-/// its own size (one image pixel per logical pixel).
+/// `Image`: a `GtkPicture` of a bundled, remote or local image. With one
+/// fixed side the other follows the aspect ratio; with neither it uses the
+/// image's intrinsic logical size.
 class Image final : public Decorated {
  public:
   Image();
 
   void set_src(std::string_view src);
-  void set_width(double width);
-  void set_height(double height);
+  void set_fit(ImageFit fit);
+  void set_placeholder(Color color);
+  void reapply_colors() override;
 
  private:
-  void update_fit();
+  void load_asset(std::string_view name);
 
   GtkPicture *picture_;
+  std::string asset_name_;
+  Color placeholder_ = Color::rgba(0);
 };
 
 /// One template instance of the view protocol. The generated views subclass

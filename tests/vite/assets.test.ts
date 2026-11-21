@@ -133,6 +133,32 @@ test("WeChat copies assets, chooses density, and embeds Inter in the page styles
   }
 });
 
+test("Linux passes the asset directory to weft_views and copies media and fonts", async () => {
+  await cp(join(root, "res/images/logo@2x.png"), join(root, "res/images/logo@3x.png"));
+  vi.stubEnv("WEFT_PLATFORM", "linux");
+  vi.stubEnv("WEFT_NATIVE", "0");
+  await (await createBuilder({
+    ...config(),
+    plugins: [weft({ assets: "res", platforms: ["linux"], app: { id: "com.example.assets" } })],
+  })).buildApp();
+  const weftDir = join(root, "apps/linux/weft");
+  const cmake = await readFile(join(weftDir, "CMakeLists.txt"), "utf8");
+  expect(cmake).toContain('weft_views("${CMAKE_CURRENT_LIST_DIR}/Generated.cpp" "${CMAKE_CURRENT_LIST_DIR}/bundle.hbc" "${CMAKE_CURRENT_LIST_DIR}/assets")');
+  const directory = join(weftDir, "assets");
+  const images = ["logo.png", "logo@2x.png", "logo@3x.png", "only_high@2x.png"];
+  const fonts = ["Inter-Bold.ttf", "Inter-Regular.ttf"];
+  expect((await readdir(directory)).sort()).toEqual(["fonts", ...images, "star.svg"]);
+  expect((await readdir(join(directory, "fonts"))).sort()).toEqual(fonts);
+  for (const [input, output] of [
+    ...images.map((name) => [`images/${name}`, name]),
+    ["icons/star.svg", "star.svg"],
+    ...fonts.map((name) => [`fonts/${name}`, `fonts/${name}`]),
+  ] as [string, string][]) {
+    const copied = await readFile(join(directory, output));
+    expect(copied.equals(await readFile(join(root, "res", input))), output).toBe(true);
+  }
+});
+
 test("dev server reloads after a variant is added to the configured asset directory", async () => {
   const server = await createServer({
     ...config(), base: "/dev/", plugins: [weft({ assets: "res" })], server: { host: "127.0.0.1", port: 0 },

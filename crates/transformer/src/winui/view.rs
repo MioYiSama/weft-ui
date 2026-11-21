@@ -30,8 +30,19 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                 .peekable();
             let declaration = if slots.peek().is_some() { "" } else { "var " };
             let args = std::fmt::from_fn(|out| match element {
-                Element::Column => out.write_str("vertical: true"),
-                Element::Row => out.write_str("vertical: false"),
+                Element::Column | Element::Row => {
+                    write!(out, "vertical: {}", *element == Element::Column)?;
+                    if let Some(slot) = template.event(index, "onTap") {
+                        write!(out, ", tap: () => Dispatch({slot})")?;
+                    }
+                    Ok(())
+                }
+                Element::Stack | Element::Text | Element::Image => {
+                    if let Some(slot) = template.event(index, "onTap") {
+                        write!(out, "tap: () => Dispatch({slot})")?;
+                    }
+                    Ok(())
+                }
                 Element::Button => match template.event(index, "onClick") {
                     Some(slot) => write!(out, "() => Dispatch({slot})"),
                     None => out.write_str("null"),
@@ -68,12 +79,7 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                         None => Ok(()),
                     }
                 }
-                Element::Stack
-                | Element::Spacer
-                | Element::Text
-                | Element::Image
-                | Element::Spinner
-                | Element::Progress => Ok(()),
+                Element::Spacer | Element::Spinner | Element::Progress => Ok(()),
                 Element::Span => write!(out, "n{}", parent.expect("a Span belongs to a Text node")),
             });
             out.writer.line(format_args!(

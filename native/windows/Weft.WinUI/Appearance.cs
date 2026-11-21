@@ -27,6 +27,7 @@ public abstract class WeftDecoratedElement : WeftPaintedElement
     private protected WeftBox Box { get; } = new();
     protected sealed override FrameworkElement Control => Box;
     private protected override LayoutInsets ContentInsets => Box.ContentInsets;
+    private protected override void SetOpacity(double value) => Box.SetOpacity(value);
 
     private WeftBrush background, borderColor;
 
@@ -82,7 +83,7 @@ internal struct WeftBrush
 
 // Keep the layout Border distinct from a shadow behind it. When clipping is off,
 // a paint-only Border rounds the chrome without implicitly clipping its sibling content.
-internal sealed class WeftBox : Grid
+internal sealed partial class WeftBox : Grid
 {
     internal Border Border { get; } = new() { BackgroundSizing = BackgroundSizing.OuterBorderEdge };
     internal Border Paint => useChrome ? chrome! : Border;

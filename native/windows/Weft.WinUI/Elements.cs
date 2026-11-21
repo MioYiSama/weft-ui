@@ -18,11 +18,12 @@ public sealed class WeftStack : WeftPaddedElement
 {
     private readonly WeftLinearPanel panel;
 
-    public WeftStack(bool vertical)
+    public WeftStack(bool vertical, Action? tap = null)
     {
         panel = new WeftLinearPanel(vertical ? WeftAxis.Vertical : WeftAxis.Horizontal);
         Box.Border.Child = panel;
         Children = new WeftRegion(panel);
+        if (tap is not null) Box.EnableTap(tap);
     }
 
     public WeftRegion Children { get; }
@@ -37,10 +38,11 @@ public sealed class WeftOverlay : WeftPaddedElement
 {
     private readonly WeftStackPanel panel = new();
 
-    public WeftOverlay()
+    public WeftOverlay(Action? tap = null)
     {
         Box.Border.Child = panel;
         Children = new WeftRegion(panel);
+        if (tap is not null) Box.EnableTap(tap);
     }
 
     public WeftRegion Children { get; }
@@ -108,7 +110,11 @@ public sealed class WeftText : WeftPaddedElement
 
     private WeftBrush foreground;
 
-    public WeftText() => Box.Border.Child = block;
+    public WeftText(Action? tap = null)
+    {
+        Box.Border.Child = block;
+        if (tap is not null) Box.EnableTap(tap);
+    }
 
     public string Value
     {
@@ -244,7 +250,11 @@ public sealed class WeftImage : WeftDecoratedElement
 {
     private readonly Image image = new() { Stretch = Stretch.None };
 
-    public WeftImage() => Box.Border.Child = image;
+    public WeftImage(Action? tap = null)
+    {
+        Box.Border.Child = image;
+        if (tap is not null) Box.EnableTap(tap);
+    }
 
     public string Src
     {

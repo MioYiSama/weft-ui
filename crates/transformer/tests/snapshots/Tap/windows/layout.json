@@ -1,0 +1,33 @@
+{
+  "hash": "8c1df00d0c961bb0",
+  "templates": [
+    {
+      "label": "Tap",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {}, "children": [1, 6]},
+        {"element": "Row", "props": {"opacity": 0.8, "gap": 8}, "children": [2, 4]},
+        {"element": "Button", "props": {}, "children": [3]},
+        {"element": "Text", "props": {"value": "Button"}, "children": []},
+        {"element": "Text", "props": {"maxLines": 2}, "children": [5]},
+        {"element": "Span", "props": {"weight": "semibold", "value": "Tap me"}, "children": []},
+        {"element": "Stack", "props": {}, "children": [7]},
+        {"element": "Image", "props": {"width": 48, "height": 48}, "children": []}
+      ],
+      "values": [
+        {"node": 0, "prop": "opacity", "type": "Float"},
+        {"node": 7, "prop": "src", "type": "String"}
+      ],
+      "events": [
+        {"node": 0, "event": "onTap", "payload": null, "controls": null},
+        {"node": 1, "event": "onTap", "payload": null, "controls": null},
+        {"node": 2, "event": "onClick", "payload": null, "controls": null},
+        {"node": 4, "event": "onTap", "payload": null, "controls": null},
+        {"node": 6, "event": "onTap", "payload": null, "controls": null},
+        {"node": 7, "event": "onTap", "payload": null, "controls": null}
+      ],
+      "points": []
+    }
+  ]
+}

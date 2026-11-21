@@ -39,7 +39,8 @@ public abstract class WeftElement
     public double MarginStart { set { margin.Start = value; UpdateMargin(); } }
     public double MarginEnd { set { margin.End = value; UpdateMargin(); } }
 
-    public double Opacity { set => Control.Opacity = Math.Clamp(value, 0, 1); }
+    public double Opacity { set => SetOpacity(Math.Clamp(value, 0, 1)); }
+    private protected virtual void SetOpacity(double value) => Control.Opacity = value;
     public bool Hidden { set => Control.Visibility = value ? Visibility.Collapsed : Visibility.Visible; }
 
     private protected virtual LayoutInsets ContentInsets => default;

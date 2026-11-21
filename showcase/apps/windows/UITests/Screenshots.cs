@@ -58,6 +58,7 @@ public sealed class Screenshots
                 if (id == "text") VerifyTypography(window);
                 if (id == "controls") VerifyControls(window);
                 if (id == "inputs") VerifyInputs(window);
+                if (id == "tap") VerifyTaps(window);
             }
             finally
             {
@@ -266,6 +267,91 @@ public sealed class Screenshots
         Expect(() => !Focused() && Label("未聚焦"), "A false focus edge must release keyboard focus");
         Click("聚焦文本框");
         Expect(() => Focused() && Label("已聚焦"), "A subsequent true edge must request focus again");
+    }
+
+    private static void VerifyTaps(Window window)
+    {
+        AutomationElement Button(string label) => window.FindFirstDescendant(cf =>
+            cf.ByControlType(ControlType.Button).And(cf.ByName(label)))
+            ?? throw new AssertFailedException($"Missing accessible button '{label}'");
+
+        static System.Drawing.Point Center(AutomationElement element)
+        {
+            var bounds = element.BoundingRectangle;
+            return new(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2);
+        }
+
+        void Counts(int rows, int cards, int buttons, int texts)
+        {
+            foreach (var label in new[] { $"Rows: {rows}", $"Cards: {cards}", $"Buttons: {buttons}", $"Text: {texts}" })
+                Assert.IsNotNull(Retry.WhileNull(() => window.FindFirstDescendant(cf => cf.ByName(label)),
+                    TimeSpan.FromSeconds(3)).Result, $"Expected '{label}' after tapping one target");
+        }
+
+        var row = Button("Open details");
+        var card = Button("Image card");
+        var nested = Button("Nested actions");
+        var preview = Button("Preview");
+        var save = nested.FindFirstDescendant(cf => cf.ByClassName("Button").And(cf.ByControlType(ControlType.Button)));
+        var image = card.FindFirstDescendant(cf => cf.ByClassName("WeftTap").And(cf.ByControlType(ControlType.Button)));
+        Assert.IsNotNull(save, "The native button must remain visible inside the tappable row");
+        Assert.IsNotNull(image, "The nested tappable image must have a button role even before it loads");
+        Counts(0, 0, 0, 0);
+
+        Mouse.Click(Center(row));
+        Counts(1, 0, 0, 0);
+        Mouse.Click(Center(card));
+        Counts(1, 1, 0, 0);
+        Mouse.Click(Center(image));
+        Counts(1, 2, 0, 0);
+        Mouse.Click(Center(save));
+        Counts(1, 2, 1, 0);
+        Mouse.Click(Center(preview));
+        Counts(1, 2, 1, 1);
+
+        // The card's solid background lets us observe feedback without sampling text or the image.
+        var bounds = card.BoundingRectangle;
+        var probe = new System.Drawing.Rectangle(bounds.Right - bounds.Width / 8, bounds.Top + bounds.Height / 4, 1, 1);
+        int Red(System.Drawing.Rectangle rect)
+        {
+            var previous = SetThreadDpiAwarenessContext(-4);
+            if (previous == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
+            try
+            {
+                using var pixel = Capture.Rectangle(rect);
+                return pixel.Bitmap.GetPixel(0, 0).R;
+            }
+            finally
+            {
+                SetThreadDpiAwarenessContext(previous);
+            }
+        }
+        var rest = Red(probe);
+        var outside = probe with { Y = bounds.Bottom + 4 };
+        var backing = Red(outside);
+        var dimmed = rest * 0.6 + backing * 0.4;
+        Mouse.Position = Center(card);
+        Mouse.Down();
+        try
+        {
+            Assert.IsFalse(Retry.While(() => Red(probe), red => Math.Abs(red - dimmed) > 2,
+                TimeSpan.FromSeconds(3)).TimedOut, "Holding a tap must dim the entire element to 60%");
+            Counts(1, 2, 1, 1);
+            Mouse.Position = outside.Location;
+        }
+        finally
+        {
+            Mouse.Up();
+        }
+        Assert.IsFalse(Retry.While(() => Red(probe), red => red != rest,
+            TimeSpan.FromSeconds(3)).TimedOut, "Releasing outside must restore the original opacity");
+        Counts(1, 2, 1, 1);
+
+        preview.Focus();
+        Keyboard.Type(VirtualKeyShort.RETURN);
+        Counts(1, 2, 1, 2);
+        preview.Patterns.Invoke.Pattern.Invoke();
+        Counts(1, 2, 1, 3);
     }
 
     private static void Paste(string text)

@@ -4,7 +4,6 @@ use super::{
     Children, Css, CssTarget, CssUnit, CustomCss, ElementSpec, FeatureSpec, PropKind, PropSpec,
     PropType,
 };
-use crate::protocol::Platform;
 
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -4418,13 +4417,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 18] = [
         children: Children::None,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::TextArea,
@@ -4433,13 +4426,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 18] = [
         children: Children::None,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::Spinner,
@@ -4448,13 +4435,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 18] = [
         children: Children::None,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::Progress,
@@ -4463,13 +4444,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 18] = [
         children: Children::None,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::Divider,
@@ -4478,13 +4453,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 18] = [
         children: Children::None,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::Slider,
@@ -4493,13 +4462,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 18] = [
         children: Children::None,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::Picker,
@@ -4508,13 +4471,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 18] = [
         children: Children::None,
         parents: &[],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
 ];
 

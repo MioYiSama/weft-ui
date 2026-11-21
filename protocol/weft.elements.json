@@ -433,7 +433,6 @@
       "name": "Switch",
       "doc": { "en": "Toggles a setting on or off.", "zh": "打开或关闭一项设置。" },
       "groups": ["layout", "visibility"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "members": [
         {
           "name": "checked", "type": "Bool", "positional": true, "required": true, "controlledBy": "onChange",
@@ -453,7 +452,6 @@
       "name": "TextArea",
       "doc": { "en": "Edits multiple lines of text.", "zh": "编辑多行文本。" },
       "groups": ["layout", "visibility"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "members": [
         {
           "name": "value", "type": "String", "positional": true, "required": true, "controlledBy": "onChange",
@@ -477,7 +475,6 @@
       "name": "Spinner",
       "doc": { "en": "Indicates that work is in progress without showing an amount.", "zh": "表示操作正在进行，不显示具体进度。" },
       "groups": ["layout", "visibility"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "members": [
         {
           "name": "color", "type": "Color", "css": { "property": "color", "unit": "color" },
@@ -489,7 +486,6 @@
       "name": "Progress",
       "doc": { "en": "Displays the completed fraction of a task.", "zh": "显示任务已完成的比例。" },
       "groups": ["layout", "visibility"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "members": [
         {
           "name": "value", "type": "Float", "positional": true, "required": true,
@@ -507,7 +503,6 @@
       "name": "Divider",
       "doc": { "en": "Separates adjacent content with a line.", "zh": "用线条分隔相邻内容。" },
       "groups": ["layout", "visibility"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "members": [
         {
           "name": "vertical", "type": "Bool", "constant": true, "default": false,
@@ -524,7 +519,6 @@
       "name": "Slider",
       "doc": { "en": "Selects an integer within a range.", "zh": "在指定范围内选择整数。" },
       "groups": ["layout", "visibility"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "members": [
         {
           "name": "value", "type": "Int", "positional": true, "required": true, "controlledBy": "onChange",
@@ -556,7 +550,6 @@
       "name": "Picker",
       "doc": { "en": "Selects one option from a list of strings.", "zh": "从字符串列表中选择一项。" },
       "groups": ["layout", "visibility"],
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" },
       "members": [
         {
           "name": "selected", "type": "Int", "positional": true, "required": true, "controlledBy": "onChange",

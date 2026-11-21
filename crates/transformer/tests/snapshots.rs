@@ -107,7 +107,7 @@ const TYPOGRAPHY: Fixture = Fixture {
 const CONTROLS: Fixture = Fixture {
     name: "Controls",
     source: include_str!("fixtures/Controls.weft"),
-    natives: &[],
+    natives: ALL_NATIVES,
 };
 
 /// Every generated file of the app, as the platform's output directory would

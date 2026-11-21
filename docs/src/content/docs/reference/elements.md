@@ -394,8 +394,6 @@ Must be a direct child of: `Column`, `Row`, `Scroll`.
 
 Toggles a setting on or off.
 
-**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
-
 **Children:** None.
 
 | Property | Type | Default | Description | Platform exceptions |
@@ -428,8 +426,6 @@ Toggles a setting on or off.
 ## TextArea
 
 Edits multiple lines of text.
-
-**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
 
 **Children:** None.
 
@@ -465,8 +461,6 @@ Edits multiple lines of text.
 
 Indicates that work is in progress without showing an amount.
 
-**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
-
 **Children:** None.
 
 | Property | Type | Default | Description | Platform exceptions |
@@ -494,8 +488,6 @@ Indicates that work is in progress without showing an amount.
 ## Progress
 
 Displays the completed fraction of a task.
-
-**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
 
 **Children:** None.
 
@@ -526,8 +518,6 @@ Displays the completed fraction of a task.
 
 Separates adjacent content with a line.
 
-**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
-
 **Children:** None.
 
 | Property | Type | Default | Description | Platform exceptions |
@@ -556,8 +546,6 @@ Separates adjacent content with a line.
 ## Slider
 
 Selects an integer within a range.
-
-**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
 
 **Children:** None.
 
@@ -594,8 +582,6 @@ Selects an integer within a range.
 ## Picker
 
 Selects one option from a list of strings.
-
-**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
 
 **Children:** None.
 

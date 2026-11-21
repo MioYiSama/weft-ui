@@ -28,19 +28,20 @@ final class UITests: XCTestCase {
         add.tap()
         XCTAssertTrue(app.staticTexts["2 todos"].waitForExistence(timeout: 5))
 
-        // Checkboxes (switches on iOS) in the rows.
-        let first = app.switches.element(boundBy: 0)
+        // The checkmark buttons in the rows expose their checked state.
+        let checkboxes = app.buttons.matching(identifier: "Checkbox")
+        let first = checkboxes.element(boundBy: 0)
         XCTAssertEqual(first.value as? String, "0")
         first.tap()
         XCTAssertEqual(first.value as? String, "1")
-        XCTAssertEqual(app.switches.element(boundBy: 1).value as? String, "0")
+        XCTAssertEqual(checkboxes.element(boundBy: 1).value as? String, "0")
 
         // Removing the first row keeps the second.
         app.buttons.matching(identifier: "Remove").element(boundBy: 0).tap()
         XCTAssertTrue(app.staticTexts["1 todos"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["Buy milk and"].exists)
         XCTAssertTrue(app.staticTexts["Eggs"].exists)
-        XCTAssertEqual(app.switches.element(boundBy: 0).value as? String, "0")
+        XCTAssertEqual(checkboxes.element(boundBy: 0).value as? String, "0")
     }
 
     @MainActor

@@ -1,10 +1,8 @@
 import SwiftUI
 
-// Controlled `Input` and `Checkbox`. The native control reports every user
-// edit through `edit`, which dispatches it synchronously and returns the
-// value to show again when the app refused it (`nil` when accepted). Text
-// being composed by an input method is not reported, so it is never rolled
-// back mid-composition; the committed text is.
+// The `edit` closure dispatches the event and returns the slot's value to
+// restore when an edit was refused, or nil when accepted. Input
+// delegates skip marked text so it is never rolled back mid-composition.
 
 /// Intrinsic width of an `Input` (CSS inputs default to about 20 characters).
 private let inputWidth: CGFloat = 200
@@ -72,48 +70,6 @@ public struct WeftInput: NSViewRepresentable {
     }
 }
 
-/// `Checkbox`: an `NSButton` checkbox.
-public struct WeftCheckbox: NSViewRepresentable {
-    let checked: Bool
-    let edit: @MainActor (Bool) -> Bool?
-
-    public init(checked: Bool, edit: @escaping @MainActor (Bool) -> Bool?) {
-        self.checked = checked
-        self.edit = edit
-    }
-
-    public func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    public func makeNSView(context: Context) -> NSButton {
-        let button = NSButton(checkboxWithTitle: "", target: context.coordinator, action: #selector(Coordinator.toggled(_:)))
-        button.state = checked ? .on : .off
-        return button
-    }
-
-    public func updateNSView(_ button: NSButton, context: Context) {
-        context.coordinator.checkbox = self
-        button.isEnabled = context.environment.isEnabled
-        button.state = checked ? .on : .off
-    }
-
-    @MainActor
-    public final class Coordinator: NSObject {
-        var checkbox: WeftCheckbox
-
-        init(_ checkbox: WeftCheckbox) {
-            self.checkbox = checkbox
-        }
-
-        @objc func toggled(_ button: NSButton) {
-            if let restored = checkbox.edit(button.state == .on) {
-                button.state = restored ? .on : .off
-            }
-        }
-    }
-}
-
 #else
 import UIKit
 
@@ -172,48 +128,149 @@ public struct WeftInput: UIViewRepresentable {
     }
 }
 
-/// `Checkbox`: a `UISwitch`, the iOS control for a boolean.
-public struct WeftCheckbox: UIViewRepresentable {
-    let checked: Bool
-    let edit: @MainActor (Bool) -> Bool?
+#endif
 
-    public init(checked: Bool, edit: @escaping @MainActor (Bool) -> Bool?) {
-        self.checked = checked
-        self.edit = edit
-    }
+/// A binding to the value slot, rather than independent state in the control.
+/// Refused edits invalidate the control even when the value slot did not change.
+private struct WeftControl<Value, Content: View>: View {
+    let value: Value
+    let edit: @MainActor (Value) -> Value?
+    let content: (Binding<Value>) -> Content
+    @State private var rejection = 0
 
-    public func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    public func makeUIView(context: Context) -> UISwitch {
-        let toggle = UISwitch()
-        toggle.isOn = checked
-        toggle.addTarget(context.coordinator, action: #selector(Coordinator.toggled(_:)), for: .valueChanged)
-        return toggle
-    }
-
-    public func updateUIView(_ toggle: UISwitch, context: Context) {
-        context.coordinator.checkbox = self
-        toggle.isEnabled = context.environment.isEnabled
-        if toggle.isOn != checked {
-            toggle.setOn(checked, animated: true)
-        }
-    }
-
-    @MainActor
-    public final class Coordinator: NSObject {
-        var checkbox: WeftCheckbox
-
-        init(_ checkbox: WeftCheckbox) {
-            self.checkbox = checkbox
-        }
-
-        @objc func toggled(_ toggle: UISwitch) {
-            if let restored = checkbox.edit(toggle.isOn) {
-                toggle.setOn(restored, animated: true)
-            }
-        }
+    var body: some View {
+        _ = rejection
+        return content(Binding(get: { value }, set: {
+            if edit($0) != nil { rejection &+= 1 }
+        }))
     }
 }
-#endif
+
+/// A native checkbox on macOS and a square checkmark button on iOS.
+@MainActor public func WeftCheckbox(checked: Bool, edit: @escaping @MainActor (Bool) -> Bool?) -> some View {
+    #if os(macOS)
+    WeftControl(value: checked, edit: edit) { binding in
+        Toggle("", isOn: binding).labelsHidden().toggleStyle(.checkbox)
+    }
+    #else
+    Button {
+        _ = edit(!checked)
+    } label: {
+        Image(systemName: checked ? "checkmark.square.fill" : "square")
+    }
+    .accessibilityLabel("Checkbox")
+    .accessibilityValue(checked ? "1" : "0")
+    #endif
+}
+
+/// A native on/off switch.
+@MainActor public func weftSwitch(checked: Bool, edit: @escaping @MainActor (Bool) -> Bool?) -> some View {
+    WeftControl(value: checked, edit: edit) { binding in
+        Toggle("", isOn: binding).labelsHidden().toggleStyle(.switch)
+    }
+}
+
+/// A multiline text field with three lines reserved for its content.
+public struct WeftTextArea: View {
+    private let value: String
+    private let placeholder: String
+    private let edit: @MainActor (String) -> String?
+    @State private var draft: String
+
+    public init(value: String, placeholder: String, edit: @escaping @MainActor (String) -> String?) {
+        self.value = value
+        self.placeholder = placeholder
+        self.edit = edit
+        _draft = State(initialValue: value)
+    }
+
+    public var body: some View {
+        TextField("", text: $draft, prompt: Text(placeholder), axis: .vertical)
+            .lineLimit(3, reservesSpace: true)
+            .textFieldStyle(.roundedBorder)
+            .onChange(of: value) { _, value in draft = value }
+            .onChange(of: draft) { _, proposed in
+                // The vertical field keeps its edit buffer if only a computed binding
+                // is invalidated. Set the draft back to the slot explicitly on refusal.
+                if proposed != value, let restored = edit(proposed) {
+                    draft = restored
+                }
+            }
+    }
+}
+
+/// A native slider with an integral event payload.
+@MainActor public func weftSlider(
+    value: CGFloat, min: CGFloat, max: CGFloat, step: CGFloat, edit: @escaping @MainActor (Double) -> Double?
+) -> some View {
+    let lower = Double(min)
+    let upper = Double(max)
+    let increment = Double(step)
+    let valid = lower.isFinite && upper.isFinite && lower < upper
+    return WeftControl(value: valid ? Double(value) : 0, edit: { edit(roundedSliderValue($0)) }) { binding in
+        Slider(value: binding,
+               in: valid ? lower...upper : 0...1,
+               step: increment.isFinite && increment > 0 ? increment : 1)
+            .disabled(!valid)
+    }
+}
+
+func roundedSliderValue(_ value: Double) -> Double {
+    value.rounded()
+}
+
+/// A menu labeled by the selected option, or the placeholder if none is selected.
+@MainActor public func weftPicker(
+    selected: CGFloat, options: [String], placeholder: String, edit: @escaping @MainActor (Double) -> Double?
+) -> some View {
+    Menu {
+        ForEach(options.indices, id: \.self) { index in
+            Button(options[index]) { _ = edit(Double(index)) }
+        }
+    } label: {
+        Text(pickerLabel(selected: selected, options: options, placeholder: placeholder))
+    }
+}
+
+func pickerLabel(selected: CGFloat, options: [String], placeholder: String) -> String {
+    guard let index = Int(exactly: selected), options.indices.contains(index) else { return placeholder }
+    return options[index]
+}
+
+/// A native indeterminate progress indicator.
+@MainActor @ViewBuilder public func weftSpinner(color: WeftColor?) -> some View {
+    #if os(macOS)
+    if let color {
+        // AppKit's busy indicator ignores tint and SwiftUI color effects.
+        let tint = color.resolved
+        TimelineView(.animation) { timeline in
+            let phase = timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1)
+            Circle().trim(from: 0, to: 0.75)
+                .stroke(tint, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .rotationEffect(.degrees(phase * 360))
+                .frame(width: 18, height: 18)
+                .padding(1)
+        }
+        .accessibilityRepresentation { ProgressView() }
+    } else {
+        ProgressView()
+    }
+    #else
+    ProgressView().tint(color?.resolved)
+    #endif
+}
+
+/// A native progress bar displaying a fraction from zero to one.
+@MainActor public func weftProgress(value: CGFloat, color: WeftColor?) -> some View {
+    ProgressView(value: Double(value)).tint(color?.resolved)
+}
+
+/// A horizontal or vertical native separator.
+@MainActor @ViewBuilder public func weftDivider(vertical: Bool, color: WeftColor?) -> some View {
+    let line = Divider().overlay { color?.resolved }
+    if vertical {
+        HStack(spacing: 0) { line }
+    } else {
+        VStack(spacing: 0) { line }
+    }
+}

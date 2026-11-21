@@ -58,7 +58,17 @@ impl Body<'_> {
         });
         let leaf = matches!(
             element,
-            Element::Text | Element::Button | Element::Input | Element::Checkbox
+            Element::Text
+                | Element::Button
+                | Element::Input
+                | Element::Checkbox
+                | Element::Switch
+                | Element::TextArea
+                | Element::Slider
+                | Element::Picker
+                | Element::Spinner
+                | Element::Progress
+                | Element::Divider
         );
         if leaf {
             if padding.is_empty() {
@@ -112,15 +122,6 @@ impl Body<'_> {
                 None => out.writer.line("WeftSpacer()"),
             },
             Element::Span => unreachable!("`Span` is rendered inline by its parent `Text`"),
-            Element::Switch
-            | Element::TextArea
-            | Element::Spinner
-            | Element::Progress
-            | Element::Divider
-            | Element::Slider
-            | Element::Picker => {
-                unreachable!("unsupported elements are rejected before code generation")
-            }
             Element::Text => self.text(out, node, props, children),
             Element::Button => {
                 match self.template.event(node, "onClick") {
@@ -149,6 +150,53 @@ impl Body<'_> {
                 let (event, slot) = self.template.controlled(node);
                 out.writer.line(format_args!(
                     "WeftCheckbox(checked: s.v{slot}) {{ s.dispatch({event}, .bool($0)) ? nil : s.v{slot} }}"
+                ));
+            }
+            Element::Switch => {
+                let (event, slot) = self.template.controlled(node);
+                out.writer.line(format_args!(
+                    "weftSwitch(checked: s.v{slot}) {{ s.dispatch({event}, .bool($0)) ? nil : s.v{slot} }}"
+                ));
+            }
+            Element::TextArea => {
+                let (event, slot) = self.template.controlled(node);
+                let placeholder = with_default(prop("placeholder"), "\"\"");
+                out.writer.line(format_args!(
+                    "WeftTextArea(value: s.v{slot}, placeholder: {placeholder}) {{ s.dispatch({event}, .string($0)) ? nil : s.v{slot} }}"
+                ));
+            }
+            Element::Slider => {
+                let (event, slot) = self.template.controlled(node);
+                let min = with_default(prop("min"), "0");
+                let max = with_default(prop("max"), "100");
+                let step = with_default(prop("step"), "1");
+                out.writer.line(format_args!(
+                    "weftSlider(value: s.v{slot}, min: {min}, max: {max}, step: {step}) {{ s.dispatch({event}, .number($0)) ? nil : Double(s.v{slot}) }}"
+                ));
+            }
+            Element::Picker => {
+                let (event, slot) = self.template.controlled(node);
+                let options = Argument::Property(prop("options").expect("`Picker` has options"));
+                let placeholder = with_default(prop("placeholder"), "\"\"");
+                out.writer.line(format_args!(
+                    "weftPicker(selected: s.v{slot}, options: {options}, placeholder: {placeholder}) {{ s.dispatch({event}, .number($0)) ? nil : Double(s.v{slot}) }}"
+                ));
+            }
+            Element::Spinner => {
+                let color = optional(prop("color"));
+                out.writer.line(format_args!("weftSpinner(color: {color})"));
+            }
+            Element::Progress => {
+                let value = Argument::Property(prop("value").expect("`Progress` has a value"));
+                let color = optional(prop("color"));
+                out.writer
+                    .line(format_args!("weftProgress(value: {value}, color: {color})"));
+            }
+            Element::Divider => {
+                let vertical = with_default(prop("vertical"), "false");
+                let color = optional(prop("color"));
+                out.writer.line(format_args!(
+                    "weftDivider(vertical: {vertical}, color: {color})"
                 ));
             }
             Element::Image => {

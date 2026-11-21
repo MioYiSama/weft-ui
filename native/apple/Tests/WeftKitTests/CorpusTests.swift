@@ -106,6 +106,26 @@ private func decode(_ bytes: [UInt8]) throws -> [Op] {
     }
 }
 
+@Test func pickerReadsStringsSlot() throws {
+    let cases = try #require(corpus("values")["cases"] as? [JSONObject])
+    let test = try #require(cases.first { $0["name"] as? String == "strings-non-ascii" })
+    let options = try #require((test["value"] as? JSONObject)?["strings"] as? [String])
+    let batch: [UInt8] = [WeftProtocol.version, OpCode.set.rawValue, 0, 0, 0, 0, 0, 0, 0, 0]
+    guard case let .set(_, _, value) = try #require(decode(batch + hexBytes(test)).first) else {
+        Issue.record("Picker options must be delivered by a set op")
+        return
+    }
+    #expect(value.strings == options)
+    #expect(pickerLabel(selected: 1, options: value.strings, placeholder: "Choose") == options[1])
+    #expect(pickerLabel(selected: -1, options: value.strings, placeholder: "Choose") == "Choose")
+    #expect(pickerLabel(selected: CGFloat(options.count), options: value.strings, placeholder: "Choose") == "Choose")
+}
+
+@Test(arguments: [(19.999999999, 20.0), (3.5, 4.0), (-3.5, -4.0), (0.0, 0.0)])
+func sliderRoundsItsIntegerPayload(input: Double, expected: Double) {
+    #expect(roundedSliderValue(input) == expected)
+}
+
 // Compare header JSON without depending on object key order or input formatting.
 private func canonicalJSON(_ json: JSONObject) throws -> Data {
     try JSONSerialization.data(withJSONObject: json, options: .sortedKeys)

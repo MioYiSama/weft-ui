@@ -942,11 +942,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R3.d | ☑ | 162f3e0 | 截图待维护者确认（`text`：android）；C-android（含 4 个文本测试）、C-ui 通过；6 张截图回归 0.000%（`text` 页改动后复查仍为 0.000%） |
 | R3.n | ☑ | 65ae9ac | C-windows（core 18、壳 12）、C-ui 通过；Windows 截图已查看，截断位置与 Web 一致；已有 Windows 快照未变 |
 | R3.g | ☑ | b0b69a2 | C-linux 6 组、C-ui 通过；Linux 截图已查看；已有 Linux 快照未变；没有待移出的 conformance 夹具 |
-| R4.w | ☑ | （本提交） | 截图待维护者确认（`controls`：web、wechat）；C-rust 128 项、C-ts 通过，`controls` 在三个驱动上一致，tsc 计数不变；Web 上逐个操作控件并验证锁定时恢复；C-apps 仅 web、wechat 有差异，已重新录制基线 |
-| R4.a | ☐ | | |
-| R4.d | ☐ | | |
-| R4.n | ☐ | | |
-| R4.g | ☐ | | |
+| R4.w | ☑ | ae7e026 | 截图待维护者确认（`controls`：web、wechat）；C-rust 128 项、C-ts 通过，`controls` 在三个驱动上一致，tsc 计数不变；Web 上逐个操作控件并验证锁定时恢复；C-apps 仅 web、wechat 有差异，已重新录制基线 |
+| R4.a | ☑ | （本提交） | 截图待维护者确认（`controls`：ios；重新生成的 ios `hello`，差异 0.414%）；C-apple 16 项、example 的 iOS 与 macOS C-ui 通过；iOS 上自动操作验证锁定时恢复；macOS 截图已查看，未锁定时的操作已验证，锁定恢复因系统权限弹窗反复出现未完成；含本批共用的 schema、夹具、`pages.json`、`pending.json` |
+| R4.d | ☑ | f9b7411 | 截图待维护者确认（`controls`：android）；C-android 20 项、C-ui 与 2 个 showcase 控件测试通过（含锁定恢复）；截图回归 0.000% |
+| R4.n | ☑ | 4090c41 | C-windows（core 19、壳 17）、C-ui 通过；showcase FlaUI 测试验证锁定恢复；Windows 截图已查看 |
+| R4.g | ☑ | f3740d0 | C-linux 7 组、C-ui、原生 conformance 7 项（含 `controls`）通过；showcase 测试验证锁定恢复；Linux 截图已查看 |
 | R5.w | ☐ | | |
 | R5.a | ☐ | | |
 | R5.d | ☐ | | |
@@ -1011,3 +1011,8 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R4.w] Weft 没有数组字面量，`Picker.options` 只能来自参数。showcase 的 `pages.json` 新增可选字段 `props`（目前只支持字符串数组），目录脚本据此生成 `model ShowcaseModel` 并按顺序传给页面，`src/index.ts` 从同一份清单构造模型；已写入 showcase/README.md。结论：接受
 - [R4.w] 小程序 `picker` 的 `change` 事件载荷中索引是字符串，`textarea` 不能靠 `bindinput` 的返回值恢复文本；sink 分别转换索引，并用 `setData` 恢复文本。结论：接受
 - [R4.w] 原生 C++ conformance host 还不支持 `Float`、`Strings` 值槽与数字编辑载荷；R4.g 把 `controls` 移出 `pending.json` 前需要补齐。结论：R4.g 处理
+- [R4.a–R4.g] `/tmp/weft-m1/lock.sh` 用 `$$` 记录锁的持有者，但在 agent 工具的内置 shell 里，`$$` 是所有 agent 共用的宿主进程号（`bash script.sh` 时是假进程号），锁并不能真正互斥，两次 iOS 测试曾经重叠运行。`weft_lock` 现在只在真正的 bash 进程里加锁，否则报错返回 1，并把持有者不是 bash 的锁视为过期；所有加锁的命令改用 `/bin/bash -c '…'`。按路径执行的检查脚本一直是真正的 bash，不受影响；此前在内置 shell 里加锁的构建与截图可能重叠过，结果均已人工核对。结论：已修复，执行说明已更新
+- [R4.a] macOS 的 showcase 自动操作途中反复弹出系统权限请求（维护者反馈），为此停止了 macOS UI 自动化：`controls` 截图与未锁定时的操作已验证，锁定恢复未完成，未验证的测试步骤已删除。SwiftUI 需要两处回退：`TextArea` 被拒绝时显式恢复本地编辑缓冲；macOS 原生 `ProgressView` 忽略 `.tint`，`Spinner` 设了 `color` 时改画带颜色的旋转圆弧。iOS 的 `Checkbox` 变小后 `hello` 页的相邻按钮与输入框移动，基线已重新生成（0.414%）。结论：macOS 锁定恢复留待维护者在权限就绪后人工确认
+- [R4.d] Compose `Slider` 的刻度只能均分区间，不均匀或过密的步长改用连续轨道，在壳里按步长取整；截图工具推进 Compose 时钟，使 `Spinner` 的帧可重复。结论：接受
+- [R4.n] Windows 截图窗口在 `controls` 页高 800（其他页 760），`text` 页宽 390（R3.n 起）；与 R3.a 不为单页改 macOS 窗口的做法不一致，WinUI 控件更高、页面不滚动截图时需要。结论：接受，记录在案
+- [R4.g] GTK `TextView` 没有原生占位文字，`TextArea` 用文本缓冲之外的覆盖层显示；被拒绝的 `Switch` 在重绘前恢复，使无障碍状态一并回退；Linux 镜像加装 `fonts-noto-cjk` 以显示中文标签。结论：接受

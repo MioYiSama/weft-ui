@@ -1,0 +1,52 @@
+{
+  "hash": "c524063413101fb0",
+  "templates": [
+    {
+      "label": "Controls",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {"fill": true, "gap": 8}, "children": [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13]},
+        {"element": "Switch", "props": {}, "children": []},
+        {"element": "Switch", "props": {"disabled": true}, "children": []},
+        {"element": "Checkbox", "props": {}, "children": []},
+        {"element": "TextArea", "props": {"placeholder": "Write a note"}, "children": []},
+        {"element": "Spinner", "props": {}, "children": []},
+        {"element": "Progress", "props": {"height": 6}, "children": []},
+        {"element": "Progress", "props": {"width": 120, "value": 0.8, "color": "#218670"}, "children": []},
+        {"element": "Divider", "props": {}, "children": []},
+        {"element": "Row", "props": {"height": 24}, "children": [10]},
+        {"element": "Divider", "props": {"vertical": true}, "children": []},
+        {"element": "Slider", "props": {"min": 10, "step": 5}, "children": []},
+        {"element": "Picker", "props": {"placeholder": "Choose an option"}, "children": []},
+        {"element": "Picker", "props": {"disabled": true}, "children": []}
+      ],
+      "values": [
+        {"node": 1, "prop": "checked", "type": "Bool"},
+        {"node": 2, "prop": "checked", "type": "Bool"},
+        {"node": 3, "prop": "checked", "type": "Bool"},
+        {"node": 4, "prop": "value", "type": "String"},
+        {"node": 5, "prop": "color", "type": "Color"},
+        {"node": 6, "prop": "value", "type": "Float"},
+        {"node": 6, "prop": "color", "type": "Color"},
+        {"node": 10, "prop": "color", "type": "Color"},
+        {"node": 11, "prop": "value", "type": "Int"},
+        {"node": 11, "prop": "max", "type": "Int"},
+        {"node": 12, "prop": "selected", "type": "Int"},
+        {"node": 12, "prop": "options", "type": "Strings"},
+        {"node": 13, "prop": "selected", "type": "Int"},
+        {"node": 13, "prop": "options", "type": "Strings"}
+      ],
+      "events": [
+        {"node": 1, "event": "onChange", "payload": "Bool", "controls": 0},
+        {"node": 2, "event": "onChange", "payload": "Bool", "controls": 1},
+        {"node": 3, "event": "onChange", "payload": "Bool", "controls": 2},
+        {"node": 4, "event": "onChange", "payload": "String", "controls": 3},
+        {"node": 11, "event": "onChange", "payload": "Int", "controls": 8},
+        {"node": 12, "event": "onChange", "payload": "Int", "controls": 10},
+        {"node": 13, "event": "onChange", "payload": "Int", "controls": 12}
+      ],
+      "points": []
+    }
+  ]
+}

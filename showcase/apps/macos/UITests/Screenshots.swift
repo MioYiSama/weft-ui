@@ -29,6 +29,7 @@ final class Screenshots: XCTestCase {
             XCTAssertTrue(button.isHittable, "Catalog button page:\(id) is off screen")
             button.click()
             Thread.sleep(forTimeInterval: 1)
+            if id == "controls" { XCTAssertTrue(window.staticTexts["控件设置"].exists) }
 
             let screenshot = window.screenshot()
             let suffix = dark ? "-dark" : ""

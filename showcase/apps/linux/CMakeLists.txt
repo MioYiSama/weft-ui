@@ -14,6 +14,8 @@ enable_testing()
 add_executable(ui_tests tests/UITests.cpp)
 weft_app(ui_tests)
 add_test(NAME ui COMMAND ui_tests)
+add_test(NAME ui.tap COMMAND ui_tests --tap)
+set_tests_properties(ui.tap PROPERTIES SKIP_RETURN_CODE 77)
 
 add_executable(screenshots tests/screenshots.cpp)
 get_target_property(weft_linux_source weft_linux SOURCE_DIR)

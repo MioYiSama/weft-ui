@@ -48,16 +48,91 @@ ops::StringList strings(const ops::Value &value) {
 
 // Element.
 
+struct Element::Tap {
+  static void pressed(GtkGestureClick *, int, double x, double y, Tap *tap) {
+    auto *widget = tap->element.widget();
+    auto *target = gtk_widget_pick(widget, x, y, GTK_PICK_DEFAULT);
+    // Leave the press unclaimed so a scroll viewport can still start a drag.
+    // Neither a nested onTap nor a native Button should dim its ancestors.
+    for (; target && target != widget; target = gtk_widget_get_parent(target)) {
+      if (gtk_accessible_get_accessible_role(GTK_ACCESSIBLE(target)) == GTK_ACCESSIBLE_ROLE_BUTTON) return;
+    }
+    tap->down = true;
+    tap->element.apply_opacity();
+  }
+
+  static void released(GtkGestureClick *gesture, int, double x, double y, Tap *tap) {
+    if (!tap->clear()) return;
+    auto *widget = tap->element.widget();
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+    if (gtk_widget_contains(widget, x, y)) tap->action();
+  }
+
+  static void cancelled(GtkGesture *, GdkEventSequence *, Tap *tap) { tap->clear(); }
+
+  static gboolean key_pressed(GtkEventControllerKey *, guint key, guint, GdkModifierType, Tap *tap) {
+    if (!gtk_widget_has_focus(tap->element.widget())) return false;
+    if (key != GDK_KEY_Return && key != GDK_KEY_KP_Enter && key != GDK_KEY_space) return false;
+    tap->action();
+    return true;
+  }
+
+  bool clear() {
+    if (!std::exchange(down, false)) return false;
+    element.apply_opacity();
+    return true;
+  }
+
+  Element &element;
+  std::function<void()> action;
+  GtkEventController *gesture;
+  GtkEventController *keys;
+  bool down = false;
+};
+
 Element::Element(GtkWidget *widget) : widget_(GTK_WIDGET(g_object_ref_sink(widget))), layout_(attach_layout(widget)) {}
 
 Element::~Element() {
   // The widget may outlive the element, e.g. while GTK emits one of its
   // signals; its handlers must not reach the element any more.
+  if (tap_) {
+    g_signal_handlers_disconnect_by_data(tap_->gesture, tap_.get());
+    g_signal_handlers_disconnect_by_data(tap_->keys, tap_.get());
+    gtk_widget_remove_controller(widget_, tap_->gesture);
+    gtk_widget_remove_controller(widget_, tap_->keys);
+  }
   g_signal_handlers_disconnect_by_data(widget_, this);
   g_object_unref(widget_);
 }
 
-void Element::set_opacity(double opacity) { gtk_widget_set_opacity(widget_, std::clamp(opacity, 0.0, 1.0)); }
+void Element::set_on_tap(std::function<void()> action) {
+  if (tap_) {
+    tap_->action = std::move(action);
+    return;
+  }
+  auto *gesture = gtk_gesture_click_new();
+  auto *controller = GTK_EVENT_CONTROLLER(gesture);
+  auto *keys = gtk_event_controller_key_new();
+  tap_ = std::make_unique<Tap>(*this, std::move(action), controller, keys);
+  g_object_set(widget_, "accessible-role", GTK_ACCESSIBLE_ROLE_BUTTON, nullptr);
+  gtk_widget_set_focusable(widget_, true);
+  gtk_widget_set_cursor_from_name(widget_, "pointer");
+  gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), GDK_BUTTON_PRIMARY);
+  gtk_event_controller_set_propagation_phase(controller, GTK_PHASE_BUBBLE);
+  g_signal_connect(gesture, "pressed", G_CALLBACK(Tap::pressed), tap_.get());
+  g_signal_connect(gesture, "released", G_CALLBACK(Tap::released), tap_.get());
+  g_signal_connect(gesture, "cancel", G_CALLBACK(Tap::cancelled), tap_.get());
+  gtk_widget_add_controller(widget_, controller);
+  g_signal_connect(keys, "key-pressed", G_CALLBACK(Tap::key_pressed), tap_.get());
+  gtk_widget_add_controller(widget_, keys);
+}
+
+void Element::set_opacity(double opacity) {
+  opacity_ = std::clamp(opacity, 0.0, 1.0);
+  apply_opacity();
+}
+
+void Element::apply_opacity() { gtk_widget_set_opacity(widget_, opacity_ * (tap_ && tap_->down ? 0.6 : 1)); }
 void Element::set_hidden(bool hidden) { gtk_widget_set_visible(widget_, !hidden); }
 
 void Element::set_width(double width) {
@@ -511,6 +586,15 @@ void TextLayout::before_allocate(GtkWidget *widget, int width) {
 Button::Button(std::function<void()> click)
     : Element(gtk_button_new()), click_(std::move(click)), content_(Axis::Horizontal, CrossAlign::Center) {
   gtk_button_set_child(GTK_BUTTON(widget()), content_.widget());
+  // GTK handles Button releases in capture by default. Use the same
+  // child-first order as onTap when a Button contains another tappable.
+  g_autoptr(GListModel) controllers = gtk_widget_observe_controllers(widget());
+  for (guint i = 0, n = g_list_model_get_n_items(controllers); i < n; ++i) {
+    g_autoptr(GtkEventController) controller = GTK_EVENT_CONTROLLER(g_list_model_get_item(controllers, i));
+    if (!GTK_IS_GESTURE_CLICK(controller)) continue;
+    gtk_event_controller_set_propagation_phase(controller, GTK_PHASE_BUBBLE);
+    break;
+  }
   if (click_) g_signal_connect(widget(), "clicked", G_CALLBACK(clicked), this);
 }
 

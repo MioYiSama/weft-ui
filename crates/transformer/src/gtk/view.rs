@@ -76,6 +76,11 @@ fn node(out: &mut Code, template: &Template, index: u32, parent: Option<u32>) {
             };
             let made = format!("make<weft::{}>({args})", wrapper(*element));
             let member = initialize(out, template, index, &made);
+            if let Some(slot) = template.event(index, "onTap") {
+                out.writer.line(format_args!(
+                    "{member}set_on_tap([this] {{ dispatch({slot}); }});"
+                ));
+            }
             out.writer.line(format_args!(
                 "{region}.add({});",
                 reference(template, index)

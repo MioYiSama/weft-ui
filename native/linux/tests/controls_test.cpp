@@ -226,6 +226,55 @@ void focus_edges() {
   gtk_window_destroy(window);
 }
 
+void tap_feedback() {
+  weft::Stack card;
+  int activations = 0;
+  card.set_on_tap([&] { ++activations; });
+  auto *widget = card.widget();
+  auto *window = gtk_window_new();
+  gtk_window_set_child(GTK_WINDOW(window), widget);
+  gtk_window_present(GTK_WINDOW(window));
+  gtk_widget_allocate(widget, 80, 40, -1, nullptr);
+  g_assert_cmpint(gtk_accessible_get_accessible_role(GTK_ACCESSIBLE(widget)), ==, GTK_ACCESSIBLE_ROLE_BUTTON);
+
+  g_autoptr(GListModel) controllers = gtk_widget_observe_controllers(widget);
+  g_autoptr(GtkEventController) click = nullptr;
+  for (guint i = 0, n = g_list_model_get_n_items(controllers); i < n; ++i) {
+    g_autoptr(GtkEventController) controller = GTK_EVENT_CONTROLLER(g_list_model_get_item(controllers, i));
+    if (GTK_IS_GESTURE_CLICK(controller)) {
+      click = GTK_EVENT_CONTROLLER(g_steal_pointer(&controller));
+      break;
+    }
+  }
+  g_assert_nonnull(click);
+  g_assert_cmpint(gtk_event_controller_get_propagation_phase(click), ==, GTK_PHASE_BUBBLE);
+
+  auto expect_opacity = [&](double value) {
+    g_assert_cmpfloat_with_epsilon(gtk_widget_get_opacity(widget), value, 1.0 / 255.0);
+  };
+  card.set_opacity(0.75);
+  g_signal_emit_by_name(click, "pressed", 1, 10.0, 10.0);
+  expect_opacity(0.45);
+  g_assert_cmpint(activations, ==, 0);
+  card.set_opacity(0.5);
+  expect_opacity(0.3);
+  g_signal_emit_by_name(click, "cancel", nullptr);
+  expect_opacity(0.5);
+  g_signal_emit_by_name(click, "released", 1, 10.0, 10.0);
+  g_assert_cmpint(activations, ==, 0);
+
+  g_signal_emit_by_name(click, "pressed", 1, 10.0, 10.0);
+  g_signal_emit_by_name(click, "released", 1, 90.0, 10.0);
+  expect_opacity(0.5);
+  g_assert_cmpint(activations, ==, 0);
+
+  g_signal_emit_by_name(click, "pressed", 1, 10.0, 10.0);
+  g_signal_emit_by_name(click, "released", 1, 10.0, 10.0);
+  expect_opacity(0.5);
+  g_assert_cmpint(activations, ==, 1);
+  gtk_window_destroy(GTK_WINDOW(window));
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
@@ -238,5 +287,6 @@ int main(int argc, char **argv) {
   g_test_add_func("/controls/input-edit-limits", input_edit_limits);
   g_test_add_func("/controls/textarea-edit-limits", textarea_edit_limits);
   g_test_add_func("/controls/focus-edges", focus_edges);
+  g_test_add_func("/controls/tap-feedback", tap_feedback);
   return g_test_run();
 }

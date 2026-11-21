@@ -3,7 +3,11 @@
 
 #include <gtk/gtk.h>
 #include <weft/gtk.hpp>
+#ifdef GDK_WINDOWING_X11
+#include <gdk/x11/gdkx.h>
+#endif
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -199,6 +203,149 @@ void inputs(GtkWidget *root) {
   check(contains(textareas.front(), expected), "TextArea split the emoji at the UTF-16 boundary");
 }
 
+#ifdef GDK_WINDOWING_X11
+void xdotool(GtkWidget *widget, std::initializer_list<const char *> args) {
+  std::vector<char *> argv{const_cast<char *>("xdotool")};
+  for (const char *arg : args) argv.push_back(const_cast<char *>(arg));
+  argv.push_back(nullptr);
+  int status;
+  g_autoptr(GError) error = nullptr;
+  check(g_spawn_sync(nullptr, argv.data(), nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr,
+                     nullptr, nullptr, &status, &error), "Could not run xdotool");
+  check(g_spawn_check_wait_status(status, &error), "xdotool command failed");
+  gdk_display_sync(gtk_widget_get_display(widget));
+  pump();
+}
+
+void point_at(GtkWidget *widget) {
+  check(widget, "Pointer target missing");
+  auto ready = [&] {
+    return gtk_widget_get_mapped(widget) && gtk_widget_get_width(widget) > 0 && gtk_widget_get_height(widget) > 0;
+  };
+  // Replacing the catalog with the page queues allocation on the frame clock.
+  const auto deadline = g_get_monotonic_time() + G_TIME_SPAN_SECOND;
+  while (!ready() && g_get_monotonic_time() < deadline) {
+    g_usleep(1000);
+    pump();
+  }
+  check(ready(), "Pointer target was not allocated");
+  auto *native = gtk_widget_get_native(widget);
+  auto *surface = gtk_native_get_surface(native);
+  const graphene_point_t local_center{gtk_widget_get_width(widget) * 0.5f, gtk_widget_get_height(widget) * 0.5f};
+  graphene_point_t center;
+  check(gtk_widget_compute_point(widget, GTK_WIDGET(native), &local_center, &center),
+        "Pointer target is not in the window");
+  double x, y;
+  gtk_native_get_surface_transform(native, &x, &y);
+  const int scale = gdk_surface_get_scale_factor(surface);
+  const auto xid = std::to_string(gdk_x11_surface_get_xid(surface));
+  const auto px = std::to_string(std::lround((center.x - x) * scale));
+  const auto py = std::to_string(std::lround((center.y - y) * scale));
+  xdotool(widget, {"mousemove", "--window", xid.c_str(), px.c_str(), py.c_str()});
+}
+
+GtkWidget *tap_target(GtkWidget *widget) {
+  for (; widget; widget = gtk_widget_get_parent(widget)) {
+    if (gtk_accessible_get_accessible_role(GTK_ACCESSIBLE(widget)) == GTK_ACCESSIBLE_ROLE_BUTTON) return widget;
+  }
+  check(false, "Target has no accessible button ancestor");
+  return nullptr;
+}
+
+void taps(GtkWidget *root) {
+  xdotool(root, {"mouseup", "1"});
+  click(root, "page:tap");
+  auto expect_counts = [&](int rows, int cards, int buttons, int texts) {
+    check(label(root, "Rows: " + std::to_string(rows)) && label(root, "Cards: " + std::to_string(cards)) &&
+          label(root, "Buttons: " + std::to_string(buttons)) && label(root, "Text: " + std::to_string(texts)),
+          "A tap changed the wrong counters");
+  };
+  auto expect_opacity = [](GtkWidget *widget, double opacity) {
+    const auto actual = gtk_widget_get_opacity(widget);
+    if (std::abs(actual - opacity) <= 1.0 / 255.0) return;
+    std::fprintf(stderr, "Expected opacity %.3f during or after tap, got %.3f\n", opacity, actual);
+    std::exit(1);
+  };
+  auto press = [&](GtkWidget *target) {
+    point_at(target);
+    xdotool(root, {"mousedown", "1"});
+  };
+  auto release = [&] { xdotool(root, {"mouseup", "1"}); };
+
+  auto *details = label(root, "Open details");
+  auto *row = tap_target(details);
+  press(details);
+  expect_counts(0, 0, 0, 0);
+  expect_opacity(row, 0.85 * 0.6);
+  point_at(label(root, "Tap targets"));
+  release();
+  expect_counts(0, 0, 0, 0);
+  expect_opacity(row, 0.85);
+  press(details);
+  release();
+  expect_counts(1, 0, 0, 0);
+
+  auto *card_label = label(root, "Image card");
+  auto *card = tap_target(card_label);
+  press(card_label);
+  expect_opacity(card, 0.6);
+  release();
+  expect_counts(1, 1, 0, 0);
+
+  auto *image = all(root, GTK_TYPE_PICTURE, 1)[0];
+  press(image);
+  expect_opacity(tap_target(image), 0.6);
+  expect_opacity(card, 1);
+  release();
+  expect_counts(1, 2, 0, 0);
+
+  auto *nested_row = tap_target(label(root, "Nested actions"));
+  press(label(root, "Save"));
+  expect_opacity(nested_row, 1);
+  release();
+  expect_counts(1, 2, 1, 0);
+
+  auto *preview_label = label(root, "Preview");
+  auto *preview = tap_target(preview_label);
+  press(preview_label);
+  expect_opacity(preview, 0.6);
+  expect_opacity(nested_row, 1);
+  release();
+  expect_counts(1, 2, 1, 1);
+
+  check(gtk_widget_grab_focus(preview), "Tappable Text cannot receive keyboard focus");
+  xdotool(root, {"key", "space"});
+  expect_counts(1, 2, 1, 2);
+}
+
+void button_containing_tappables() {
+  int outer_count = 0, text_count = 0, button_count = 0;
+  weft::Button outer([&] { ++outer_count; });
+  weft::Button inner([&] { ++button_count; });
+  weft::Text text;
+  text.set_value("Text in Button");
+  text.set_on_tap([&] { ++text_count; });
+  weft::Text caption;
+  caption.set_value("Button in Button");
+  inner.children().add(caption);
+  outer.children().add(text);
+  outer.children().add(inner);
+
+  auto *window = gtk_window_new();
+  gtk_window_set_child(GTK_WINDOW(window), outer.widget());
+  gtk_window_present(GTK_WINDOW(window));
+  pump();
+  point_at(text.widget());
+  xdotool(window, {"click", "1"});
+  check(outer_count == 0 && text_count == 1 && button_count == 0, "Outer Button intercepted a nested onTap");
+  point_at(inner.widget());
+  xdotool(window, {"click", "1"});
+  check(outer_count == 0 && text_count == 1 && button_count == 1, "Outer Button intercepted a nested Button");
+  gtk_window_destroy(GTK_WINDOW(window));
+  pump();
+}
+#endif
+
 void run(void (*verify)(GtkWidget *)) {
   GtkWidget *window = gtk_window_new();
   GtkWidget *root = weft::start_app();
@@ -218,12 +365,24 @@ void run(void (*verify)(GtkWidget *)) {
 
 }  // namespace
 
-int main() {
+int main(int argc, char **argv) {
   if (!gtk_init_check()) {
     std::fprintf(stderr, "UI tests need a display (DISPLAY or WAYLAND_DISPLAY)\n");
     return 1;
   }
   g_object_set(gtk_settings_get_default(), "gtk-enable-animations", false, nullptr);
+  if (argc == 2 && std::string_view(argv[1]) == "--tap") {
+#ifdef GDK_WINDOWING_X11
+    g_autofree char *tool = g_find_program_in_path("xdotool");
+    if (GDK_IS_X11_DISPLAY(gdk_display_get_default()) && tool) {
+      run(taps);
+      button_containing_tappables();
+      return 0;
+    }
+#endif
+    std::fprintf(stderr, "Tap pointer tests need X11 and xdotool\n");
+    return 77;
+  }
   run(controls);
   run(inputs);
   return 0;

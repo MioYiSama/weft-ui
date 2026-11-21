@@ -97,6 +97,8 @@ class Element {
   GtkWidget *widget() const { return widget_; }
   virtual void reapply_colors() {}
 
+  /// Installs the element's activation handler before it is mounted.
+  void set_on_tap(std::function<void()> action);
   void set_opacity(double opacity);
   void set_hidden(bool hidden);
   void set_width(double width);
@@ -122,10 +124,14 @@ class Element {
   WidgetLayout &layout() const { return layout_; }
 
  private:
+  struct Tap;
+  void apply_opacity();
   void set_margin_edge(Edge edge, double value);
 
   GtkWidget *widget_;
   WidgetLayout &layout_;
+  double opacity_ = 1;
+  std::unique_ptr<Tap> tap_;
 };
 
 /// An ordered run of sibling nodes: the children of a stack, or the

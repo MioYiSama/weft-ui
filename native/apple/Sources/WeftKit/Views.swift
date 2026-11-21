@@ -46,15 +46,6 @@ public struct WeftRoot: View {
     }
 }
 
-extension View {
-    /// Style properties of `Text`; unset ones keep the platform's defaults.
-    public func weftText(color: WeftColor?, size: CGFloat?, bold: Bool?) -> some View {
-        foregroundStyle(color?.resolved ?? .primary)
-            .font(size.map { Font.system(size: $0) })
-            .bold(bold ?? false)
-    }
-}
-
 /// `Image`: a remote image. With one fixed side the other follows the
 /// aspect ratio, with both the image fills them, and with neither it keeps
 /// its own size.

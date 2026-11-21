@@ -70,7 +70,7 @@ private struct V0: View {
                 } label: {
                     weftButtonLabel {
                         weftLeaf {
-                            Text(verbatim: s.v1)
+                            weftText(spans: [.init(value: s.v1)])
                         }
                     }
                 }
@@ -128,7 +128,7 @@ private struct V2: View {
     var body: some View {
         weftLinear(axis: .horizontal, gap: 0, align: .start, justify: .start) {
             weftLeaf {
-                Text(verbatim: s.v0)
+                weftText(spans: [.init(value: s.v0)])
             }
             weftLeaf {
                 Button {
@@ -136,7 +136,7 @@ private struct V2: View {
                 } label: {
                     weftButtonLabel {
                         weftLeaf {
-                            Text(verbatim: "x")
+                            weftText(spans: [.init(value: "x")])
                         }
                     }
                 }

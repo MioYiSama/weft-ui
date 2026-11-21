@@ -58,7 +58,7 @@ component Typography() {
             }
             Column(fill = true, gap = 6) {
                 Text("TWO-LINE LIMIT", style = TypeLabel)
-                Text("The wind lifted the pages from the desk and scattered them across the courtyard before anyone could catch them.",
+                Text("The wind lifted the pages from the desk and scattered them across the courtyard before anyone could catch them, and rain soaked the loose sheets before they could be brought back inside.",
                      fill = true, maxLines = 2, style = TypeSample)
             }
             Column(fill = true, gap = 6) {

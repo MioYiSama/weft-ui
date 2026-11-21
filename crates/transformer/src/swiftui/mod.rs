@@ -211,7 +211,7 @@ mod tests {
     fn strings_are_escaped_and_never_interpolated() {
         let code = swift(r#"component A() { Text("say \"hi\" \\(x) \u{7}") }"#);
         assert!(
-            code.contains(r#"Text(verbatim: "say \"hi\" \\(x) \u{7}")"#),
+            code.contains(r#"weftText(spans: [.init(value: "say \"hi\" \\(x) \u{7}")])"#),
             "{code}"
         );
     }

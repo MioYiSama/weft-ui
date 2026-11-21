@@ -937,11 +937,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R2.d | ☑ | 4fbced6 | 截图待维护者确认（`appearance`、`theme`、`theme-dark`：android）；C-android、C-ui 与 3 个外观仪器测试通过；截图回归 0.000% |
 | R2.n | ☑ | b0a94d5 | C-windows（core 18、WinUI 12）、C-ui 通过；Windows 截图已查看，隐藏卡片不留空隙；已有 Windows 快照未变 |
 | R2.g | ☑ | 43cf97b | C-linux 5 组、C-ui 通过；Linux 截图（含真正的深色 `theme-dark`）已查看；已有 Linux 快照未变 |
-| R3.w | ☑ | （本提交） | 截图待维护者确认（`text`：web、wechat；改用系统字体后重新生成的 web `hello`、`layout`、`appearance`、`theme`、`theme-dark`）；C-rust 125 项、C-ts 218 项通过，tsc 计数不变；conformance 黄金文件不变；C-apps 7 个平台有差异，已重新录制基线 |
-| R3.a | ☐ | | |
-| R3.d | ☐ | | |
-| R3.n | ☐ | | |
-| R3.g | ☐ | | |
+| R3.w | ☑ | a962e07 | 截图待维护者确认（`text`：web、wechat；改用系统字体后重新生成的 web `hello`、`layout`、`appearance`、`theme`、`theme-dark`）；C-rust 125 项、C-ts 218 项通过，tsc 计数不变；conformance 黄金文件不变；C-apps 7 个平台有差异，已重新录制基线 |
+| R3.a | ☑ | （本提交） | 截图待维护者确认（`text`：ios；重新生成的 ios `hello`、`layout`、`appearance`、`theme`、`theme-dark`，差异 0.297–0.702%）；C-apple 14 项、iOS 与 macOS 的 C-ui 通过；macOS 截图已查看；含本批共用的 schema、夹具、`pages.json` 与 `text` 页改动；C-apps 仅 ios、macOS 的 `Generated.swift` 有差异，已重新录制基线 |
+| R3.d | ☑ | 162f3e0 | 截图待维护者确认（`text`：android）；C-android（含 4 个文本测试）、C-ui 通过；6 张截图回归 0.000%（`text` 页改动后复查仍为 0.000%） |
+| R3.n | ☑ | 65ae9ac | C-windows（core 18、壳 12）、C-ui 通过；Windows 截图已查看，截断位置与 Web 一致；已有 Windows 快照未变 |
+| R3.g | ☑ | b0b69a2 | C-linux 6 组、C-ui 通过；Linux 截图已查看；已有 Linux 快照未变；没有待移出的 conformance 夹具 |
 | R4.w | ☐ | | |
 | R4.a | ☐ | | |
 | R4.d | ☐ | | |
@@ -1001,3 +1001,9 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R3.w] 计划没有写「预期变化」。实际变化：所有小程序快照的 `view.wxss`（新增 `.w-text`、`.w-span` 规则）；`Text` 按计划重新分组后，属性与槽位顺序改变（`value` 与 `color` 互换），使用 `Text` 的夹具在所有平台的快照（布局表、布局哈希、生成视图与 JS）以及 CSS 映射下标随之变化；example 7 个平台产物同样因此变化。分析测试 `Text("x") { Spacer() }` 的断言改为新的 `content`/`children` 报错。结论：接受（计划改动的必然结果），已重新录制 C-apps 基线
 - [R3.w] showcase 目录按页面 id 的 PascalCase 生成组件名，`text` 页会得到与内置元素同名的 `Text`。保留 id `text` 与文件 `Text.weft`，`pages.json` 新增可选字段 `component`（本页为 `Typography`），已写入 showcase/README.md。结论：接受
 - [R3.w] Chromium 默认的衬线字体（Times）让 300/400/500 与 600/700 看起来一样，字重阶梯无法比较。showcase 的 Web 入口 `showcase/index.html` 统一设置 `font-family: system-ui, -apple-system, sans-serif`，runtime 的 `weft.css` 与 example 不变；web 已有 5 张基线随之重新生成。结论：接受
+- [R3.a] SwiftUI 只能在行与行之间加间距：`lineHeight` 小于字体自然行高时不起作用，第一行上方也不会加行距；`center`、`end` 对齐还需要在整个内容盒内定位文本。所有 `Text` 改走 `weftText(spans:)` 后，6 个已有夹具的 Swift 快照随之变化，iOS 已有 5 张基线因粗体标题的字距略有不同，差异 0.297–0.702%，已重新生成。结论：接受（平台限制，记录在案）
+- [R3.a] macOS 截图窗口宽 480pt，`text` 页「两行截断」示例句恰好排满两行，看不到省略号。没有为这一页单独收窄 macOS 窗口，而是加长示例句；在 390pt 宽的平台上前两行不变，web、ios、android 回归 0.000%，wechat ≤0.007%（时钟）。结论：接受
+- [R3.n] WinUI 默认字体 Segoe UI Variable 没有 500 的命名字重，`FontWeights.Medium` 画出来与 Regular 400 逐像素相同；保留原生映射，不换字体。结论：接受（平台限制）
+- [R3.g] GTK 的 `gtk_label_set_lines` 按段落分别限制行数，含显式换行的文本改用对整个标签生效的回退实现；Linux 镜像加装 `fonts-inter-variable`，否则 Noto Sans 无法区分 5 种字重。结论：接受
+- [R3.a–R3.g] 并行编辑 `protocol/weft.elements.json` 时互相覆盖：一次把 Apple 已删除的 `groups.text` 标记写回，另一次把 `lineHeight` 的 `css` 键顺序改成 `unit` 在前，导致 runtime 的 `CSS_PROPS` 与 example 的 web、wechat 产物变化；提交前已改回。结论：原生波次结束后由编排者核对 schema 的 diff 与 C-apps
+- [R3.a–R3.g] 一次 `shot:wechat` 因开发者工具 websocket 异常中途退出，重跑通过。结论：偶发，记录在案

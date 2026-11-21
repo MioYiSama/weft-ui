@@ -11,12 +11,12 @@ extension View {
         background: WeftColor? = nil, radius: CGFloat = 0, border: CGFloat = 0,
         borderColor: WeftColor? = nil, shadow: WeftShadow = .none, clip: Bool = false
     ) -> some View {
-        modifier(WeftDecoration(background: background, radius: max(0, radius), border: max(0, border),
-                                borderColor: borderColor, shadow: shadow, clip: clip))
+        modifier(WeftBoxDecoration(background: background, radius: max(0, radius), border: max(0, border),
+                                   borderColor: borderColor, shadow: shadow, clip: clip))
     }
 }
 
-private struct WeftDecoration: ViewModifier {
+private struct WeftBoxDecoration: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
     let background: WeftColor?
     let radius: CGFloat

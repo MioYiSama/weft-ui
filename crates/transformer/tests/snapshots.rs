@@ -95,7 +95,13 @@ const APPEARANCE: Fixture = Fixture {
 const TYPOGRAPHY: Fixture = Fixture {
     name: "Typography",
     source: include_str!("fixtures/Typography.weft"),
-    natives: &[],
+    natives: &[
+        Platform::Ios,
+        Platform::Macos,
+        Platform::Android,
+        Platform::Windows,
+        Platform::Linux,
+    ],
 };
 
 /// Every generated file of the app, as the platform's output directory would

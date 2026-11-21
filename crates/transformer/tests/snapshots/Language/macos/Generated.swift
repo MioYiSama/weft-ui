@@ -60,7 +60,7 @@ private struct V0: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: s.v0)
+            weftText(spans: [.init(value: s.v0)])
         }
     }
 }
@@ -87,7 +87,7 @@ private struct V1: View {
     var body: some View {
         weftLinear(axis: .horizontal, gap: 0, align: .start, justify: .start) {
             weftLeaf {
-                Text(verbatim: s.v0)
+                weftText(spans: [.init(value: s.v0)])
             }
             weftLeaf {
                 Button {
@@ -95,7 +95,7 @@ private struct V1: View {
                 } label: {
                     weftButtonLabel {
                         weftLeaf {
-                            Text(verbatim: "1")
+                            weftText(spans: [.init(value: "1")])
                         }
                     }
                 }
@@ -106,7 +106,7 @@ private struct V1: View {
                 } label: {
                     weftButtonLabel {
                         weftLeaf {
-                            Text(verbatim: "2")
+                            weftText(spans: [.init(value: "2")])
                         }
                     }
                 }
@@ -117,7 +117,7 @@ private struct V1: View {
                 } label: {
                     weftButtonLabel {
                         weftLeaf {
-                            Text(verbatim: "Repeat")
+                            weftText(spans: [.init(value: "Repeat")])
                         }
                     }
                 }
@@ -224,7 +224,7 @@ private struct V4: View {
     var body: some View {
         weftLinear(axis: .vertical, gap: 0, align: .start, justify: .start) {
             weftLeaf {
-                Text(verbatim: s.v0)
+                weftText(spans: [.init(value: s.v0)])
             }
             if let c = s.p0 { V0(s: c) }
             if let c = s.p1 { V1(s: c) }
@@ -235,8 +235,7 @@ private struct V4: View {
             if let c = s.p6 { V3(s: c) }
             ForEach(s.p7) { c in V10(s: c) }
             weftLeaf {
-                Text(verbatim: "note")
-                .weftText(color: WeftColor.rgba(0x6b7280ff), size: 14, bold: nil)
+                weftText(spans: [.init(value: "note")], color: WeftColor.rgba(0x6b7280ff), size: 14)
             }
         }
     }
@@ -263,7 +262,7 @@ private struct V5: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: s.v0)
+            weftText(spans: [.init(value: s.v0)])
         }
     }
 }
@@ -289,7 +288,7 @@ private struct V6: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: s.v0)
+            weftText(spans: [.init(value: s.v0)])
         }
     }
 }
@@ -315,7 +314,7 @@ private struct V7: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: s.v0)
+            weftText(spans: [.init(value: s.v0)])
         }
     }
 }
@@ -346,7 +345,7 @@ private struct V9: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: "Footer only")
+            weftText(spans: [.init(value: "Footer only")])
         }
     }
 }
@@ -380,7 +379,7 @@ private struct V10: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: s.v0)
+            weftText(spans: [.init(value: s.v0)])
         }
         switch s.p0 {
         case let c as S11: V11(s: c).id(c.id)
@@ -402,7 +401,7 @@ private struct V11: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: "image")
+            weftText(spans: [.init(value: "image")])
         }
     }
 }
@@ -419,7 +418,7 @@ private struct V12: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: "text")
+            weftText(spans: [.init(value: "text")])
         }
     }
 }

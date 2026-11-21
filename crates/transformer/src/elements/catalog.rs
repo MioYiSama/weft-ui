@@ -4,7 +4,6 @@ use super::{
     Children, Css, CssTarget, CssUnit, CustomCss, ElementSpec, FeatureSpec, PropKind, PropSpec,
     PropType,
 };
-use crate::protocol::Platform;
 
 /// Support exceptions for a target platform; omitted entries are supported.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1037,13 +1036,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(36),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "italic",
@@ -1053,13 +1046,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(37),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "decoration",
@@ -1069,13 +1056,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(38),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "value",
@@ -1095,13 +1076,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(39),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "maxLines",
@@ -1111,13 +1086,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(40),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "lineHeight",
@@ -1127,13 +1096,7 @@ const PROPS_1: &[PropSpec] = &[
         constant: false,
         css: Some(41),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "bold",
@@ -1156,13 +1119,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(34),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "size",
@@ -1172,13 +1129,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(35),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "weight",
@@ -1188,13 +1139,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(36),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "italic",
@@ -1204,13 +1149,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(37),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "decoration",
@@ -1220,13 +1159,7 @@ const PROPS_2: &[PropSpec] = &[
         constant: false,
         css: Some(38),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "value",
@@ -2858,13 +2791,7 @@ pub(crate) const ELEMENTS: [ElementSpec; 11] = [
         children: Children::None,
         parents: &[Element::Text],
         content: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     ElementSpec {
         element: Element::Button,

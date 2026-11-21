@@ -67,7 +67,7 @@ private struct V0: View {
                 } label: {
                     weftButtonLabel {
                         weftLeaf {
-                            Text(verbatim: s.v0)
+                            weftText(spans: [.init(value: s.v0)])
                         }
                     }
                 }
@@ -136,8 +136,7 @@ private struct V1: View {
     var body: some View {
         weftLinear(axis: .vertical, gap: 8, align: .start, justify: .start, padding: .init(padding: 12)) {
             weftLeaf {
-                Text(verbatim: "Gallery")
-                .weftText(color: WeftColor.rgba(0x224466ff), size: 20, bold: true)
+                weftText(spans: [.init(value: "Gallery")], color: WeftColor.rgba(0x224466ff), size: 20, bold: true)
             }
             weftLinear(axis: .horizontal, gap: s.v4, align: .start, justify: .start, padding: .init(padding: s.v2)) {
                 weftLeaf {
@@ -146,8 +145,7 @@ private struct V1: View {
                 WeftImage(src: s.v6)
                 .weftFrame(width: 32, height: 32)
                 weftLeaf {
-                    Text(verbatim: "Preview")
-                    .weftText(color: s.v7, size: s.v8, bold: s.v9)
+                    weftText(spans: [.init(value: "Preview")], color: s.v7, size: s.v8, bold: s.v9)
                 }
             }
             .weftDecoration(background: s.v3)
@@ -191,7 +189,7 @@ private struct V2: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: s.v0)
+            weftText(spans: [.init(value: s.v0)])
         }
         switch s.p0 {
         case let c as S3: V3(s: c).id(c.id)
@@ -244,7 +242,7 @@ private struct V4: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: s.v0)
+            weftText(spans: [.init(value: s.v0)])
         }
     }
 }

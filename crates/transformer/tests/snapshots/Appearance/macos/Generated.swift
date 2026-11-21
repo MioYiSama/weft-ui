@@ -86,7 +86,7 @@ private struct V0: View {
         weftLinear(axis: .vertical, gap: 8, align: .start, justify: .start, padding: .init(padding: 12)) {
             weftLinear(axis: .horizontal, gap: 0, align: .start, justify: .start) {
                 weftLeaf(padding: .init(padding: 6)) {
-                    Text(verbatim: "Label")
+                    weftText(spans: [.init(value: "Label")])
                 }
                 .weftDecoration(background: WeftColor.rgba(0xf4c989ff), radius: 4)
             }
@@ -103,7 +103,7 @@ private struct V0: View {
             .weftFrame(width: 160, height: 80)
             weftScroll(direction: .vertical, gap: 0, align: .start, indicators: true) {
                 weftLeaf {
-                    Text(verbatim: "Scroll")
+                    weftText(spans: [.init(value: "Scroll")])
                 }
                 .weftFrame(height: 96)
             }
@@ -114,7 +114,7 @@ private struct V0: View {
                 Button {} label: {
                     weftButtonLabel {
                         weftLeaf {
-                            Text(verbatim: "Action")
+                            weftText(spans: [.init(value: "Action")])
                         }
                     }
                 }

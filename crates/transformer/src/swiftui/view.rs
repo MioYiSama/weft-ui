@@ -111,18 +111,8 @@ impl Body<'_> {
                 )),
                 None => out.writer.line("WeftSpacer()"),
             },
-            Element::Span => unreachable!("platform support rejects `Span` before generation"),
-            Element::Text => {
-                let value = Argument::Property(prop("value").expect("`Text` has a value"));
-                out.writer.line(format_args!("Text(verbatim: {value})"));
-                let properties = ["color", "size", "bold"].map(prop);
-                if properties.iter().any(Option::is_some) {
-                    let [color, size, bold] = properties.map(optional);
-                    out.writer.line(format_args!(
-                        ".weftText(color: {color}, size: {size}, bold: {bold})"
-                    ));
-                }
-            }
+            Element::Span => unreachable!("`Span` is rendered inline by its parent `Text`"),
+            Element::Text => self.text(out, node, props, children),
             Element::Button => {
                 match self.template.event(node, "onClick") {
                     Some(slot) => {
@@ -203,6 +193,59 @@ impl Body<'_> {
         if !child.is_empty() {
             out.writer.line(format_args!(".weftChild({child})"));
         }
+    }
+
+    fn text(&self, out: &mut Code, node: u32, props: &[StaticProp], children: &[u32]) {
+        let prop = |name: &str| self.template.prop(node, props, name);
+        let options = Properties::new(
+            [
+                "color",
+                "size",
+                "weight",
+                "italic",
+                "decoration",
+                "bold",
+                "align",
+                "maxLines",
+                "lineHeight",
+            ],
+            |name| prop(name).map(|value| text_argument(name, value)),
+        );
+        let arguments = fmt::from_fn(|f| {
+            if options.is_empty() {
+                Ok(())
+            } else {
+                write!(f, ", {options}")
+            }
+        });
+        if children.is_empty() {
+            let value = Argument::Property(prop("value").expect("plain `Text` has a value"));
+            out.writer.line(format_args!(
+                "weftText(spans: [.init(value: {value})]{arguments})"
+            ));
+            return;
+        }
+        out.open("weftText(spans: [");
+        for &child in children {
+            let ViewNodeKind::Element {
+                element: Element::Span,
+                props,
+                ..
+            } = &self.template.nodes[child as usize].kind
+            else {
+                unreachable!("only `Span` can be a direct child of `Text`");
+            };
+            let span = Properties::new(
+                ["value", "color", "size", "weight", "italic", "decoration"],
+                |name| {
+                    self.template
+                        .prop(child, props, name)
+                        .map(|value| text_argument(name, value))
+                },
+            );
+            out.writer.line(format_args!(".init({span}),"));
+        }
+        out.close(format_args!("]{arguments})"));
     }
 
     fn point(&self, out: &mut Code, point: u32) {
@@ -305,6 +348,15 @@ fn with_default<'t>(source: Option<PropSource<'t>>, default: &'static str) -> Ar
     source.map_or(Argument::Default(default), Argument::Property)
 }
 
+fn text_argument<'t>(name: &str, source: PropSource<'t>) -> Argument<'t> {
+    match name {
+        "weight" => Argument::Union(Some(source), "Weight", ".regular"),
+        "decoration" => Argument::Union(Some(source), "Decoration", ".none"),
+        "align" => Argument::Union(Some(source), "TextAlign", ".start"),
+        _ => Argument::Property(source),
+    }
+}
+
 enum Argument<'t> {
     Property(PropSource<'t>),
     Union(Option<PropSource<'t>>, &'static str, &'static str),
@@ -318,7 +370,11 @@ impl Display for Argument<'_> {
             Self::Union(Some(PropSource::Slot(slot)), name, _) => {
                 write!(f, "Weft{name}(weft: s.v{slot})")
             }
-            Self::Union(Some(PropSource::Constant(Constant::String(case))), _, _) => {
+            Self::Union(Some(PropSource::Constant(Constant::String(case))), name, _) => {
+                // `.none` by itself would mean nil for the optional text decoration.
+                if *name == "Decoration" && case == "none" {
+                    f.write_str("WeftDecoration")?;
+                }
                 write!(f, ".{case}")
             }
             Self::Union(Some(PropSource::Constant(_)), name, _) => {

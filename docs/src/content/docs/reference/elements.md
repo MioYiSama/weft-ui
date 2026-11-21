@@ -134,20 +134,18 @@ Only these direct child elements are accepted: `Span`.
 | `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `color` | `Color` | — | Sets the text color. | — |
 | `size` | `Int` | — | Sets the font size in logical pixels. | — |
-| `weight` | `Weight` | `"regular"` | Sets the font weight. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `italic` | `Bool` | `false` | Sets the text in italics. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `decoration` | `Decoration` | `"none"` | Underlines or strikes through the text. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `weight` | `Weight` | `"regular"` | Sets the font weight. | — |
+| `italic` | `Bool` | `false` | Sets the text in italics. | — |
+| `decoration` | `Decoration` | `"none"` | Underlines or strikes through the text. | — |
 | `value` (positional) | `String` | — | The plain text to display; required unless `Span` children provide the content. | — |
-| `align` | `TextAlign` | `"start"` | Aligns lines within the text box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `maxLines` | `Int` | `0` | Truncates overflowing lines with an ellipsis; zero or less leaves the text unlimited. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `lineHeight` | `Int` | — | Sets the line height in logical pixels. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `align` | `TextAlign` | `"start"` | Aligns lines within the text box. | — |
+| `maxLines` | `Int` | `0` | Truncates overflowing lines with an ellipsis; zero or less leaves the text unlimited. | — |
+| `lineHeight` | `Int` | — | Sets the line height in logical pixels. | — |
 | `bold` | `Bool` | — | Displays the text in bold. | — |
 
 ## Span
 
 Displays an inline run of text with its own styling.
-
-**Platform exceptions:** Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.
 
 **Children:** None.
 
@@ -155,11 +153,11 @@ Must be a direct child of: `Text`.
 
 | Property | Type | Default | Description | Platform exceptions |
 | --- | --- | --- | --- | --- |
-| `color` | `Color` | — | Sets the text color. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `size` | `Int` | — | Sets the font size in logical pixels. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `weight` | `Weight` | `"regular"` | Sets the font weight. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `italic` | `Bool` | `false` | Sets the text in italics. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `decoration` | `Decoration` | `"none"` | Underlines or strikes through the text. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `color` | `Color` | — | Sets the text color. | — |
+| `size` | `Int` | — | Sets the font size in logical pixels. | — |
+| `weight` | `Weight` | `"regular"` | Sets the font weight. | — |
+| `italic` | `Bool` | `false` | Sets the text in italics. | — |
+| `decoration` | `Decoration` | `"none"` | Underlines or strikes through the text. | — |
 | `value` (positional) | `String` | Required | The text of this run. | — |
 
 ## Button

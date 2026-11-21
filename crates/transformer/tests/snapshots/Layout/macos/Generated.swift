@@ -146,7 +146,7 @@ private struct V1: View {
             weftLinear(axis: .horizontal, gap: s.v3, align: WeftCrossAlign(weft: s.v4), justify: WeftJustify(weft: s.v5), padding: .init(padding: 6, paddingY: s.v2, paddingTop: 5)) {
                 weftLinear(axis: .horizontal, gap: 0, align: .start, justify: .start) {
                     weftLeaf(padding: .init(paddingTop: 2, paddingBottom: 3, paddingStart: 4, paddingEnd: 5)) {
-                        Text(verbatim: "fluid")
+                        weftText(spans: [.init(value: "fluid")])
                     }
                     .weftChild(marginTop: 1, marginBottom: 2, marginStart: 3, marginEnd: 4)
                 }
@@ -154,7 +154,7 @@ private struct V1: View {
                 .weftChild(grow: s.v6, fill: s.v7)
                 WeftSpacer(size: s.v9)
                 weftLeaf(padding: .init(paddingY: 8)) {
-                    Text(verbatim: "fixed")
+                    weftText(spans: [.init(value: "fixed")])
                 }
                 .weftFrame(aspectRatio: 1.5)
                 .weftChild(grow: 2.0, fill: true, marginStart: s.v10)
@@ -175,7 +175,7 @@ private struct V1: View {
             }
             weftScroll(direction: .vertical, gap: 4, align: .center, indicators: s.v12) {
                 weftLeaf {
-                    Text(verbatim: "vertical")
+                    weftText(spans: [.init(value: "vertical")])
                 }
                 WeftSpacer()
                 ForEach(s.p2) { c in V4(s: c) }
@@ -187,7 +187,7 @@ private struct V1: View {
                     Button {} label: {
                         weftButtonLabel {
                             weftLeaf {
-                                Text(verbatim: "horizontal")
+                                weftText(spans: [.init(value: "horizontal")])
                             }
                         }
                     }
@@ -221,7 +221,7 @@ private struct V2: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: "overlay")
+            weftText(spans: [.init(value: "overlay")])
         }
         .weftChild(fill: true)
     }
@@ -239,7 +239,7 @@ private struct V3: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: "projected")
+            weftText(spans: [.init(value: "projected")])
         }
     }
 }
@@ -265,7 +265,7 @@ private struct V4: View {
 
     var body: some View {
         weftLeaf {
-            Text(verbatim: s.v0)
+            weftText(spans: [.init(value: s.v0)])
         }
     }
 }

@@ -34,12 +34,21 @@ class ScreenshotTest {
         directory.mkdirs()
         for (id in ids) {
             ActivityScenario.launch(MainActivity::class.java).use {
-                compose.onNodeWithText("page:$id").performScrollTo().performClick()
-                compose.waitForIdle()
-                Thread.sleep(1000)
-                val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
-                File(directory, "$id$suffix.png").outputStream().use { output ->
-                    check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+                val page = compose.onNodeWithText("page:$id").performScrollTo()
+                // Auto-advance cancels infinite animations. Capture a stable frame after the
+                // animation has started, rather than freezing indicators at their initial value.
+                compose.mainClock.autoAdvance = false
+                try {
+                    page.performClick()
+                    compose.mainClock.advanceTimeBy(3_000)
+                    compose.waitForIdle()
+                    Thread.sleep(1000)
+                    val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+                    File(directory, "$id$suffix.png").outputStream().use { output ->
+                        check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+                    }
+                } finally {
+                    compose.mainClock.autoAdvance = true
                 }
             }
         }

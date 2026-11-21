@@ -55,8 +55,16 @@ impl Body<'_> {
             _ => element.name(),
         });
         let mut args = CallArgs::new(line);
-        let controlled = matches!(element, Element::Input | Element::Checkbox)
-            .then(|| self.template.controlled(node));
+        let controlled = matches!(
+            element,
+            Element::Input
+                | Element::TextArea
+                | Element::Checkbox
+                | Element::Switch
+                | Element::Slider
+                | Element::Picker
+        )
+        .then(|| self.template.controlled(node));
         let names: &[&str] = match element {
             Element::Column | Element::Row => {
                 let axis = if element == Element::Row {
@@ -84,13 +92,19 @@ impl Body<'_> {
                 args.push(KotlinProp(prop("value").expect("`Span` has a value"), None));
                 &[]
             }
-            Element::Input | Element::Checkbox => {
-                let (_, slot) = controlled.expect("input controls have value slots");
+            Element::Input
+            | Element::TextArea
+            | Element::Checkbox
+            | Element::Switch
+            | Element::Slider
+            | Element::Picker => {
+                let (_, slot) = controlled.expect("controlled elements have value slots");
                 args.push(format_args!("s.v{slot}"));
-                if element == Element::Input {
-                    &["placeholder", "disabled"]
-                } else {
-                    &["disabled"]
+                match element {
+                    Element::Input | Element::TextArea => &["placeholder", "disabled"],
+                    Element::Slider => &["min", "max", "step", "disabled"],
+                    Element::Picker => &["options", "placeholder", "disabled"],
+                    _ => &["disabled"],
                 }
             }
             Element::Image => {
@@ -100,15 +114,15 @@ impl Body<'_> {
             Element::Stack => &["alignment"],
             Element::Scroll => &["direction", "gap", "align", "indicators"],
             Element::Spacer => &["size"],
-            Element::Switch
-            | Element::TextArea
-            | Element::Spinner
-            | Element::Progress
-            | Element::Divider
-            | Element::Slider
-            | Element::Picker => {
-                unreachable!("unsupported elements are rejected before code generation")
+            Element::Spinner => &["color"],
+            Element::Progress => {
+                args.push(KotlinProp(
+                    prop("value").expect("`Progress` has a value"),
+                    None,
+                ));
+                &["color"]
             }
+            Element::Divider => &["vertical", "color"],
         };
         let text_style = if matches!(element, Element::Text | Element::Span) {
             TEXT_STYLE
@@ -133,31 +147,36 @@ impl Body<'_> {
             args.push(format_args!("{name} = {}", KotlinProp(value, union)));
         }
         modifiers(&mut args, prop);
-        args.finish(element == Element::Spacer);
+        args.finish(matches!(
+            element,
+            Element::Spacer | Element::Spinner | Element::Divider
+        ));
         match element {
-            Element::Input => {
-                let (event, slot) = controlled.expect("Input has a value slot");
+            Element::Input | Element::TextArea => {
+                let (event, slot) = controlled.expect("text controls have value slots");
                 out.writer.end_line(format_args!(
                     " {{ if (s.dispatch({event}, WeftValue.Text(it))) null else s.v{slot} }}"
                 ));
             }
-            Element::Checkbox => {
-                let (event, _) = controlled.expect("Checkbox has a value slot");
+            Element::Checkbox | Element::Switch => {
+                let (event, _) = controlled.expect("toggle controls have value slots");
                 out.writer.end_line(format_args!(
                     " {{ s.dispatch({event}, WeftValue.Bool(it)) }}"
                 ));
             }
+            Element::Slider | Element::Picker => {
+                let (event, _) = controlled.expect("numeric controls have value slots");
+                out.writer.end_line(format_args!(
+                    " {{ s.dispatch({event}, WeftValue.Number(it.toDouble())) }}"
+                ));
+            }
             Element::Text if children.is_empty() => out.writer.end_line(""),
-            Element::Span | Element::Image | Element::Spacer => out.writer.end_line(""),
-            Element::Switch
-            | Element::TextArea
+            Element::Span
+            | Element::Image
+            | Element::Spacer
             | Element::Spinner
             | Element::Progress
-            | Element::Divider
-            | Element::Slider
-            | Element::Picker => {
-                unreachable!("unsupported elements are rejected before code generation")
-            }
+            | Element::Divider => out.writer.end_line(""),
             Element::Column
             | Element::Row
             | Element::Stack

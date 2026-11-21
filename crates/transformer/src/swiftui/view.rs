@@ -238,13 +238,26 @@ impl Body<'_> {
             }
             Element::Image => {
                 let src = Argument::Property(prop("src").expect("`Image` has a source"));
-                out.writer.line(format_args!("WeftImage(src: {src})"));
+                let options = Properties::new(["fit", "placeholder"], |name| {
+                    let source = prop(name)?;
+                    Some(match name {
+                        "fit" => Argument::Union(Some(source), "ImageFit", ".cover"),
+                        _ => Argument::Property(source),
+                    })
+                });
+                let arguments = optional_arguments(&options);
+                out.writer
+                    .line(format_args!("WeftImage(src: {src}{arguments})"));
             }
         }
         if leaf {
             out.close("}");
         }
         let decoration = Properties::new(DECORATION, |name| {
+            // Replaced image content follows its border radius regardless of the child-clipping option.
+            if name == "clip" && element == Element::Image {
+                return prop("radius").map(|_| Argument::Default("true"));
+            }
             let source = prop(name)?;
             Some(match name {
                 "shadow" => Argument::Union(Some(source), "Shadow", ".none"),
@@ -324,6 +337,7 @@ impl Body<'_> {
             [
                 "color",
                 "size",
+                "font",
                 "weight",
                 "italic",
                 "decoration",
@@ -334,13 +348,7 @@ impl Body<'_> {
             ],
             |name| prop(name).map(|value| text_argument(name, value)),
         );
-        let arguments = fmt::from_fn(|f| {
-            if options.is_empty() {
-                Ok(())
-            } else {
-                write!(f, ", {options}")
-            }
-        });
+        let arguments = optional_arguments(&options);
         if children.is_empty() {
             let value = Argument::Property(prop("value").expect("plain `Text` has a value"));
             out.writer.line(format_args!(
@@ -359,7 +367,15 @@ impl Body<'_> {
                 unreachable!("only `Span` can be a direct child of `Text`");
             };
             let span = Properties::new(
-                ["value", "color", "size", "weight", "italic", "decoration"],
+                [
+                    "value",
+                    "color",
+                    "size",
+                    "font",
+                    "weight",
+                    "italic",
+                    "decoration",
+                ],
                 |name| {
                     self.template
                         .prop(child, props, name)
@@ -465,6 +481,16 @@ impl<const N: usize> Display for Properties<'_, N> {
         }
         Ok(())
     }
+}
+
+fn optional_arguments<'a, const N: usize>(options: &'a Properties<'_, N>) -> impl Display + 'a {
+    fmt::from_fn(move |f| {
+        if options.is_empty() {
+            Ok(())
+        } else {
+            write!(f, ", {options}")
+        }
+    })
 }
 
 fn with_default<'t>(source: Option<PropSource<'t>>, default: &'static str) -> Argument<'t> {

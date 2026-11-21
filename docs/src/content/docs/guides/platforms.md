@@ -135,7 +135,7 @@ The plugin builds `apps/windows/App.csproj` with `dotnet build`. The project imp
 
 ## Linux
 
-Use a Linux host with a C++20 toolchain, CMake 3.28 or later, `pkg-config`, and development packages for GTK 4.10 or later, libsoup 3, and json-glib. On Debian or Ubuntu the library packages are `libgtk-4-dev`, `libsoup-3.0-dev`, and `libjson-glib-dev`. The prebuilt kernel bundles its Unicode data and does not require system ICU.
+Use a Linux host with a C++20 toolchain, CMake 3.28 or later, `pkg-config`, and development packages for GTK 4.10 or later, libsoup 3, json-glib, and Fontconfig, plus the GdkPixbuf SVG loader for SVG icons. On Debian or Ubuntu the packages are `libgtk-4-dev`, `libsoup-3.0-dev`, `libjson-glib-dev`, `libfontconfig-dev`, and `librsvg2-common`. The prebuilt kernel bundles its Unicode data and does not require system ICU.
 
 On Linux arm64, Vite uses the `hermesc` shipped in `@weft-ui/native-linux`, because `hermes-compiler` does not provide one. Install that package on a Linux arm64 host even when targeting a different native platform, or set `WEFT_HERMESC`.
 

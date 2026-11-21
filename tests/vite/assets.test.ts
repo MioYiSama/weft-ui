@@ -133,32 +133,14 @@ test("WeChat copies assets, chooses density, and embeds Inter in the page styles
   }
 });
 
-test("Linux passes the asset directory to weft_views and copies media and fonts", async () => {
 test("Android packages density variants, VectorDrawables and Inter font faces", async () => {
   await cp(join(root, "res/images/logo@2x.png"), join(root, "res/images/logo@3x.png"));
-  vi.stubEnv("WEFT_PLATFORM", "linux");
   vi.stubEnv("WEFT_PLATFORM", "android");
   vi.stubEnv("WEFT_NATIVE", "0");
   await (await createBuilder({
     ...config(),
-    plugins: [weft({ assets: "res", platforms: ["linux"], app: { id: "com.example.assets" } })],
     plugins: [weft({ assets: "res", platforms: ["android"], app: { id: "com.example.assets" } })],
   })).buildApp();
-  const weftDir = join(root, "apps/linux/weft");
-  const cmake = await readFile(join(weftDir, "CMakeLists.txt"), "utf8");
-  expect(cmake).toContain('weft_views("${CMAKE_CURRENT_LIST_DIR}/Generated.cpp" "${CMAKE_CURRENT_LIST_DIR}/bundle.hbc" "${CMAKE_CURRENT_LIST_DIR}/assets")');
-  const directory = join(weftDir, "assets");
-  const images = ["logo.png", "logo@2x.png", "logo@3x.png", "only_high@2x.png"];
-  const fonts = ["Inter-Bold.ttf", "Inter-Regular.ttf"];
-  expect((await readdir(directory)).sort()).toEqual(["fonts", ...images, "star.svg"]);
-  expect((await readdir(join(directory, "fonts"))).sort()).toEqual(fonts);
-  for (const [input, output] of [
-    ...images.map((name) => [`images/${name}`, name]),
-    ["icons/star.svg", "star.svg"],
-    ...fonts.map((name) => [`fonts/${name}`, `fonts/${name}`]),
-  ] as [string, string][]) {
-    const copied = await readFile(join(directory, output));
-    expect(copied.equals(await readFile(join(root, "res", input))), output).toBe(true);
   const res = join(root, "apps/android/weft/src/main/res");
   expect(await readdir(join(res, "drawable-mdpi"))).toEqual(["weft_logo.png"]);
   expect((await readdir(join(res, "drawable-xhdpi"))).sort()).toEqual(["weft_logo.png", "weft_only_high.png"]);
@@ -172,6 +154,42 @@ test("Android packages density variants, VectorDrawables and Inter font faces", 
   for (const weight of [400, 700]) {
     expect(family).toContain(`<font android:font="@font/weft_inter_${weight}" android:fontWeight="${weight}" android:fontStyle="normal" />`);
   }
+});
+
+test.each(["ios", "macos"] as const)("%s emits a Swift package resource catalog and font manifest", async (platform) => {
+  await cp(join(root, "res/images/logo@2x.png"), join(root, "res/images/logo@3x.png"));
+  vi.stubEnv("WEFT_PLATFORM", platform);
+  vi.stubEnv("WEFT_NATIVE", "0");
+  await (await createBuilder({
+    ...config(),
+    plugins: [weft({ assets: "res", platforms: [platform], app: { id: "com.example.assets" } })],
+  })).buildApp();
+  const generated = join(root, "apps", platform, "weft");
+  const catalog = join(generated, "Assets.xcassets");
+  const readJson = async (...path: string[]) => JSON.parse(await readFile(join(...path), "utf8"));
+  expect(await readJson(catalog, "Contents.json")).toMatchObject({ info: { version: 1 } });
+  const logo = join(catalog, "logo.imageset");
+  expect((await readJson(logo, "Contents.json")).images).toEqual([
+    { idiom: "universal", filename: "logo.png", scale: "1x" },
+    { idiom: "universal", filename: "logo@2x.png", scale: "2x" },
+    { idiom: "universal", filename: "logo@3x.png", scale: "3x" },
+  ]);
+  expect((await readJson(catalog, "only_high.imageset", "Contents.json")).images).toEqual([
+    { idiom: "universal", filename: "only_high@2x.png", scale: "2x" },
+  ]);
+  expect(await readJson(catalog, "star.imageset", "Contents.json")).toMatchObject({
+    images: [{ idiom: "universal", filename: "star.svg" }],
+    properties: { "preserves-vector-representation": true },
+  });
+  const manifest = await readFile(join(generated, "Package.swift"), "utf8");
+  expect(manifest).toContain('resources: [.copy("bundle.hbc"), .process("Assets.xcassets"), .copy("fonts")]');
+  expect(await readJson(generated, "fonts/manifest.json")).toEqual([
+    { file: "Inter-Bold.ttf", family: "Inter", weight: 700, italic: false },
+    { file: "Inter-Regular.ttf", family: "Inter", weight: 400, italic: false },
+  ]);
+  expect(await readFile(join(generated, "fonts/Inter-Regular.ttf"))).toEqual(
+    await readFile(join(fixture, "assets/fonts/Inter-Regular.ttf")),
+  );
 });
 
 test("Windows copies asset content through Weft.targets", async () => {
@@ -201,6 +219,32 @@ test("Windows copies asset content through Weft.targets", async () => {
       { File: "Inter-Regular.ttf", Family: "Inter", Weight: 400, Italic: false },
     ],
   });
+});
+
+test("Linux passes the asset directory to weft_views and copies media and fonts", async () => {
+  await cp(join(root, "res/images/logo@2x.png"), join(root, "res/images/logo@3x.png"));
+  vi.stubEnv("WEFT_PLATFORM", "linux");
+  vi.stubEnv("WEFT_NATIVE", "0");
+  await (await createBuilder({
+    ...config(),
+    plugins: [weft({ assets: "res", platforms: ["linux"], app: { id: "com.example.assets" } })],
+  })).buildApp();
+  const weftDir = join(root, "apps/linux/weft");
+  const cmake = await readFile(join(weftDir, "CMakeLists.txt"), "utf8");
+  expect(cmake).toContain('weft_views("${CMAKE_CURRENT_LIST_DIR}/Generated.cpp" "${CMAKE_CURRENT_LIST_DIR}/bundle.hbc" "${CMAKE_CURRENT_LIST_DIR}/assets")');
+  const directory = join(weftDir, "assets");
+  const images = ["logo.png", "logo@2x.png", "logo@3x.png", "only_high@2x.png"];
+  const fonts = ["Inter-Bold.ttf", "Inter-Regular.ttf"];
+  expect((await readdir(directory)).sort()).toEqual(["fonts", ...images, "star.svg"]);
+  expect((await readdir(join(directory, "fonts"))).sort()).toEqual(fonts);
+  for (const [input, output] of [
+    ...images.map((name) => [`images/${name}`, name]),
+    ["icons/star.svg", "star.svg"],
+    ...fonts.map((name) => [`fonts/${name}`, `fonts/${name}`]),
+  ] as [string, string][]) {
+    const copied = await readFile(join(directory, output));
+    expect(copied.equals(await readFile(join(root, "res", input))), output).toBe(true);
+  }
 });
 
 test("dev server reloads after a variant is added to the configured asset directory", async () => {

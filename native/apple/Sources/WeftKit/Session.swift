@@ -22,6 +22,7 @@ public final class WeftSession {
     /// Why the app failed to start or render, shown instead of its views.
     public private(set) var failure: String?
 
+    let assets: WeftAssets
     @ObservationIgnored private let make: Make
     @ObservationIgnored private var scopes: [UInt32: WeftScope] = [:]
     @ObservationIgnored private let host = Host()
@@ -33,10 +34,10 @@ public final class WeftSession {
     @ObservationIgnored private nonisolated(unsafe) var runtime: OpaquePointer?
     @ObservationIgnored private nonisolated(unsafe) var bytecode: UnsafeMutableRawBufferPointer?
 
-    /// Starts the app compiled to `bytecode` (`bundle.hbc`), whose views
-    /// implement the layout with hash `layoutHash`. Failures are reported
-    /// through `failure`.
-    public init(bytecode url: URL?, layoutHash: UInt64, make: @escaping Make) {
+    /// Registers `resources` and starts the app compiled to `bytecode` (`bundle.hbc`).
+    /// The views implement the layout with hash `layoutHash`; failures are reported through `failure`.
+    public init(bytecode url: URL?, resources: Bundle, layoutHash: UInt64, make: @escaping Make) {
+        assets = WeftAssets(bundle: resources)
         self.make = make
         scopes[0] = WeftRootScope(id: 0, session: self)
         guard let url, let data = try? Data(contentsOf: url, options: .mappedIfSafe), !data.isEmpty else {

@@ -325,6 +325,32 @@ private struct WeftConfiguredBox<Content: View>: View {
     }
 }
 
+// The image is drawn into its final content box after intrinsic measurement, so fitting cannot resize that box.
+private struct WeftImageLayout: Layout {
+    let box: WeftBox
+    let intrinsic: CGSize
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        box.constraints.measure(box.proposal(proposal), padding: box.insets) {
+            $0.imageIdeal(intrinsic: intrinsic)
+        }
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let content = ProposedViewSize(width: max(0, bounds.width - box.insets.horizontal),
+                                       height: max(0, bounds.height - box.insets.vertical))
+        subviews.first?.place(at: CGPoint(x: bounds.minX + box.insets.left, y: bounds.minY + box.insets.top),
+                             anchor: .topLeading, proposal: content)
+    }
+}
+
+@MainActor func weftImageBox<Content: View>(intrinsic: CGSize, @ViewBuilder content: () -> Content) -> some View {
+    let child = content()
+    return WeftConfiguredBox(padding: .init()) { box in
+        WeftImageLayout(box: box, intrinsic: intrinsic) { child }
+    }
+}
+
 /// A single-axis scroll viewport whose contents use the same linear layout as Row and Column.
 @MainActor public func weftScroll<Content: View>(
     direction: WeftAxis = .vertical, gap: CGFloat = 0, align: WeftCrossAlign = .start,

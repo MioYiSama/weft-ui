@@ -137,7 +137,7 @@ const TAP: Fixture = Fixture {
 const ASSETS: Fixture = Fixture {
     name: "Assets",
     source: include_str!("fixtures/Assets.weft"),
-    natives: &[],
+    natives: ALL_NATIVES,
     diverges: &[],
 };
 

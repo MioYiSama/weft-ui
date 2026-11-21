@@ -81,7 +81,7 @@ Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "
 }
 ```
 
-边框增加元素的外部尺寸，不改变内容盒大小。背景延伸到边框下方，`radius` 同时为背景和边框设置圆角。`clip = true` 将子元素裁剪在带圆角的内边距盒内。`"small"`、`"medium"` 和 `"large"` 阴影画在边框盒外，默认为 `"none"`。
+边框增加元素的外部尺寸，不改变内容盒大小。背景延伸到边框下方，`radius` 同时为背景和边框设置圆角。`clip = true` 将子元素裁剪在带圆角的内边距盒内。`Image` 设置 `radius` 后，图片本身总会按圆角裁剪。`"small"`、`"medium"` 和 `"large"` 阴影画在边框盒外，默认为 `"none"`。
 
 `opacity` 改变整个元素及其子元素的不透明度，但不影响布局。要隐藏元素且不留空位，设置 `hidden = true`。各元素可用的属性见[内置元素参考](/zh/reference/elements/)。
 

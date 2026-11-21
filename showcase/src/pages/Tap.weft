@@ -38,9 +38,8 @@ component Tap() {
             }
             Row(fill = true, align = "center", gap = 12, padding = 16,
                 background = "#194e61", radius = 12, onTap = { images = images + 1 }) {
-                // The colored tile stays visible even on hosts without a data-URL image loader.
                 Stack(width = 48, height = 48, alignment = "center", background = "#28677b", radius = 8) {
-                    Image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAf0lEQVR4nO3RwQ2AIAyFYbZ2O3dwAg8OgtFEY1Aqhdf28pr0yv+lpMThcIwmL1MOC5cLDczrJj5oCjji17bGYYhnXIswidcQcIAU/7vEULg1LiHc4nBET7yGUMNG4iVCfR1EvPuLrOMiwiv+ifCOvxBRgBsRCTgRBBBAAAHRgB2p2M047p3XawAAAABJRU5ErkJggg==",
+                    Image("asset:tap_card",
                         width = 32, height = 32, onTap = { images = images + 1 })
                 }
                 Column(grow = 1, gap = 4) {

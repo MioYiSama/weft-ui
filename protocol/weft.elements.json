@@ -203,8 +203,7 @@
       "doc": { "en": "Theme declarations and color tokens.", "zh": "主题声明和颜色令牌。" }
     },
     "assets": {
-      "doc": { "en": "Local image assets and custom fonts.", "zh": "本地图片资源和自定义字体。" },
-      "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+      "doc": { "en": "Local image assets and custom fonts.", "zh": "本地图片资源和自定义字体。" }
     }
   },
   "elements": [
@@ -416,14 +415,12 @@
         {
           "name": "fit", "type": "ImageFit", "default": "cover",
           "css": { "property": "object-fit", "unit": "keyword", "keywords": {} },
-          "doc": { "en": "Crops (`cover`), fits (`contain`), or stretches (`fill`) the image to its box.", "zh": "在盒内裁剪（`cover`）、完整显示（`contain`）或拉伸（`fill`）图片。" },
-          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+          "doc": { "en": "Crops (`cover`), fits (`contain`), or stretches (`fill`) the image to its box.", "zh": "在盒内裁剪（`cover`）、完整显示（`contain`）或拉伸（`fill`）图片。" }
         },
         {
           "name": "placeholder", "type": "Color",
           "css": { "property": "--w-image-placeholder", "unit": "color" },
-          "doc": { "en": "Shows this background color while the image loads or if it fails.", "zh": "图片加载中或加载失败时显示此背景色。" },
-          "support": { "ios": "no", "macos": "no", "android": "no", "windows": "no", "linux": "no" }
+          "doc": { "en": "Shows this background color while the image loads or if it fails.", "zh": "图片加载中或加载失败时显示此背景色。" }
         }
       ]
     },

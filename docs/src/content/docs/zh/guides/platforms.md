@@ -135,7 +135,7 @@ pnpm --filter example test:windows
 
 ## Linux
 
-在 Linux 主机上准备 C++20 工具链、CMake 3.28 或更高版本、`pkg-config`，以及 GTK 4.10 或更高版本、libsoup 3 和 json-glib 的开发包。在 Debian 或 Ubuntu 上，这些库的开发包分别是 `libgtk-4-dev`、`libsoup-3.0-dev` 和 `libjson-glib-dev`。预构建的内核自带 Unicode 数据，无需安装系统 ICU。
+在 Linux 主机上准备 C++20 工具链、CMake 3.28 或更高版本、`pkg-config`，GTK 4.10 或更高版本、libsoup 3、json-glib 和 Fontconfig 的开发包，以及显示 SVG 图标所需的 GdkPixbuf SVG 加载器。在 Debian 或 Ubuntu 上，对应的包是 `libgtk-4-dev`、`libsoup-3.0-dev`、`libjson-glib-dev`、`libfontconfig-dev` 和 `librsvg2-common`。预构建的内核自带 Unicode 数据，无需安装系统 ICU。
 
 `hermes-compiler` 不提供 Linux arm64 版本，所以 Vite 在这类主机上使用 `@weft-ui/native-linux` 提供的 `hermesc`。即使目标是其他原生平台，也要安装这个包，或设置 `WEFT_HERMESC`。
 

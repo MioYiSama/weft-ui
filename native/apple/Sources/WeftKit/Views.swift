@@ -25,6 +25,7 @@ public struct WeftRoot: View {
             .weftFrame(width: geometry.size.width, height: geometry.size.height)
             .clipped()
             .environment(\.layoutDirection, .leftToRight)
+            .environment(\.weftAssets, session.assets)
             .onChange(of: environment, initial: true) { _, updated in
                 session.update(environment: updated)
             }
@@ -72,29 +73,3 @@ public struct WeftPressStyle: ButtonStyle {
     #endif
 }
 
-/// `Image`: a remote image. With one fixed side the other follows the
-/// aspect ratio, with both the image fills them, and with neither it keeps
-/// its own size.
-public struct WeftImage: View {
-    private let src: String
-    private var sizing = WeftSizing()
-
-    public init(src: String) { self.src = src }
-
-    public var body: some View {
-        let axes = sizing.exactAxes
-        let width = sizing.frame.width != nil || axes.width
-        let height = sizing.frame.height != nil || axes.height
-        weftLeaf {
-            AsyncImage(url: URL(string: src)) { phase in
-                if let image = phase.image {
-                    switch (width, height) {
-                    case (false, false): image
-                    case (true, true): image.resizable()
-                    default: image.resizable().aspectRatio(contentMode: .fit)
-                    }
-                }
-            }
-        }
-    }
-}

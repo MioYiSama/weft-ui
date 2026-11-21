@@ -156,22 +156,34 @@ component Remote(source: String) {
         );
         let compilation = crate::check(load(&[path], &mut loader));
         let program = compilation.program.expect("valid asset properties");
+        let assets = FEATURES
+            .iter()
+            .find(|feature| feature.name == "assets")
+            .expect("assets feature");
         for platform in [
+            Platform::Web,
+            Platform::Wechat,
             Platform::Ios,
             Platform::Macos,
             Platform::Android,
             Platform::Windows,
             Platform::Linux,
         ] {
+            let rejected = assets
+                .support
+                .iter()
+                .any(|&(target, level)| target == platform && level == Level::No);
             let errors = check(&program, platform);
-            assert_eq!(errors.len(), 2, "{errors:?}");
+            assert_eq!(
+                errors.len(),
+                if rejected { 2 } else { 0 },
+                "{platform}: {errors:?}"
+            );
             assert!(errors.iter().all(|error| {
                 error.is_error()
                     && error.message == format!("local assets are not supported on {platform}")
             }));
         }
-        assert!(check(&program, Platform::Web).is_empty());
-        assert!(check(&program, Platform::Wechat).is_empty());
     }
 
     #[test]

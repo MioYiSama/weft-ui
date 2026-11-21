@@ -957,11 +957,11 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 | R6.d | ☑ | 7815a11 | 截图待维护者确认（`tap`：android）；C-android 21 项、C-ui 与 5 个 showcase 仪器测试通过（各计数独立、按压像素、松开与取消恢复、外部松开不触发）；其余 android 基线 0.000% |
 | R6.n | ☑ | 0e101da | C-windows（core 21、壳 26）、C-ui 通过；showcase 测试用真实鼠标验证各计数独立、按压反馈、外部松开、Enter 与 UIA Invoke；Windows 截图已查看 |
 | R6.g | ☑ | f95fe48 | C-linux 7 组、C-ui、原生 conformance 21 项（含 `tap`）通过；X11 showcase 测试验证各计数独立、外部松开与键盘触发；Linux 截图已查看 |
-| R7.w | ☑ | （本提交） | 截图待维护者确认（`assets`：web、wechat）；C-rust 133 项、C-ts 231 项通过，tsc 计数不变；五个原生 showcase 目标在 `WEFT_NATIVE=0` 下生成成功；小程序主包 1,773,384 字节（字体 1630 KiB，构建给出警告），低于 2 MiB；开发者工具渲染三种 Inter 字重；C-apps 仅 web、wechat 有差异，已重新录制基线 |
-| R7.a | ☐ | | |
-| R7.d | ☐ | | |
-| R7.n | ☐ | | |
-| R7.g | ☐ | | |
+| R7.w | ☑ | 11b52f0 | 截图待维护者确认（`assets`：web、wechat）；C-rust 133 项、C-ts 231 项通过，tsc 计数不变；五个原生 showcase 目标在 `WEFT_NATIVE=0` 下生成成功；小程序主包 1,773,384 字节（字体 1630 KiB，构建给出警告），低于 2 MiB；开发者工具渲染三种 Inter 字重；C-apps 仅 web、wechat 有差异，已重新录制基线 |
+| R7.a | ☑ | （本提交） | 截图待维护者确认（`assets`：ios；`tap` 的 ios 截图 0.000% 不变）；C-apple 26 项（倍数选择、缺失图片、Inter 注册）、iOS C-ui、macOS C-ui 与 showcase 截图（一次运行）通过；Apple 的 Vite 资源断言通过；其余 ios 基线 0.000%；含本批共用的 schema、夹具、`pages.json`、`tap` 页改用打包图片 `asset:tap_card` 与 views、platforms 指南更新 |
+| R7.d | ☑ | 15447d9 | 截图待维护者确认（`assets`：android；`tap` 的 android 基线在 Apple 提交中随图片显示而更新）；C-android 21 项、C-ui、3 个资源仪器测试与 Android 的 Vite 断言通过；其余 android 基线 0.000% |
+| R7.n | ☑ | 0df03db | C-windows（core 21、WinUI 37）、C-ui 与 Windows 的 Vite 断言通过；Windows `assets`、`tap` 截图已查看 |
+| R7.g | ☑ | 06781eb | C-linux 8 组、C-ui 与 Linux 的 Vite 断言通过，CMake 复制的资源与生成文件逐字节一致；Linux `assets`、`tap` 截图已查看 |
 | R8.w | ☐ | | |
 | R8.a | ☐ | | |
 | R8.d | ☐ | | |
@@ -1038,3 +1038,9 @@ R1 新增共享样例 `protocol/corpus/layout.json`，四个原生壳各写一�
 - [R7.w] 计划没有写「预期变化」。实际变化：schema 生成表（`catalog.rs`、runtime `elements.ts`、两份元素参考，以及四个原生元素表因新增 `ImageFit` 而更新）；`Controls`、`Layout`、`Typography`、`Gallery` 的 Web JS 与小程序 `view.js` 只是 CSS 下标位移；`Gallery`、`Tap` 的动态图片源改走资源解析；`Appearance`、`Gallery`、`Layout`、`Tap` 的小程序 `view.wxml` 显式写出默认 `mode="aspectFill"`（规范 §6 默认 `cover`）；example 的 web、wechat 产物随之变化。原生快照与原生 example 产物不变。结论：接受，已重新录制 C-apps 基线
 - [R7.w] 小程序的 `@font-face`（base64 写入 `weft/index.wxss`）在开发者工具中三种字重都能渲染，不需要 `wx.loadFontFace`。三种 Inter 字重让主包增加 1630 KiB，构建给出警告；打包后主包 1.69 MiB，低于 2 MiB 上限。上传面板需要辅助功能权限，未实际上传。结论：接受，记录在案；应用若用更多字体需改用分包或网络字体
 - [R7.w] `tap` 页仍用内嵌 PNG，原生构建目前会拒绝 `asset:` 源。结论：R7 原生波次在五个平台都支持资源后，由 Apple 提交（最后一个）把它换成打包资源
+- [R7 期间] 规范的盒模型说 `radius` 裁剪背景与边框、`clip = true` 裁剪子元素，没有说 `Image` 自己的像素。Web 与小程序的图片按 `border-radius` 裁剪（CSS 对替换元素的固有行为），Android 的 `Image` 仍是直角。结论：`Image` 设置 `radius` 时总是把图片本身裁成圆角（`Image` 没有子元素，`clip` 与之无关），R7 原生波次各平台实现，views 指南补一句
+- [R7.a] Apple 的资源包要由生成代码在会话启动时传入：所有 Apple `Generated.swift` 快照与 example 产物多一行 `resources: Bundle.module`。各应用的 `Package.swift` 本来就声明了资源（`bundle.hbc`），没有资源目录的应用也能编译；比起在运行时由 `bundle.hbc` 的路径反推资源包（iOS、macOS 目录结构不同），显式传入更可靠。结论：接受
+- [R7.g] Linux example 的 `weft_views` 总是带第三个参数（资源目录），因此 C-apps 的 linux `CMakeLists.txt` 有一行差异。重建 Docker 镜像会删掉缓存内核构建引用的 `/hermes-src` 符号链接，需要指回已检出的 Hermes 标签（本地环境问题，仓库无改动）。结论：接受
+- [R7.d] Android 新增依赖 `svg2vectordrawable` 把 SVG 转成 VectorDrawable，`pnpm-lock.yaml` 随之更新。结论：接受
+- [R7.n] 非打包 WinUI 应用中 `ms-appx` 字体 URI 可用，无需 `file:` 回退。结论：接受
+- [R7 收尾] `tap` 页的图片改用打包资源 `asset:tap_card`（由原内嵌 PNG 解码而来），五个原生平台都能显示；Web、iOS 截图 0.000% 不变，Android 基线因图片出现而更新（差异 0.143%），Windows、Linux 截图已查看。结论：接受

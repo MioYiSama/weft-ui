@@ -76,6 +76,7 @@ fn generate(layout: &ViewLayout) -> String {
     out.open(session);
     out.writer
         .line("bytecode: Bundle.module.url(forResource: \"bundle\", withExtension: \"hbc\"),");
+    out.writer.line("resources: Bundle.module,");
     out.writer
         .line(format_args!("layoutHash: 0x{:016x},", layout.hash()));
     out.writer.line("make: makeScope");

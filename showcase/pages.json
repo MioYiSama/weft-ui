@@ -23,7 +23,6 @@
   },
   {
     "id": "assets",
-    "title": "Assets",
-    "pending": ["ios", "macos", "android", "windows", "linux"]
+    "title": "Assets"
   }
 ]

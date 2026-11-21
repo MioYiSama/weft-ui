@@ -312,8 +312,8 @@ Displays a bundled image or an image from a URL.
 | `shadow` | `Shadow` | `"none"` | Draws a preset shadow outside the border box. | — |
 | `clip` | `Bool` | `false` | Clips overflowing content to the rounded padding box. | — |
 | `src` (positional) | `String` | Required | The image URL or a bundled asset reference (`asset:name`). | — |
-| `fit` | `ImageFit` | `"cover"` | Crops (`cover`), fits (`contain`), or stretches (`fill`) the image to its box. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
-| `placeholder` | `Color` | — | Shows this background color while the image loads or if it fails. | Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux` |
+| `fit` | `ImageFit` | `"cover"` | Crops (`cover`), fits (`contain`), or stretches (`fill`) the image to its box. | — |
+| `placeholder` | `Color` | — | Shows this background color while the image loads or if it fails. | — |
 
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
@@ -646,7 +646,3 @@ Selects one option from a list of strings.
 | Event | Payload | Description | Platform exceptions |
 | --- | --- | --- | --- |
 | `onChange` | `Int` | Reports the zero-based index of the proposed option. | — |
-
-## Feature support
-
-- `assets`: Local image assets and custom fonts. Unsupported: `ios`; Unsupported: `macos`; Unsupported: `android`; Unsupported: `windows`; Unsupported: `linux`.

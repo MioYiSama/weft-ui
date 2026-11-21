@@ -6,6 +6,7 @@ import WeftKit
 /// The app's kernel session, started on first use with the bundle of this package.
 @MainActor private let session = WeftSession(
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
+    resources: Bundle.module,
     layoutHash: 0x399c5415a0a16e67,
     make: makeScope
 )

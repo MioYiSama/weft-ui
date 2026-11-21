@@ -12,6 +12,7 @@ import { writeWechatAssets } from "./assets/wechat.ts";
 import { writeAndroidAssets } from "./assets/android.ts";
 import { writeWindowsAssets } from "./assets/windows.ts";
 import { writeLinuxAssets } from "./assets/linux.ts";
+import { writeAppleAssets } from "./assets/apple.ts";
 
 /** Options of the Weft Vite plugin. */
 export interface WeftOptions {
@@ -383,6 +384,7 @@ export default function weft(options: WeftOptions = {}): Plugin {
       if (platform === "android") await writeAndroidAssets(assets(), generated);
       if (platform === "windows") writeWindowsAssets(assets(), generated);
       if (platform === "linux") writeLinuxAssets(assets(), generated);
+      if (platform === "ios" || platform === "macos") writeAppleAssets(assets(), generated);
       const shell = shells.get(platform)!;
       const adapter = nativeAdapter(platform, shell);
       const projectPath = relative(root, project).replaceAll("\\", "/") || ".";

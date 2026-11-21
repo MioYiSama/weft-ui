@@ -81,7 +81,7 @@ Column(padding = 12, background = "#ffffff", radius = 12, border = 1, shadow = "
 }
 ```
 
-The border adds to the element's outer size, not to its content size. The background extends under the border, and `radius` rounds both. Use `clip = true` to keep children inside the rounded padding box. The `"small"`, `"medium"`, and `"large"` shadows paint outside the border box; the default is `"none"`.
+The border adds to the element's outer size, not to its content size. The background extends under the border, and `radius` rounds both. Use `clip = true` to keep children inside the rounded padding box. An `Image` with `radius` always rounds its picture. The `"small"`, `"medium"`, and `"large"` shadows paint outside the border box; the default is `"none"`.
 
 `opacity` fades the whole element, including its children, without changing its size. Use `hidden = true` to hide an element and remove its space in the layout. See the [built-in element reference](/reference/elements/) for the available properties on each element.
 

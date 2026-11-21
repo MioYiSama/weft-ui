@@ -2250,13 +2250,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(44),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
     PropSpec {
         name: "placeholder",
@@ -2266,13 +2260,7 @@ const PROPS_6: &[PropSpec] = &[
         constant: false,
         css: Some(45),
         controlled_by: None,
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
 ];
 
@@ -4696,12 +4684,6 @@ pub(crate) const FEATURES: [FeatureSpec; 2] = [
     },
     FeatureSpec {
         name: "assets",
-        support: &[
-            (Platform::Ios, Level::No),
-            (Platform::Macos, Level::No),
-            (Platform::Android, Level::No),
-            (Platform::Windows, Level::No),
-            (Platform::Linux, Level::No),
-        ],
+        support: &[],
     },
 ];

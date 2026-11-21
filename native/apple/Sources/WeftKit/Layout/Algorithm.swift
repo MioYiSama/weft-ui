@@ -46,6 +46,16 @@ struct WeftProposal: Equatable {
         (width, height) = axis == .horizontal ? (main, cross) : (cross, main)
     }
 
+    func imageIdeal(intrinsic: CGSize) -> CGSize {
+        guard intrinsic.width > 0, intrinsic.height > 0 else { return .zero }
+        let w = intrinsic.width
+        let h = intrinsic.height
+        if let width = width.exact { return CGSize(width: width, height: width * h / w) }
+        if let height = height.exact { return CGSize(width: height * w / h, height: height) }
+        let scale = min(1, (width.limit ?? .infinity) / w, (height.limit ?? .infinity) / h)
+        return CGSize(width: w * scale, height: h * scale)
+    }
+
     func inset(_ edges: WeftInsets) -> Self {
         Self(width: width.inset(edges.horizontal), height: height.inset(edges.vertical))
     }

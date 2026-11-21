@@ -10,6 +10,7 @@ import WeftKit
     ])
     return WeftSession(
         bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
+        resources: Bundle.module,
         layoutHash: 0xdf9b1480f4cc5c0a,
         make: makeScope
     )

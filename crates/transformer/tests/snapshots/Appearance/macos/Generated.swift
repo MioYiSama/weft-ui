@@ -6,6 +6,7 @@ import WeftKit
 /// The app's kernel session, started on first use with the bundle of this package.
 @MainActor private let session = WeftSession(
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
+    resources: Bundle.module,
     layoutHash: 0xe7efdea4345db2e9,
     make: makeScope
 )
@@ -95,7 +96,7 @@ private struct V0: View {
             .weftVisibility(hidden: s.v1)
             weftStack(alignment: .topStart) {
                 WeftImage(src: "wide.png")
-                .weftDecoration(radius: 6)
+                .weftDecoration(radius: 6, clip: true)
                 .weftOpacity(opacity: 0.8)
                 .weftFrame(width: 240, height: 96)
             }

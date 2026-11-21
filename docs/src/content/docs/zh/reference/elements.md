@@ -312,8 +312,8 @@ title: 内置元素
 | `shadow` | `Shadow` | `"none"` | 在边框盒外绘制预设阴影。 | — |
 | `clip` | `Bool` | `false` | 将溢出的内容裁剪到带圆角的内边距盒内。 | — |
 | `src` (位置参数) | `String` | 必填 | 图片的 URL 或打包资源引用（`asset:name`）。 | — |
-| `fit` | `ImageFit` | `"cover"` | 在盒内裁剪（`cover`）、完整显示（`contain`）或拉伸（`fill`）图片。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
-| `placeholder` | `Color` | — | 图片加载中或加载失败时显示此背景色。 | 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux` |
+| `fit` | `ImageFit` | `"cover"` | 在盒内裁剪（`cover`）、完整显示（`contain`）或拉伸（`fill`）图片。 | — |
+| `placeholder` | `Color` | — | 图片加载中或加载失败时显示此背景色。 | — |
 
 | 事件 | 载荷 | 说明 | 平台例外 |
 | --- | --- | --- | --- |
@@ -646,7 +646,3 @@ title: 内置元素
 | 事件 | 载荷 | 说明 | 平台例外 |
 | --- | --- | --- | --- |
 | `onChange` | `Int` | 提供用户选择的选项索引（从 0 开始）。 | — |
-
-## 功能支持
-
-- `assets`: 本地图片资源和自定义字体。 不支持: `ios`; 不支持: `macos`; 不支持: `android`; 不支持: `windows`; 不支持: `linux`.

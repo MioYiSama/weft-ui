@@ -1,0 +1,38 @@
+{
+  "hash": "399c5415a0a16e67",
+  "templates": [
+    {
+      "label": "Inputs",
+      "kind": "component",
+      "roots": [0],
+      "nodes": [
+        {"element": "Column", "props": {}, "children": [1, 2, 3, 4, 5]},
+        {"element": "Input", "props": {}, "children": []},
+        {"element": "Input", "props": {"type": "password"}, "children": []},
+        {"element": "TextArea", "props": {"maxLength": 10, "focused": false}, "children": []},
+        {"element": "Text", "props": {}, "children": []},
+        {"element": "Button", "props": {}, "children": [6]},
+        {"element": "Text", "props": {"value": "Toggle focus"}, "children": []}
+      ],
+      "values": [
+        {"node": 1, "prop": "value", "type": "String"},
+        {"node": 1, "prop": "type", "type": "String"},
+        {"node": 1, "prop": "maxLength", "type": "Int"},
+        {"node": 1, "prop": "focused", "type": "Bool"},
+        {"node": 2, "prop": "value", "type": "String"},
+        {"node": 3, "prop": "value", "type": "String"},
+        {"node": 4, "prop": "value", "type": "String"}
+      ],
+      "events": [
+        {"node": 1, "event": "onChange", "payload": "String", "controls": 0},
+        {"node": 1, "event": "onSubmit", "payload": null, "controls": null},
+        {"node": 1, "event": "onFocusChange", "payload": "Bool", "controls": null},
+        {"node": 2, "event": "onChange", "payload": "String", "controls": 4},
+        {"node": 3, "event": "onChange", "payload": "String", "controls": 5},
+        {"node": 3, "event": "onFocusChange", "payload": "Bool", "controls": null},
+        {"node": 5, "event": "onClick", "payload": null, "controls": null}
+      ],
+      "points": []
+    }
+  ]
+}

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Windows.System;
 
 namespace Weft.WinUI;
 
@@ -14,29 +17,47 @@ public abstract class WeftTextInput : WeftElement
 {
     // The normal intrinsic width is about 20 characters, not a fixed layout constraint.
     private const double InputWidth = 200;
-    private protected TextBox Box { get; } = new();
+    // Layout owns this stable element while Input can swap its native editor.
+    private readonly Grid host = new();
     private readonly Func<string, bool> edit;
     private string value = "";
-    private bool composing;
+    private int maxLength = int.MaxValue;
+    private bool composing, updating, focused, focusPending;
+    private protected Control Editor { get; private set; }
 
-    private protected WeftTextInput(Func<string, bool> edit)
+    private protected WeftTextInput(Func<string, bool> edit, Action<bool>? focusChanged, Action? submit = null)
     {
         this.edit = edit;
-        Box.SetValue(WeftLayout.PreferredWidthProperty, InputWidth);
-        Box.TextChanging += (_, args) =>
+        var box = new TextBox();
+        Editor = box;
+        Observe(box);
+        host.Children.Add(box);
+        host.SetValue(WeftLayout.PreferredWidthProperty, InputWidth);
+        if (focusChanged is not null)
         {
-            if (args.IsContentChanging) Edited();
-        };
-        // Keep IME composition local until the text is committed.
-        Box.TextCompositionStarted += (_, _) => composing = true;
-        Box.TextCompositionEnded += (_, _) =>
-        {
-            composing = false;
-            Edited();
-        };
+            var reported = false;
+            void Report(object sender, RoutedEventArgs args)
+            {
+                // Focus events bubble from template children too. Moving within
+                // the editor (or replacing it while focused) isn't a focus change.
+                var current = HasFocus();
+                if (current == reported) return;
+                reported = current;
+                focusChanged(current);
+            }
+            host.GotFocus += Report;
+            host.LostFocus += Report;
+        }
+        if (submit is not null)
+            host.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler((_, args) =>
+            {
+                if (args.Key != VirtualKey.Enter || composing) return;
+                args.Handled = true;
+                submit();
+            }), handledEventsToo: true);
     }
 
-    protected sealed override FrameworkElement Control => Box;
+    protected sealed override FrameworkElement Control => host;
 
     /// <summary>The controlled value slot.</summary>
     public string Value
@@ -44,35 +65,200 @@ public abstract class WeftTextInput : WeftElement
         set
         {
             this.value = Normalize(value);
-            if (!composing && Normalize(Box.Text) != this.value) Show();
+            if (!composing && Read() != this.value) Show(this.value);
         }
     }
 
-    public string Placeholder { set => Box.PlaceholderText = value; }
-    public bool Disabled { set => Box.IsEnabled = !value; }
+    public string Placeholder
+    {
+        set
+        {
+            if (Editor is TextBox box) box.PlaceholderText = value;
+            else ((PasswordBox)Editor).PlaceholderText = value;
+        }
+    }
 
-    private string Normalize(string text) => Box.AcceptsReturn
+    public bool Disabled { set => Editor.IsEnabled = !value; }
+
+    public double MaxLength
+    {
+        set
+        {
+            maxLength = value < 0 ? int.MaxValue : (int)Math.Min(value, int.MaxValue);
+            ApplyNativeLimit();
+        }
+    }
+
+    public bool Focused
+    {
+        set
+        {
+            if (focused == value) return;
+            focused = value;
+            if (value && !host.IsLoaded)
+            {
+                if (!focusPending) host.Loaded += FocusOnLoad;
+                focusPending = true;
+                return;
+            }
+            if (value) Editor.Focus(FocusState.Programmatic);
+            else if (HasFocus())
+                for (var parent = VisualTreeHelper.GetParent(host); parent is not null; parent = VisualTreeHelper.GetParent(parent))
+                    if (parent is WeftLinearPanel { IsRoot: true } root)
+                    {
+                        root.TakeInputFocus();
+                        break;
+                    }
+        }
+    }
+
+    private void FocusOnLoad(object sender, RoutedEventArgs args)
+    {
+        host.Loaded -= FocusOnLoad;
+        focusPending = false;
+        if (focused) Editor.Focus(FocusState.Programmatic);
+    }
+
+    private bool HasFocus()
+    {
+        if (host.XamlRoot is not { } root) return false;
+        for (var target = FocusManager.GetFocusedElement(root) as DependencyObject; target is not null; target = VisualTreeHelper.GetParent(target))
+            if (target == host) return true;
+        return false;
+    }
+
+    private protected void ReplaceEditor(Control editor)
+    {
+        var previous = Editor;
+        var hadFocus = HasFocus();
+        Editor = editor;
+        composing = false;
+        Disabled = !previous.IsEnabled;
+        Placeholder = previous is TextBox box ? box.PlaceholderText : ((PasswordBox)previous).PlaceholderText;
+        ApplyNativeLimit();
+        if (value.Length != 0) Show(value);
+        Observe(editor);
+        host.Children.Add(editor);
+        if (hadFocus) editor.Focus(FocusState.Programmatic);
+        host.Children.Remove(previous);
+    }
+
+    private void Observe(Control editor)
+    {
+        if (editor is PasswordBox password)
+        {
+            password.PasswordChanged += (sender, _) => { if (sender == Editor) Edited(); };
+            return;
+        }
+        var box = (TextBox)editor;
+        box.TextChanging += (sender, args) =>
+        {
+            if (sender == Editor && args.IsContentChanging) Edited();
+        };
+        // Keep IME composition local until the text is committed.
+        box.TextCompositionStarted += (sender, _) => { if (sender == Editor) composing = true; };
+        box.TextCompositionEnded += (sender, _) =>
+        {
+            if (sender != Editor) return;
+            composing = false;
+            Edited();
+        };
+    }
+
+    private void ApplyNativeLimit()
+    {
+        // Native zero is the unlimited sentinel. LimitEdit also handles an explicit
+        // zero, and guards the boundary if a native edit bypasses the property.
+        var limit = maxLength == int.MaxValue ? 0 : maxLength;
+        if (Editor is TextBox box) box.MaxLength = limit;
+        else ((PasswordBox)Editor).MaxLength = limit;
+    }
+
+    private string Normalize(string text) => Editor is TextBox { AcceptsReturn: true }
         ? text.Replace("\r\n", "\n").Replace('\r', '\n')
         : text;
 
+    private string Read() => Editor is TextBox box ? Normalize(box.Text) : ((PasswordBox)Editor).Password;
+
     private void Edited()
     {
-        if (composing) return;
-        var text = Normalize(Box.Text);
-        if (text != value && !edit(text)) Show();
+        if (composing || updating) return;
+        var text = Read();
+        var limited = LimitEdit(text, maxLength);
+        if (limited != text) Show(limited);
+        if (limited != value && !edit(limited)) Show(value);
+    }
+
+    internal static string LimitEdit(string text, int limit)
+    {
+        var length = Math.Min(text.Length, limit);
+        // Native text input can hand us an edit that has already been cut at
+        // MaxLength. Don't send a lone surrogate over the UTF-8 bridge either way.
+        var first = text.AsSpan(0, length).IndexOfAnyInRange('\ud800', '\udfff');
+        for (var i = first; i >= 0 && i < length; i++)
+        {
+            if (!char.IsSurrogate(text[i])) continue;
+            if (i + 1 == length || !char.IsSurrogatePair(text[i], text[i + 1]))
+            {
+                length = i;
+                break;
+            }
+            i++;
+        }
+        return length == text.Length ? text : text[..length];
     }
 
     /// <summary>Replaces the text, keeping the caret where the new text allows.</summary>
-    private void Show()
+    private void Show(string text)
     {
-        var caret = Box.SelectionStart;
-        Box.Text = value;
-        Box.SelectionStart = Math.Min(caret, Box.Text.Length);
+        updating = true;
+        try
+        {
+            if (Editor is TextBox box)
+            {
+                var caret = box.SelectionStart;
+                box.Text = text;
+                box.SelectionStart = Math.Min(caret, box.Text.Length);
+            }
+            else ((PasswordBox)Editor).Password = text;
+        }
+        finally
+        {
+            updating = false;
+        }
     }
 }
 
-/// <summary><c>Input</c>: a single-line <see cref="TextBox"/>.</summary>
-public sealed class WeftInput(Func<string, bool> edit) : WeftTextInput(edit) { }
+/// <summary><c>Input</c>: a single-line <see cref="TextBox"/> or secure <see cref="PasswordBox"/>.</summary>
+public sealed class WeftInput(Func<string, bool> edit, Action? submit = null, Action<bool>? focusChanged = null)
+    : WeftTextInput(edit, focusChanged, submit)
+{
+    public WeftInputType Type
+    {
+        set
+        {
+            if (value == WeftInputType.Password)
+            {
+                if (Editor is not PasswordBox) ReplaceEditor(new PasswordBox());
+                return;
+            }
+            if (Editor is not TextBox) ReplaceEditor(new TextBox());
+            ((TextBox)Editor).InputScope = new InputScope
+            {
+                Names =
+                {
+                    new InputScopeName(value switch
+                    {
+                        WeftInputType.Number => InputScopeNameValue.Number,
+                        WeftInputType.Email => InputScopeNameValue.EmailNameOrAddress,
+                        WeftInputType.Phone => InputScopeNameValue.TelephoneNumber,
+                        _ => InputScopeNameValue.Default,
+                    }),
+                },
+            };
+        }
+    }
+}
 
 /// <summary><c>TextArea</c>: a wrapping <see cref="TextBox"/> with a three-line intrinsic height.</summary>
 public sealed class WeftTextArea : WeftTextInput
@@ -80,18 +266,19 @@ public sealed class WeftTextArea : WeftTextInput
     private const int Rows = 3;
     private const double LineHeightMultiplier = 1.4;
 
-    public WeftTextArea(Func<string, bool> edit) : base(edit)
+    public WeftTextArea(Func<string, bool> edit, Action<bool>? focusChanged = null) : base(edit, focusChanged)
     {
-        Box.AcceptsReturn = true;
-        Box.TextWrapping = TextWrapping.Wrap;
-        ScrollViewer.SetVerticalScrollBarVisibility(Box, ScrollBarVisibility.Auto);
-        Box.RegisterPropertyChangedCallback(TextBox.FontSizeProperty, (_, _) => UpdatePreferredHeight());
-        Box.RegisterPropertyChangedCallback(TextBox.PaddingProperty, (_, _) => UpdatePreferredHeight());
-        UpdatePreferredHeight();
+        var box = (TextBox)Editor;
+        box.AcceptsReturn = true;
+        box.TextWrapping = TextWrapping.Wrap;
+        ScrollViewer.SetVerticalScrollBarVisibility(box, ScrollBarVisibility.Auto);
+        box.RegisterPropertyChangedCallback(TextBox.FontSizeProperty, (_, _) => UpdatePreferredHeight(box));
+        box.RegisterPropertyChangedCallback(TextBox.PaddingProperty, (_, _) => UpdatePreferredHeight(box));
+        UpdatePreferredHeight(box);
     }
 
-    private void UpdatePreferredHeight() => Box.SetValue(WeftLayout.PreferredHeightProperty,
-        Box.FontSize * LineHeightMultiplier * Rows + Box.Padding.Top + Box.Padding.Bottom);
+    private void UpdatePreferredHeight(TextBox box) => Element.SetValue(WeftLayout.PreferredHeightProperty,
+        box.FontSize * LineHeightMultiplier * Rows + box.Padding.Top + box.Padding.Bottom);
 }
 
 /// <summary><c>Checkbox</c>: a <see cref="CheckBox"/> without a label.</summary>

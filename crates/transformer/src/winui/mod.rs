@@ -18,7 +18,7 @@
 //! | `Text`     | `WeftText`         | `TextBlock`                 |
 //! | `Span`     | `WeftSpan`         | `Run` in its parent        |
 //! | `Button`   | `WeftButton`       | `Button`                    |
-//! | `Input`    | `WeftInput`        | Controlled `TextBox`        |
+//! | `Input`    | `WeftInput`        | `TextBox` or `PasswordBox`   |
 //! | `Checkbox` | `WeftCheckbox`     | Controlled `CheckBox`       |
 //! | `Image`    | `WeftImage`        | `Image` with `BitmapImage`  |
 //!

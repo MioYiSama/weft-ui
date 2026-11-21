@@ -43,7 +43,17 @@ fn node(out: &mut Code, template: &Template, has_theme: bool, index: u32, parent
                 | Element::Slider
                 | Element::Picker => {
                     let (slot, _) = template.controlled(index);
-                    write!(out, "v => Dispatch({slot}, WeftValue.Of(v))")
+                    write!(out, "v => Dispatch({slot}, WeftValue.Of(v))")?;
+                    if let Some(slot) = template.event(index, "onSubmit") {
+                        write!(out, ", submit: () => Dispatch({slot})")?;
+                    }
+                    if let Some(slot) = template.event(index, "onFocusChange") {
+                        write!(
+                            out,
+                            ", focusChanged: v => Dispatch({slot}, WeftValue.Of(v))"
+                        )?;
+                    }
+                    Ok(())
                 }
                 Element::Scroll | Element::Divider => {
                     let name = if *element == Element::Scroll {
@@ -136,6 +146,7 @@ pub(super) fn union(element: Element, name: &str) -> Option<&'static str> {
         (Element::Column | Element::Row, "justify") => Some("Justify"),
         (Element::Stack, "alignment") => Some("Alignment"),
         (Element::Scroll, "direction") => Some("Axis"),
+        (Element::Input, "type") => Some("InputType"),
         (Element::Text, "align") => Some("TextAlign"),
         (Element::Text | Element::Span, "weight") => Some("Weight"),
         (Element::Text | Element::Span, "decoration") => Some("Decoration"),

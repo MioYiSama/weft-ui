@@ -165,6 +165,23 @@ internal sealed class WeftLinearPanel(
     private WeftCrossAlign align;
     private WeftJustify justify;
 
+    internal bool IsRoot => fillAvailable;
+
+    // The root is a focus sink for a blur request, not a normal tab stop.
+    internal void TakeInputFocus()
+    {
+        IsTabStop = true;
+        if (Focus(FocusState.Programmatic)) LostFocus += StopTakingInputFocus;
+        else IsTabStop = false;
+    }
+
+    private void StopTakingInputFocus(object sender, RoutedEventArgs args)
+    {
+        if (args.OriginalSource != this) return;
+        LostFocus -= StopTakingInputFocus;
+        IsTabStop = false;
+    }
+
     internal double Gap { set => SetLayout(ref gap, Math.Max(0, value)); }
     internal WeftCrossAlign Align { set => SetLayout(ref align, value); }
     internal WeftJustify Justify { set => SetLayout(ref justify, value); }

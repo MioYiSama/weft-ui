@@ -1,10 +1,13 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
 using FlaUI.Core.Tools;
+using FlaUI.Core.WindowsAPI;
 using FlaUI.UIA3;
 
 namespace UITests;
@@ -54,6 +57,7 @@ public sealed class Screenshots
                 if (id == "appearance") VerifyVisibility(window);
                 if (id == "text") VerifyTypography(window);
                 if (id == "controls") VerifyControls(window);
+                if (id == "inputs") VerifyInputs(window);
             }
             finally
             {
@@ -207,6 +211,75 @@ public sealed class Screenshots
         locked.Toggle();
         Select(channel, "测试版");
         Assert.AreEqual("测试版", channel.SelectedItem?.Text);
+    }
+
+    private static void VerifyInputs(Window window)
+    {
+        var boxes = window.FindAllDescendants(cf => cf.ByClassName("TextBox"));
+        Assert.AreEqual(5, boxes.Length, "Expected four single-line text boxes and the notes area");
+        var password = window.FindFirstDescendant(cf => cf.ByClassName("PasswordBox"));
+        Assert.IsNotNull(password, "Password input must use WinUI's secure control");
+        Assert.IsTrue(password.Properties.IsPassword.ValueOrDefault);
+        var input = boxes[0].AsTextBox();
+        var notes = boxes[^1].AsTextBox();
+
+        void Expect(Func<bool> predicate, string message) => Assert.IsFalse(
+            Retry.While(() => !predicate(), pending => pending, TimeSpan.FromSeconds(5)).TimedOut, message);
+        void TextIs(TextBox box, string expected, string message)
+        {
+            var result = Retry.While(() => box.Text, text => text != expected, TimeSpan.FromSeconds(5));
+            Assert.AreEqual(expected, result.Result, message);
+        }
+        bool Label(string text) => window.FindFirstDescendant(cf => cf.ByName(text)) is not null;
+        bool Focused() => input.Properties.HasKeyboardFocus.ValueOrDefault;
+        void Click(string label)
+        {
+            var button = FindButton(window, label);
+            Assert.IsNotNull(button);
+            button.AsButton().Invoke();
+        }
+
+        Click("聚焦文本框");
+        Expect(() => Focused() && Label("已聚焦"), "A true focus edge must focus the input and report it");
+        var beforeSplit = new string('a', 19);
+        Paste(beforeSplit + "😀");
+        TextIs(input, beforeSplit, "The twentieth unit must not hold half an emoji");
+        Expect(() => Label("19/20"), "The binding must receive the truncated edit");
+        Keyboard.Type(VirtualKeyShort.RETURN);
+        TextIs(input, "", "Enter must submit and clear the controlled value");
+        Expect(() => Label("0/20"), "Enter must clear the binding too");
+        var fits = new string('a', 18) + "😀";
+        Paste(fits + "z");
+        TextIs(input, fits, "A full emoji fits in two UTF-16 units");
+        Expect(() => Label("20/20"), "The binding must count two units for a full emoji");
+
+        notes.Focus();
+        Expect(() => !Focused() && Label("未聚焦"), "User blur must report focus loss without requesting it again");
+        var notesLimit = new string('a', 79);
+        Paste(notesLimit + "😀");
+        TextIs(notes, notesLimit, "TextArea must also enforce its UTF-16 limit");
+        Assert.IsFalse(Focused(), "Editing another control must not reapply a previous focus request");
+        Assert.IsNotNull(FindButton(window, "放弃焦点"), "A user blur must not write back to the focus slot");
+        input.Focus();
+        Expect(() => Focused() && Label("已聚焦"), "A user focus change must also report focus gain");
+        Click("放弃焦点");
+        Expect(() => !Focused() && Label("未聚焦"), "A false focus edge must release keyboard focus");
+        Click("聚焦文本框");
+        Expect(() => Focused() && Label("已聚焦"), "A subsequent true edge must request focus again");
+    }
+
+    private static void Paste(string text)
+    {
+        // Enter the entire edit at once, independently of the guest's active IME.
+        var command = "Set-Clipboard -Value '" + text.Replace("'", "''") + "'";
+        var start = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
+        start.ArgumentList.Add("-NoProfile");
+        start.ArgumentList.Add("-EncodedCommand");
+        start.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(command)));
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("Cannot set the clipboard");
+        Assert.IsTrue(process.WaitForExit(10_000), "Timed out setting the clipboard");
+        Assert.AreEqual(0, process.ExitCode, "Cannot set the clipboard");
+        Keyboard.TypeSimultaneously(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_V);
     }
 
     private static void CaptureWindow(Window window, string path)

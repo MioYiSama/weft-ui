@@ -8,6 +8,7 @@ import WeftKit
     bytecode: Bundle.module.url(forResource: "bundle", withExtension: "hbc"),
     resources: Bundle.module,
     layoutHash: 0xe3346ca1afcb3b60,
+    safeArea: true,
     make: makeScope
 )
 

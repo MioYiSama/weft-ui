@@ -82,7 +82,7 @@ private func decode(_ bytes: [UInt8]) throws -> [Op] {
     let test = try #require(cases.first { $0["name"] as? String == "unknown-opcode-after-create" })
     let bytes = try hexBytes(test)
     var createdScopes: [UInt32] = []
-    let session = WeftSession(bytecode: nil, resources: .main, layoutHash: 0) { _, id, session in
+    let session = WeftSession(bytecode: nil, resources: .main, layoutHash: 0, safeArea: true) { _, id, session in
         createdScopes.append(id)
         return WeftScope(id: id, session: session)
     }

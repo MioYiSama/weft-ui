@@ -79,6 +79,8 @@ fn generate(layout: &ViewLayout) -> String {
     out.writer.line("resources: Bundle.module,");
     out.writer
         .line(format_args!("layoutHash: 0x{:016x},", layout.hash()));
+    out.writer
+        .line(format_args!("safeArea: {},", layout.safe_area()));
     out.writer.line("make: makeScope");
     out.close(")");
     if !theme.is_empty() {
@@ -198,21 +200,37 @@ fn scope(out: &mut Code, index: usize, template: &Template) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::AppOptions;
     use weft_ui_parser::MemoryLoader;
 
-    fn swift(source: &str) -> String {
+    fn swift(source: &str, options: &AppOptions) -> String {
         let mut loader = MemoryLoader::new();
         loader.insert("App.weft", source);
         let compilation = crate::check(weft_ui_parser::load(&["App.weft"], &mut loader));
         let Some(program) = &compilation.program else {
             panic!("{}", compilation.render_diagnostics());
         };
-        generate(&ViewLayout::new(program))
+        generate(&ViewLayout::for_platform(program, None, options))
+    }
+
+    #[test]
+    fn safe_area_is_registered_with_the_session() {
+        let source = "component App() { Text(\"Safe area\") }";
+        let default = swift(source, &AppOptions::default());
+        let edge_to_edge = swift(source, &AppOptions { safe_area: false });
+        assert!(default.contains("safeArea: true,\n"), "{default}");
+        assert!(
+            edge_to_edge.contains("safeArea: false,\n"),
+            "{edge_to_edge}"
+        );
     }
 
     #[test]
     fn strings_are_escaped_and_never_interpolated() {
-        let code = swift(r#"component A() { Text("say \"hi\" \\(x) \u{7}") }"#);
+        let code = swift(
+            r#"component A() { Text("say \"hi\" \\(x) \u{7}") }"#,
+            &AppOptions::default(),
+        );
         assert!(
             code.contains(r#"weftText(spans: [.init(value: "say \"hi\" \\(x) \u{7}")])"#),
             "{code}"

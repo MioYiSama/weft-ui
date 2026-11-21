@@ -23,6 +23,7 @@ public final class WeftSession {
     public private(set) var failure: String?
 
     let assets: WeftAssets
+    let safeArea: Bool
     @ObservationIgnored private let make: Make
     @ObservationIgnored private var scopes: [UInt32: WeftScope] = [:]
     @ObservationIgnored private let host = Host()
@@ -36,8 +37,10 @@ public final class WeftSession {
 
     /// Registers `resources` and starts the app compiled to `bytecode` (`bundle.hbc`).
     /// The views implement the layout with hash `layoutHash`; failures are reported through `failure`.
-    public init(bytecode url: URL?, resources: Bundle, layoutHash: UInt64, make: @escaping Make) {
+    /// `safeArea` controls root layout without changing the insets reported to the app.
+    public init(bytecode url: URL?, resources: Bundle, layoutHash: UInt64, safeArea: Bool, make: @escaping Make) {
         assets = WeftAssets(bundle: resources)
+        self.safeArea = safeArea
         self.make = make
         scopes[0] = WeftRootScope(id: 0, session: self)
         guard let url, let data = try? Data(contentsOf: url, options: .mappedIfSafe), !data.isEmpty else {

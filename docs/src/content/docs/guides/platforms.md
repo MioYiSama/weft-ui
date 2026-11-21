@@ -29,7 +29,7 @@ export default defineConfig({
 | `app.name` | The name of the Vite root directory | The display name filled into platform templates on the first build. |
 | `include` | `src/**/*.weft` | A glob relative to the Vite root. Non-Web builds compile the matched `.weft` files together. |
 | `entry` | The first existing `src/index.js`, `src/index.ts`, `src/index.mjs`, `src/index.mts`, `src/index.cjs`, or `src/index.cts`, in that order | The JS or TS logic entry for non-Web builds, resolved from the Vite root. Web starts from `index.html`. |
-| `safeArea` | `true` | Keep root content clear of system UI on Web and WeChat. Set to `false` for an edge-to-edge layout. |
+| `safeArea` | `true` | Keep root content clear of system UI. Set to `false` for an edge-to-edge layout. Desktop targets have no insets, so the option changes nothing there. |
 | `dts` | `false` | Set to `true` to write `X.d.weft.ts` next to `X.weft` when not using `@weft-ui/content-mapper`. Enable `allowArbitraryExtensions` in TypeScript. |
 
 ## Choose a target

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Renders the root component or startup failure in the window's safe area.
+/// Renders the root component or startup failure, respecting the safe area by default.
 public struct WeftRoot: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
@@ -13,23 +13,37 @@ public struct WeftRoot: View {
     public var body: some View {
         GeometryReader { geometry in
             let environment = windowEnvironment(geometry)
-            weftLinear(axis: .vertical) {
-                if let failure = session.failure {
-                    Text(verbatim: failure)
-                        .foregroundStyle(.red)
-                        .padding()
-                } else if let root = session.root {
-                    root.view.id(root.id)
+            Group {
+                if session.safeArea {
+                    content(size: geometry.size)
+                } else {
+                    // Keep the outer reader in the safe area so platform.safeArea still reports the insets.
+                    GeometryReader { fullWindow in
+                        content(size: fullWindow.size)
+                    }
+                    .ignoresSafeArea()
                 }
             }
-            .weftFrame(width: geometry.size.width, height: geometry.size.height)
-            .clipped()
-            .environment(\.layoutDirection, .leftToRight)
-            .environment(\.weftAssets, session.assets)
             .onChange(of: environment, initial: true) { _, updated in
                 session.update(environment: updated)
             }
         }
+    }
+
+    private func content(size: CGSize) -> some View {
+        weftLinear(axis: .vertical) {
+            if let failure = session.failure {
+                Text(verbatim: failure)
+                    .foregroundStyle(.red)
+                    .padding()
+            } else if let root = session.root {
+                root.view.id(root.id)
+            }
+        }
+        .weftFrame(width: size.width, height: size.height)
+        .clipped()
+        .environment(\.layoutDirection, .leftToRight)
+        .environment(\.weftAssets, session.assets)
     }
 
     private func windowEnvironment(_ geometry: GeometryProxy) -> WeftEnvironment {

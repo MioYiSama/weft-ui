@@ -29,7 +29,7 @@ export default defineConfig({
 | `app.name` | Vite 根目录的目录名 | 首次构建时填入平台工程模板的显示名称。 |
 | `include` | `src/**/*.weft` | 相对于 Vite 根目录的 glob。Web 以外的平台会将匹配的 `.weft` 文件一起编译。 |
 | `entry` | 按顺序查找，取第一个存在的文件：`src/index.js`、`src/index.ts`、`src/index.mjs`、`src/index.mts`、`src/index.cjs`、`src/index.cts` | Web 以外平台的 JS 或 TS 逻辑入口，相对于 Vite 根目录解析。Web 从 `index.html` 启动。 |
-| `safeArea` | `true` | 在网页和微信小程序中，让根内容避开系统界面。设为 `false` 时，内容可以延伸到窗口边缘。 |
+| `safeArea` | `true` | 让根内容避开系统界面。设为 `false` 时，内容可以延伸到窗口边缘。桌面平台没有安全区，此选项不起作用。 |
 | `dts` | `false` | 不使用 `@weft-ui/content-mapper` 时，可设为 `true`，在 `X.weft` 旁生成 `X.d.weft.ts`。同时在 TypeScript 中启用 `allowArbitraryExtensions`。 |
 
 ## 选择构建目标
